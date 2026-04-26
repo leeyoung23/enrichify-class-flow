@@ -27,6 +27,7 @@ import TrialScheduling from '@/pages/TrialScheduling';
 import MyTasks from '@/pages/MyTasks';
 import PrototypeSummary from '@/pages/PrototypeSummary';
 import FeeTracking from '@/pages/FeeTracking';
+import PublicWelcome from '@/pages/PublicWelcome';
 
 const AuthenticatedApp = () => {
   const { isLoadingAuth, isLoadingPublicSettings, authError, navigateToLogin } = useAuth();
@@ -86,14 +87,19 @@ const AuthenticatedApp = () => {
 function App() {
 
   return (
-    <AuthProvider>
-      <QueryClientProvider client={queryClientInstance}>
-        <Router>
-          <AuthenticatedApp />
-        </Router>
+    <QueryClientProvider client={queryClientInstance}>
+      <Router>
+        <Routes>
+          <Route path="/welcome" element={<PublicWelcome />} />
+          <Route path="/*" element={(
+            <AuthProvider>
+              <AuthenticatedApp />
+            </AuthProvider>
+          )} />
+        </Routes>
         <Toaster />
-      </QueryClientProvider>
-    </AuthProvider>
+      </Router>
+    </QueryClientProvider>
   )
 }
 
