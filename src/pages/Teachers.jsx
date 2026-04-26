@@ -3,7 +3,7 @@ import { useOutletContext } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { inviteUser, listStaff } from '@/services/dataService';
 import { canInviteStaff } from '@/services/permissionService';
-import { Users, Plus, Mail, UserPlus } from 'lucide-react';
+import { Users, Mail, UserPlus } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
