@@ -316,9 +316,15 @@ export default function PublicWelcome() {
           50% { transform: scale(1.035); box-shadow: 0 30px 80px rgba(125, 211, 252, 0.34); }
         }
 
-        @keyframes welcome-glow {
-          0%, 100% { box-shadow: 0 18px 45px rgba(125, 211, 252, 0.2); }
-          50% { box-shadow: 0 24px 70px rgba(125, 211, 252, 0.36); }
+        @keyframes welcome-orbit-card {
+          0%, 100% {
+            transform: translate3d(0, 0, 0) scale(1);
+            box-shadow: 0 18px 45px rgba(125, 211, 252, 0.22);
+          }
+          50% {
+            transform: translate3d(0, -8px, 0) scale(1.025);
+            box-shadow: 0 26px 72px rgba(125, 211, 252, 0.36);
+          }
         }
 
         .welcome-fade {
@@ -330,7 +336,7 @@ export default function PublicWelcome() {
         }
 
         .welcome-glow {
-          animation: welcome-glow 5.5s ease-in-out infinite;
+          animation: welcome-orbit-card 6.5s ease-in-out infinite;
         }
 
         .welcome-reveal {
@@ -378,7 +384,7 @@ export default function PublicWelcome() {
           <div className="welcome-fade">
             <div className="mb-6 inline-flex items-center gap-2 rounded-full border border-sky-100 bg-white/80 px-4 py-2 text-sm font-medium text-sky-700 shadow-sm">
               <Sparkles className="h-4 w-4" />
-              Calm learning support for modern enrichment centres
+              Assistive AI support for education centres
             </div>
             <h1 className="max-w-5xl text-6xl font-black tracking-[-0.06em] text-slate-950 md:text-7xl">
               Young&apos;s Learners for every child, class, and centre team.
