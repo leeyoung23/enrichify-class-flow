@@ -24,49 +24,29 @@ const staffLinks = [
   { label: 'HQ Admin Sign In', to: '/?demoRole=hq_admin', description: 'Manage the full platform, branch performance, and strategic reporting.' },
 ];
 
-const databaseTables = [
-  'profiles',
-  'students',
-  'schools',
-  'curriculum_pathways',
-  'guardian_student_links',
-  'staff_invites',
-  'student_learning_profiles',
+const featureGroups = [
+  {
+    icon: Users,
+    title: 'For families',
+    text: 'Track homework, approved reports, attendance, and learning progress in one gentle view.',
+  },
+  {
+    icon: BookOpen,
+    title: 'For teachers',
+    text: 'Move through class session flow, homework checks, notes, parent updates, and daily tasks.',
+  },
+  {
+    icon: Building2,
+    title: 'For centre leaders',
+    text: 'Understand branch overview, teacher KPI, fees, observations, and trial activity with less noise.',
+  },
 ];
-
-function Field({ label, placeholder }) {
-  return (
-    <label className="block">
-      <span className="text-xs font-semibold uppercase tracking-[0.16em] text-sky-700">{label}</span>
-      <input
-        className="mt-2 w-full rounded-2xl border border-sky-100 bg-white/80 px-4 py-3 text-sm text-slate-500 shadow-sm outline-none ring-sky-200 placeholder:text-slate-400"
-        placeholder={placeholder}
-        readOnly
-      />
-    </label>
-  );
-}
-
-function SelectField({ label, placeholder }) {
-  return (
-    <label className="block">
-      <span className="text-xs font-semibold uppercase tracking-[0.16em] text-sky-700">{label}</span>
-      <select
-        className="mt-2 w-full rounded-2xl border border-sky-100 bg-white/80 px-4 py-3 text-sm text-slate-500 shadow-sm outline-none ring-sky-200"
-        defaultValue=""
-        disabled
-      >
-        <option value="">{placeholder}</option>
-      </select>
-    </label>
-  );
-}
 
 function RoleLinkCard({ item }) {
   return (
     <Link
       to={item.to}
-      className="group flex h-full flex-col justify-between rounded-3xl border border-sky-100 bg-white/85 p-5 shadow-sm transition hover:-translate-y-0.5 hover:border-sky-200 hover:shadow-xl hover:shadow-sky-100"
+      className="group flex h-full flex-col justify-between rounded-[1.75rem] border border-sky-100 bg-white/90 p-5 shadow-sm transition hover:-translate-y-0.5 hover:border-sky-200 hover:shadow-xl hover:shadow-sky-100"
     >
       <div>
         <div className="mb-3 flex h-10 w-10 items-center justify-center rounded-2xl bg-sky-50 text-sky-700">
@@ -105,17 +85,17 @@ export default function PublicWelcome() {
       </header>
 
       <main id="top">
-        <section className="mx-auto grid max-w-7xl items-center gap-12 px-5 py-20 lg:grid-cols-[1.05fr_0.95fr] lg:py-24">
+        <section className="mx-auto grid max-w-7xl items-center gap-14 px-5 py-20 lg:grid-cols-[1.08fr_0.92fr] lg:py-28">
           <div>
             <div className="mb-6 inline-flex items-center gap-2 rounded-full border border-sky-100 bg-white/80 px-4 py-2 text-sm font-medium text-sky-700 shadow-sm">
               <Sparkles className="h-4 w-4" />
-              Future-ready learning and centre operations
+              Calm learning support for modern enrichment centres
             </div>
-            <h1 className="max-w-4xl text-5xl font-bold tracking-[-0.04em] text-slate-950 md:text-6xl">
-              Young&apos;s Learners brings families, teachers, and centre leaders into one calm workspace.
+            <h1 className="max-w-4xl text-5xl font-bold tracking-[-0.045em] text-slate-950 md:text-6xl">
+              A clearer way to support every learner, lesson, and centre team.
             </h1>
             <p className="mt-6 max-w-2xl text-lg leading-8 text-slate-600">
-              An AI-assisted enrichment learning and operations platform for progress reports, homework, class workflows, branch oversight, and future personalised learning paths.
+              Young&apos;s Learners is an AI-assisted enrichment learning and operations platform for homework, reports, class routines, and thoughtful centre oversight.
             </p>
             <div className="mt-8 flex flex-col gap-3 sm:flex-row">
               <a href="#about" className="inline-flex items-center justify-center rounded-2xl bg-sky-700 px-6 py-3 text-sm font-semibold text-white shadow-xl shadow-sky-200 transition hover:bg-sky-800">
@@ -127,40 +107,42 @@ export default function PublicWelcome() {
             </div>
           </div>
 
-          <div className="rounded-[2rem] border border-sky-100 bg-white/85 p-6 shadow-2xl shadow-sky-100">
+          <div className="rounded-[2rem] border border-sky-100 bg-white/90 p-6 shadow-2xl shadow-sky-100">
             <div className="rounded-[1.5rem] bg-gradient-to-br from-sky-100 to-blue-50 p-6">
               <div className="mb-6 flex items-center justify-between">
                 <div>
-                  <p className="text-sm font-semibold text-sky-800">Today at Young&apos;s Learners</p>
-                  <p className="text-xs text-slate-500">Demo preview only</p>
+                  <p className="text-sm font-semibold text-sky-800">Learning centre overview</p>
+                  <p className="text-xs text-slate-500">Simple, approved, role-aware views</p>
                 </div>
                 <ShieldCheck className="h-6 w-6 text-sky-700" />
               </div>
               <div className="space-y-3">
-                {['Teacher notes ready for parent review', 'Homework uploads waiting for feedback', 'Branch overview stays clear and focused'].map((item) => (
+                {['Parent reports are ready for review', 'Homework follow-up stays visible', 'Branch priorities stay calm and clear'].map((item) => (
                   <div key={item} className="flex items-center gap-3 rounded-2xl bg-white/85 p-4 text-sm font-medium text-slate-700 shadow-sm">
                     <CheckCircle2 className="h-5 w-5 text-sky-600" />
                     {item}
                   </div>
                 ))}
               </div>
+              <div className="mt-5 rounded-2xl border border-white/80 bg-white/70 p-4">
+                <p className="text-xs font-semibold uppercase tracking-[0.18em] text-sky-700">Built for</p>
+                <p className="mt-2 text-sm leading-6 text-slate-600">Parents, students, teachers, branch supervisors, and HQ teams who need the right information at the right moment.</p>
+              </div>
             </div>
           </div>
         </section>
 
-        <section id="about" className="mx-auto max-w-7xl px-5 py-14">
-          <div className="grid gap-6 lg:grid-cols-3">
-            {[
-              { icon: Users, title: 'Families stay informed', text: 'Parents and students see approved progress, homework status, and learning materials without internal centre tools.' },
-              { icon: BookOpen, title: 'Teachers stay focused', text: 'Class workflows keep attendance, homework, notes, and parent report drafts in one teaching-first flow.' },
-              { icon: Building2, title: 'Leaders see operations', text: 'Branch supervisors and HQ can monitor quality, trials, fees, and performance without overwhelming daily users.' },
-            ].map(({ icon: Icon, title, text }) => (
-              <div key={title} className="rounded-3xl border border-sky-100 bg-white/80 p-6 shadow-sm">
-                <Icon className="mb-4 h-6 w-6 text-sky-700" />
-                <h2 className="text-lg font-semibold">{title}</h2>
-                <p className="mt-3 text-sm leading-6 text-slate-600">{text}</p>
-              </div>
-            ))}
+        <section id="about" className="mx-auto max-w-7xl px-5 py-12">
+          <div className="rounded-[2rem] border border-sky-100 bg-white/85 p-8 shadow-sm lg:p-10">
+            <p className="text-sm font-semibold uppercase tracking-[0.22em] text-sky-700">Mission</p>
+            <div className="mt-4 grid gap-8 lg:grid-cols-[0.85fr_1.15fr] lg:items-end">
+              <h2 className="text-3xl font-bold tracking-tight text-slate-950 md:text-4xl">
+                Connecting learning, communication, and centre operations in one calm system.
+              </h2>
+              <p className="text-base leading-8 text-slate-600">
+                Young&apos;s Learners helps enrichment centres keep daily teaching focused while giving families, teachers, and leaders a shared view of progress.
+              </p>
+            </div>
           </div>
         </section>
 
@@ -168,7 +150,7 @@ export default function PublicWelcome() {
           <div className="mb-8 max-w-2xl">
             <p className="text-sm font-semibold uppercase tracking-[0.22em] text-sky-700">Role entry</p>
             <h2 className="mt-3 text-3xl font-bold tracking-tight">Choose your Young&apos;s Learners access path.</h2>
-            <p className="mt-3 text-slate-600">These buttons use demo links only. Real Supabase Auth and activation codes will be added later after database and RLS design is approved.</p>
+            <p className="mt-3 text-slate-600">Choose the role that matches your day-to-day view. These prototype links open safe demo spaces only.</p>
           </div>
           <div className="grid gap-6 lg:grid-cols-2">
             <div>
@@ -190,56 +172,37 @@ export default function PublicWelcome() {
           </div>
         </section>
 
-        <section id="features" className="mx-auto grid max-w-7xl gap-6 px-5 py-14 lg:grid-cols-2">
-          <div className="rounded-[2rem] border border-sky-100 bg-white/85 p-7 shadow-sm">
-            <p className="text-sm font-semibold uppercase tracking-[0.22em] text-sky-700">Family onboarding preview</p>
-            <h2 className="mt-3 text-2xl font-bold">School context supports future personalisation.</h2>
-            <p className="mt-3 text-sm leading-6 text-slate-600">
-              School and curriculum information will later help generate personalised materials, gamified modules, and AI homework marking. This form is UI-only and does not submit data.
-            </p>
-            <div className="mt-6 grid gap-4 sm:grid-cols-2">
-              <Field label="Parent name" placeholder="Example: A parent or guardian" />
-              <Field label="Parent email or phone" placeholder="Not collected in this prototype" />
-              <Field label="Child name" placeholder="Example: Child name" />
-              <Field label="Child year / grade" placeholder="Example: Year 5" />
-              <Field label="Child school name" placeholder="Example: School name" />
-              <SelectField label="School type" placeholder="Select later: national, international, homeschool" />
-              <SelectField label="Curriculum pathway" placeholder="Select later: Cambridge, local, other" />
-              <Field label="Subjects enrolled" placeholder="Example: English, Maths, Science" />
-            </div>
+        <section id="features" className="mx-auto max-w-7xl px-5 py-14">
+          <div className="mb-8 max-w-2xl">
+            <p className="text-sm font-semibold uppercase tracking-[0.22em] text-sky-700">Platform benefits</p>
+            <h2 className="mt-3 text-3xl font-bold tracking-tight">Designed for the rhythm of an enrichment centre.</h2>
           </div>
-
-          <div className="rounded-[2rem] border border-sky-100 bg-white/85 p-7 shadow-sm">
-            <p className="text-sm font-semibold uppercase tracking-[0.22em] text-sky-700">Staff onboarding preview</p>
-            <h2 className="mt-3 text-2xl font-bold">Activation codes are for first setup only.</h2>
-            <p className="mt-3 text-sm leading-6 text-slate-600">
-              Staff should use invite or activation codes only during first-time onboarding. Daily login should later use normal Supabase Auth sessions.
-            </p>
-            <div className="mt-6 grid gap-4">
-              <Field label="Staff email" placeholder="Invited staff email" />
-              <SelectField label="Role" placeholder="Teacher, branch supervisor, or HQ admin" />
-              <Field label="Invite / activation code" placeholder="Validated later by a secure server flow" />
-            </div>
-            <div className="mt-6 rounded-3xl bg-sky-50 p-5 text-sm leading-6 text-slate-700">
-              No real authentication, code validation, or staff account creation is implemented on this page.
-            </div>
+          <div className="grid gap-6 lg:grid-cols-3">
+            {featureGroups.map(({ icon: Icon, title, text }) => (
+              <div key={title} className="rounded-[1.75rem] border border-sky-100 bg-white/85 p-6 shadow-sm">
+                <Icon className="mb-5 h-6 w-6 text-sky-700" />
+                <h3 className="text-lg font-semibold text-slate-950">{title}</h3>
+                <p className="mt-3 text-sm leading-6 text-slate-600">{text}</p>
+              </div>
+            ))}
           </div>
         </section>
 
         <section className="mx-auto max-w-7xl px-5 py-14 pb-20">
-          <div className="rounded-[2rem] border border-sky-100 bg-white/85 p-7 shadow-sm">
-            <p className="text-sm font-semibold uppercase tracking-[0.22em] text-sky-700">Database-first notes</p>
-            <h2 className="mt-3 text-2xl font-bold">Future Supabase mapping</h2>
-            <div className="mt-6 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-              {databaseTables.map((table) => (
-                <div key={table} className="rounded-2xl border border-sky-100 bg-sky-50/70 px-4 py-3 font-mono text-sm text-sky-900">
-                  {table}
-                </div>
-              ))}
+          <div className="grid gap-5 rounded-[2rem] border border-sky-100 bg-white/85 p-7 shadow-sm md:grid-cols-[1fr_auto_auto] md:items-center">
+            <div>
+              <p className="text-sm font-semibold uppercase tracking-[0.22em] text-sky-700">Getting started</p>
+              <h2 className="mt-3 text-2xl font-bold tracking-tight">Setup flows are coming later.</h2>
+              <p className="mt-3 max-w-2xl text-sm leading-6 text-slate-600">
+                Family setup and staff activation will be added after the secure account and data model is approved. No real information is collected here.
+              </p>
             </div>
-            <p className="mt-6 text-sm leading-6 text-slate-600">
-              Real implementation should wait for Supabase tables, foreign keys, role policies, RLS tests, and secure onboarding flows. This prototype uses fake demo links only.
-            </p>
+            <button type="button" className="rounded-2xl border border-sky-100 bg-sky-50 px-5 py-3 text-sm font-semibold text-sky-800">
+              Start Family Setup - Coming soon
+            </button>
+            <button type="button" className="rounded-2xl border border-sky-100 bg-sky-50 px-5 py-3 text-sm font-semibold text-sky-800">
+              Start Staff Setup - Coming soon
+            </button>
           </div>
         </section>
       </main>
