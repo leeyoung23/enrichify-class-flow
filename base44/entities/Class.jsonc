@@ -1,0 +1,38 @@
+{
+  "name": "Class",
+  "type": "object",
+  "properties": {
+    "name": {
+      "type": "string",
+      "description": "Class name"
+    },
+    "branch_id": {
+      "type": "string",
+      "description": "ID of the branch this class belongs to"
+    },
+    "subject": {
+      "type": "string",
+      "description": "Subject taught"
+    },
+    "teacher_email": {
+      "type": "string",
+      "description": "Email of the assigned teacher"
+    },
+    "schedule": {
+      "type": "string",
+      "description": "Class schedule (e.g. Mon/Wed 3-4pm)"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "active",
+        "inactive"
+      ],
+      "default": "active"
+    }
+  },
+  "required": [
+    "name",
+    "branch_id"
+  ]
+}

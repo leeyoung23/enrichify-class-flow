@@ -1,0 +1,19 @@
+{
+  "name": "User",
+  "type": "object",
+  "properties": {
+    "role": {
+      "type": "string",
+      "enum": [
+        "hq_admin",
+        "branch_supervisor",
+        "teacher"
+      ],
+      "default": "teacher"
+    },
+    "branch_id": {
+      "type": "string",
+      "description": "Branch assigned to (for supervisors and teachers)"
+    }
+  }
+}

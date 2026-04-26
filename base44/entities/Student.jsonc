@@ -1,0 +1,43 @@
+{
+  "name": "Student",
+  "type": "object",
+  "properties": {
+    "name": {
+      "type": "string",
+      "description": "Student full name"
+    },
+    "class_id": {
+      "type": "string",
+      "description": "ID of the class"
+    },
+    "branch_id": {
+      "type": "string",
+      "description": "ID of the branch"
+    },
+    "parent_name": {
+      "type": "string",
+      "description": "Parent/guardian name"
+    },
+    "parent_phone": {
+      "type": "string",
+      "description": "Parent phone number"
+    },
+    "parent_email": {
+      "type": "string",
+      "description": "Parent email"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "active",
+        "inactive"
+      ],
+      "default": "active"
+    }
+  },
+  "required": [
+    "name",
+    "class_id",
+    "branch_id"
+  ]
+}

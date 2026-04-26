@@ -1,0 +1,42 @@
+{
+  "name": "ParentUpdate",
+  "type": "object",
+  "properties": {
+    "student_id": {
+      "type": "string",
+      "description": "Student ID"
+    },
+    "class_id": {
+      "type": "string",
+      "description": "Class ID"
+    },
+    "teacher_email": {
+      "type": "string",
+      "description": "Teacher who created this update"
+    },
+    "notes": {
+      "type": "string",
+      "description": "Teacher's original notes"
+    },
+    "ai_draft": {
+      "type": "string",
+      "description": "AI-generated parent message draft"
+    },
+    "final_message": {
+      "type": "string",
+      "description": "Final edited message saved by teacher"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "draft",
+        "saved"
+      ],
+      "default": "draft"
+    }
+  },
+  "required": [
+    "student_id",
+    "class_id"
+  ]
+}
