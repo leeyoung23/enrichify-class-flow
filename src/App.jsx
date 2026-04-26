@@ -75,8 +75,8 @@ const AuthenticatedApp = () => {
         <Route path="/my-tasks" element={<MyTasks />} />
         <Route path="/prototype-summary" element={<PrototypeSummary />} />
         <Route path="/fee-tracking" element={<FeeTracking />} />
+        <Route path="/parent-view" element={<ParentView />} />
       </Route>
-      <Route path="/parent-view" element={<ParentView />} />
       <Route path="*" element={<PageNotFound />} />
     </Routes>
   );

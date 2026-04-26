@@ -9,6 +9,7 @@ import { Button } from '@/components/ui/button';
 import { base44 } from '@/api/base44Client';
 import { cn } from '@/lib/utils';
 import { getSelectedDemoRole, normalizeRole } from '@/services/authService';
+import { getRoleNavigation } from '@/services/permissionService';
 
 const ROLE_TITLES = {
   hq_admin: 'HQ Admin',
@@ -18,71 +19,45 @@ const ROLE_TITLES = {
   student: 'Student',
 };
 
-const NAV_ITEMS = {
-  hq_admin: [
-    { label: 'Dashboard', icon: LayoutDashboard, path: '/' },
-    { label: 'Branches', icon: Building2, path: '/branches' },
-    { label: 'Classes', icon: BookOpen, path: '/classes' },
-    { label: 'Teachers', icon: Users, path: '/teachers' },
-    { label: 'Students', icon: GraduationCap, path: '/students' },
-    { label: 'Attendance', icon: ClipboardCheck, path: '/attendance' },
-    { label: 'Homework', icon: PenLine, path: '/homework' },
-    { label: 'Parent Updates', icon: MessageSquarePlus, path: '/parent-updates' },
-    { label: 'Fee Tracking', icon: Wallet, path: '/fee-tracking' },
-    { label: 'Leads & Enrolment', icon: UserPlus, path: '/leads' },
-    { label: 'Trial Scheduling', icon: CalendarRange, path: '/trial-scheduling' },
-    { label: 'Observations', icon: ClipboardPen, path: '/observations' },
-    { label: 'Teacher KPI', icon: ChartNoAxesColumn, path: '/teacher-kpi' },
-    { label: 'Future AI Engine', icon: Bot, path: '/future-ai-learning-engine' },
-    { label: 'Migration Audit', icon: FolderGit2, path: '/migration-ownership-audit' },
-    { label: 'Prototype Summary', icon: FileText, path: '/prototype-summary' },
-    { label: 'Branch Performance', icon: BarChart3, path: '/branch-performance' },
-    { label: 'My Tasks', icon: BellRing, path: '/my-tasks' },
-  ],
-  branch_supervisor: [
-    { label: 'Dashboard', icon: LayoutDashboard, path: '/' },
-    { label: 'Classes', icon: BookOpen, path: '/classes' },
-    { label: 'Teachers', icon: Users, path: '/teachers' },
-    { label: 'Students', icon: GraduationCap, path: '/students' },
-    { label: 'Attendance', icon: ClipboardCheck, path: '/attendance' },
-    { label: 'Homework', icon: PenLine, path: '/homework' },
-    { label: 'Parent Updates', icon: MessageSquarePlus, path: '/parent-updates' },
-    { label: 'Fee Tracking', icon: Wallet, path: '/fee-tracking' },
-    { label: 'Leads & Enrolment', icon: UserPlus, path: '/leads' },
-    { label: 'Trial Scheduling', icon: CalendarRange, path: '/trial-scheduling' },
-    { label: 'Observations', icon: ClipboardPen, path: '/observations' },
-    { label: 'Teacher KPI', icon: ChartNoAxesColumn, path: '/teacher-kpi' },
-    { label: 'Prototype Summary', icon: FileText, path: '/prototype-summary' },
-    { label: 'Branch Performance', icon: BarChart3, path: '/branch-performance' },
-    { label: 'My Tasks', icon: BellRing, path: '/my-tasks' },
-  ],
-  teacher: [
-    { label: 'Dashboard', icon: LayoutDashboard, path: '/' },
-    { label: 'Class Session', icon: PlayCircle, path: '/class-session' },
-    { label: 'My Classes', icon: BookOpen, path: '/classes' },
-    { label: 'My Students', icon: GraduationCap, path: '/students' },
-    { label: 'Attendance', icon: ClipboardCheck, path: '/attendance' },
-    { label: 'Homework', icon: PenLine, path: '/homework' },
-    { label: 'Parent Updates', icon: MessageSquarePlus, path: '/parent-updates' },
-    { label: 'My Trial Classes', icon: CalendarRange, path: '/trial-scheduling' },
-    { label: 'My Tasks', icon: BellRing, path: '/my-tasks' },
-    { label: 'Teacher KPI', icon: ChartNoAxesColumn, path: '/teacher-kpi' },
-    { label: 'Observations', icon: ClipboardPen, path: '/observations' },
-  ],
-  parent: [
-    { label: 'Parent Dashboard', icon: LayoutDashboard, path: '/parent-view' },
-    { label: 'Fee Tracking', icon: Wallet, path: '/fee-tracking' },
-  ],
-  student: [
-    { label: 'Learning Portal', icon: BookOpen, path: '/parent-view' },
-  ],
+const ICONS = {
+  dashboard: LayoutDashboard,
+  branches: Building2,
+  classes: BookOpen,
+  teachers: Users,
+  students: GraduationCap,
+  attendance: ClipboardCheck,
+  parentUpdates: MessageSquarePlus,
+  homework: PenLine,
+  leads: UserPlus,
+  classSession: PlayCircle,
+  observations: ClipboardPen,
+  teacherKpi: ChartNoAxesColumn,
+  futureAi: Bot,
+  migrationAudit: FolderGit2,
+  branchPerformance: BarChart3,
+  trialScheduling: CalendarRange,
+  myTasks: BellRing,
+  prototypeSummary: FileText,
+  feeTracking: Wallet,
 };
+
+function withDemoRole(path, selectedDemoRole) {
+  if (!selectedDemoRole) return path;
+  const [pathWithoutHash, hash = ''] = path.split('#');
+  const [pathname, search = ''] = pathWithoutHash.split('?');
+  const params = new URLSearchParams(search);
+  params.set('demoRole', selectedDemoRole);
+  if ((selectedDemoRole === 'parent' || selectedDemoRole === 'student') && pathname === '/parent-view' && !params.has('student')) {
+    params.set('student', 'student-01');
+  }
+  return `${pathname}?${params.toString()}${hash ? `#${hash}` : ''}`;
+}
 
 export default function Sidebar({ user, collapsed, onToggle }) {
   const location = useLocation();
   const selectedDemoRole = getSelectedDemoRole();
   const role = selectedDemoRole || normalizeRole(user?.role) || 'teacher';
-  const items = NAV_ITEMS[role] || NAV_ITEMS.teacher;
+  const items = getRoleNavigation(role);
 
   return (
     <aside className={cn(
@@ -103,11 +78,12 @@ export default function Sidebar({ user, collapsed, onToggle }) {
 
       <nav className="flex-1 py-4 px-3 space-y-1 overflow-y-auto">
         {items.map((item) => {
-          const isActive = location.pathname === item.path;
+          const itemPath = item.path.split('#')[0];
+          const isActive = location.pathname === itemPath;
           return (
             <Link
               key={item.path}
-              to={item.path}
+              to={withDemoRole(item.path, selectedDemoRole)}
               className={cn(
                 "flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-200",
                 isActive 
@@ -115,7 +91,7 @@ export default function Sidebar({ user, collapsed, onToggle }) {
                   : "text-muted-foreground hover:bg-accent hover:text-accent-foreground"
               )}
             >
-              <item.icon className="h-[18px] w-[18px] flex-shrink-0" />
+              {React.createElement(ICONS[item.icon] || LayoutDashboard, { className: "h-[18px] w-[18px] flex-shrink-0" })}
               {!collapsed && <span className="truncate">{item.label}</span>}
             </Link>
           );

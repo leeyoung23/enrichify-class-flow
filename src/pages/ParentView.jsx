@@ -32,7 +32,7 @@ function AttendanceSummary({ records }) {
   const rate = total > 0 ? Math.round((counts.present / total) * 100) : 0;
 
   return (
-    <Card>
+    <Card id="attendance-summary">
       <CardHeader className="pb-3">
         <CardTitle className="text-base">Attendance Summary</CardTitle>
       </CardHeader>
@@ -130,7 +130,7 @@ function LatestReport({ updates }) {
   const latest = updates[0];
   if (!latest) {
     return (
-      <Card>
+      <Card id="homework-due">
         <CardHeader className="pb-3">
           <CardTitle className="text-base">Latest Report</CardTitle>
         </CardHeader>
@@ -195,7 +195,7 @@ function StudentPortalSummary({ attendance, updates }) {
         <Card><CardContent className="pt-6"><p className="text-sm text-muted-foreground">Progress Summary</p><p className="text-3xl font-bold mt-1">{progressRate}%</p></CardContent></Card>
       </div>
 
-      <Card>
+      <Card id="recent-feedback">
         <CardHeader className="pb-3"><CardTitle className="text-base">Homework Due</CardTitle></CardHeader>
         <CardContent>
           <div className="space-y-2 text-sm">
@@ -209,7 +209,7 @@ function StudentPortalSummary({ attendance, updates }) {
         </CardContent>
       </Card>
 
-      <Card>
+      <Card id="learning-resources">
         <CardHeader className="pb-3"><CardTitle className="text-base">Recent Feedback</CardTitle></CardHeader>
         <CardContent>
           <div className="space-y-3 text-sm">
@@ -222,7 +222,7 @@ function StudentPortalSummary({ attendance, updates }) {
         </CardContent>
       </Card>
 
-      <Card>
+      <Card id="simple-progress-summary">
         <CardHeader className="pb-3"><CardTitle className="text-base">Learning Resources</CardTitle></CardHeader>
         <CardContent>
           <div className="space-y-2 text-sm text-muted-foreground">
