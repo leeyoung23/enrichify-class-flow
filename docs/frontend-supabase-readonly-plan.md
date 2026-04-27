@@ -185,3 +185,36 @@ Use this prompt for the next implementation step:
 > 4. Keep all existing page behavior stable.
 > 5. Run `npm run build`, `npm run lint`, `npm run typecheck`.
 > 6. Summarize changed files and fallback behavior.
+
+## 10) Implementation status (first read-only slice)
+
+Implemented in this checkpoint:
+
+- Added `src/services/supabaseClient.js`
+  - Reads `VITE_SUPABASE_URL` and `VITE_SUPABASE_ANON_KEY` from `import.meta.env`.
+  - Exports `supabase` and `isSupabaseConfigured()`.
+  - Returns `null` client behavior when env vars are missing.
+  - Does not import or use `SUPABASE_SERVICE_ROLE_KEY`.
+- Added `src/services/supabaseReadService.js`
+  - Added one read-only method: `getApprovedSalesKitResources()`.
+  - Queries `sales_kit_resources` with safe selected fields only.
+  - Filters `status = approved`.
+  - Orders by `created_at` descending.
+  - Returns predictable `{ data, error }` result and avoids unhandled throws.
+- Added optional service-level smoke script:
+  - `scripts/supabase-readonly-smoke-test.mjs`
+  - Added package script `npm run test:supabase:read`
+  - Uses `.env.local` + anon key only; no writes.
+
+Intentionally not connected yet:
+
+- No page/UI wiring changes were made.
+- `src/pages/SalesKit.jsx` remains local demo-card based.
+- No broad `dataService` migration in this checkpoint.
+- No auth/login rollout changes.
+- No writes/uploads/messaging paths were added.
+
+Reason for this minimal choice:
+
+- Keeping UI unchanged is the safest first step while validating read-only service primitives.
+- This preserves `demoRole` and demo/local fallback behavior with zero runtime UX regression risk.

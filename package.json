@@ -10,6 +10,7 @@
     "lint:fix": "eslint . --fix",
     "typecheck": "tsc -p ./jsconfig.json",
     "test:rls": "node scripts/rls-smoke-test.mjs",
+    "test:supabase:read": "node scripts/supabase-readonly-smoke-test.mjs",
     "preview": "vite preview"
   },
   "dependencies": {
