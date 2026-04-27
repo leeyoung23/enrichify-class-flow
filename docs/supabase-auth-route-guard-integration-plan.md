@@ -100,7 +100,7 @@ Related: `docs/supabase-auth-transition-plan.md`, `src/services/supabaseAuthServ
 
 | Phase | Scope |
 |-------|--------|
-| **3A** | Add a **non-invasive** auth state module: e.g. `useSupabaseAuthState` hook or lightweight **`SupabaseSessionProvider`** that only exposes `{ session, profile, appUser, loading, error }` and subscribes to `supabase.auth.onAuthStateChange`. **No** `AppLayout` edits yet; optionally mount provider high in tree without consuming it in layout. |
+| **3A** | ✅ **`SupabaseAuthStateProvider`** + **`useSupabaseAuthState()`** in `src/hooks/useSupabaseAuthState.jsx` — `onAuthStateChange`, profile load via `getCurrentProfile` / `mapProfileToAppUser`, exposes `session`, `user`, `profile`, `appUser`, `loading`, `error`, `isSupabaseAuthAvailable`, `refreshAuthState`. Mounted in **`App.jsx`** around **`Router`** only; **no** `AppLayout` / route-guard changes. |
 | **3B** | **`AppLayout`**: when **no `demoRole`**, read from Phase 3A state; if Supabase session + profile present, set **`effectiveUser`** from **`mapProfileToAppUser`**; else fall back to Base44 `getCurrentUser()` until removed. |
 | **3C** | **Protected route fallback:** if non-demo, no session (and no Base44 user if still enabled), **`Navigate`** to **`/auth-preview`** (or `/login`) with optional `state.from`. Keep public routes unchanged. |
 | **3D** | **Production hardening:** feature flags, remove Base44 path for non-demo, tighten `AuthProvider` / marketing split—**later** only. |
@@ -116,4 +116,13 @@ Use this for a future coding task:
 
 ---
 
-*Document type: planning. No runtime changes required to adopt this file alone.*
+## Phase 3A implementation status (done)
+
+- **`src/hooks/useSupabaseAuthState.jsx`** — `SupabaseAuthStateProvider` + **`useSupabaseAuthState()`**; listens with **`supabase.auth.onAuthStateChange`**; uses **`supabaseAuthService`** only; safe empty state when Supabase is not configured; no redirects; no **`demoRole`** interaction.
+- **`App.jsx`** — wraps **`Router`** (and thus **`/auth-preview`**, **`/welcome`**, and **`/*`**) inside **`SupabaseAuthStateProvider`** so session updates propagate without new consumers yet.
+- **`AppLayout`** — **unchanged**; **`demoRole`** remains the primary preview path for the main shell.
+- **Next:** Phase **3B** — `AppLayout` may consume **`useSupabaseAuthState().appUser`** only when **`demoRole`** is absent.
+
+---
+
+*Document type: planning. Phase 3A runtime hook/provider is implemented; route guard integration remains Phase 3B+.*

@@ -30,6 +30,7 @@ import FeeTracking from '@/pages/FeeTracking';
 import PublicWelcome from '@/pages/PublicWelcome';
 import AuthPreview from '@/pages/AuthPreview';
 import SalesKit from '@/pages/SalesKit';
+import { SupabaseAuthStateProvider } from '@/hooks/useSupabaseAuthState';
 
 const AuthenticatedApp = () => {
   const { isLoadingAuth, isLoadingPublicSettings, authError, navigateToLogin } = useAuth();
@@ -91,6 +92,7 @@ function App() {
 
   return (
     <QueryClientProvider client={queryClientInstance}>
+      <SupabaseAuthStateProvider>
       <Router>
         <Routes>
           <Route path="/auth-preview" element={<AuthPreview />} />
@@ -103,6 +105,7 @@ function App() {
         </Routes>
         <Toaster />
       </Router>
+      </SupabaseAuthStateProvider>
     </QueryClientProvider>
   )
 }
