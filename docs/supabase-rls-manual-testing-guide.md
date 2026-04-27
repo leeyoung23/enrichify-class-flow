@@ -83,6 +83,11 @@ At minimum, verify these negative cases:
 - Branch Supervisor cannot see archived `sales_kit_resources`.
 - Student cannot see internal `teacher_tasks`.
 
+Teacher task RLS note:
+
+- Teacher task access should use non-recursive policies between `teacher_tasks` and `teacher_task_assignments`.
+- Parent and student should remain blocked from internal teacher task records.
+
 ## 6) Safe way to test RLS (recommended)
 
 Use one of these approaches later:
