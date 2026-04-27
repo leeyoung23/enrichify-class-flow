@@ -11,6 +11,7 @@
     "typecheck": "tsc -p ./jsconfig.json",
     "test:rls": "node scripts/rls-smoke-test.mjs",
     "test:supabase:read": "node scripts/supabase-readonly-smoke-test.mjs",
+    "test:supabase:auth": "node scripts/supabase-auth-smoke-test.mjs",
     "preview": "vite preview"
   },
   "dependencies": {
