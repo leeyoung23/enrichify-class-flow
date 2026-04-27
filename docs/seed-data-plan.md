@@ -1,521 +1,193 @@
 # Seed Data Plan
 
-This plan defines fake Supabase seed data for future Young's Learners backend testing. It is documentation only. Do not use real branch, student, parent, teacher, school, phone, email, fee, payment, homework, or upload data.
+This is a fake/demo Supabase seed data plan for testing only.
 
-Seed data should prove that every role sees only the records it should see. Each group below includes a minimum dataset, relationships, expected visibility, and a negative test.
+Do not use real student, parent, teacher, school, phone, email, fee, payment, homework, or upload data.
 
-## 1. Branches
+Each group below includes:
 
-Purpose: test branch scoping and HQ-wide visibility.
+- purpose
+- minimum fake records
+- relationships
+- roles that should see it
+- one negative test case
 
-Minimum fake records:
+## 1) branches
 
-- `branch_north`: North Demo Learning Centre
-- `branch_south`: South Demo Study Centre
+- **Purpose:** branch-level scope control.
+- **Minimum fake records:** 2 (`branch_north_demo`, `branch_south_demo`).
+- **Relationships:** parent entity for classes, staff, students, tasks, leads, trials, fees, observations.
+- **Roles that should see it:** HQ all; Branch Supervisor own branch; Teacher indirect via assigned classes.
+- **Negative test:** North supervisor must not read South branch records.
 
-Relationships:
+## 2) profiles/users
 
-- Classes, students, teachers, fees, observations, leads, and trials should reference one of these branches.
+- **Purpose:** role identity and profile loading.
+- **Minimum fake records:** 6 (HQ, 1 branch supervisor, 1 teacher, 1 parent, 1 student, 1 additional cross-branch staff).
+- **Relationships:** links to role-specific tables (`teachers`, `guardians`, student-linked profile model).
+- **Roles that should see it:** self profile for all; HQ broader read as policy allows.
+- **Negative test:** Parent must not browse unrelated staff profiles.
 
-Expected visibility:
+## 3) teachers
 
-- HQ Admin sees both branches.
-- North Branch Supervisor sees only `branch_north`.
-- South Branch Supervisor sees only `branch_south`.
-- Teachers see branch context for assigned classes only.
+- **Purpose:** teacher extension and branch identity.
+- **Minimum fake records:** 2 (one per branch).
+- **Relationships:** links to `profiles`, `teacher_class_assignments`, `teacher_tasks`.
+- **Roles that should see it:** HQ all; Branch Supervisor own branch; Teacher self.
+- **Negative test:** Teacher in North cannot read South teacher staff record.
 
-Negative test:
+## 4) classes
 
-- North Branch Supervisor must not see South branch records.
+- **Purpose:** class ownership and branch-class mapping.
+- **Minimum fake records:** 3 (2 North, 1 South).
+- **Relationships:** `students`, `teacher_class_assignments`, `attendance_records`, `homework_records`.
+- **Roles that should see it:** HQ all; Branch Supervisor own branch; Teacher assigned classes; Parent/Student limited linked context.
+- **Negative test:** Teacher assigned to class A cannot read class C from another branch.
 
-## 2. Profiles/users
+## 5) students
 
-Purpose: test role-based login and profile loading.
+- **Purpose:** learner visibility by assignment/link.
+- **Minimum fake records:** 4.
+- **Relationships:** `guardians`, `guardian_student_links`, attendance, homework, reports, fees, observations, school profiles.
+- **Roles that should see it:** HQ all; Branch Supervisor own branch; Teacher assigned classes; Parent linked child; Student self.
+- **Negative test:** Parent linked to Student 1 cannot read Student 2.
 
-Minimum fake records:
+## 6) guardians
 
-- 1 HQ Admin: `demo.hq@example.test`
-- 2 Branch Supervisors: `demo.north.supervisor@example.test`, `demo.south.supervisor@example.test`
-- 2 Teachers: `demo.teacher.one@example.test`, `demo.teacher.two@example.test`
-- 2 Parents: `demo.parent.one@example.test`, `demo.parent.two@example.test`
-- 2 Students: `demo.student.one@example.test`, `demo.student.two@example.test`
+- **Purpose:** parent-side identity.
+- **Minimum fake records:** 2.
+- **Relationships:** `profiles`, `guardian_student_links`.
+- **Roles that should see it:** parent self; HQ broad; branch scoped access where policy allows.
+- **Negative test:** Teacher cannot browse full guardian table.
 
-Relationships:
+## 7) guardian_student_links
 
-- Staff profiles reference branches where relevant.
-- Parent profiles link through `guardians`.
-- Student profiles link to one student record or a future student-auth linking model.
+- **Purpose:** enforce parent-child access.
+- **Minimum fake records:** 2 links.
+- **Relationships:** join guardians to students.
+- **Roles that should see it:** HQ all; Branch Supervisor branch-scoped; Parent own links.
+- **Negative test:** Parent A must not read Parent B links.
 
-Expected visibility:
+## 8) teacher_class_assignments
 
-- Users can read their own profile.
-- HQ Admin can read all.
-- Branch Supervisor can read staff in own branch.
+- **Purpose:** enforce teacher class scope.
+- **Minimum fake records:** 3 assignments.
+- **Relationships:** links teachers to classes; drives attendance/homework/report visibility.
+- **Roles that should see it:** HQ all; Branch Supervisor own branch; Teacher own assignments.
+- **Negative test:** Teacher without assignment cannot query target class assignment row.
 
-Negative test:
+## 9) attendance_records
 
-- Parent must not browse staff profiles.
+- **Purpose:** session attendance and role-based read/edit checks.
+- **Minimum fake records:** at least 6 (mixed statuses).
+- **Relationships:** references student, class, branch, teacher.
+- **Roles that should see it:** HQ all; Branch Supervisor own branch; Teacher assigned classes; Parent/Student linked/self.
+- **Negative test:** Branch supervisor from other branch cannot read/edit record.
 
-## 3. Teachers
+## 10) homework_records
 
-Purpose: test staff profile extension and teacher assignment.
+- **Purpose:** homework completion tracking.
+- **Minimum fake records:** 6 (completed/incomplete/not_submitted mix).
+- **Relationships:** references student, class, branch, teacher, optional due info.
+- **Roles that should see it:** HQ all; Branch Supervisor own branch; Teacher assigned classes; Parent/Student linked/self.
+- **Negative test:** Teacher not assigned to class cannot update homework status.
 
-Minimum fake records:
+## 11) homework_attachments
 
-- Teacher One in North branch.
-- Teacher Two in South branch.
+- **Purpose:** metadata for uploaded homework files.
+- **Minimum fake records:** 4 metadata rows.
+- **Relationships:** references student, class, branch, homework record, storage path.
+- **Roles that should see it:** HQ all; Branch Supervisor own branch; Teacher assigned classes; Parent/Student linked/self where allowed.
+- **Negative test:** Student cannot access another student's attachment metadata or file.
 
-Relationships:
+## 12) parent_comments
 
-- Each teacher links to a `profiles` row.
-- Each teacher links to classes through `teacher_class_assignments`.
+- **Purpose:** quick parent comment workflow after class.
+- **Minimum fake records:** 4 (draft/edited/approved/released mix).
+- **Relationships:** references student, class, branch, teacher, status fields.
+- **Roles that should see it:** Teacher assigned students; Branch Supervisor/HQ review scope; Parent/Student approved-released only.
+- **Negative test:** Parent must not read draft/unapproved comment rows.
 
-Expected visibility:
+## 13) weekly_progress_reports
 
-- HQ Admin sees all teachers.
-- Branch Supervisor sees teachers in own branch.
-- Teacher sees own teacher record.
+- **Purpose:** fixed weekly report lifecycle.
+- **Minimum fake records:** 3 (draft, ready-for-review, released).
+- **Relationships:** references student, class, branch, teacher, week range, status.
+- **Roles that should see it:** Teacher assigned students; Branch Supervisor/HQ review scope; Parent/Student approved-released only.
+- **Negative test:** Teacher outside assignment cannot approve or release report.
 
-Negative test:
+## 14) teacher_tasks
 
-- Teacher One must not see Teacher Two's private staff profile.
+- **Purpose:** branch/HQ task management.
+- **Minimum fake records:** 5 tasks (open, in-progress, done).
+- **Relationships:** references branch/class/student context; parent table for assignments/attachments.
+- **Roles that should see it:** HQ all; Branch Supervisor own branch; Teacher assigned tasks only.
+- **Negative test:** Teacher must not see unassigned task details.
 
-## 4. Classes
+## 15) teacher_task_assignments
 
-Purpose: test class access and assignment.
+- **Purpose:** assignee-level task status.
+- **Minimum fake records:** 5 assignment rows.
+- **Relationships:** joins `teacher_tasks` to teacher profile/user.
+- **Roles that should see it:** HQ all; Branch Supervisor own branch; Teacher own assignments.
+- **Negative test:** Teacher A cannot update Teacher B assignment row.
 
-Minimum fake records:
+## 16) task_attachments
 
-- North English A
-- North Maths B
-- South Science C
+- **Purpose:** file metadata for task evidence/resources.
+- **Minimum fake records:** 3 metadata rows.
+- **Relationships:** references task, assignment, branch, storage path.
+- **Roles that should see it:** HQ all; Branch Supervisor own branch; assigned teacher.
+- **Negative test:** Unassigned teacher cannot read attachment row or file.
 
-Relationships:
+## 17) fee_records
 
-- Each class references a branch.
-- Teacher assignments reference classes.
-- Students reference classes.
+- **Purpose:** internal fee tracking tests.
+- **Minimum fake records:** 4 (paid/unpaid/pending/overdue).
+- **Relationships:** references student, class, branch, optional receipt metadata.
+- **Roles that should see it:** HQ all; Branch Supervisor own branch; Parent limited linked-child view if product policy allows.
+- **Negative test:** Teacher cannot read fee amount/payment method/internal note fields.
 
-Expected visibility:
+## 18) observations
 
-- HQ Admin sees all.
-- Branch Supervisor sees own branch classes.
-- Teacher sees assigned classes.
-- Parent/student see limited class summary for linked/self student.
+- **Purpose:** teaching observation workflow.
+- **Minimum fake records:** 3 (draft/follow-up/completed).
+- **Relationships:** references branch, class, teacher, observer profile.
+- **Roles that should see it:** HQ all; Branch Supervisor own branch; Teacher only allowed completed/self-visible subset.
+- **Negative test:** Teacher cannot read supervisor draft observation.
 
-Negative test:
+## 19) leads
 
-- Teacher assigned to North English A must not see South Science C.
+- **Purpose:** sales/enrolment pipeline test data.
+- **Minimum fake records:** 4 (new/contacted/trial/enrolled mix).
+- **Relationships:** references branch, interested program, owner.
+- **Roles that should see it:** HQ all; Branch Supervisor own branch; Teacher limited context only if explicitly assigned.
+- **Negative test:** South supervisor cannot read North lead notes.
 
-## 5. Students
+## 20) trial_schedules
 
-Purpose: test learner access by branch, class, parent link, and self access.
+- **Purpose:** trial scheduling and conversion workflow.
+- **Minimum fake records:** 4 (scheduled/attended/cancelled mix).
+- **Relationships:** references lead, class, branch, assigned teacher.
+- **Roles that should see it:** HQ all; Branch Supervisor own branch; Teacher assigned trials only.
+- **Negative test:** Teacher cannot read full branch trial board outside assignment.
 
-Minimum fake records:
+## 21) schools
 
-- Demo Student One in North English A.
-- Demo Student Two in North Maths B.
-- Demo Student Three in South Science C.
+- **Purpose:** school reference catalog for student context.
+- **Minimum fake records:** 3 fake schools.
+- **Relationships:** parent for `student_school_profiles`.
+- **Roles that should see it:** HQ and branch staff catalog access; linked context for teacher/parent/student.
+- **Negative test:** Parent cannot infer other students by school-level browsing.
 
-Relationships:
+## 22) student_school_profiles
 
-- Each student references branch and class.
-- Students link to guardians, attendance, homework, reports, fees, observations where applicable.
+- **Purpose:** student-specific school and curriculum mapping.
+- **Minimum fake records:** 4 profiles.
+- **Relationships:** references student and school; includes pathway/grade fields.
+- **Roles that should see it:** HQ all; Branch Supervisor own branch; Teacher assigned students; Parent linked child; Student self.
+- **Negative test:** Teacher cannot read school profile for unassigned student.
 
-Expected visibility:
+## Final seed rule
 
-- HQ Admin sees all.
-- Branch Supervisor sees own branch students.
-- Teacher sees assigned class students.
-- Parent sees linked children only.
-- Student sees own record only.
-
-Negative test:
-
-- Parent One must not see Demo Student Two or Three unless explicitly linked.
-
-## 6. Guardians
-
-Purpose: test parent profile extension.
-
-Minimum fake records:
-
-- Guardian One linked to Parent One profile.
-- Guardian Two linked to Parent Two profile.
-
-Relationships:
-
-- Each guardian links to a profile.
-- Guardian links to students through `guardian_student_links`.
-
-Expected visibility:
-
-- Parent sees own guardian record.
-- HQ Admin can manage all.
-- Branch Supervisor sees guardians for own branch students if needed.
-
-Negative test:
-
-- Teacher should not browse guardian records unless a specific workflow exposes limited parent contact data.
-
-## 7. Guardian student links
-
-Purpose: enforce parent-child access.
-
-Minimum fake records:
-
-- Guardian One -> Demo Student One.
-- Guardian Two -> Demo Student Three.
-
-Relationships:
-
-- Joins guardians to students.
-
-Expected visibility:
-
-- Parent sees only active links for their own guardian profile.
-- HQ Admin sees all.
-- Branch Supervisor sees links for own branch students.
-
-Negative test:
-
-- Guardian One must not read Demo Student Three reports or homework.
-
-## 8. Teacher class assignments
-
-Purpose: enforce teacher access.
-
-Minimum fake records:
-
-- Teacher One -> North English A.
-- Teacher One -> North Maths B.
-- Teacher Two -> South Science C.
-
-Relationships:
-
-- Joins teachers to classes.
-- Drives access to students, attendance, homework, reports, and tasks.
-
-Expected visibility:
-
-- Teacher sees own assignments.
-- Branch Supervisor sees branch assignments.
-- HQ Admin sees all.
-
-Negative test:
-
-- Teacher Two must not see North class attendance.
-
-## 9. Attendance records
-
-Purpose: test session visibility and teacher/branch scope.
-
-Minimum fake records:
-
-- Present record for Demo Student One.
-- Late record for Demo Student Two.
-- Absent record for Demo Student Three.
-
-Relationships:
-
-- Each record references student, class, branch, and teacher where available.
-
-Expected visibility:
-
-- Staff visibility follows branch/class assignment.
-- Parent/student visibility follows linked/self student.
-
-Negative test:
-
-- Parent One must not see Demo Student Three attendance.
-
-## 10. Homework records
-
-Purpose: test homework assignment and status workflow.
-
-Minimum fake records:
-
-- Assigned homework for Demo Student One.
-- Incomplete homework for Demo Student Two.
-- Completed homework for Demo Student Three.
-
-Relationships:
-
-- References student, class, branch, assigned teacher, and due date.
-
-Expected visibility:
-
-- Teacher sees assigned class homework.
-- Parent/student sees linked/self homework.
-
-Negative test:
-
-- Teacher One must not see South Science C homework.
-
-## 11. Homework attachments
-
-Purpose: test metadata for private Storage objects.
-
-Minimum fake records:
-
-- One received PDF for Demo Student One.
-- One teacher-reviewed image for Demo Student Two.
-- One feedback-released PDF for Demo Student Three.
-
-Relationships:
-
-- References homework record, student, class, branch, uploader, and Storage path.
-
-Expected visibility:
-
-- Parent/student sees linked/self uploads where allowed.
-- Teacher sees assigned class uploads.
-- Branch Supervisor sees branch uploads.
-- HQ Admin sees all.
-
-Negative test:
-
-- Student One must not access Student Three attachment metadata or file.
-
-## 12. Parent reports
-
-Purpose: test report status workflow and approved-only parent/student access.
-
-Minimum fake records:
-
-- Shared report for Demo Student One.
-- Edited report for Demo Student Two.
-- AI draft generated report for Demo Student Three.
-
-Relationships:
-
-- References student, class, branch, teacher, approver, and status.
-
-Expected visibility:
-
-- Teacher sees reports for assigned class students.
-- Branch Supervisor/HQ sees review queues.
-- Parent/student sees linked/self reports only when approved/shared.
-
-Negative test:
-
-- Parent must not see edited or draft reports.
-
-## 13. Teacher tasks
-
-Purpose: test supervisor-to-teacher task assignment.
-
-Minimum fake records:
-
-- Attendance follow-up task.
-- Lesson plan preparation task.
-- Parent report approval task.
-
-Relationships:
-
-- Task references branch, class, student, creator, due date, and task assignments.
-
-Expected visibility:
-
-- Assigned teacher sees own tasks.
-- Branch Supervisor sees branch tasks.
-- HQ Admin sees all.
-
-Negative test:
-
-- Teacher must not see another teacher's task unless assigned.
-
-## 14. Teacher task assignments
-
-Purpose: track assignee status separately from task definition.
-
-Minimum fake records:
-
-- Teacher One assigned open task.
-- Teacher One assigned completed task.
-- Teacher Two assigned overdue task.
-
-Relationships:
-
-- Joins teacher task to teacher profile.
-
-Expected visibility:
-
-- Teacher can read/update own assignment status.
-- Supervisor can monitor branch assignments.
-- HQ Admin sees all.
-
-Negative test:
-
-- Teacher One cannot mark Teacher Two assignment complete.
-
-## 15. Task attachments
-
-Purpose: test lesson plan/material file metadata.
-
-Minimum fake records:
-
-- Lesson plan PDF for North English A.
-- Worksheet PDF for North Maths B.
-- Observation follow-up note for South Science C.
-
-Relationships:
-
-- References teacher task, Storage path, uploader, and branch.
-
-Expected visibility:
-
-- Assigned teacher can read.
-- Branch Supervisor/HQ can manage by scope.
-
-Negative test:
-
-- Teacher not assigned to the task cannot access attachment file.
-
-## 16. Fee records
-
-Purpose: test internal fee tracking without real payment data.
-
-Minimum fake records:
-
-- Paid fake fee record.
-- Unpaid fake fee record.
-- Pending verification fake fee record.
-
-Relationships:
-
-- References student, branch, class, optional receipt path, and verifier.
-
-Expected visibility:
-
-- HQ Admin all.
-- Branch Supervisor own branch.
-- Parent may see limited linked-child status if product policy allows.
-- Teacher/student should not see internal financial details.
-
-Negative test:
-
-- Teacher must not access fee amount, payment method, receipt reference, or internal notes.
-
-## 17. Observations
-
-Purpose: test teaching quality observations and role visibility.
-
-Minimum fake records:
-
-- Completed observation for Teacher One.
-- Draft observation for Teacher Two.
-
-Relationships:
-
-- References branch, class, teacher, observer profile, and optional files.
-
-Expected visibility:
-
-- HQ Admin sees all.
-- Branch Supervisor sees own branch.
-- Teacher sees completed/self-visible observations only if product policy allows.
-
-Negative test:
-
-- Teacher must not see draft supervisor-only observations.
-
-## 18. Leads
-
-Purpose: test enrolment pipeline by branch.
-
-Minimum fake records:
-
-- New lead for North branch.
-- Contacted lead for South branch.
-- Converted lead for North branch.
-
-Relationships:
-
-- References branch, source, interested subject/class, and owner profile.
-
-Expected visibility:
-
-- HQ Admin all.
-- Branch Supervisor own branch.
-- Teachers generally no access unless assigned to trial follow-up.
-
-Negative test:
-
-- South Branch Supervisor cannot see North lead notes.
-
-## 19. Trial schedules
-
-Purpose: test trial class workflow.
-
-Minimum fake records:
-
-- Scheduled trial in North English A.
-- Completed trial in North Maths B.
-- Cancelled trial in South Science C.
-
-Relationships:
-
-- References branch, class, lead, assigned teacher, and trial date/time.
-
-Expected visibility:
-
-- HQ Admin all.
-- Branch Supervisor own branch.
-- Teacher sees assigned trials as task/dashboard context, not full trial admin.
-
-Negative test:
-
-- Teacher must not see full Trial Scheduling admin records outside assigned trials.
-
-## 20. Schools
-
-Purpose: test school/curriculum context without real school data.
-
-Minimum fake records:
-
-- North Demo Primary School.
-- South Demo International School.
-- Demo Homeschool Programme.
-
-Relationships:
-
-- Student school profiles reference schools.
-
-Expected visibility:
-
-- Authenticated users may read non-sensitive catalog names.
-- Student-specific links remain private.
-
-Negative test:
-
-- Parent cannot infer other students attending the same school.
-
-## 21. Student school profiles
-
-Purpose: test learner-specific school, grade, curriculum, and subject context.
-
-Minimum fake records:
-
-- Demo Student One with Cambridge-style pathway.
-- Demo Student Two with local pathway.
-- Demo Student Three with homeschool pathway.
-
-Relationships:
-
-- References student, school, curriculum pathway, year/grade, and subjects.
-
-Expected visibility:
-
-- Parent/student linked/self.
-- Teacher assigned student.
-- Branch Supervisor own branch.
-- HQ Admin all.
-
-Negative test:
-
-- Teacher cannot view school profiles for unassigned students.
-
-## Final seed data rule
-
-All seed data must be fake, clearly marked as fake, and safe to reset. Seed data should prove both positive and negative RLS cases before any real data is considered.
+Seed data must stay fake, resettable, and privacy-safe. No real data should be entered until RLS role tests are complete and approved.
