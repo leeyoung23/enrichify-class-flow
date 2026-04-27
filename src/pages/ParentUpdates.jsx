@@ -13,11 +13,6 @@ import PageHeader from '@/components/shared/PageHeader';
 import EmptyState from '@/components/shared/EmptyState';
 import { toast } from 'sonner';
 
-const COMMUNICATION_TYPES = [
-  { value: 'comment', label: 'Quick Parent Comments' },
-  { value: 'weekly_report', label: 'Weekly Progress Reports' },
-];
-
 const STATUS_OPTIONS = [
   { value: 'all', label: 'All statuses' },
   { value: 'note_created', label: 'Teacher note created' },
@@ -291,16 +286,29 @@ export default function ParentUpdates() {
           <div className="lg:col-span-3 space-y-4">
             {isTeacher && (
               <Card className="p-6">
-                <h3 className="font-semibold mb-2">Parent Updates Workflow</h3>
-                <p className="text-sm text-muted-foreground mb-4">Nothing is sent automatically. Teachers create, edit, save, approve, and later mark reports as shared.</p>
+                <h3 className="font-semibold mb-2">Parent Communication</h3>
+                <p className="text-sm text-muted-foreground mb-4">Create teacher-approved quick comments after class, or prepare fixed weekly progress reports for parent review.</p>
+
+                <div className="inline-flex rounded-lg border border-border p-1 mb-4">
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant={communicationType === 'comment' ? 'default' : 'ghost'}
+                    onClick={() => setCommunicationType('comment')}
+                  >
+                    Quick Parent Comment
+                  </Button>
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant={communicationType === 'weekly_report' ? 'default' : 'ghost'}
+                    onClick={() => setCommunicationType('weekly_report')}
+                  >
+                    Weekly Progress Report
+                  </Button>
+                </div>
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
-                  <Select value={communicationType} onValueChange={setCommunicationType}>
-                    <SelectTrigger><SelectValue placeholder="Select communication type" /></SelectTrigger>
-                    <SelectContent>
-                      {COMMUNICATION_TYPES.map((option) => <SelectItem key={option.value} value={option.value}>{option.label}</SelectItem>)}
-                    </SelectContent>
-                  </Select>
                   <Select value={selectedClassId} onValueChange={(v) => { setSelectedClassId(v); setSelectedStudentId(''); }}>
                     <SelectTrigger><SelectValue placeholder="Select class" /></SelectTrigger>
                     <SelectContent>
@@ -315,10 +323,16 @@ export default function ParentUpdates() {
                   </Select>
                 </div>
 
+                <div className="mb-4">
+                  <Badge variant="outline">
+                    Selected student: {selectedStudent?.name || 'No student selected'}
+                  </Badge>
+                </div>
+
                 {communicationType === 'comment' && step === 'notes' && (
                   <>
                     <Card className="p-4 mb-4 border-dashed">
-                      <h4 className="font-medium mb-2">Quick Parent Comment Source Data (Demo)</h4>
+                      <h4 className="font-medium mb-2">Source Summary (Demo)</h4>
                       <p className="text-xs text-muted-foreground mb-3">AI comment draft uses teacher note + attendance + homework + previous feedback + student/class profile.</p>
                       {!selectedStudentId ? (
                         <p className="text-sm text-muted-foreground">Select a class and student to load source data.</p>
