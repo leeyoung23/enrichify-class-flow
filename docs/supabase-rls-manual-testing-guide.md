@@ -96,7 +96,35 @@ Rules:
 - Keep tests isolated to fake/demo rows.
 - Record pass/fail evidence role-by-role.
 
-## 7) Recommended next implementation step
+## 7) Local smoke test harness (available now)
+
+A temporary local harness is available:
+
+- `scripts/rls-smoke-test.mjs`
+
+Run:
+
+`npm run test:rls`
+
+Required local env vars in `.env.local`:
+
+- `VITE_SUPABASE_URL`
+- `VITE_SUPABASE_ANON_KEY`
+- Passwords (either one shared or role-specific):
+  - `RLS_TEST_PASSWORD` (shared fallback)
+  - `RLS_TEST_HQ_PASSWORD`
+  - `RLS_TEST_SUPERVISOR_PASSWORD`
+  - `RLS_TEST_TEACHER_PASSWORD`
+  - `RLS_TEST_PARENT_PASSWORD`
+  - `RLS_TEST_STUDENT_PASSWORD`
+
+Notes:
+
+- The script uses anon key only and does not use service role key.
+- It signs in each fake user, queries key tables, prints PASS/CHECK/WARNING, then signs out.
+- It is a smoke test, not a full assertion suite.
+
+## 8) Recommended next implementation step
 
 Before connecting the main frontend to Supabase:
 
