@@ -205,6 +205,8 @@ Implemented in this checkpoint:
   - `scripts/supabase-readonly-smoke-test.mjs`
   - Added package script `npm run test:supabase:read`
   - Uses `.env.local` + anon key only; no writes.
+  - Validates authenticated fake-user reads for HQ Admin, Branch Supervisor, and Teacher.
+  - Uses read-only role checks because unauthenticated anon reads may return 0 under RLS.
 
 Intentionally not connected yet:
 
@@ -213,6 +215,8 @@ Intentionally not connected yet:
 - No broad `dataService` migration in this checkpoint.
 - No auth/login rollout changes.
 - No writes/uploads/messaging paths were added.
+- Sales Kit UI is intentionally not wired yet.
+- Sales Kit UI wiring should happen only after authenticated HQ/Branch Supervisor reads are confirmed in smoke tests.
 
 Reason for this minimal choice:
 
