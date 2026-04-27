@@ -126,3 +126,25 @@ Use this prompt for the next coding step:
 > 5. Do not modify write methods.
 > 6. Run `npm run build`, `npm run lint`, `npm run typecheck`, `npm run test:supabase:read`.
 > 7. Report changed files, fallback behavior, and role-based read outcomes.
+
+## 8) Implementation status
+
+Implemented in this checkpoint:
+
+- Added read-only service methods in `src/services/supabaseReadService.js`:
+  - `getBranches()`
+  - `getClasses()`
+  - `getStudents()`
+- Methods use only the frontend Supabase client (anon key path), return `{ data, error }`, and catch exceptions safely.
+- Updated `scripts/supabase-readonly-smoke-test.mjs` to include authenticated checks for:
+  - Sales Kit approved resources
+  - `branches`
+  - `classes`
+  - `students`
+  across HQ Admin, Branch Supervisor, Teacher, Parent, and Student fake users.
+
+Still intentionally not done in this checkpoint:
+
+- No `dataService` Supabase wiring for branches/classes/students yet.
+- No UI/page wiring changes in `Classes.jsx`, `Students.jsx`, or `Dashboard.jsx`.
+- No write/upload/auth UI changes.
