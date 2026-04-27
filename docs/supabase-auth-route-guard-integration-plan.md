@@ -125,4 +125,78 @@ Use this for a future coding task:
 
 ---
 
-*Document type: planning. Phase 3A runtime hook/provider is implemented; route guard integration remains Phase 3B+.*
+## Phase 3B implementation plan: AppLayout integration
+
+Planning only for this phase: **`AppLayout`** may consume **`useSupabaseAuthState()`** when **`demoRole`** is absent. **No redirects** in 3B; **Phase 3C** owns forced navigation for unauthenticated protected routes. **Do not** change global page chrome or redesign loading UI beyond a **minimal** safe loading branch where needed.
+
+### 1. Current state after Phase 3A
+
+- **`SupabaseAuthStateProvider`** wraps the **`Router`** in **`App.jsx`**, so **`useSupabaseAuthState()`** is available anywhere under the router (including **`AppLayout`**).
+- Auth state is **available** to consumers: **`session`**, **`user`**, **`profile`**, **`appUser`**, **`loading`**, **`error`**, **`isSupabaseAuthAvailable`**, **`refreshAuthState`** (exact surface per `src/hooks/useSupabaseAuthState.jsx`).
+- **`AppLayout`** still **does not** call **`useSupabaseAuthState()`**; it only branches on **`demoRole`** vs **`authService.getCurrentUser()`** (Base44-oriented path) as documented in **section 1** above.
+- **`demoRole`** remains the **primary** preview mode; **`/auth-preview`** and **`/welcome`** remain outside the **`AppLayout`** / **`AuthProvider`** catch-all pattern described in **section 1**.
+
+### 2. Phase 3B target behavior
+
+**When `demoRole` exists (URL `?demoRole=` normalised to a valid preview role):**
+
+- Preserve **existing demo user behavior exactly** as today: **`effectiveUser`** from **`getDemoUser(demoRole)`**, **`role`** from demo, **`permissionService.isRouteAllowed`**, sidebar rules, and demo data selection via **`getSelectedDemoRole()`** — unchanged.
+- Do **not** let Supabase loading, missing session, or missing profile **override** or **clear** demo identity.
+
+**When no `demoRole` exists:**
+
+- **`AppLayout`** **may** read **`useSupabaseAuthState()`**.
+- If **`appUser`** exists (signed-in Supabase user with a mapped app user shape), use it as the **current user** for **route permissions** and **`effectiveUser`** / **`role`** derivation — aligned with **`mapProfileToAppUser`** / **`permissionService.getRole`** rules in **section 6**.
+- If **`loading`** is true (Supabase auth or profile still resolving), show a **safe loading state** (reuse existing spinner / full-screen patterns from **`AuthenticatedApp`** where possible; avoid a second conflicting shell if one gate already covers the same moment — coordinate in implementation).
+- If there is **no `appUser`** / **no session** after resolution completes, **keep current behavior** (e.g. fall back to **`getCurrentUser()`** from **`authService`** if still enabled) or show the **same unauthenticated / restricted UX** the app already uses for missing Base44 user — **do not** introduce mandatory Supabase sign-in or **forced redirect** in 3B (**redirect** is **Phase 3C** unless product explicitly folds it into 3B later).
+
+### 3. Required code touchpoints (later implementation)
+
+| Area | Notes |
+|------|--------|
+| **`AppLayout.jsx`** | Branch: **`demoRole`** → demo path; else Supabase **`appUser`** + **`loading`**; else existing **`getCurrentUser()`** fallback. |
+| **`AuthProvider` / `AuthContext.jsx`** | May need alignment so Base44 loading and Supabase resolution do not **double-block** or **fight** for “who is current user”; keep changes minimal. |
+| **Current user source** | Single conceptual pipeline per branch: demo → Supabase **`appUser`** → legacy fallback. |
+| **`permissionService.isRouteAllowed`** | Continue to receive a **normalised `role`** string; ensure Supabase path supplies the same shape as today. |
+| **Any component using “current user” or role from layout context** | Audit passively during 3B so nothing assumes **only** Base44 after non-demo path switches. |
+| **Sign-out control (later)** | Not required in 3B; document for 3C+ so sign-out clears Supabase session and refreshes Phase 3A state without leaving stale layout identity. |
+
+### 4. Risks
+
+| Risk | Mitigation sketch |
+|------|-------------------|
+| **Route flicker** | Resolve **`role`** in one place per branch; avoid setting a permissive default before **`appUser`** or profile is ready; prefer explicit **`loading`** over transient **`null` role** that briefly allows or denies the wrong routes. |
+| **Accidentally breaking `demoRole`** | **Always** evaluate **`getSelectedDemoRole()`** first; never clear demo **`effectiveUser`** because Supabase is empty; never redirect demo users to auth. |
+| **Blocking `/welcome` or `/auth-preview`** | Those routes stay **outside** the **`AppLayout`** tree; do not move **`SupabaseAuthStateProvider`** or add gates that wrap public routes incorrectly. |
+| **Profile missing** | Auth user without **`profiles`** row → no **`appUser`** or incomplete mapping; must not crash **`permissionService`**; show safe degraded / restricted UI consistent with existing patterns. |
+| **Role mapping mismatch** | Use **one** mapper (**`mapProfileToAppUser`**) and **`permissionService.getRole`**; add tests or manual matrix if enums drift. |
+| **Stale Base44 / demo auth path conflict** | When both Supabase session and Base44 user could exist, define precedence: after 3B, prefer **Supabase `appUser`** when no **`demoRole`** and session is valid; document before removing Base44 in a later phase. |
+
+### 5. Recommended Phase 3B implementation strategy
+
+1. **Minimal `AppLayout` change only** — avoid touching unrelated routes or page components.
+2. **`demoRole` first branch** — short-circuit exactly as today; zero behavioral change for preview URLs.
+3. **Supabase `appUser` second branch** — when not loading and **`appUser`** is non-null, drive **`effectiveUser`** / **`role`** from it.
+4. **Existing fallback third branch** — **`getCurrentUser()`** / current restricted behavior when Supabase is absent, unsigned-out, or not configured.
+5. **No redirect yet** — defer **`Navigate`** to login / **`/auth-preview`** to **Phase 3C**.
+6. **No page UI redesign** — only reuse existing loading / restricted patterns; no marketing or layout chrome changes.
+
+### 6. Phase 3B acceptance criteria
+
+- **`?demoRole=teacher`** still works end-to-end for preview (layout, sidebar, route allow list).
+- **`?demoRole=hq_admin`** (and other supported demo roles) still work the same way.
+- **`/auth-preview`** still works (sign-in / sign-out preview, no regression from provider wrapping).
+- A **signed-in fake user** (local Supabase / test account) can be **recognised as `appUser`** when **`demoRole`** is **not** present, and **`AppLayout`** uses that identity for permissions without crashes.
+- **Protected routes** under **`AppLayout`** do **not** crash when Supabase is configured, unconfigured, signed in, or signed out (in combination with existing Base44 fallback where still present).
+- **`npm run build`**, **`npm run lint`**, **`npm run typecheck`**, **`npm run test:supabase:read`**, **`npm run test:supabase:auth`** all pass after implementation.
+
+### 7. Next implementation prompt (Phase 3B only)
+
+Copy-paste for a future coding task:
+
+> **Phase 3B — AppLayout consumes Supabase `appUser` only when no `demoRole`.**  
+> In **`src/components/layout/AppLayout.jsx`**, if **`getSelectedDemoRole()`** returns a role, keep **identical** behavior to today (demo **`effectiveUser`**, demo **`role`**, no Supabase override). If **no `demoRole`**, call **`useSupabaseAuthState()`**: while **`loading`**, show a **safe** loading UI consistent with existing app patterns (avoid duplicate spinners vs **`AuthenticatedApp`** / **`AuthProvider`** — coordinate minimally). When not loading and **`appUser`** is present, set **`effectiveUser`** / **`role`** from **`appUser`** (same shape **`permissionService.isRouteAllowed`** expects). When not loading and there is **no** **`appUser`** / session, fall back to **`authService.getCurrentUser()`** and current restricted behavior as today. **Do not** add forced redirects (Phase 3C). **Do not** remove **`demoRole`**, demo/local fallback, or **`/auth-preview`**. **Do not** change unrelated page UI, add writes/uploads, or call AI APIs. Run **`npm run build`**, **`lint`**, **`typecheck`**, **`test:supabase:read`**, **`test:supabase:auth`**.
+
+---
+
+*Document type: planning. Phase 3A runtime hook/provider is implemented; Phase 3B is planned above; forced redirects and production hardening remain Phase 3C+.*
