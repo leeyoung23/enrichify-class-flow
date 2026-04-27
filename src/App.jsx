@@ -88,7 +88,7 @@ const AuthenticatedApp = () => {
     }
   }
 
-  // Phase 3C-1: Supabase session gate (demoRole and unconfigured Supabase unchanged)
+  // Phase 3C-2: Supabase session gate — signed-out users go to /login (demoRole and unconfigured Supabase unchanged)
   if (!demoRole && isSupabaseAuthAvailable) {
     if (supabaseAuthLoading) {
       return (
@@ -103,7 +103,7 @@ const AuthenticatedApp = () => {
     if (!session) {
       const returnTarget = sanitizeReturnUrlForRedirect(`${location.pathname}${location.search}`);
       const qs = new URLSearchParams({ returnUrl: returnTarget });
-      return <Navigate to={`/auth-preview?${qs.toString()}`} replace />;
+      return <Navigate to={`/login?${qs.toString()}`} replace />;
     }
   }
 

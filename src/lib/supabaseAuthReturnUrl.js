@@ -1,6 +1,6 @@
 /**
- * Phase 3C-1: validate internal return paths to avoid open redirects.
- * Only same-origin relative paths are allowed; /auth-preview is excluded (loop prevention).
+ * Phase 3C: validate internal return paths to avoid open redirects.
+ * Only same-origin relative paths are allowed; /auth-preview and /login are excluded (loop prevention).
  */
 
 export function isSafeInternalAppPath(pathWithSearch) {
