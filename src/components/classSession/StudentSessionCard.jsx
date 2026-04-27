@@ -9,7 +9,6 @@ import {
   Sparkles, Loader2, Copy, Save, ChevronDown, ChevronUp,
   CheckCircle2, Circle
 } from 'lucide-react';
-import { base44 } from '@/api/base44Client';
 import { toast } from 'sonner';
 
 const ATTENDANCE_STATUSES = [
@@ -36,6 +35,24 @@ function StatusDot({ done, label }) {
       {label}
     </span>
   );
+}
+
+function buildDemoParentDraft({ student, attendanceRecord, notes }) {
+  const attendanceLabel = attendanceRecord?.status ? `Attendance: ${attendanceRecord.status}.` : 'Attendance is being tracked in this session.';
+  const homeworkLabel = attendanceRecord?.homework_status ? `Homework: ${attendanceRecord.homework_status}.` : 'Homework status will be confirmed after class.';
+  const sessionLabel = attendanceRecord?.date || attendanceRecord?.session_date
+    ? `Session context: ${attendanceRecord.date || attendanceRecord.session_date}.`
+    : 'Session context: current class session.';
+
+  return `Hello ${student?.parent_name || 'Parent'},
+
+${student?.name || 'Your child'} completed today\'s learning session.
+${attendanceLabel} ${homeworkLabel}
+
+Teacher note summary: ${notes}
+
+${sessionLabel}
+This is a demo AI draft for teacher review only.`;
 }
 
 export default function StudentSessionCard({
@@ -70,26 +87,7 @@ export default function StudentSessionCard({
       return;
     }
     setGenerating(true);
-    const result = await base44.integrations.Core.InvokeLLM({
-      prompt: `You are a professional enrichment centre teacher writing a parent update message.
-
-Student name: ${student.name}
-Parent name: ${student.parent_name || 'Parent'}
-Attendance status: ${attendanceRecord?.status || 'unknown'}
-Homework status: ${attendanceRecord?.homework_status || 'not recorded'}
-Teacher notes: ${notes}
-
-Write a warm, professional, and concise parent update message based on the above.
-- Address the parent by name if available
-- Briefly mention attendance and homework if relevant
-- Summarise the student's performance/behavior from the teacher notes
-- Be encouraging and constructive
-- 2-3 short paragraphs max
-- End with a positive, forward-looking note
-
-Write ONLY the message body. No subject line.`,
-    });
-    const generatedText = typeof result === 'string' ? result : result?.text || result?.data || '';
+    const generatedText = buildDemoParentDraft({ student, attendanceRecord, notes });
     setAiDraft(generatedText);
     setEditedMessage(generatedText);
     onSaveParentUpdate(student.id, {
@@ -100,6 +98,7 @@ Write ONLY the message body. No subject line.`,
     });
     setShowMessageEditor(true);
     setGenerating(false);
+    toast.info('No real AI call is made in this prototype.');
   };
 
   const handleSaveDraft = () => {
@@ -237,7 +236,7 @@ Write ONLY the message body. No subject line.`,
                 {generating ? (
                   <><Loader2 className="h-4 w-4 animate-spin" /> Generating…</>
                 ) : (
-                  <><Sparkles className="h-4 w-4 text-primary" /> Generate Parent Message Draft</>
+                  <><Sparkles className="h-4 w-4 text-primary" /> Generate Demo AI Draft</>
                 )}
               </Button>
             ) : (
@@ -246,6 +245,7 @@ Write ONLY the message body. No subject line.`,
                   <Sparkles className="h-3.5 w-3.5 text-primary" />
                   AI-generated draft — edit freely before saving.
                 </div>
+                <p className="text-xs text-muted-foreground">No real AI call is made in this prototype.</p>
                 <Textarea
                   value={editedMessage}
                   onChange={(e) => setEditedMessage(e.target.value)}
