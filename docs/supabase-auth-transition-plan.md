@@ -1,6 +1,6 @@
 # Supabase Auth Transition Plan
 
-Describes how to move from **demoRole-first preview** to **real Supabase Auth sessions** while keeping **demoRole** and **local/demo fallbacks**. **Phase 1** (Supabase auth service + CLI smoke test) is implemented; login UI, `AppLayout`, and removal of Base44/demo paths remain future work.
+Describes how to move from **demoRole-first preview** to **real Supabase Auth sessions** while keeping **demoRole** and **local/demo fallbacks**. **Phase 1** (auth service + CLI smoke) and **Phase 2** (`/auth-preview` page) are implemented; production login, `AppLayout` integration, and Base44 removal remain future work.
 
 Related references: `docs/service-layer-migration-plan.md`, `docs/frontend-supabase-readonly-checkpoint.md`, `docs/frontend-branches-classes-students-readonly-checkpoint.md`, `docs/supabase-rls-smoke-test-results.md`, `docs/supabase-007-008-application-checkpoint.md`.
 
@@ -108,10 +108,10 @@ Introduce a dedicated module (name aligned with `docs/service-layer-migration-pl
 
 | Phase | Scope |
 |-------|--------|
-| **1** | ✅ **`src/services/supabaseAuthService.js`** — session, profile read, sign-in/out, `mapProfileToAppUser`; **no** `AppLayout` / `AuthContext` wiring. |
-| **2** | ✅ **`npm run test:supabase:auth`** — `scripts/supabase-auth-smoke-test.mjs` signs in each fake user, reads `profiles`, prints role/email/branch, signs out (anon only). |
+| **1** | ✅ **`src/services/supabaseAuthService.js`** + **`npm run test:supabase:auth`** (CLI profile smoke). |
+| **2** | ✅ **Auth preview UI** — `src/pages/AuthPreview.jsx` at **`/auth-preview`** (outside `AppLayout`; not in sidebar). |
 | **3** | Add **basic login page** behind a **feature flag** or **`/login`** route; still allow **`/welcome`** and **`demoRole`** preview. |
-| **4** | **`AppLayout`**: when **no `demoRole`**, resolve user from **Supabase session + profile** (fallback Base44 if still required). |
+| **4** | **`AppLayout`**: when **no `demoRole`**, resolve user from **Supabase session + profile** (fallback Base44 if still required) — controlled integration. |
 | **5** | Gradually **remove reliance on Base44** for non-demo mode; keep demo path for local/staging. |
 
 ---
@@ -130,8 +130,16 @@ Use this for a future coding task:
 - **`src/services/supabaseAuthService.js`** added: `getCurrentSession`, `getCurrentUser` (Auth user), `getCurrentProfile`, `signInWithEmailPassword`, `signOut`, `mapProfileToAppUser`. Uses **`supabase`** from `supabaseClient.js` only; safe no-ops when Supabase is unconfigured; no service role. `getCurrentProfile` resolves the user id via **`auth.getUser()`** first (then `getSession()` fallback) so profile reads work immediately after password sign-in in Node smoke tests.
 - **`scripts/supabase-auth-smoke-test.mjs`** + **`npm run test:supabase:auth`**: read-only auth/profile check for fake demo emails (same password env vars as RLS read smoke test).
 - **`src/services/supabaseClient.js`**: resolves `VITE_SUPABASE_*` from **`import.meta.env`** or **`process.env`** so Node scripts can load the client after `dotenv`.
-- **Not done yet (by design):** login UI, `AppLayout` / route guard wiring, **`demoRole`** unchanged, **`authService.js`** unchanged.
+- **Not done yet (by design):** production login route, `AppLayout` / route guard wiring, **`demoRole`** unchanged, **`authService.js`** unchanged.
 
 ---
 
-*Document type: planning. Phase 1 service + smoke test are implemented; UI wiring remains future work.*
+## Phase 2 implementation status (preview UI)
+
+- **`/auth-preview`** — `AuthPreview` page for browser testing: fake-user email quick-fill, password field (never displayed after entry), `signInWithEmailPassword` → `getCurrentProfile` → `mapProfileToAppUser`, safe read-only profile display, `signOut`. Routed in **`App.jsx`** next to **`/welcome`**, **outside** `AuthProvider` / **`AppLayout`** so the main app route guard and **`demoRole`**-first behaviour are unchanged.
+- **Navigation:** not added to sidebar; open by URL only (optional welcome link was omitted by product preference).
+- **Next:** Phase 3+ — feature-flag login or controlled **`AppLayout`** integration when ready.
+
+---
+
+*Document type: planning. Phase 1 (service + CLI smoke) and Phase 2 (auth preview page) are implemented; main shell integration remains future work.*

@@ -28,6 +28,7 @@ import MyTasks from '@/pages/MyTasks';
 import PrototypeSummary from '@/pages/PrototypeSummary';
 import FeeTracking from '@/pages/FeeTracking';
 import PublicWelcome from '@/pages/PublicWelcome';
+import AuthPreview from '@/pages/AuthPreview';
 import SalesKit from '@/pages/SalesKit';
 
 const AuthenticatedApp = () => {
@@ -92,6 +93,7 @@ function App() {
     <QueryClientProvider client={queryClientInstance}>
       <Router>
         <Routes>
+          <Route path="/auth-preview" element={<AuthPreview />} />
           <Route path="/welcome" element={<PublicWelcome />} />
           <Route path="/*" element={(
             <AuthProvider>
