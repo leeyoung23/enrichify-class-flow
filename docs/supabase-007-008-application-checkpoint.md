@@ -41,19 +41,22 @@ Many buttons and flows remain **disconnected** from Supabase writes and storage 
 
 ---
 
-## 7) Future parent portal: class photo / media planning
+## 7) Future parent portal: **Class Memories** (“Memories”) planning
+
+**Product-facing language:** In the parent portal, this experience is **Memories** or **Class Memories**. **“Class photo” is not the parent-facing name**—it is too narrow for what we want families to feel when they open the app.
 
 Product direction for a later phase (schema and storage **not** implemented in this checkpoint):
 
-- **Primary experience:** Parent portal shows the **latest teacher-uploaded class photo first** (hero / cover), so parents immediately see current class life.
-- **Update cadence:** Gallery updates **only when a teacher uploads** new media for that class—not on a parent-triggered refresh of arbitrary external sources.
-- **History:** Parents can open a **history** or archive view of past class photos/media for classes their child is linked to, subject to policy.
-- **Likely storage:** Supabase Storage bucket name candidate: **`class-photos`** (or similarly scoped bucket per environment), with path conventions that include `branch_id` / `class_id` / object id to support RLS-aligned policies later.
-- **Likely metadata table:** **`class_media`** or **`class_photos`** (naming TBD) with fields such as: `id`, `branch_id`, `class_id`, `uploaded_by_profile_id` (teacher), `storage_bucket`, `storage_path`, `file_name`, `mime_type`, `caption`, `sort_order` / `is_cover`, `status` (e.g. draft / pending_review / approved / archived), `reviewed_by_profile_id`, `reviewed_at`, `visible_to_parents_at`, timestamps.
+- **Latest Memory:** The parent portal should lead with **Latest Memory**—the most recent **teacher-uploaded** Memory for the child’s class—so families immediately see something current and welcoming from class life.
+- **What a Memory can be:** Memories can include **photos**, **short videos**, **captions**, and **learning evidence** (e.g. highlights of work or moments worth sharing), not only still images.
+- **Update cadence:** **Class Memories** update **only when a teacher uploads** a new Memory for that class—not from parent-triggered pulls of arbitrary external sources.
+- **Class Memories History:** Parents should be able to open **Class Memories History** to review **past Memories** for classes linked to their child, subject to policy (archive/hide rules TBD).
+- **Internal / engineering naming:** Storage buckets and tables may still use technical names such as **`class-photos`** (bucket candidate) and **`class_media`** or **`class_photos`** (metadata tables)—these refer to **media records** in the database, not the label shown to parents.
+- **Likely metadata table (internal):** **`class_media`** or **`class_photos`** (naming TBD) with fields such as: `id`, `branch_id`, `class_id`, `uploaded_by_profile_id` (teacher), `storage_bucket`, `storage_path`, `file_name`, `mime_type`, `caption`, `sort_order` / `is_cover`, `status` (e.g. draft / pending_review / approved / archived), `reviewed_by_profile_id`, `reviewed_at`, `visible_to_parents_at`, timestamps.
 - **Roles (target):**
-  - **Teacher:** upload and manage drafts for **assigned** classes only.
-  - **Branch supervisor / HQ:** review, approve, archive, or hide media as needed.
-  - **Parent:** see only **approved / visible** media for **linked child’s** classes; no access to other branches’ or unlinked classes’ assets.
+  - **Teacher:** uploads **Memories** for **assigned** classes only (drafts until reviewed if required).
+  - **Branch supervisor / HQ:** review, approve, archive, or hide Memories as needed.
+  - **Parent:** sees only **approved / visible** Memories for **linked child / class** context; no access to other branches’ or unlinked classes’ assets.
   - **Student (optional later):** simplified view consistent with age and policy.
 - **RLS / storage alignment:** Policies must mirror branch and class assignment; frontend filtering is never a substitute for RLS and signed URL rules.
 
@@ -64,8 +67,8 @@ This section is **planning only**—no bucket, table, or UI work is required by 
 ## 8) Recommended next milestones
 
 1. **Smoke tests:** Extend `scripts/supabase-readonly-smoke-test.mjs` (and/or SQL verification) to optionally assert **read** visibility for roles against **007** tables (e.g. curriculum row count for teacher, denied rows for parent where policy expects), without enabling writes from the script.
-2. **Class photo / media:** Finalise `class_media` / `class_photos` schema sketch and Storage policy draft; implement in a **later** SQL migration after security review.
-3. **Auth / writes:** Either deepen **real auth / login** hardening or plan the **first intentional Supabase write flow** (e.g. school profile or class photo draft) behind RLS—still fake-data-first in non-prod.
+2. **Class Memories (internal `class_media` / `class_photos`):** Finalise metadata schema sketch and Storage policy draft for teacher-uploaded Memories; implement in a **later** SQL migration after security review.
+3. **Auth / writes:** Either deepen **real auth / login** hardening or plan the **first intentional Supabase write flow** (e.g. school profile or teacher Memory draft) behind RLS—still fake-data-first in non-prod.
 
 ---
 
