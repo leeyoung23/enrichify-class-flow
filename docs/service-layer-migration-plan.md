@@ -43,9 +43,11 @@ Recommended migration order:
 6. homework attachment upload
 7. teacher tasks
 8. fee records
-9. observations
-10. leads/trial schedules
-11. report sending later through secure backend/Edge Function
+9. payment receipt upload metadata + receipt verification flow
+10. sales kit resource management/read flow
+11. observations
+12. leads/trial schedules
+13. report sending later through secure backend/Edge Function
 
 ## 5) Base44 dependencies to replace
 
@@ -67,6 +69,7 @@ Follow these non-negotiable rules during migration:
 - Use fake seed data first.
 - Do not remove Base44 fallback until Supabase parity is confirmed.
 - Do not use real data.
+- Do not ship frontend-only receipt or sales-kit upload logic; all real flows must be storage + RLS backed.
 
 ## Practical mapping notes
 
@@ -75,6 +78,24 @@ Follow these non-negotiable rules during migration:
 - `classSessionService.js` -> move session writes to `supabaseClassSessionService.js`.
 - Storage-facing helpers -> move to `supabaseStorageService.js`.
 - Keep `permissionService.js` role constants/navigation model stable; role values can be sourced from Supabase profiles later.
+
+### Payment receipt upload planning
+
+- Parent uploads payment receipt files through a future Supabase Storage-backed service path (bucket candidate: `fee-receipts`).
+- Receipt metadata must be persisted in backend tables (either `fee_records` metadata fields or linked receipt rows).
+- Required review flow:
+  - Branch Supervisor reviews/verifies receipts for own branch only.
+  - HQ Admin can review/verify across all branches.
+  - Teachers must not access fee/payment receipt records.
+- Parent-facing read paths should expose only linked-child payment status and allowed receipt summary fields.
+
+### Sales Kit management planning
+
+- Sales Kit files/links should be managed in backend metadata + Supabase Storage (bucket candidate: `sales-kit-resources`).
+- HQ Admin should create/upload/manage Sales Kit resources and approvals.
+- Branch Supervisor should read/open only approved resources in allowed scope.
+- Teachers, Parents, and Students must not read Sales Kit resources.
+- Service-layer methods should keep upload/review/read rules out of page components and enforce role scope through Supabase RLS-backed queries.
 
 ## Rollout control gates
 

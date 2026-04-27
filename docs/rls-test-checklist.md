@@ -17,7 +17,10 @@ Reminder: **Frontend filtering is not security. RLS must enforce access at datab
 - Parent comments visibility includes all statuses by policy.
 - Weekly report visibility includes all statuses by policy.
 - Fee records visibility is global.
+- Payment receipt screenshot metadata and files are visible for all branches under admin scope.
+- Can verify receipts across all branches.
 - Teacher tasks visibility is global.
+- Sales Kit resources can be created/updated/approved by HQ only.
 - Storage access is restricted to allowed admin scope.
 - Negative test: HQ token should still fail for deleted/disabled account state.
 
@@ -32,7 +35,10 @@ Reminder: **Frontend filtering is not security. RLS must enforce access at datab
 - Parent comments visibility/release rights match branch scope policy.
 - Weekly report visibility/release rights match branch scope policy.
 - Fee records visibility limited to own branch.
+- Payment receipt screenshot metadata and files limited to own branch.
+- Can verify receipts for own branch only.
 - Teacher tasks visibility limited to own branch tasks.
+- Sales Kit resources visibility limited to approved items by policy.
 - Storage access limited to own branch files/prefixes.
 - Negative test: branch supervisor must not read another branch data by direct SQL/API call.
 
@@ -47,7 +53,9 @@ Reminder: **Frontend filtering is not security. RLS must enforce access at datab
 - Parent comments visibility for assigned students; release rights by policy only.
 - Weekly report visibility for assigned students; release rights by policy only.
 - Fee records visibility should be blocked unless explicitly allowed.
+- Payment receipt metadata/file access must be blocked.
 - Teacher tasks visibility limited to own assignments.
+- Sales Kit visibility must be blocked.
 - Storage access limited to assigned class/student files by policy.
 - Negative test: teacher cannot query records for unassigned class/student.
 
@@ -62,7 +70,9 @@ Reminder: **Frontend filtering is not security. RLS must enforce access at datab
 - Parent comments visibility only approved/released linked-child items.
 - Weekly report visibility only approved/released linked-child items.
 - Fee records visibility limited to linked child records where policy allows.
+- Payment receipt status visibility limited to linked child records where policy allows.
 - Teacher tasks visibility blocked.
+- Sales Kit visibility blocked.
 - Storage access limited to linked child files where policy allows.
 - Negative test: parent cannot query another child via modified URL/ID.
 
@@ -77,7 +87,9 @@ Reminder: **Frontend filtering is not security. RLS must enforce access at datab
 - Parent comments visibility approved/released self-only items if policy allows.
 - Weekly report visibility approved/released self-only items if policy allows.
 - Fee records visibility blocked unless product explicitly allows.
+- Payment receipt metadata/file access blocked.
 - Teacher tasks visibility blocked.
+- Sales Kit visibility blocked.
 - Storage access limited to self files where policy allows.
 - Negative test: student cannot read sibling/peer data by changing IDs in requests.
 
@@ -86,9 +98,11 @@ Reminder: **Frontend filtering is not security. RLS must enforce access at datab
 ## Cross-role Blocking Tests
 
 - Teacher must not read branch-supervisor-only sales/lead/fee admin datasets.
+- Teacher must not access fee receipt uploads or receipt verification fields.
 - Parent must not read teacher draft comments or unapproved weekly reports.
 - Student must not read parent-only contact details.
 - Branch supervisor must not read HQ-global rows outside own branch.
+- Branch supervisor must not access unapproved Sales Kit resources.
 - Any role must fail reads/writes when JWT role is mismatched to row scope.
 
 ## Storage Policy Checks
@@ -98,6 +112,8 @@ Reminder: **Frontend filtering is not security. RLS must enforce access at datab
 - Test read: linked/assigned file succeeds.
 - Test read: unlinked/unassigned file fails.
 - Test delete/update metadata: only authorized roles succeed.
+- Test `fee-receipts` bucket: parent upload own linked-child receipt succeeds; teacher upload/read fails.
+- Test `sales-kit-resources` bucket: HQ upload/manage succeeds; branch supervisor read approved succeeds; non-approved read fails.
 
 ## Execution Notes
 

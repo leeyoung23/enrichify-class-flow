@@ -7,6 +7,7 @@
 insert into storage.buckets (id, name, public)
 values
   ('homework-uploads', 'homework-uploads', false),
+  ('fee-receipts', 'fee-receipts', false),
   ('parent-report-samples', 'parent-report-samples', false),
   ('task-attachments', 'task-attachments', false),
   ('sales-kit-resources', 'sales-kit-resources', false)
@@ -87,15 +88,28 @@ using (
 
 -- Sales kit resources:
 -- - HQ manage all
--- - Branch supervisor read (and write where scoped by row policies if enabled later)
+-- - Branch supervisor read approved-only resources
 drop policy if exists sales_kit_resources_select_storage on storage.objects;
 create policy sales_kit_resources_select_storage
 on storage.objects for select
 using (
   bucket_id = 'sales-kit-resources'
-  and (
-    public.is_hq_admin()
-    or public.current_user_role() = 'branch_supervisor'
+  and exists (
+    select 1
+    from public.sales_kit_resources skr
+    where skr.storage_bucket = 'sales-kit-resources'
+      and skr.storage_path = storage.objects.name
+      and (
+        public.is_hq_admin()
+        or (
+          public.current_user_role() = 'branch_supervisor'
+          and skr.status = 'approved'
+          and (
+            skr.is_global = true
+            or (skr.branch_id is not null and public.is_branch_supervisor_for_branch(skr.branch_id))
+          )
+        )
+      )
   )
 );
 
@@ -105,6 +119,47 @@ on storage.objects for insert
 with check (
   bucket_id = 'sales-kit-resources'
   and public.is_hq_admin()
+);
+
+-- Fee receipts:
+-- - Parent upload/read for linked student fee receipt rows only
+-- - Branch supervisor own branch review/read
+-- - HQ all branches review/read
+-- - Teacher blocked by design
+drop policy if exists fee_receipts_select_storage on storage.objects;
+create policy fee_receipts_select_storage
+on storage.objects for select
+using (
+  bucket_id = 'fee-receipts'
+  and exists (
+    select 1
+    from public.fee_records fr
+    where fr.receipt_storage_bucket = 'fee-receipts'
+      and fr.receipt_file_path = storage.objects.name
+      and (
+        public.is_hq_admin()
+        or public.is_branch_supervisor_for_branch(fr.branch_id)
+        or public.is_guardian_for_student(fr.student_id)
+      )
+  )
+);
+
+drop policy if exists fee_receipts_insert_storage on storage.objects;
+create policy fee_receipts_insert_storage
+on storage.objects for insert
+with check (
+  bucket_id = 'fee-receipts'
+  and exists (
+    select 1
+    from public.fee_records fr
+    where fr.receipt_storage_bucket = 'fee-receipts'
+      and fr.receipt_file_path = storage.objects.name
+      and (
+        public.is_hq_admin()
+        or public.is_branch_supervisor_for_branch(fr.branch_id)
+        or public.is_guardian_for_student(fr.student_id)
+      )
+  )
 );
 
 -- Parent report samples:

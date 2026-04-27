@@ -255,6 +255,19 @@ create policy fee_records_staff_only on fee_records for select using (
   public.is_hq_admin() or public.is_branch_supervisor_for_branch(branch_id)
 );
 
+drop policy if exists fee_records_parent_linked_summary on fee_records;
+create policy fee_records_parent_linked_summary on fee_records for select using (
+  public.is_guardian_for_student(student_id)
+  and verification_status in ('submitted', 'verified')
+);
+
+drop policy if exists fee_records_modify_staff_only on fee_records;
+create policy fee_records_modify_staff_only on fee_records for all using (
+  public.is_hq_admin() or public.is_branch_supervisor_for_branch(branch_id)
+) with check (
+  public.is_hq_admin() or public.is_branch_supervisor_for_branch(branch_id)
+);
+
 drop policy if exists observations_staff_scope on observations;
 create policy observations_staff_scope on observations for select using (
   public.is_hq_admin()
@@ -278,27 +291,17 @@ create policy trial_schedules_staff_scope on trial_schedules for select using (
 drop policy if exists sales_kit_resources_select on sales_kit_resources;
 create policy sales_kit_resources_select on sales_kit_resources for select using (
   public.is_hq_admin()
-  or public.current_user_role() = 'branch_supervisor'
+  or (
+    public.current_user_role() = 'branch_supervisor'
+    and status = 'approved'
+    and (
+      is_global = true
+      or (branch_id is not null and public.is_branch_supervisor_for_branch(branch_id))
+    )
+  )
 );
 
 drop policy if exists sales_kit_resources_modify on sales_kit_resources;
-create policy sales_kit_resources_modify on sales_kit_resources for all using (
-  public.is_hq_admin()
-  or (
-    public.current_user_role() = 'branch_supervisor'
-    and (
-      branch_id is null
-      or public.is_branch_supervisor_for_branch(branch_id)
-    )
-  )
-) with check (
-  public.is_hq_admin()
-  or (
-    public.current_user_role() = 'branch_supervisor'
-    and (
-      branch_id is null
-      or public.is_branch_supervisor_for_branch(branch_id)
-    )
-  )
-);
+create policy sales_kit_resources_modify on sales_kit_resources for all using (public.is_hq_admin())
+with check (public.is_hq_admin());
 

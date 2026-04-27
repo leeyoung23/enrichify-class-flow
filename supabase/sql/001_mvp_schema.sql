@@ -242,6 +242,13 @@ create table if not exists fee_records (
   fee_period text not null,
   amount numeric(12,2) not null default 0,
   status fee_status not null default 'unpaid',
+  receipt_file_path text,
+  receipt_storage_bucket text not null default 'fee-receipts',
+  uploaded_by_profile_id uuid references profiles(id),
+  uploaded_at timestamptz,
+  verified_by_profile_id uuid references profiles(id),
+  verified_at timestamptz,
+  verification_status text not null default 'not_uploaded',
   internal_note text,
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
@@ -285,10 +292,17 @@ create table if not exists sales_kit_resources (
   id uuid primary key default gen_random_uuid(),
   branch_id uuid references branches(id),
   title text not null,
+  resource_type text not null default 'pdf',
+  description text,
+  resource_url text,
   storage_bucket text not null default 'sales-kit-resources',
   storage_path text not null,
+  status communication_status not null default 'draft',
   is_global boolean not null default false,
+  branch_scope text not null default 'scoped',
   created_by_profile_id uuid references profiles(id),
+  approved_by_profile_id uuid references profiles(id),
+  approved_at timestamptz,
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
 );
@@ -321,9 +335,11 @@ create index if not exists idx_teacher_tasks_teacher_student_class on teacher_ta
 create index if not exists idx_teacher_task_assignments_teacher_id on teacher_task_assignments(teacher_id);
 create index if not exists idx_fee_records_branch_id on fee_records(branch_id);
 create index if not exists idx_fee_records_student_id on fee_records(student_id);
+create index if not exists idx_fee_records_verification_status on fee_records(verification_status);
 create index if not exists idx_observations_branch_id on observations(branch_id);
 create index if not exists idx_observations_teacher_id on observations(teacher_id);
 create index if not exists idx_leads_branch_id on leads(branch_id);
 create index if not exists idx_trial_schedules_branch_id on trial_schedules(branch_id);
 create index if not exists idx_sales_kit_resources_branch_id on sales_kit_resources(branch_id);
+create index if not exists idx_sales_kit_resources_status on sales_kit_resources(status);
 

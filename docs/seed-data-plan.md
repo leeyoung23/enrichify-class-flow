@@ -144,11 +144,18 @@ Each group below includes:
 
 - **Purpose:** internal fee tracking tests.
 - **Minimum fake records:** 4 (paid/unpaid/pending/overdue).
-- **Relationships:** references student, class, branch, optional receipt metadata.
+- **Relationships:** references student, class, branch, plus fake receipt metadata (`receipt_file_path`, `uploaded_by`, `uploaded_at`, `verified_by`, `verified_at`, `verification_status`, `internal_note`).
 - **Roles that should see it:** HQ all; Branch Supervisor own branch; Parent limited linked-child view if product policy allows.
 - **Negative test:** Teacher cannot read fee amount/payment method/internal note fields.
 
-## 18) observations
+## 18) fee_receipt_storage_metadata (within `fee_records` or linked receipt rows)
+
+- **Purpose:** test payment screenshot/receipt verification flow with storage-linked metadata.
+- **Minimum fake records:** 3 (uploaded, verified, rejected/needs-review examples).
+- **Relationships:** linked to `fee_records`, `students`, `branches`, and future `fee-receipts` storage bucket object paths.
+- **Roles that should see it:** HQ all branches; Branch Supervisor own branch; Parent own linked-child status summary only.
+- **Negative test:** Teacher must not read receipt metadata rows or file paths.
+## 19) observations
 
 - **Purpose:** teaching observation workflow.
 - **Minimum fake records:** 3 (draft/follow-up/completed).
@@ -156,7 +163,7 @@ Each group below includes:
 - **Roles that should see it:** HQ all; Branch Supervisor own branch; Teacher only allowed completed/self-visible subset.
 - **Negative test:** Teacher cannot read supervisor draft observation.
 
-## 19) leads
+## 20) leads
 
 - **Purpose:** sales/enrolment pipeline test data.
 - **Minimum fake records:** 4 (new/contacted/trial/enrolled mix).
@@ -164,7 +171,7 @@ Each group below includes:
 - **Roles that should see it:** HQ all; Branch Supervisor own branch; Teacher limited context only if explicitly assigned.
 - **Negative test:** South supervisor cannot read North lead notes.
 
-## 20) trial_schedules
+## 21) trial_schedules
 
 - **Purpose:** trial scheduling and conversion workflow.
 - **Minimum fake records:** 4 (scheduled/attended/cancelled mix).
@@ -172,7 +179,7 @@ Each group below includes:
 - **Roles that should see it:** HQ all; Branch Supervisor own branch; Teacher assigned trials only.
 - **Negative test:** Teacher cannot read full branch trial board outside assignment.
 
-## 21) schools
+## 22) schools
 
 - **Purpose:** school reference catalog for student context.
 - **Minimum fake records:** 3 fake schools.
@@ -180,13 +187,21 @@ Each group below includes:
 - **Roles that should see it:** HQ and branch staff catalog access; linked context for teacher/parent/student.
 - **Negative test:** Parent cannot infer other students by school-level browsing.
 
-## 22) student_school_profiles
+## 23) student_school_profiles
 
 - **Purpose:** student-specific school and curriculum mapping.
 - **Minimum fake records:** 4 profiles.
 - **Relationships:** references student and school; includes pathway/grade fields.
 - **Roles that should see it:** HQ all; Branch Supervisor own branch; Teacher assigned students; Parent linked child; Student self.
 - **Negative test:** Teacher cannot read school profile for unassigned student.
+
+## 24) sales_kit_resources
+
+- **Purpose:** test HQ-managed Sales Kit resource lifecycle (upload/approve/publish) and branch supervisor consumption.
+- **Minimum fake records:** 4 (draft, approved-global, approved-branch, archived).
+- **Relationships:** links to uploader/approver profiles, optional branch scope, and future `sales-kit-resources` storage object path.
+- **Roles that should see it:** HQ full manage; Branch Supervisor read approved only; Teacher/Parent/Student blocked.
+- **Negative test:** Branch Supervisor cannot read draft/unapproved resource; Teacher cannot read any Sales Kit record.
 
 ## Final seed rule
 

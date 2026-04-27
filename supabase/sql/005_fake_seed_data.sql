@@ -94,8 +94,28 @@ insert into task_attachments (id, task_id, uploaded_by_profile_id, storage_bucke
 on conflict (id) do nothing;
 
 -- Fee record (fake)
-insert into fee_records (id, branch_id, student_id, class_id, fee_period, amount, status, internal_note) values
-  ('50505050-5050-5050-5050-505050505050', '11111111-1111-1111-1111-111111111111', '55555555-5555-5555-5555-555555555555', '33333333-3333-3333-3333-333333333331', '2026-04', 120.00, 'pending_verification', 'demo fee record only')
+insert into fee_records (
+  id, branch_id, student_id, class_id, fee_period, amount, status,
+  receipt_file_path, receipt_storage_bucket, uploaded_by_profile_id, uploaded_at,
+  verified_by_profile_id, verified_at, verification_status, internal_note
+) values
+  (
+    '50505050-5050-5050-5050-505050505050',
+    '11111111-1111-1111-1111-111111111111',
+    '55555555-5555-5555-5555-555555555555',
+    '33333333-3333-3333-3333-333333333331',
+    '2026-04',
+    120.00,
+    'pending_verification',
+    'demo/receipts/fee-001.png',
+    'fee-receipts',
+    'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaa4',
+    now() - interval '1 day',
+    'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaa2',
+    now(),
+    'verified',
+    'demo fee record only'
+  )
 on conflict (id) do nothing;
 
 -- Observations
@@ -113,8 +133,58 @@ insert into trial_schedules (id, branch_id, class_id, lead_id, assigned_teacher_
 on conflict (id) do nothing;
 
 -- Sales kit resources
-insert into sales_kit_resources (id, branch_id, title, storage_bucket, storage_path, is_global, created_by_profile_id) values
-  ('80808080-8080-8080-8080-808080808080', null, 'Demo Sales Brochure', 'sales-kit-resources', 'demo/global/sales-brochure.pdf', true, 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaa1'),
-  ('81818181-8181-8181-8181-818181818181', '11111111-1111-1111-1111-111111111111', 'Demo North Campaign Deck', 'sales-kit-resources', 'demo/north/campaign-deck.pdf', false, 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaa2')
+insert into sales_kit_resources (
+  id, branch_id, title, resource_type, description, resource_url,
+  storage_bucket, storage_path, status, is_global, branch_scope,
+  created_by_profile_id, approved_by_profile_id, approved_at
+) values
+  (
+    '80808080-8080-8080-8080-808080808080',
+    null,
+    'Demo Sales Brochure',
+    'pdf',
+    'Global approved demo brochure',
+    null,
+    'sales-kit-resources',
+    'demo/global/sales-brochure.pdf',
+    'approved',
+    true,
+    'global',
+    'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaa1',
+    'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaa1',
+    now() - interval '2 days'
+  ),
+  (
+    '81818181-8181-8181-8181-818181818181',
+    '11111111-1111-1111-1111-111111111111',
+    'Demo North Campaign Deck',
+    'pdf',
+    'Branch scoped approved demo deck',
+    null,
+    'sales-kit-resources',
+    'demo/north/campaign-deck.pdf',
+    'approved',
+    false,
+    'branch',
+    'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaa1',
+    'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaa1',
+    now() - interval '1 day'
+  ),
+  (
+    '82828282-8282-8282-8282-828282828282',
+    '11111111-1111-1111-1111-111111111111',
+    'Demo Draft Sales Notes',
+    'link',
+    'Draft example not visible to branch supervisors',
+    'https://example.test/demo-draft-sales-notes',
+    'sales-kit-resources',
+    'demo/north/draft-sales-notes.txt',
+    'draft',
+    false,
+    'branch',
+    'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaa1',
+    null,
+    null
+  )
 on conflict (id) do nothing;
 
