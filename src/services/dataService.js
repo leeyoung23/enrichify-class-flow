@@ -519,12 +519,24 @@ export async function inviteUser(email) {
 }
 
 export async function generateParentMessage(student, notes) {
-  if (demoEnabled()) {
-    return `Hello ${student?.parent_name || 'Parent'},\n\n${student?.name || 'Your child'} had a positive session today. ${notes}\n\nPlease continue the same support at home. Thank you.`;
-  }
-  return base44.integrations.Core.InvokeLLM({
-    prompt: `You are a professional enrichment centre teacher writing a parent update message.\n\nStudent name: ${student?.name || 'Student'}\nParent name: ${student?.parent_name || 'Parent'}\nTeacher notes: ${notes}\n\nWrite a warm, professional, and concise parent update message.`
-  });
+  // Real AI generation is intentionally disabled in this prototype.
+  // Future implementation should use Supabase Edge Functions or a secure backend, not frontend direct calls.
+  const studentName = student?.name || 'Your child';
+  const parentName = student?.parent_name || student?.guardian_name || 'Parent/Guardian';
+  const className = student?.class_name || 'the class';
+  const attendanceStatus = student?.attendance_status || 'being tracked';
+  const homeworkStatus = student?.homework_status || 'pending review';
+  const teacherNote = notes?.trim() || 'Today we focused on steady progress and participation.';
+
+  return `Hello ${parentName},
+
+${studentName} completed today\'s session in ${className}.
+Attendance status: ${attendanceStatus}.
+Homework status: ${homeworkStatus}.
+
+Teacher note: ${teacherNote}
+
+This is a demo parent update draft only. It should be reviewed and approved by the teacher before sharing.`;
 }
 
 export async function uploadHomeworkAttachment(file, studentId) {
