@@ -69,6 +69,56 @@ async function countRows(client, tableName, filterBuilder = (q) => q, selectColu
   return { ok: true, count: count ?? 0 };
 }
 
+async function runTeacherTasksFallbackDiagnostics(client, user) {
+  const attempts = [
+    { label: "A", columns: "id" },
+    { label: "B", columns: "id,title" },
+    { label: "C", columns: "id,title,status" },
+    {
+      label: "D",
+      columns:
+        "id,title,branch_id,class_id,student_id,created_by_profile_id,status,created_at,updated_at",
+    },
+  ];
+
+  statusLine("CHECK", `${user.email} [${user.role}] teacher_tasks fallback diagnostics start`);
+
+  for (const attempt of attempts) {
+    statusLine(
+      "CHECK",
+      `${user.email} [${user.role}] teacher_tasks fallback ${attempt.label} selecting columns: ${attempt.columns}`,
+    );
+    try {
+      const { count, error } = await client
+        .from("teacher_tasks")
+        .select(attempt.columns, { count: "exact", head: true });
+
+      const hasData = (count ?? 0) > 0;
+      statusLine(
+        "CHECK",
+        `${user.email} [${user.role}] teacher_tasks fallback ${attempt.label} has_data=${hasData} row_count=${count ?? 0}`,
+      );
+
+      if (error) {
+        statusLine(
+          "WARNING",
+          `${user.email} [${user.role}] teacher_tasks fallback ${attempt.label} error_json=${JSON.stringify(error, null, 2)}`,
+        );
+      } else {
+        statusLine("PASS", `${user.email} [${user.role}] teacher_tasks fallback ${attempt.label} succeeded`);
+      }
+    } catch (err) {
+      statusLine(
+        "WARNING",
+        `${user.email} [${user.role}] teacher_tasks fallback ${attempt.label} threw exception: ${err?.message || err}`,
+      );
+      if (err?.stack) {
+        statusLine("WARNING", `${user.email} [${user.role}] teacher_tasks fallback ${attempt.label} stack:\n${err.stack}`);
+      }
+    }
+  }
+}
+
 function evaluateExpectations(role, counts, roleEmail) {
   statusLine("CHECK", `${roleEmail}: evaluating rough role expectations`);
 
@@ -173,6 +223,12 @@ async function runForUser(user) {
         "WARNING",
         `${user.email} [${user.role}] table=${table} query failed (${formatSupabaseError(result.error)})`,
       );
+      if (table === "teacher_tasks") {
+        // When teacher_tasks fails, run granular fallback diagnostics to isolate
+        // invalid columns vs RLS/policy/PostgREST behavior.
+        // eslint-disable-next-line no-await-in-loop
+        await runTeacherTasksFallbackDiagnostics(client, user);
+      }
       continue;
     }
     counts[table] = result.count;
