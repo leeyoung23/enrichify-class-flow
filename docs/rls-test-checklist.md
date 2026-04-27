@@ -121,3 +121,15 @@ Reminder: **Frontend filtering is not security. RLS must enforce access at datab
 - Run tests with fake users for each role.
 - Validate both UI behavior and direct API/database query behavior.
 - Record pass/fail evidence before enabling real data onboarding.
+
+## School/Curriculum + AI Foundation (007) Checks
+
+When `supabase/sql/007_school_curriculum_ai_foundation.sql` is manually applied, add role tests for:
+
+- `schools` and `student_school_profiles` RLS (HQ full; branch supervisor own-branch scope via linked students; teacher assigned students only; parent/student linked self only).
+- `curriculum_mappings` and `learning_objectives` staff visibility (teacher read-only; supervisor/HQ manage by policy).
+- `student_subject_enrolments` multi-subject visibility by linked/assigned student.
+- `student_learning_profiles` internal staff-only fields (parent/student blocked unless later policy changes).
+- `homework_marking_results` parent/student read only when `teacher_approved = true`.
+- `ai_generation_requests` and `ai_feedback_tags` staff-only access.
+- `ai_generation_outputs` parent/student access only for approved/released rows linked to own child/self.

@@ -196,3 +196,12 @@ Target model (aligned with onboarding + AI plans + `rls-test-checklist.md`):
 ## Summary
 
 The MVP schema **partially** supports school/curriculum context via `schools`, `student_school_profiles`, `students`, and `classes`, with fake seed coverage. It is **not** sufficient for full AI personalisation: curriculum/objective/profile/marking/log tables are absent, subject enrolment is underspecified, and **RLS is not drafted for the two school-related tables** in `003`. Next step should be an additive SQL migration plan (and checklist updates) before relying on these tables from the app or Edge Functions.
+
+## Update note (draft SQL prepared)
+
+Follow-up draft files now prepared for manual review/application:
+
+- `supabase/sql/007_school_curriculum_ai_foundation.sql`
+- `supabase/sql/008_school_curriculum_ai_fake_seed.sql`
+
+These drafts are additive and include conservative RLS for new foundation tables plus `schools` and `student_school_profiles`.

@@ -216,3 +216,12 @@ Suggested order after that:
 1. complete school/curriculum read model planning and field mapping,
 2. then plan secure AI Edge Function contracts,
 3. then revisit auth/login rollout details for production hardening.
+
+## 10) Draft SQL foundation status
+
+Draft schema foundation files were prepared for manual review/application:
+
+- `supabase/sql/007_school_curriculum_ai_foundation.sql`
+- `supabase/sql/008_school_curriculum_ai_fake_seed.sql`
+
+These drafts introduce additive school/curriculum + AI foundation tables and conservative staff-first RLS defaults, without frontend AI API integration.
