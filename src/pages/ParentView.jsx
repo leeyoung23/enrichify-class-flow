@@ -126,39 +126,66 @@ function ChildProfileSummary({ student, cls }) {
   );
 }
 
-function LatestReport({ updates }) {
-  const latest = updates[0];
-  if (!latest) {
-    return (
-      <Card id="homework-due">
-        <CardHeader className="pb-3">
-          <CardTitle className="text-base">Latest Report</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <p className="text-sm text-muted-foreground">No report available yet. Your child's teacher will share updates here.</p>
-        </CardContent>
-      </Card>
-    );
-  }
+function LatestParentComment({ updates }) {
+  const latestComment = updates.find((item) => item.update_type !== 'weekly_report');
+  return (
+    <Card id="latest-parent-comment">
+      <CardHeader className="pb-3">
+        <div className="flex items-center justify-between">
+          <CardTitle className="text-base">Latest Parent Comment</CardTitle>
+          <Badge className={latestComment ? 'bg-green-100 text-green-700 border-green-200' : ''} variant="outline">
+            {latestComment?.status || 'not available'}
+          </Badge>
+        </div>
+      </CardHeader>
+      <CardContent>
+        {latestComment ? (
+          <>
+            <div className="flex items-center gap-2 mb-3 text-xs text-muted-foreground">
+              <FileText className="h-3.5 w-3.5" />
+              {latestComment.created_date ? new Date(latestComment.created_date).toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' }) : 'Recent'}
+            </div>
+            <p className="text-sm leading-relaxed whitespace-pre-line text-foreground">
+              {latestComment.shared_report || latestComment.approved_report || latestComment.final_message || 'No message content.'}
+            </p>
+          </>
+        ) : (
+          <p className="text-sm text-muted-foreground">No approved or released parent comment yet.</p>
+        )}
+      </CardContent>
+    </Card>
+  );
+}
+
+function LatestWeeklyProgressReport({ updates }) {
+  const latestWeekly = updates.find((item) => item.update_type === 'weekly_report');
+  const weeklyMeta = latestWeekly?.weekly_report || {};
 
   return (
     <Card id="latest-report">
       <CardHeader className="pb-3">
         <div className="flex items-center justify-between">
-          <CardTitle className="text-base">Latest Report</CardTitle>
-          <Badge className={['approved', 'shared'].includes(latest.status) ? 'bg-green-100 text-green-700 border-green-200' : ''} variant="outline">
-            {latest.status}
+          <CardTitle className="text-base">Latest Weekly Progress Report</CardTitle>
+          <Badge className={latestWeekly ? 'bg-green-100 text-green-700 border-green-200' : ''} variant="outline">
+            {latestWeekly?.status || 'not available'}
           </Badge>
         </div>
       </CardHeader>
       <CardContent>
-        <div className="flex items-center gap-2 mb-3 text-xs text-muted-foreground">
-          <FileText className="h-3.5 w-3.5" />
-          {latest.created_date ? new Date(latest.created_date).toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' }) : 'Recent'}
-        </div>
-        <p className="text-sm leading-relaxed whitespace-pre-line text-foreground">
-          {latest.shared_report || latest.approved_report || latest.final_message || 'No message content.'}
-        </p>
+        {latestWeekly ? (
+          <div className="space-y-2 text-sm">
+            <p><span className="text-muted-foreground">Week range:</span> {weeklyMeta.week_range || 'Weekly summary'}</p>
+            <p><span className="text-muted-foreground">Attendance summary:</span> {weeklyMeta.attendance_summary || 'Not recorded'}</p>
+            <p><span className="text-muted-foreground">Homework completion:</span> {weeklyMeta.homework_completion || 'Not recorded'}</p>
+            <p><span className="text-muted-foreground">Learning focus:</span> {weeklyMeta.learning_focus || 'Not available'}</p>
+            <p><span className="text-muted-foreground">Strengths:</span> {weeklyMeta.strengths || 'Not available'}</p>
+            <p><span className="text-muted-foreground">Areas to improve:</span> {weeklyMeta.areas_to_improve || 'Not available'}</p>
+            <p><span className="text-muted-foreground">Suggested home practice:</span> {weeklyMeta.suggested_home_practice || 'Not available'}</p>
+            <p><span className="text-muted-foreground">Next week focus:</span> {weeklyMeta.next_week_focus || 'Not available'}</p>
+          </div>
+        ) : (
+          <p className="text-sm text-muted-foreground">No approved or released weekly progress report yet.</p>
+        )}
       </CardContent>
     </Card>
   );
@@ -462,7 +489,8 @@ export default function ParentView() {
           ) : (
             <>
               <ChildProfileSummary student={student} cls={cls} />
-              <LatestReport updates={updates} />
+              <LatestParentComment updates={updates} />
+              <LatestWeeklyProgressReport updates={updates} />
               {feeStatus && (
                 <Card>
                   <CardHeader className="pb-3">

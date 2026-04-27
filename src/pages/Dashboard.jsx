@@ -34,8 +34,8 @@ export default function Dashboard() {
   };
 
   const teacherMetrics = getTeacherKpiMetrics(user);
-  const aiReportPendingCount = teacherMetrics.reportStatuses.noteCreated;
-  const aiReportReadyCount = teacherMetrics.reportStatuses.aiDraftGenerated + teacherMetrics.reportStatuses.edited;
+  const commentPendingApprovalCount = recentUpdates.filter((item) => item.update_type !== 'weekly_report' && ['note_created', 'ai_draft_generated', 'edited'].includes(item.status)).length;
+  const weeklyReadyForReviewCount = recentUpdates.filter((item) => item.update_type === 'weekly_report' && ['ai_draft_generated', 'edited', 'approved'].includes(item.status)).length;
   const hqSummary = getHqDashboardSummary(user);
   const hqAlerts = getHqAlertLists(user);
   const studentSummary = getStudentDashboardSummary(user);
@@ -125,12 +125,12 @@ export default function Dashboard() {
             <Card className="p-5">
               <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
                 <div>
-                  <h3 className="font-semibold">AI Parent Report Drafts</h3>
-                  <p className="text-sm text-muted-foreground">Demo-only workflow: generate draft, edit, approve, then manually share.</p>
+                  <h3 className="font-semibold">Parent Comments & Weekly Reports</h3>
+                  <p className="text-sm text-muted-foreground">Demo-only workflow: teachers draft, review, approve, and release communication manually.</p>
                 </div>
                 <div className="flex gap-2 flex-wrap">
                   <Button asChild variant="outline">
-                    <Link to="/parent-updates">Open Parent Updates</Link>
+                    <Link to="/parent-updates">Open Parent Communication</Link>
                   </Button>
                   <Button asChild>
                     <Link to="/class-session">Start Class Session</Link>
@@ -139,12 +139,12 @@ export default function Dashboard() {
               </div>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-4">
                 <div className="rounded-lg bg-accent/40 px-3 py-2">
-                  <p className="text-xs text-muted-foreground">Pending note-to-draft</p>
-                  <p className="text-lg font-semibold">{aiReportPendingCount}</p>
+                  <p className="text-xs text-muted-foreground">Comments pending approval</p>
+                  <p className="text-lg font-semibold">{commentPendingApprovalCount}</p>
                 </div>
                 <div className="rounded-lg bg-accent/40 px-3 py-2">
-                  <p className="text-xs text-muted-foreground">Ready for teacher review</p>
-                  <p className="text-lg font-semibold">{aiReportReadyCount}</p>
+                  <p className="text-xs text-muted-foreground">Weekly reports ready for review</p>
+                  <p className="text-lg font-semibold">{weeklyReadyForReviewCount}</p>
                 </div>
               </div>
             </Card>
