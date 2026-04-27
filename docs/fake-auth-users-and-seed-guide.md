@@ -48,19 +48,13 @@ For each created user in `Authentication` -> `Users`:
 
 Do not put sensitive production IDs in public docs.
 
-## Replace placeholder IDs in `005_fake_seed_data.sql`
+## How `005` maps Auth users now
 
-Open `supabase/sql/005_fake_seed_data.sql` and replace only the placeholder profile IDs used in the `profiles` insert block.
+`supabase/sql/005_fake_seed_data.sql` now looks up `auth.users.id` by fake email directly in SQL.
 
-Current placeholders to replace:
+This means manual UUID replacement is no longer the default workflow.
 
-- `aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaa1` -> HQ user UUID
-- `aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaa2` -> Branch Supervisor user UUID
-- `aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaa3` -> Teacher user UUID
-- `aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaa4` -> Parent user UUID
-- `aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaa5` -> Student user UUID
-
-Keep all non-user fake IDs (branch/class/student/task/etc.) as-is unless there is a specific reason to change them.
+You should still verify all 5 fake users exist before running `005`. The seed file includes a pre-run guard and will fail early if users are missing.
 
 ## Safety warnings
 
@@ -71,7 +65,7 @@ Keep all non-user fake IDs (branch/class/student/task/etc.) as-is unless there i
 
 ## Running seed SQL after replacement
 
-After placeholder IDs are replaced locally, you can manually run:
+After confirming fake users exist, you can manually run:
 
 - `supabase/sql/005_fake_seed_data.sql`
 
@@ -84,7 +78,7 @@ Run it in Supabase SQL Editor only after confirming readiness checklist below.
 - [ ] `003_rls_policies_draft.sql` succeeded
 - [ ] `004_storage_buckets_and_policies.sql` succeeded
 - [ ] All 5 fake Auth users were created
-- [ ] Placeholder profile UUIDs were replaced in `005_fake_seed_data.sql`
+- [ ] `005_fake_seed_data.sql` email lookups match the 5 fake users in Auth
 - [ ] Seed file reviewed and still fake-only
 - [ ] No real data included
 
