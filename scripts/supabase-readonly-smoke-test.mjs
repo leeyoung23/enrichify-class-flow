@@ -17,6 +17,95 @@ const BRANCH_FIELDS = "id,name,created_at,updated_at";
 const CLASS_FIELDS = "id,name,branch_id,subject,level,schedule_note,created_at,updated_at";
 const STUDENT_FIELDS = "id,full_name,branch_id,class_id,created_at,updated_at";
 
+/** 007/008 foundation tables — read-only count checks (RLS exercised via anon client + user JWT). */
+const FOUNDATION_TABLES = [
+  "schools",
+  "student_school_profiles",
+  "curriculum_mappings",
+  "learning_objectives",
+  "student_subject_enrolments",
+  "student_learning_profiles",
+  "homework_marking_results",
+  "ai_generation_requests",
+  "ai_generation_outputs",
+  "ai_feedback_tags",
+  "teacher_approval_logs",
+];
+
+/**
+ * Per-role expected row counts after 005+008 fake seed (approximate).
+ * - min: fail CHECK if count < min (unless query errored, then WARNING)
+ * - max: WARNING if count > max (policy leak suspicion)
+ * - optionalZeroMessage: when count===0 for staff-only tables, emit CHECK instead of silent PASS
+ */
+const FOUNDATION_EXPECT = {
+  "HQ Admin": {
+    schools: { min: 1 },
+    student_school_profiles: { min: 1 },
+    curriculum_mappings: { min: 1 },
+    learning_objectives: { min: 1 },
+    student_subject_enrolments: { min: 1 },
+    student_learning_profiles: { min: 1 },
+    homework_marking_results: { min: 1 },
+    ai_generation_requests: { min: 1 },
+    ai_generation_outputs: { min: 1 },
+    ai_feedback_tags: { min: 0, optionalZeroMessage: "no rows (008 does not seed ai_feedback_tags)" },
+    teacher_approval_logs: { min: 0, optionalZeroMessage: "may be 0 until approval actions are logged" },
+  },
+  "Branch Supervisor": {
+    schools: { min: 1 },
+    student_school_profiles: { min: 1 },
+    curriculum_mappings: { min: 1 },
+    learning_objectives: { min: 1 },
+    student_subject_enrolments: { min: 1 },
+    student_learning_profiles: { min: 1 },
+    homework_marking_results: { min: 1 },
+    ai_generation_requests: { min: 1 },
+    ai_generation_outputs: { min: 1 },
+    ai_feedback_tags: { min: 0, optionalZeroMessage: "no rows (008 does not seed ai_feedback_tags)" },
+    teacher_approval_logs: { min: 0, optionalZeroMessage: "may be 0 until approval actions are logged" },
+  },
+  Teacher: {
+    schools: { min: 1 },
+    student_school_profiles: { min: 1 },
+    curriculum_mappings: { min: 1 },
+    learning_objectives: { min: 1 },
+    student_subject_enrolments: { min: 1 },
+    student_learning_profiles: { min: 1 },
+    homework_marking_results: { min: 1 },
+    ai_generation_requests: { min: 1 },
+    ai_generation_outputs: { min: 1 },
+    ai_feedback_tags: { min: 0, optionalZeroMessage: "no rows (008 does not seed ai_feedback_tags)" },
+    teacher_approval_logs: { min: 0, optionalZeroMessage: "may be 0 until approval actions are logged" },
+  },
+  Parent: {
+    schools: { min: 1 },
+    student_school_profiles: { min: 1 },
+    curriculum_mappings: { max: 0 },
+    learning_objectives: { max: 0 },
+    student_subject_enrolments: { min: 1 },
+    student_learning_profiles: { max: 0 },
+    homework_marking_results: { max: 0 },
+    ai_generation_requests: { max: 0 },
+    ai_generation_outputs: { max: 0 },
+    ai_feedback_tags: { max: 0 },
+    teacher_approval_logs: { max: 0 },
+  },
+  Student: {
+    schools: { min: 1 },
+    student_school_profiles: { min: 1 },
+    curriculum_mappings: { max: 0 },
+    learning_objectives: { max: 0 },
+    student_subject_enrolments: { min: 1 },
+    student_learning_profiles: { max: 0 },
+    homework_marking_results: { max: 0 },
+    ai_generation_requests: { max: 0 },
+    ai_generation_outputs: { max: 0 },
+    ai_feedback_tags: { max: 0 },
+    teacher_approval_logs: { max: 0 },
+  },
+};
+
 function resolvePassword(roleSpecificVar) {
   return process.env[roleSpecificVar] || process.env.RLS_TEST_PASSWORD || "";
 }
@@ -87,6 +176,68 @@ async function getStudents(client) {
     return { data: Array.isArray(data) ? data : [], error: null };
   } catch (error) {
     return { data: [], error };
+  }
+}
+
+/**
+ * Exact row count visible under RLS for a table (no row payload).
+ * @returns {{ count: number, error: object | null }}
+ */
+async function countFoundationRows(client, table) {
+  try {
+    const { count, error } = await client.from(table).select("id", { count: "exact", head: true });
+    if (error) {
+      return { count: 0, error };
+    }
+    return { count: count ?? 0, error: null };
+  } catch (error) {
+    return { count: 0, error };
+  }
+}
+
+function evaluateFoundationTableCounts(userLabel, table, count, error) {
+  const spec = FOUNDATION_EXPECT[userLabel]?.[table];
+  if (!spec) {
+    printResult("CHECK", `${userLabel}: foundation table "${table}" has no expectation spec`);
+    return;
+  }
+
+  if (error) {
+    printResult(
+      "WARNING",
+      `${userLabel}: foundation ${table} count query failed (${error.message || error.code || "unknown"})`
+    );
+    return;
+  }
+
+  if (typeof spec.max === "number" && count > spec.max) {
+    printResult(
+      "WARNING",
+      `${userLabel}: foundation ${table} count=${count} exceeds expected max=${spec.max} (possible RLS leak)`
+    );
+    return;
+  }
+
+  if (typeof spec.min === "number" && count < spec.min) {
+    printResult(
+      "CHECK",
+      `${userLabel}: foundation ${table} count=${count} below expected min=${spec.min} (verify 007/008 seed and role scope)`
+    );
+    return;
+  }
+
+  if (count === 0 && spec.optionalZeroMessage) {
+    printResult("CHECK", `${userLabel}: foundation ${table} count=0 — ${spec.optionalZeroMessage}`);
+    return;
+  }
+
+  printResult("PASS", `${userLabel}: foundation ${table} count=${count} (RLS read ok)`);
+}
+
+async function runFoundationTableChecks(client, userLabel) {
+  for (const table of FOUNDATION_TABLES) {
+    const { count, error } = await countFoundationRows(client, table);
+    evaluateFoundationTableCounts(userLabel, table, count, error);
   }
 }
 
@@ -240,6 +391,8 @@ async function runUserCheck(userConfig) {
       studentsResult.data.length
     );
   }
+
+  await runFoundationTableChecks(client, userConfig.label);
 
   const { error: signOutError } = await client.auth.signOut();
   if (signOutError) {

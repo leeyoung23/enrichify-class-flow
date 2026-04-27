@@ -124,7 +124,7 @@ Reminder: **Frontend filtering is not security. RLS must enforce access at datab
 
 ## School/Curriculum + AI Foundation (007) Checks
 
-When `supabase/sql/007_school_curriculum_ai_foundation.sql` is manually applied, add role tests for:
+When `supabase/sql/007_school_curriculum_ai_foundation.sql` is manually applied, validate the following (manually and/or via `npm run test:supabase:read`, which performs **read-only count** checks per fake role for `schools`, `student_school_profiles`, and the other 007 foundation tables after **008** seed data exists):
 
 - `schools` and `student_school_profiles` RLS (HQ full; branch supervisor own-branch scope via linked students; teacher assigned students only; parent/student linked self only).
 - `curriculum_mappings` and `learning_objectives` staff visibility (teacher + branch supervisor read; **writes HQ-only** per `007` draft).

@@ -39,6 +39,10 @@ There is **no** OpenAI or other LLM API integration in the frontend or as a requ
 
 Many buttons and flows remain **disconnected** from Supabase writes and storage uploads until dedicated write phases. This includes (non-exhaustively) real homework uploads, fee receipts, sales kit management from the app, and new foundation tables—**no obligation** for the preview app to persist to these tables yet.
 
+### Read-only smoke test coverage (007 / 008)
+
+`npm run test:supabase:read` runs `scripts/supabase-readonly-smoke-test.mjs`, which signs in each fake role and performs **count-only** `select` head requests (no writes, no service role) against the **007 / 008** foundation tables as well as the existing Sales Kit / branches / classes / students checks. Expect **CHECK** lines for optional empty tables (e.g. `ai_feedback_tags` not seeded in 008, `teacher_approval_logs` often zero).
+
 ---
 
 ## 7) Future parent portal: **Class Memories** (“Memories”) planning
@@ -66,7 +70,7 @@ This section is **planning only**—no bucket, table, or UI work is required by 
 
 ## 8) Recommended next milestones
 
-1. **Smoke tests:** Extend `scripts/supabase-readonly-smoke-test.mjs` (and/or SQL verification) to optionally assert **read** visibility for roles against **007** tables (e.g. curriculum row count for teacher, denied rows for parent where policy expects), without enabling writes from the script.
+1. **Smoke tests:** Foundation table read counts are covered in `scripts/supabase-readonly-smoke-test.mjs`; tighten assertions or add SQL verification as policies evolve.
 2. **Class Memories (internal `class_media` / `class_photos`):** Finalise metadata schema sketch and Storage policy draft for teacher-uploaded Memories; implement in a **later** SQL migration after security review.
 3. **Auth / writes:** Either deepen **real auth / login** hardening or plan the **first intentional Supabase write flow** (e.g. school profile or teacher Memory draft) behind RLS—still fake-data-first in non-prod.
 
