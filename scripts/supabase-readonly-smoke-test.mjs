@@ -229,6 +229,10 @@ async function runUserCheck(userConfig) {
       `${userConfig.label}: core read error branches/classes/students = ${branchesResult.error?.message || "ok"}/${classesResult.error?.message || "ok"}/${studentsResult.error?.message || "ok"}`
     );
   } else {
+    printResult(
+      "PASS",
+      `${userConfig.label}: dashboard summary input counts branches/classes/students = ${branchesResult.data.length}/${classesResult.data.length}/${studentsResult.data.length}`
+    );
     evaluateCoreReadCounts(
       userConfig,
       branchesResult.data.length,

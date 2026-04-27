@@ -1,7 +1,7 @@
 import React from 'react';
 import { Link, useOutletContext } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
-import { listParentUpdates, getTeacherKpiMetrics, getHqDashboardSummary, getHqAlertLists, getStudentDashboardSummary, getTrialSchedules, getTeacherNotifications, listFeeRecords, getFeeDashboardSummary, listHomeworkAttachments, getHomeworkAttachmentSummary } from '@/services/dataService';
+import { listParentUpdates, getTeacherKpiMetrics, getHqDashboardSummary, getHqAlertLists, getStudentDashboardSummary, getTrialSchedules, getTeacherNotifications, listFeeRecords, getFeeDashboardSummary, listHomeworkAttachments, getHomeworkAttachmentSummary, getDashboardReadSummary, getReadDataSource } from '@/services/dataService';
 import { getDashboardLabel } from '@/services/permissionService';
 import { Building2, BookOpen, ClipboardCheck, MessageSquarePlus, PlayCircle, BookOpenCheck, FileClock, Users, UserCheck, FolderOpen } from 'lucide-react';
 import UpcomingTrialsCard from '@/components/dashboard/UpcomingTrialsCard';
@@ -41,6 +41,12 @@ export default function Dashboard() {
   const studentSummary = getStudentDashboardSummary(user);
   const upcomingTrials = getTrialSchedules(user).filter((item) => item.trial_status === 'scheduled').slice(0, 3);
   const teacherNotifications = getTeacherNotifications(user).slice(0, 5);
+  const { data: dashboardReadSummary } = useQuery({
+    queryKey: ['dashboard-read-summary', role, user?.branch_id, user?.email],
+    queryFn: () => getDashboardReadSummary(user),
+    enabled: !!user && (role === 'hq_admin' || role === 'branch_supervisor'),
+  });
+  const dashboardSourceLabel = getReadDataSource('dashboard') === 'supabase' ? 'Loaded from Supabase test data' : 'Demo data';
 
   const { data: feeRecords = [] } = useQuery({
     queryKey: ['dashboard-fee-records', role, user?.branch_id, user?.student_id],
@@ -77,6 +83,17 @@ export default function Dashboard() {
 
       {role === 'hq_admin' ? (
         <>
+          <Card className="p-4 mb-6">
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <p className="text-xs text-muted-foreground">{dashboardSourceLabel}</p>
+              <div className="text-xs text-muted-foreground flex gap-4">
+                <span>Branches: {dashboardReadSummary?.branchCount ?? 0}</span>
+                <span>Classes: {dashboardReadSummary?.classCount ?? 0}</span>
+                <span>Students: {dashboardReadSummary?.studentCount ?? 0}</span>
+                <span>Approved Sales Kit: {dashboardReadSummary?.approvedSalesKitCount ?? 0}</span>
+              </div>
+            </div>
+          </Card>
           <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4 mb-6">
             <StatCard label="Total Unpaid" value={feeSummary.unpaid} icon={Building2} />
             <StatCard label="Overdue Payments" value={feeSummary.overdue} icon={Users} />
@@ -98,6 +115,17 @@ export default function Dashboard() {
         </>
       ) : role === 'branch_supervisor' ? (
         <>
+          <Card className="p-4 mb-6">
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <p className="text-xs text-muted-foreground">{dashboardSourceLabel}</p>
+              <div className="text-xs text-muted-foreground flex gap-4">
+                <span>Branches: {dashboardReadSummary?.branchCount ?? 0}</span>
+                <span>Classes: {dashboardReadSummary?.classCount ?? 0}</span>
+                <span>Students: {dashboardReadSummary?.studentCount ?? 0}</span>
+                <span>Approved Sales Kit: {dashboardReadSummary?.approvedSalesKitCount ?? 0}</span>
+              </div>
+            </div>
+          </Card>
           <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4 mb-6">
             <StatCard label="Unpaid Students" value={feeSummary.unpaid} icon={Building2} />
             <StatCard label="Overdue Payments" value={feeSummary.overdue} icon={BookOpen} />

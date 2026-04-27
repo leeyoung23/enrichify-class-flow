@@ -1,7 +1,7 @@
 import { base44 } from '@/api/base44Client';
 import { getSelectedDemoRole } from './authService';
 import { ROLES } from './permissionService';
-import { getBranches, getClasses, getStudents } from './supabaseReadService';
+import { getApprovedSalesKitResources, getBranches, getClasses, getStudents } from './supabaseReadService';
 import { isSupabaseConfigured } from './supabaseClient';
 
 const demoEnabled = () => Boolean(getSelectedDemoRole());
@@ -9,6 +9,7 @@ const readSources = {
   branches: 'demo',
   classes: 'demo',
   students: 'demo',
+  dashboard: 'demo',
 };
 
 const demoData = {
@@ -318,6 +319,48 @@ export async function listStudents(user) {
   }
   readSources.students = 'demo';
   return filterByRole(demoData.students, user, 'students');
+}
+
+export async function getDashboardReadSummary(user) {
+  if (demoEnabled()) {
+    readSources.dashboard = 'demo';
+    return {
+      branchCount: filterByRole(demoData.branches, user, 'branches').length,
+      classCount: filterByRole(demoData.classes, user, 'classes').length,
+      studentCount: filterByRole(demoData.students, user, 'students').length,
+      approvedSalesKitCount: 0,
+    };
+  }
+
+  if (isSupabaseConfigured()) {
+    const [branchesResult, classesResult, studentsResult, salesKitResult] = await Promise.all([
+      getBranches(),
+      getClasses(),
+      getStudents(),
+      getApprovedSalesKitResources(),
+    ]);
+
+    const hasCoreErrors = Boolean(branchesResult.error || classesResult.error || studentsResult.error);
+    const hasEmptyCoreData = !branchesResult.data.length || !classesResult.data.length || !studentsResult.data.length;
+
+    if (!hasCoreErrors && !hasEmptyCoreData) {
+      readSources.dashboard = 'supabase';
+      return {
+        branchCount: branchesResult.data.length,
+        classCount: classesResult.data.length,
+        studentCount: studentsResult.data.length,
+        approvedSalesKitCount: salesKitResult.error ? 0 : salesKitResult.data.length,
+      };
+    }
+  }
+
+  readSources.dashboard = 'demo';
+  return {
+    branchCount: filterByRole(demoData.branches, user, 'branches').length,
+    classCount: filterByRole(demoData.classes, user, 'classes').length,
+    studentCount: filterByRole(demoData.students, user, 'students').length,
+    approvedSalesKitCount: 0,
+  };
 }
 
 export async function listStudentsByClass(user, classId) {
