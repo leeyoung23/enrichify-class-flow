@@ -13,6 +13,7 @@ import TeacherAttentionSection from '@/components/dashboard/TeacherAttentionSect
 import { DashboardListCard, DashboardSectionGrid } from '@/components/dashboard/RoleDashboardLists';
 import HomeworkUploadSummaryCards from '@/components/dashboard/HomeworkUploadSummaryCards';
 import { Button } from '@/components/ui/button';
+import { Card } from '@/components/ui/card';
 import { format } from 'date-fns';
 
 export default function Dashboard() {
@@ -33,6 +34,8 @@ export default function Dashboard() {
   };
 
   const teacherMetrics = getTeacherKpiMetrics(user);
+  const aiReportPendingCount = teacherMetrics.reportStatuses.noteCreated;
+  const aiReportReadyCount = teacherMetrics.reportStatuses.aiDraftGenerated + teacherMetrics.reportStatuses.edited;
   const hqSummary = getHqDashboardSummary(user);
   const hqAlerts = getHqAlertLists(user);
   const studentSummary = getStudentDashboardSummary(user);
@@ -119,6 +122,32 @@ export default function Dashboard() {
             <StatCard label="Parent Reports Pending" value={teacherMetrics.reportsPending} icon={FileClock} />
           </div>
           <div className="space-y-6">
+            <Card className="p-5">
+              <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+                <div>
+                  <h3 className="font-semibold">AI Parent Report Drafts</h3>
+                  <p className="text-sm text-muted-foreground">Demo-only workflow: generate draft, edit, approve, then manually share.</p>
+                </div>
+                <div className="flex gap-2 flex-wrap">
+                  <Button asChild variant="outline">
+                    <Link to="/parent-updates">Open Parent Updates</Link>
+                  </Button>
+                  <Button asChild>
+                    <Link to="/class-session">Start Class Session</Link>
+                  </Button>
+                </div>
+              </div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-4">
+                <div className="rounded-lg bg-accent/40 px-3 py-2">
+                  <p className="text-xs text-muted-foreground">Pending note-to-draft</p>
+                  <p className="text-lg font-semibold">{aiReportPendingCount}</p>
+                </div>
+                <div className="rounded-lg bg-accent/40 px-3 py-2">
+                  <p className="text-xs text-muted-foreground">Ready for teacher review</p>
+                  <p className="text-lg font-semibold">{aiReportReadyCount}</p>
+                </div>
+              </div>
+            </Card>
             <TeacherClassOverviewSection sessions={teacherMetrics.classOverview} />
             <TeacherAttentionSection items={teacherMetrics.studentsNeedingAttention.slice(0, 3)} />
             <TeacherNotificationsCard items={teacherNotifications.slice(0, 5)} />

@@ -1,9 +1,10 @@
-import React, { useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { useOutletContext } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { listClasses, listStudentsByClass, listAttendanceRecords } from '@/services/dataService';
 import { saveAttendanceRecord, saveAttendanceNotes } from '@/services/classSessionService';
 import { isTeacherRole } from '@/services/permissionService';
+import { getSelectedDemoRole } from '@/services/authService';
 import { ClipboardCheck, Check, X, Clock, Umbrella } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
@@ -11,6 +12,7 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { format } from 'date-fns';
+import { toast } from 'sonner';
 import PageHeader from '@/components/shared/PageHeader';
 import EmptyState from '@/components/shared/EmptyState';
 
@@ -18,8 +20,12 @@ export default function Attendance() {
   const { user } = useOutletContext();
   const [selectedClassId, setSelectedClassId] = useState('');
   const [selectedDate, setSelectedDate] = useState(format(new Date(), 'yyyy-MM-dd'));
+  const [draftRecords, setDraftRecords] = useState({});
   const queryClient = useQueryClient();
   const isTeacher = isTeacherRole(user);
+  const isBranchSupervisor = user?.role === 'branch_supervisor';
+  const canEdit = isTeacher || isBranchSupervisor;
+  const demoMode = Boolean(getSelectedDemoRole());
 
   const { data: classes = [] } = useQuery({
     queryKey: ['classes-for-attendance', user?.role, user?.email],
@@ -49,17 +55,103 @@ export default function Attendance() {
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['attendance'] }),
   });
 
-  const getRecord = (studentId) => existingRecords.find(r => r.student_id === studentId);
+  useEffect(() => {
+    const nextDrafts = {};
+    existingRecords.forEach((record) => {
+      nextDrafts[record.student_id] = {
+        status: record.status || '',
+        notes: record.notes || '',
+      };
+    });
+    setDraftRecords(nextDrafts);
+  }, [existingRecords, selectedClassId, selectedDate]);
 
-  const handleMark = async (studentId, field, value) => {
-    const existing = getRecord(studentId);
-    saveMutation.mutate({ studentId, field, value });
+  const getRecord = (studentId) => {
+    const savedRecord = existingRecords.find((record) => record.student_id === studentId);
+    const draftRecord = draftRecords[studentId];
+    return {
+      ...savedRecord,
+      status: draftRecord?.status ?? savedRecord?.status ?? '',
+      notes: draftRecord?.notes ?? savedRecord?.notes ?? '',
+    };
+  };
+
+  const hasUnsavedChanges = useMemo(() => {
+    return students.some((student) => {
+      const savedRecord = existingRecords.find((record) => record.student_id === student.id);
+      const draftRecord = draftRecords[student.id] || {};
+      const savedStatus = savedRecord?.status || '';
+      const savedNotes = savedRecord?.notes || '';
+      const draftStatus = draftRecord.status ?? savedStatus;
+      const draftNotes = draftRecord.notes ?? savedNotes;
+      return savedStatus !== draftStatus || savedNotes !== draftNotes;
+    });
+  }, [students, existingRecords, draftRecords]);
+
+  const handleMark = (studentId, status) => {
+    setDraftRecords((prev) => ({
+      ...prev,
+      [studentId]: {
+        status,
+        notes: prev[studentId]?.notes ?? existingRecords.find((record) => record.student_id === studentId)?.notes ?? '',
+      },
+    }));
   };
 
   const handleNotesChange = (studentId, notes) => {
-    const existing = getRecord(studentId);
-    if (existing) {
-      notesMutation.mutate({ studentId, notes });
+    setDraftRecords((prev) => ({
+      ...prev,
+      [studentId]: {
+        status: prev[studentId]?.status ?? existingRecords.find((record) => record.student_id === studentId)?.status ?? '',
+        notes,
+      },
+    }));
+  };
+
+  const handleSaveDemoChanges = async () => {
+    if (!canEdit) {
+      return;
+    }
+
+    const changedStudents = students.filter((student) => {
+      const savedRecord = existingRecords.find((record) => record.student_id === student.id);
+      const draftRecord = draftRecords[student.id] || {};
+      const savedStatus = savedRecord?.status || '';
+      const savedNotes = savedRecord?.notes || '';
+      const draftStatus = draftRecord.status ?? savedStatus;
+      const draftNotes = draftRecord.notes ?? savedNotes;
+      return savedStatus !== draftStatus || savedNotes !== draftNotes;
+    });
+
+    if (changedStudents.length === 0) {
+      toast.info('No attendance changes to save.');
+      return;
+    }
+
+    try {
+      await Promise.all(
+        changedStudents.flatMap((student) => {
+          const savedRecord = existingRecords.find((record) => record.student_id === student.id);
+          const draftRecord = draftRecords[student.id] || {};
+          const tasks = [];
+          if ((draftRecord.status ?? '') !== (savedRecord?.status ?? '')) {
+            tasks.push(saveMutation.mutateAsync({ studentId: student.id, field: 'status', value: draftRecord.status || null }));
+          }
+          if ((draftRecord.notes ?? '') !== (savedRecord?.notes ?? '')) {
+            tasks.push(notesMutation.mutateAsync({ studentId: student.id, notes: draftRecord.notes || '' }));
+          }
+          return tasks;
+        }),
+      );
+
+      await queryClient.invalidateQueries({ queryKey: ['attendance'] });
+      toast.success(
+        demoMode
+          ? 'Demo attendance changes saved locally.'
+          : 'Attendance changes saved.',
+      );
+    } catch (error) {
+      toast.error('Failed to save attendance changes.');
     }
   };
 
@@ -132,7 +224,8 @@ export default function Attendance() {
                               : 'bg-blue-500 hover:bg-blue-600'
                             : ''
                         }`}
-                        onClick={() => handleMark(student.id, 'status', status)}
+                        onClick={() => handleMark(student.id, status)}
+                        disabled={!canEdit}
                       >
                         {statusIcon(status)} {status}
                       </Button>
@@ -142,19 +235,28 @@ export default function Attendance() {
 
                 </div>
 
-                {record && (
-                  <div className="mt-3">
-                    <Textarea
-                      placeholder="Add notes..."
-                      defaultValue={record.notes || ''}
-                      onBlur={(e) => handleNotesChange(student.id, e.target.value)}
-                      className="h-16 text-sm"
-                    />
-                  </div>
-                )}
+                <div className="mt-3">
+                  <Textarea
+                    placeholder={canEdit ? 'Add attendance note...' : 'Attendance note'}
+                    value={record?.notes || ''}
+                    onChange={(e) => handleNotesChange(student.id, e.target.value)}
+                    className="h-16 text-sm"
+                    readOnly={!canEdit}
+                  />
+                </div>
               </Card>
             );
           })}
+          {canEdit && (
+            <div className="flex justify-end pt-2">
+              <Button
+                onClick={handleSaveDemoChanges}
+                disabled={!hasUnsavedChanges || saveMutation.isPending || notesMutation.isPending}
+              >
+                Save Demo Changes
+              </Button>
+            </div>
+          )}
         </div>
       )}
     </div>
