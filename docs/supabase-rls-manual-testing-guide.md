@@ -123,6 +123,7 @@ Notes:
 - The script uses anon key only and does not use service role key.
 - It signs in each fake user, queries key tables, prints PASS/CHECK/WARNING, then signs out.
 - It is a smoke test, not a full assertion suite.
+- If a table check fails, the script prints full Supabase error context (message, code, details, hint, table, user email/role).
 
 ## 8) Recommended next implementation step
 

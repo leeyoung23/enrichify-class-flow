@@ -43,12 +43,21 @@ function statusLine(kind, message) {
   console.log(`[${kind}] ${message}`);
 }
 
+function formatSupabaseError(error) {
+  if (!error) return "unknown error";
+  const message = error.message || "(no message)";
+  const code = error.code || "(no code)";
+  const details = error.details || "(no details)";
+  const hint = error.hint || "(no hint)";
+  return `message="${message}" code="${code}" details="${details}" hint="${hint}"`;
+}
+
 async function countRows(client, tableName, filterBuilder = (q) => q) {
   let query = client.from(tableName).select("*", { count: "exact", head: true });
   query = filterBuilder(query);
   const { count, error } = await query;
   if (error) {
-    return { ok: false, count: 0, error: error.message };
+    return { ok: false, count: 0, error };
   }
   return { ok: true, count: count ?? 0 };
 }
@@ -152,7 +161,10 @@ async function runForUser(user) {
   for (const table of tableChecks) {
     const result = await countRows(client, table);
     if (!result.ok) {
-      statusLine("WARNING", `${user.email}: ${table} query failed (${result.error})`);
+      statusLine(
+        "WARNING",
+        `${user.email} [${user.role}] table=${table} query failed (${formatSupabaseError(result.error)})`,
+      );
       continue;
     }
     counts[table] = result.count;
@@ -161,11 +173,29 @@ async function runForUser(user) {
 
   if (user.role === "branch_supervisor") {
     const archived = await countRows(client, "sales_kit_resources", (q) => q.eq("status", "archived"));
+    if (!archived.ok) {
+      statusLine(
+        "WARNING",
+        `${user.email} [${user.role}] table=sales_kit_resources(status=archived) query failed (${formatSupabaseError(archived.error)})`,
+      );
+    }
     counts._salesKitArchived = archived.ok ? archived.count : -1;
   }
   if (user.role === "parent") {
     const draftComments = await countRows(client, "parent_comments", (q) => q.eq("status", "draft"));
     const draftReports = await countRows(client, "weekly_progress_reports", (q) => q.eq("status", "draft"));
+    if (!draftComments.ok) {
+      statusLine(
+        "WARNING",
+        `${user.email} [${user.role}] table=parent_comments(status=draft) query failed (${formatSupabaseError(draftComments.error)})`,
+      );
+    }
+    if (!draftReports.ok) {
+      statusLine(
+        "WARNING",
+        `${user.email} [${user.role}] table=weekly_progress_reports(status=draft) query failed (${formatSupabaseError(draftReports.error)})`,
+      );
+    }
     counts._parentCommentsDraft = draftComments.ok ? draftComments.count : -1;
     counts._weeklyReportsDraft = draftReports.ok ? draftReports.count : -1;
   }
