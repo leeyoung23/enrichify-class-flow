@@ -1,7 +1,7 @@
 import { Toaster } from "@/components/ui/toaster"
 import { QueryClientProvider } from '@tanstack/react-query'
 import { queryClientInstance } from '@/lib/query-client'
-import { BrowserRouter as Router, Route, Routes } from 'react-router-dom';
+import { BrowserRouter as Router, Link, Navigate, Route, Routes, useLocation } from 'react-router-dom';
 import PageNotFound from './lib/PageNotFound';
 import { AuthProvider, useAuth } from '@/lib/AuthContext';
 import UserNotRegisteredError from '@/components/UserNotRegisteredError';
@@ -31,10 +31,41 @@ import PublicWelcome from '@/pages/PublicWelcome';
 import AuthPreview from '@/pages/AuthPreview';
 import SalesKit from '@/pages/SalesKit';
 import StaffTimeClock from '@/pages/StaffTimeClock';
-import { SupabaseAuthStateProvider } from '@/hooks/useSupabaseAuthState';
+import { SupabaseAuthStateProvider, useSupabaseAuthState } from '@/hooks/useSupabaseAuthState';
+import { getSelectedDemoRole } from '@/services/authService';
+import { sanitizeReturnUrlForRedirect } from '@/lib/supabaseAuthReturnUrl';
+
+function SupabaseProfileMissing() {
+  const { error } = useSupabaseAuthState();
+  return (
+    <div className="fixed inset-0 flex items-center justify-center p-6 bg-background">
+      <div className="max-w-md rounded-lg border border-border bg-card p-6 space-y-4 text-center shadow-sm">
+        <h1 className="text-lg font-semibold tracking-tight">Profile not available</h1>
+        <p className="text-sm text-muted-foreground">
+          You are signed in with Supabase, but no usable application profile was loaded for this app.
+          {error?.message ? (
+            <span className="block mt-2 text-destructive">{error.message}</span>
+          ) : null}
+        </p>
+        <p className="text-xs text-muted-foreground">
+          Use Auth Preview to sign out and try again, or contact an administrator. You are not sent back to sign-in in a loop.
+        </p>
+        <Link
+          to="/auth-preview"
+          className="inline-block text-sm font-medium text-primary underline-offset-4 hover:underline"
+        >
+          Go to Auth Preview
+        </Link>
+      </div>
+    </div>
+  );
+}
 
 const AuthenticatedApp = () => {
+  const location = useLocation();
   const { isLoadingAuth, isLoadingPublicSettings, authError, navigateToLogin } = useAuth();
+  const { session, appUser, loading: supabaseAuthLoading, isSupabaseAuthAvailable } = useSupabaseAuthState();
+  const demoRole = getSelectedDemoRole();
 
   // Show loading spinner while checking app public settings or auth
   if (isLoadingPublicSettings || isLoadingAuth) {
@@ -53,6 +84,25 @@ const AuthenticatedApp = () => {
       // Redirect to login automatically
       navigateToLogin();
       return null;
+    }
+  }
+
+  // Phase 3C-1: Supabase session gate (demoRole and unconfigured Supabase unchanged)
+  if (!demoRole && isSupabaseAuthAvailable) {
+    if (supabaseAuthLoading) {
+      return (
+        <div className="fixed inset-0 flex items-center justify-center">
+          <div className="w-8 h-8 border-4 border-slate-200 border-t-slate-800 rounded-full animate-spin"></div>
+        </div>
+      );
+    }
+    if (session?.user && !appUser) {
+      return <SupabaseProfileMissing />;
+    }
+    if (!session) {
+      const returnTarget = sanitizeReturnUrlForRedirect(`${location.pathname}${location.search}`);
+      const qs = new URLSearchParams({ returnUrl: returnTarget });
+      return <Navigate to={`/auth-preview?${qs.toString()}`} replace />;
     }
   }
 

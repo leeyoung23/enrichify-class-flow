@@ -1,4 +1,5 @@
 import React, { useCallback, useState } from "react";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -9,6 +10,7 @@ import {
   signInWithEmailPassword,
   signOut,
 } from "@/services/supabaseAuthService.js";
+import { parseReturnUrlQueryParam } from "@/lib/supabaseAuthReturnUrl.js";
 
 const FAKE_USERS = [
   { label: "HQ Admin", email: "hq.demo@example.test" },
@@ -19,6 +21,8 @@ const FAKE_USERS = [
 ];
 
 export default function AuthPreview() {
+  const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [profileRow, setProfileRow] = useState(null);
@@ -63,6 +67,10 @@ export default function AuthPreview() {
       }
       setProfileRow(profile);
       setAppUser(mapProfileToAppUser(profile));
+      const nextPath = parseReturnUrlQueryParam(searchParams.get("returnUrl"));
+      if (nextPath) {
+        navigate(nextPath, { replace: true });
+      }
     } catch (err) {
       setStatusError(err?.message || "Unexpected error");
     } finally {
@@ -93,8 +101,9 @@ export default function AuthPreview() {
             production or real child data. Enter the same password you use for{" "}
             <code className="rounded bg-muted px-1 py-0.5 text-xs">npm run test:supabase:auth</code>{" "}
             (from your local env; nothing is shown here). The main app still uses{" "}
-            <code className="rounded bg-muted px-1 py-0.5 text-xs">demoRole</code> for preview; this page
-            does not change route guards.
+            <code className="rounded bg-muted px-1 py-0.5 text-xs">demoRole</code> for preview. After a
+            successful sign-in, if a safe internal <code className="rounded bg-muted px-1 py-0.5 text-xs">returnUrl</code>{" "}
+            query param is present, you are redirected back to that path.
           </p>
         </div>
 

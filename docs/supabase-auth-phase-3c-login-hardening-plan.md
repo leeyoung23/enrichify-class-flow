@@ -1,8 +1,8 @@
 # Supabase Auth — Phase 3C login / redirect hardening plan
 
-**Planning only:** no `AppLayout`, `AuthenticatedApp`, `AuthProvider`, or route changes are implied by this file alone. Preserve **`demoRole`**, **`/auth-preview`**, **`/welcome`**, and **demo/local fallback** until product explicitly removes them.
+**Phase 3C-1 is implemented** in **`src/App.jsx`** (`AuthenticatedApp`), **`src/pages/AuthPreview.jsx`** (post-sign-in **`returnUrl`**), and **`src/lib/supabaseAuthReturnUrl.js`**. **`AppLayout`** permission rules are unchanged. **3C-2+** (polished **`/login`**, role landing, production polish) remain future work.
 
-**Related:** `docs/supabase-auth-route-guard-integration-plan.md`, `docs/supabase-auth-phase-3b-checkpoint.md`, `docs/product-feature-gap-audit.md`, `src/App.jsx`, `src/components/layout/AppLayout.jsx`, `src/hooks/useSupabaseAuthState.jsx`, `src/services/supabaseAuthService.js`, `src/pages/AuthPreview.jsx`.
+**Related:** `docs/supabase-auth-route-guard-integration-plan.md`, `docs/supabase-auth-phase-3b-checkpoint.md`, `docs/product-feature-gap-audit.md`, `src/components/layout/AppLayout.jsx`, `src/hooks/useSupabaseAuthState.jsx`, `src/services/supabaseAuthService.js`.
 
 ---
 
@@ -15,7 +15,7 @@
 | **`/welcome`** | Public marketing-style entry; outside authenticated shell. |
 | **`useSupabaseAuthState`** | Provider wraps **`Router`**; exposes **`session`**, **`appUser`**, **`loading`**, etc. |
 | **`AppLayout` (Phase 3B)** | When **no `demoRole`**, can use **`appUser`** for **`effectiveUser`** / route permissions; shows a **loading** shell while Supabase resolves; falls back to **`authService.getCurrentUser()`** (Base44-oriented) when no **`appUser`**. |
-| **Forced redirects** | **None** today for “not signed in” on protected routes; unauthenticated users may see restricted/empty shell per existing behaviour. |
+| **Forced redirects (3C-1)** | When **Supabase is configured**, **`demoRole`** is absent, and auth is **resolved** with **no session**, **`AuthenticatedApp`** redirects to **`/auth-preview?returnUrl=…`**. When Supabase is **not configured**, no Supabase-based redirect (legacy **`AppLayout`** fallback unchanged). |
 | **Production login UI** | Not shipped; **`/auth-preview`** is dev-oriented copy and layout. |
 
 ---
@@ -29,7 +29,7 @@
 | **Protected app (`/*` under `AppLayout`)** | When **`getSelectedDemoRole()`** is **absent** **and** there is **no valid Supabase session** (and optionally **no** acceptable legacy user if still enabled), **redirect** to **`/auth-preview`** (or future **`/login`**) with optional **`returnUrl`** / **`state.from`**. |
 | **Signed-in Supabase user** | With **`profiles`** row mapped to **`appUser`**, user reaches **role-appropriate** routes via existing **`permissionService`** + **`AppLayout`** (no “role picker” overriding **`profiles.role`**). |
 | **`demoRole` present** | **No redirect** to login for lack of Supabase session; preview identity wins; do not clear demo user because session is null. |
-| **Base44 / legacy** | Until removed, define explicit precedence with Phase 3B: **Supabase `appUser`** when session valid; else legacy **`getCurrentUser()`**; Phase 3C redirect should fire only when **both** paths indicate unauthenticated (product decision to confirm in implementation). |
+| **Base44 / legacy (3C-1 as shipped)** | When **`isSupabaseAuthAvailable`**, the **gate runs before `AppLayout`**; users **without** a Supabase session are sent to **`/auth-preview`** even if a legacy path could theoretically apply. When Supabase is **not** configured, **`AppLayout`** still uses **`getCurrentUser()`** fallback as in Phase **3B**. |
 
 ---
 
@@ -90,7 +90,7 @@
 
 | Sub-phase | Scope |
 |-----------|--------|
-| **3C-1** | Add **redirect** for unauthenticated protected tree using **existing `/auth-preview`** + **`returnUrl`**; **`demoRole`** and public routes unchanged; minimal copy updates on **`/auth-preview`** if needed (“Sign in to continue”). |
+| **3C-1** | **Done** — **`AuthenticatedApp`** redirects when no **`demoRole`**, Supabase configured, resolved **no session**; **`returnUrl`** sanitised via **`supabaseAuthReturnUrl.js`**; **session + no `appUser`** → **`SupabaseProfileMissing`** (no loop); **`AuthPreview`** navigates to safe **`returnUrl`** after sign-in. |
 | **3C-2** | Evolve **`/auth-preview`** UI into a **nicer `/login`** (or duplicate page + redirect); shared sign-in logic in a small module to avoid drift. |
 | **3C-3** | **Post-login routing** — optional default path by **`profiles.role`** (e.g. parent → **`/parent-view`**); keep **`returnUrl`** when safe. |
 | **3C-4** | **Production polish** — branding, accessibility, reset password flow, rate-limit messaging, analytics hooks (product-dependent). |
@@ -106,6 +106,22 @@ Copy-paste for a future coding task:
 > **Phase 3C-1 — Redirect unauthenticated users to existing `/auth-preview`.**  
 > In **`src/App.jsx`** / **`AuthenticatedApp`** (or a dedicated wrapper), after **`AuthProvider`** and **`SupabaseAuthStateProvider`** are available: if the route is **not** public (`/welcome`, `/auth-preview`) and **`getSelectedDemoRole()`** is **null** and **`useSupabaseAuthState()`** reports **not loading** with **no session** / **no `appUser`** (and per product: **no** acceptable **`getCurrentUser()`** legacy user), **`Navigate`** to **`/auth-preview`** with a safe **`returnUrl`** (encode pathname + search; exclude auth-preview self). If **`demoRole`** is set, **never** apply this redirect. If Supabase is **not configured**, do **not** strand users — fall back to legacy-only behaviour. **Do not** remove **`demoRole`** or demo data paths. **Do not** add writes, uploads, or AI calls. Run **`npm run build`**, **`lint`**, **`typecheck`**, **`test:supabase:read`**, **`test:supabase:auth`**.
 
+*(Implemented — see **Phase 3C-1 implementation notes** below; use this prompt only for regressions or re-implementation.)*
+
 ---
 
-*Document type: planning. Phase 3C is not implemented until the above prompts are executed in code.*
+## Phase 3C-1 implementation notes (exact behaviour)
+
+1. **Public:** **`/welcome`** and **`/auth-preview`** are defined **outside** the **`/*`** + **`AuthProvider`** tree — never hit **`AuthenticatedApp`**, so **never** redirected by this gate.
+2. **`demoRole`:** If **`getSelectedDemoRole()`** is non-null, the Supabase session gate in **`AuthenticatedApp`** is **skipped** entirely — preview behaviour unchanged (including no extra redirect for missing Supabase session).
+3. **Supabase off:** If **`!isSupabaseAuthAvailable`**, the gate is **skipped** — same as pre–3C-1 for local dev without env.
+4. **Loading:** If the gate applies and **`useSupabaseAuthState().loading`** is true, the **same** full-screen spinner as Base44 auth loading is shown.
+5. **No session (gate applies, resolved):** **`Navigate`** to **`/auth-preview?returnUrl=<encoded safe path>`** where **`returnUrl`** defaults to **`/`** if the current path would be unsafe (e.g. **`/auth-preview`**).
+6. **Session but no `appUser`:** Renders **`SupabaseProfileMissing`** (copy + link to **`/auth-preview`**); **does not** redirect to **`/auth-preview`** in a loop.
+7. **Sign-in return:** **`AuthPreview`** after successful profile load calls **`navigate(safeReturn)`** when **`returnUrl`** parses to a safe internal path; otherwise the user stays on **`/auth-preview`** with the profile card.
+
+**Next phase:** **3C-2** — polished **`/login`** (or evolve **`/auth-preview`** UI) without changing this redirect contract; **3C-3** — optional default landing by **`profiles.role`**.
+
+---
+
+*Document type: planning + implementation notes. Phase **3C-1** is in code; **3C-2** and above are not.*
