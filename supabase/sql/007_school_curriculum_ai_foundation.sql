@@ -202,19 +202,6 @@ as $$
   limit 1
 $$;
 
-create or replace function public.homework_branch_id(homework_uuid uuid)
-returns uuid
-language sql
-stable
-security definer
-set search_path = public
-as $$
-  select hr.branch_id
-  from public.homework_records hr
-  where hr.id = homework_uuid
-  limit 1
-$$;
-
 -- -----------------------------------------------------------------------------
 -- 9) Enable RLS (including existing school tables previously missing in 003)
 -- -----------------------------------------------------------------------------
@@ -283,13 +270,12 @@ create policy curriculum_mappings_select_staff on public.curriculum_mappings for
   or public.current_user_role() in ('branch_supervisor', 'teacher')
 );
 
+-- Writes are HQ-only: rows have no branch_id, so branch_supervisor cannot be scoped to "own branch".
 drop policy if exists curriculum_mappings_modify_staff on public.curriculum_mappings;
 create policy curriculum_mappings_modify_staff on public.curriculum_mappings for all using (
   public.is_hq_admin()
-  or public.current_user_role() = 'branch_supervisor'
 ) with check (
   public.is_hq_admin()
-  or public.current_user_role() = 'branch_supervisor'
 );
 
 -- learning_objectives: staff-only for now.
@@ -302,10 +288,8 @@ create policy learning_objectives_select_staff on public.learning_objectives for
 drop policy if exists learning_objectives_modify_staff on public.learning_objectives;
 create policy learning_objectives_modify_staff on public.learning_objectives for all using (
   public.is_hq_admin()
-  or public.current_user_role() = 'branch_supervisor'
 ) with check (
   public.is_hq_admin()
-  or public.current_user_role() = 'branch_supervisor'
 );
 
 -- student_subject_enrolments
@@ -467,10 +451,14 @@ create policy teacher_approval_logs_select_staff on public.teacher_approval_logs
   or public.current_user_role() in ('branch_supervisor', 'teacher')
 );
 
+-- Actor must match JWT (HQ may insert on behalf of others only if product later allows; keep actor = self for staff).
 drop policy if exists teacher_approval_logs_insert_staff on public.teacher_approval_logs;
 create policy teacher_approval_logs_insert_staff on public.teacher_approval_logs for insert with check (
   public.is_hq_admin()
-  or public.current_user_role() in ('branch_supervisor', 'teacher')
+  or (
+    public.current_user_role() in ('branch_supervisor', 'teacher')
+    and profile_id = auth.uid()
+  )
 );
 
 -- -----------------------------------------------------------------------------

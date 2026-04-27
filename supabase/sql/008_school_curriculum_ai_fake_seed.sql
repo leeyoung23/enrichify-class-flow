@@ -2,6 +2,9 @@
 -- Fake/demo seed additions for 007 foundation tables.
 -- Do NOT auto-run. Manual review + execution only in fake/demo environment.
 -- No real student/parent/teacher/school data.
+--
+-- Prerequisites: run 001–006 first, then 007, then this file. Requires 005 fake auth users
+-- and deterministic demo IDs from 005 (students, classes, homework_records, etc.).
 
 -- Curriculum mapping (demo)
 insert into public.curriculum_mappings (
@@ -93,7 +96,7 @@ insert into public.student_learning_profiles (
   'Demo AI summary draft. Not for production.',
   (select id from auth.users where email = 'teacher.demo@example.test' limit 1)
 )
-on conflict (id) do nothing;
+on conflict (student_id) do nothing;
 
 -- Homework marking result draft (single demo row)
 insert into public.homework_marking_results (
