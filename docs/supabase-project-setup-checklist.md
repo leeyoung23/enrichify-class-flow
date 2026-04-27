@@ -98,7 +98,7 @@ Connect frontend in safe phases:
 3. Connect read-only data first
 4. Then auth/profile loading
 5. Then attendance/homework flows
-6. Then parent communication flows
+6. Then Parent Updates flows (`/parent-updates` — quick comments + weekly reports)
 7. Then uploads
 8. Sending/report automation comes later
 

@@ -33,6 +33,8 @@ The React app continues to use existing read-only slices (e.g. Sales Kit, branch
 
 **Parent portal — Class Memories (demo UI only):** **`ParentView`** includes a **Latest Memory** / **Class Memories History** block with **gradient placeholders and fake captions** (parent-facing wording: “Class Memories”, not “Class Photo” as the product label). This is **not** backed by `class_media`, Storage, or Supabase reads; **real Memories** remain a future migration + write/upload phase.
 
+**Teacher/staff — Parent Updates:** The product-facing module for quick parent comments and weekly progress reports is **Parent Updates** (route **`/parent-updates`**). Internal code may still use names such as `ParentUpdates.jsx` or `parentUpdates` icons; the visible sidebar and page title use **Parent Updates**.
+
 ## 5) No AI API connected
 
 There is **no** OpenAI or other LLM API integration in the frontend or as a required runtime path. Any future AI orchestration remains planned for **server-side** patterns (e.g. Edge Functions) with keys **never** exposed to the client.

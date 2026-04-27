@@ -271,7 +271,7 @@ export default function ParentUpdates() {
   return (
     <div>
       <PageHeader
-        title="Parent Communication"
+        title="Parent Updates"
         description={isTeacher ? 'Manage quick parent comments and weekly progress reports for assigned demo students. Nothing is sent automatically.' : 'Review parent comments and weekly progress reports in demo mode only.'}
       />
 
@@ -286,7 +286,7 @@ export default function ParentUpdates() {
           <div className="lg:col-span-3 space-y-4">
             {isTeacher && (
               <Card className="p-6">
-                <h3 className="font-semibold mb-2">Parent Communication</h3>
+                <h3 className="font-semibold mb-2">Parent Updates</h3>
                 <p className="text-sm text-muted-foreground mb-4">Create teacher-approved quick comments after class, or prepare fixed weekly progress reports for parent review.</p>
 
                 <div className="inline-flex rounded-lg border border-border p-1 mb-4">
@@ -519,7 +519,7 @@ export default function ParentUpdates() {
             <Card className="p-6">
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4">
                 <div>
-                  <h3 className="font-semibold">Parent Communication Records</h3>
+                  <h3 className="font-semibold">All updates</h3>
                   <p className="text-sm text-muted-foreground">Quick comments and weekly reports stay in demo mode until approved and released.</p>
                 </div>
                 <div className="w-full sm:w-[220px]">

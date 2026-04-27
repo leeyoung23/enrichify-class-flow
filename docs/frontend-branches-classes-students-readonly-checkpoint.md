@@ -67,7 +67,7 @@ Note:
 - Dashboard metrics
 - Attendance
 - Homework
-- Parent Communication
+- Parent Updates
 - Class Session
 - Fee Tracking
 - Uploads

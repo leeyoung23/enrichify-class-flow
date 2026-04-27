@@ -89,7 +89,7 @@ Run setup in this sequence inside Supabase (manual console planning order):
 1. **Enums first**
    - Define role/status/type enums needed by schema.
 2. **MVP tables second**
-   - Create core tables first (profiles, branches, classes, students, guardians, links, assignments, attendance, homework, parent communication, etc.).
+   - Create core tables first (profiles, branches, classes, students, guardians, links, assignments, attendance, homework, parent updates / parent-facing reports, etc.).
 3. **Foreign keys**
    - Add FK constraints after parent tables are in place.
 4. **Indexes**

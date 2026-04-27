@@ -2,7 +2,7 @@
 
 **Planning only:** no UI changes, no Supabase Storage wiring, no runtime writes, and no new tables are implied by this document. Parent-facing terminology stays **Memories** / **Class Memories** (not “Class Photo” as the primary product label). **`demoRole`** and existing **Parent View** placeholders remain until later phases.
 
-**Related:** `docs/supabase-007-008-application-checkpoint.md` (Class Memories / `class_media` planning), `src/pages/ParentView.jsx` (Latest Memory / Class Memories History demo), `src/pages/ClassSession.jsx`, `src/pages/ParentUpdates.jsx`.
+**Related:** `docs/supabase-007-008-application-checkpoint.md` (Class Memories / `class_media` planning), `src/pages/ParentView.jsx` (Latest Memory / Class Memories History demo), `src/pages/ClassSession.jsx`, `src/pages/ParentUpdates.jsx` (**Parent Updates** module at **`/parent-updates`**).
 
 ---
 
@@ -24,7 +24,7 @@ Teachers create Memories so families feel connected to **what happened in class*
 | Priority | Surface | Rationale |
 |----------|---------|-----------|
 | **Primary** | **Class Session** page — control such as **“+ Add Memory”** | Teachers are **in context** of a live or wrap-up session; capture is **timely** and naturally tied to **`class_id`** / **session** metadata. |
-| **Secondary** | **Parent Communication** (`ParentUpdates`) — **“Attach Memory”** or select existing Memory when composing parent comments or **weekly reports** | Links narrative updates to **concrete class moments** without forcing a second navigation; reuses **approved** Memories where policy requires. |
+| **Secondary** | **Parent Updates** (`ParentUpdates.jsx`, **`/parent-updates`**) — **“Attach Memory”** or select existing Memory when composing parent comments or **weekly reports** | Links narrative updates to **concrete class moments** without forcing a second navigation; reuses **approved** Memories where policy requires. |
 | **Parent portal** | **View only** | Parents consume **Latest Memory** and **Class Memories History**; **no upload** in parent UI. |
 
 **Out of scope for teacher upload:** HQ-only bulk import may be a **later** admin tool; not required for MVP teacher flow.
@@ -33,8 +33,8 @@ Teachers create Memories so families feel connected to **what happened in class*
 
 ## 3) Teacher workflow (target)
 
-1. **Context:** Teacher selects **class** (and optionally **session** / date) — already implied by Class Session or Parent Communication flows.
-2. **Entry:** Tap **“+ Add Memory”** (Class Session) or attach from Parent Communication.
+1. **Context:** Teacher selects **class** (and optionally **session** / date) — already implied by Class Session or **Parent Updates** flows.
+2. **Entry:** Tap **“+ Add Memory”** (Class Session) or attach from **Parent Updates**.
 3. **Media:** Upload **photo/video** (future Storage) or, in **demo phase**, placeholder / local-only preview until Storage exists.
 4. **Metadata:** **Caption** (required or strongly encouraged); optional **title**; optional link to **session_id** / lesson note.
 5. **Visibility / lifecycle:** Choose **draft**, **submit for review**, or (if policy allows) **visible to parents** — product default should bias toward **review** for safeguarding.
@@ -111,7 +111,7 @@ Indexes: `(class_id, created_at desc)`, `(branch_id, visibility_status)`, `(uplo
 | Location | Element |
 |----------|---------|
 | **Class Session** | **“+ Add Memory”** button → modal or side panel; **Phase 3** can use **local state only** (no Storage). |
-| **Parent Communication** | Small **“Attach Memory”** strip: pick from **draft** Memories for this class or “create new” deep-link to Class Session. |
+| **Parent Updates** | Small **“Attach Memory”** strip: pick from **draft** Memories for this class or “create new” deep-link to Class Session. |
 | **Parent View** | **Already** has **Latest Memory** + **Class Memories History** placeholders — replace with **read** queries when backend exists. |
 
 Do **not** add real uploads until Storage + RLS are ready.

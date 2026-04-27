@@ -12,7 +12,7 @@ The prototype is in a stable demo state:
 - Public `/welcome` page remains available.
 - Role dashboards are active for HQ Admin, Branch Supervisor, Teacher, Parent, and Student demo roles.
 - Attendance interaction supports demo editing for Teacher and Branch Supervisor, with HQ review/read-only behavior.
-- Parent Communication workflow is present and separated into:
+- Parent Updates workflow is present and separated into:
   - Quick Parent Comment
   - Weekly Progress Report
 - Weekly progress report demo flow includes draft, approval, and release stages.

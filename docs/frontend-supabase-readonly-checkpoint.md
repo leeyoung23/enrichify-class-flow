@@ -30,7 +30,7 @@ The following areas remain demo/local-only and are not Supabase-wired in this ch
 - dashboards
 - attendance
 - homework
-- parent communication
+- parent updates (`/parent-updates` — product label **Parent Updates**)
 - class session
 - fee tracking
 - uploads

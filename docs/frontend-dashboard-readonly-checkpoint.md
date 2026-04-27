@@ -42,7 +42,7 @@ Source label behavior:
 
 - Attendance save/edit behavior
 - Homework upload/review workflows
-- Parent Communication release flows
+- Parent Updates release flows
 - Weekly report release flows
 - Teacher task updates
 - Fee receipt uploads/verification writes

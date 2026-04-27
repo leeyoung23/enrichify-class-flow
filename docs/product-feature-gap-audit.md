@@ -15,7 +15,7 @@ These routes/pages render in the authenticated shell (or public routes) with rea
 | **Org structure** | Branches, Classes, Teachers, Students list pages. |
 | **Attendance** | Attendance views (demo-backed lists / filters). |
 | **Homework** | Homework views and status summaries. |
-| **Parent Communication** | Parent updates / reports workflow UI (`ParentUpdates.jsx`) including draft/review patterns. |
+| **Parent Updates** | Quick parent comments and weekly progress reports workflow UI (`ParentUpdates.jsx`, route **`/parent-updates`**) including draft/review patterns. |
 | **Class Session** | Session-oriented teacher UI (`ClassSession.jsx`). |
 | **My Tasks** | Teacher task queue style UI. |
 | **Leads & enrolment** | Leads page. |
@@ -146,7 +146,7 @@ Ordered for **risk reduction** and **dependency clarity** (high-level; paralleli
 1. **Real auth / login hardening (Phase 3C+)** — Redirect or clear unauthenticated experience; sign-out coherence; reduce double-loading; keep `demoRole` until Supabase parity proven.
 2. **Schema + RLS for first write domain** — Pick one vertical (e.g. **attendance** or **teacher_tasks**) with small blast radius; ship **server-validated** writes from authenticated users only.
 3. **Storage foundation** — One private bucket pattern + signed URL flow; apply first to **fee receipts** or **homework uploads** (product priority).
-4. **Parent communication write/read parity** — Parent comments + weekly reports: persist drafts, teacher review, parent release; align with existing UI states.
+4. **Parent Updates write/read parity** — Parent comments + weekly reports: persist drafts, teacher review, parent release; align with existing UI states.
 5. **AI Edge Functions** — Behind feature flags: **homework marking** OR **weekly report** draft generation first; persist to **`ai_generation_*`** / **`homework_marking_results`** as designed in 007/008.
 6. **Sales Kit HQ management** — Writes + storage for resources; keep approval gate.
 7. **School / curriculum onboarding (staff)** — CRUD or import flows for mappings/objectives once parent/staff reads need them in UI.

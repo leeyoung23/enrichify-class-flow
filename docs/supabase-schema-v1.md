@@ -482,7 +482,7 @@ Role access rules:
 
 ### `parent_reports`
 
-Purpose: parent communication workflow.
+Purpose: Parent Updates workflow (quick comments, weekly reports; product-facing name).
 
 Key fields:
 
