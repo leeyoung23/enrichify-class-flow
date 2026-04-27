@@ -28,6 +28,7 @@ import MyTasks from '@/pages/MyTasks';
 import PrototypeSummary from '@/pages/PrototypeSummary';
 import FeeTracking from '@/pages/FeeTracking';
 import PublicWelcome from '@/pages/PublicWelcome';
+import SalesKit from '@/pages/SalesKit';
 
 const AuthenticatedApp = () => {
   const { isLoadingAuth, isLoadingPublicSettings, authError, navigateToLogin } = useAuth();
@@ -76,6 +77,7 @@ const AuthenticatedApp = () => {
         <Route path="/my-tasks" element={<MyTasks />} />
         <Route path="/prototype-summary" element={<PrototypeSummary />} />
         <Route path="/fee-tracking" element={<FeeTracking />} />
+        <Route path="/sales-kit" element={<SalesKit />} />
         <Route path="/parent-view" element={<ParentView />} />
       </Route>
       <Route path="*" element={<PageNotFound />} />

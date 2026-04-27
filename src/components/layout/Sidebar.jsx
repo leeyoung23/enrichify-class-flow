@@ -3,7 +3,7 @@ import { Link, useLocation } from 'react-router-dom';
 import { 
   LayoutDashboard, Building2, BookOpen, Users, GraduationCap, 
   ClipboardCheck, MessageSquarePlus, LogOut, ChevronLeft, ChevronRight,
-  PenLine, UserPlus, PlayCircle, ClipboardPen, ChartNoAxesColumn, Bot, FolderGit2, BarChart3, CalendarRange, BellRing, FileText, Wallet
+  PenLine, UserPlus, PlayCircle, ClipboardPen, ChartNoAxesColumn, Bot, FolderGit2, BarChart3, CalendarRange, BellRing, FileText, Wallet, Briefcase
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { base44 } from '@/api/base44Client';
@@ -39,6 +39,7 @@ const ICONS = {
   myTasks: BellRing,
   prototypeSummary: FileText,
   feeTracking: Wallet,
+  salesKit: Briefcase,
 };
 
 function withDemoRole(path, selectedDemoRole) {
