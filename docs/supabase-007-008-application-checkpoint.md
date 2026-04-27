@@ -31,6 +31,8 @@ All rows introduced by **008** are **explicitly fake** and for demo/testing only
 
 The React app continues to use existing read-only slices (e.g. Sales Kit, branches, classes, students, dashboard summary) and **demo/local fallback** via `demoRole` and the service layer. **No new UI or service reads** are required to have been wired to `curriculum_mappings`, `learning_objectives`, `student_subject_enrolments`, `student_learning_profiles`, homework marking, or AI tracking tables as of this checkpoint.
 
+**Parent portal — Class Memories (demo UI only):** **`ParentView`** includes a **Latest Memory** / **Class Memories History** block with **gradient placeholders and fake captions** (parent-facing wording: “Class Memories”, not “Class Photo” as the product label). This is **not** backed by `class_media`, Storage, or Supabase reads; **real Memories** remain a future migration + write/upload phase.
+
 ## 5) No AI API connected
 
 There is **no** OpenAI or other LLM API integration in the frontend or as a required runtime path. Any future AI orchestration remains planned for **server-side** patterns (e.g. Edge Functions) with keys **never** exposed to the client.
@@ -64,15 +66,17 @@ Product direction for a later phase (schema and storage **not** implemented in t
   - **Student (optional later):** simplified view consistent with age and policy.
 - **RLS / storage alignment:** Policies must mirror branch and class assignment; frontend filtering is never a substitute for RLS and signed URL rules.
 
-This section is **planning only**—no bucket, table, or UI work is required by this document.
+This section is **planning only** for schema and storage — the **demo** Memories block in **`ParentView`** does not satisfy or replace this work.
 
 ---
 
 ## 8) Recommended next milestones
 
 1. **Smoke tests:** Foundation table read counts are covered in `scripts/supabase-readonly-smoke-test.mjs`; tighten assertions or add SQL verification as policies evolve.
-2. **Class Memories (internal `class_media` / `class_photos`):** Finalise metadata schema sketch and Storage policy draft for teacher-uploaded Memories; implement in a **later** SQL migration after security review.
+2. **Class Memories (internal `class_media` / `class_photos`):** Finalise metadata schema sketch and Storage policy draft for teacher-uploaded Memories; implement in a **later** SQL migration after security review — the current UI is **placeholder only** (no bucket, no writes).
 3. **Auth / writes:** Either deepen **real auth / login** hardening or plan the **first intentional Supabase write flow** (e.g. school profile or teacher Memory draft) behind RLS—still fake-data-first in non-prod.
+
+**Staff Time Clock (related prototype):** A separate **demo** page **`/staff-time-clock`** exists for staff roles with **no** backend persistence; see `docs/staff-time-clock-roadmap.md`.
 
 ---
 

@@ -8,7 +8,7 @@ import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
 import {
   GraduationCap, CheckCircle2, XCircle, Clock, Umbrella,
-  BookOpen, BookX, Minus, Upload, ExternalLink, FileText, Loader2
+  BookOpen, BookX, Minus, Upload, ExternalLink, FileText, Loader2, Sparkles
 } from 'lucide-react';
 
 const ATTENDANCE_ICONS = {
@@ -335,6 +335,108 @@ function HomeworkUpload({ items }) {
   );
 }
 
+const DEMO_CLASS_MEMORIES_HISTORY = [
+  {
+    id: 'm1',
+    date: '18 Apr 2026',
+    caption: 'Small groups shared their story summaries — great energy!',
+    label: 'Class Alpha · Literacy block',
+  },
+  {
+    id: 'm2',
+    date: '10 Apr 2026',
+    caption: 'Outdoor shapes hunt — linking maths to the playground.',
+    label: 'Class Alpha · Maths',
+  },
+  {
+    id: 'm3',
+    date: '3 Apr 2026',
+    caption: 'Music and movement warm-up before handwriting.',
+    label: 'Class Alpha · Morning session',
+  },
+];
+
+/**
+ * Parent-facing Class Memories demo only (no class_media / storage; fake captions and placeholders).
+ * Internal schema may use class_media — not wired here.
+ */
+function ClassMemoriesDemoSection({ className }) {
+  const displayClass = className || 'Demo Class';
+
+  return (
+    <div className="space-y-4 mb-6">
+      <div className="flex items-start gap-2">
+        <Sparkles className="h-5 w-5 text-amber-500 shrink-0 mt-0.5" aria-hidden />
+        <div>
+          <h2 className="text-lg font-semibold tracking-tight">Latest Memory</h2>
+          <p className="text-sm text-muted-foreground mt-1">A recent moment from your child&apos;s class.</p>
+        </div>
+      </div>
+
+      <Card className="overflow-hidden border-amber-100/80 bg-gradient-to-b from-amber-50/40 to-card">
+        <CardContent className="p-0">
+          <div
+            className="h-40 w-full bg-gradient-to-br from-amber-100 via-rose-50 to-violet-100 flex items-center justify-center text-muted-foreground/70 text-xs px-4 text-center"
+            role="img"
+            aria-label="Demo placeholder for a class memory image"
+          >
+            Soft gradient placeholder (demo — not a real photo)
+          </div>
+          <div className="p-4 space-y-2">
+            <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
+              <Badge variant="outline">{displayClass}</Badge>
+              <span>24 Apr 2026</span>
+            </div>
+            <p className="text-sm font-medium leading-snug">
+              Wonderful focus during our group reading today — everyone contributed!
+            </p>
+            <p className="text-xs text-muted-foreground">— Ms. Taylor (demo caption)</p>
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              className="mt-1"
+              onClick={() => document.getElementById('class-memories-history')?.scrollIntoView({ behavior: 'smooth' })}
+            >
+              View Class Memories History
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
+
+      <Card id="class-memories-history">
+        <CardHeader className="pb-3">
+          <CardTitle className="text-base">Class Memories History</CardTitle>
+          <p className="text-sm text-muted-foreground font-normal">Past Class Memories for your child&apos;s class (demo).</p>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          {DEMO_CLASS_MEMORIES_HISTORY.map((item) => (
+            <div
+              key={item.id}
+              className="rounded-lg border border-border/80 overflow-hidden bg-card"
+            >
+              <div className="h-28 w-full bg-gradient-to-r from-sky-50 via-indigo-50 to-fuchsia-50 flex items-center justify-center text-[11px] text-muted-foreground/80 px-3 text-center">
+                Activity placeholder (demo)
+              </div>
+              <div className="p-3 space-y-1.5">
+                <div className="flex flex-wrap gap-2 text-xs text-muted-foreground">
+                  <span>{item.date}</span>
+                  <Badge variant="secondary" className="text-xs font-normal">{item.label}</Badge>
+                </div>
+                <p className="text-sm leading-relaxed">{item.caption}</p>
+              </div>
+            </div>
+          ))}
+          <p className="text-xs text-muted-foreground pt-1">
+            Demo only — real Class Memories will use a future class_media-style metadata table and Supabase Storage after the
+            write phase. No uploads or real media in this preview.
+          </p>
+        </CardContent>
+      </Card>
+    </div>
+  );
+}
+
 export default function ParentView() {
   const urlParams = new URLSearchParams(window.location.search);
   const studentId = urlParams.get('student');
@@ -438,6 +540,8 @@ export default function ParentView() {
             </div>
           </div>
         </div>
+
+        {!isDemoStudentPreview && <ClassMemoriesDemoSection className={cls?.name} />}
 
         {!isDemoStudentPreview && (
           <Card className="mb-6">

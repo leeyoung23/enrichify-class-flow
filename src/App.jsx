@@ -30,6 +30,7 @@ import FeeTracking from '@/pages/FeeTracking';
 import PublicWelcome from '@/pages/PublicWelcome';
 import AuthPreview from '@/pages/AuthPreview';
 import SalesKit from '@/pages/SalesKit';
+import StaffTimeClock from '@/pages/StaffTimeClock';
 import { SupabaseAuthStateProvider } from '@/hooks/useSupabaseAuthState';
 
 const AuthenticatedApp = () => {
@@ -65,6 +66,7 @@ const AuthenticatedApp = () => {
         <Route path="/teachers" element={<Teachers />} />
         <Route path="/students" element={<Students />} />
         <Route path="/attendance" element={<Attendance />} />
+        <Route path="/staff-time-clock" element={<StaffTimeClock />} />
         <Route path="/parent-updates" element={<ParentUpdates />} />
         <Route path="/homework" element={<Homework />} />
         <Route path="/leads" element={<Leads />} />

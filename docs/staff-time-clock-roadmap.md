@@ -1,6 +1,10 @@
 # Staff Time Clock Roadmap
 
-Planning only: staff **punch in / punch out** and related reporting. **No SQL, UI, or runtime implementation** is implied by this document. **Student attendance** remains a separate product area (`attendance_records` and related flows).
+Planning for staff **punch in / punch out** and related reporting. **Student attendance** remains a separate product area (`attendance_records` and related flows).
+
+**Demo UI (current):** A **placeholder** page exists at **`/staff-time-clock`** (`src/pages/StaffTimeClock.jsx`) for **HQ Admin**, **Branch Supervisor**, and **Teacher** roles only — **local state and fake tables**; **no Supabase writes**, no schema, no clock persistence. **Parents and students** have **no** nav link; the route is not in their allow lists.
+
+**Still future:** SQL (`staff_time_entries`, RLS), authenticated writes, storage, and production clock flows — see sections below.
 
 ---
 
@@ -119,10 +123,10 @@ All enforcement at **Postgres RLS**; UI checks are never sufficient.
 
 ## 10) Next recommended action
 
-**Finish Supabase Auth route guard integration (Phase 3A–3C in `docs/supabase-auth-route-guard-integration-plan.md`) before building production staff clock writes.**
+**Finish Supabase Auth route guard integration (Phase 3C redirect/login hardening in `docs/supabase-auth-route-guard-integration-plan.md`) before building production staff clock writes.**
 
-**Why:** Punch events must attach to the **real logged-in `profile_id`** with enforceable RLS. Until `AppLayout` / session reliably reflects Supabase profile (when not in `demoRole`), clock data would be ambiguous or tied to preview-only identity. Schema design (Phase 1–2) can proceed in parallel on paper, but **service + UI clock (Phases 3–4)** should follow **stable auth binding**.
+**Why:** Punch events must attach to the **real logged-in `profile_id`** with enforceable RLS. Until non-demo sessions reliably reflect Supabase `profiles` with RLS-tested inserts, clock data would be ambiguous. Schema design (Phase 1–2) can proceed in parallel on paper; **replace the demo placeholder** with real services only after auth/write phases.
 
 ---
 
-*Document type: planning. No migrations or UI work required to adopt this file alone.*
+*Document type: planning + checkpoint notes. Demo **Staff Time Clock** UI is a non-persistent prototype; migrations and real clock persistence are not implied by the placeholder alone.*
