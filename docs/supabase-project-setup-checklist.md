@@ -9,13 +9,14 @@ Use this document as a **do-this-in-order** guide. Do not skip steps.
 Confirm this baseline before any Supabase work:
 
 - Current branch: `cursor/safe-lint-typecheck-486d`
-- Latest confirmed commit: `15341b2`
+- Current checkpoint commit: `5339528` (`Document successful Supabase RLS smoke test`)
 - `npm run build` passes
 - `npm run lint` passes
 - `npm run typecheck` passes
 - App is currently demo-safe
 - No real AI call path remains
 - `demoRole` must remain enabled during transition
+- Project has progressed past initial SQL setup into successful fake-user Supabase RLS smoke testing.
 
 ## 2) Supabase Account and Project Setup
 

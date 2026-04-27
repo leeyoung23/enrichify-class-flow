@@ -13,6 +13,11 @@ These files are **draft preparation SQL** for review and iteration.
 3. `003_rls_policies_draft.sql`
 4. `004_storage_buckets_and_policies.sql`
 5. `005_fake_seed_data.sql`
+6. `006_fix_teacher_tasks_rls.sql`
+
+`006_fix_teacher_tasks_rls.sql` was added after smoke testing exposed a circular RLS dependency between `teacher_tasks` and `teacher_task_assignments`.
+
+If you are recreating the currently tested database state, do not stop at `005`; apply `006` as the final patch in this sequence.
 
 ## Safety Rules
 
