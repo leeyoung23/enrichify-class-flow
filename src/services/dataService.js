@@ -1,8 +1,15 @@
 import { base44 } from '@/api/base44Client';
 import { getSelectedDemoRole } from './authService';
 import { ROLES } from './permissionService';
+import { getBranches, getClasses, getStudents } from './supabaseReadService';
+import { isSupabaseConfigured } from './supabaseClient';
 
 const demoEnabled = () => Boolean(getSelectedDemoRole());
+const readSources = {
+  branches: 'demo',
+  classes: 'demo',
+  students: 'demo',
+};
 
 const demoData = {
   branches: [
@@ -260,20 +267,57 @@ function filterByRole(items, user, type) {
 }
 
 export async function listBranches(user) {
-  if (demoEnabled()) return filterByRole(demoData.branches, user, 'branches');
-  if (user?.role === ROLES.BRANCH_SUPERVISOR) return base44.entities.Branch.filter({ id: user.branch_id });
-  return base44.entities.Branch.list();
+  if (demoEnabled()) {
+    readSources.branches = 'demo';
+    return filterByRole(demoData.branches, user, 'branches');
+  }
+  if (isSupabaseConfigured()) {
+    const { data, error } = await getBranches();
+    if (!error && Array.isArray(data) && data.length > 0) {
+      readSources.branches = 'supabase';
+      return data;
+    }
+  }
+  readSources.branches = 'demo';
+  return filterByRole(demoData.branches, user, 'branches');
 }
 
 export async function listClasses(user) {
-  if (demoEnabled()) return filterByRole(demoData.classes, user, 'classes');
-  if (user?.role === ROLES.TEACHER) return base44.entities.Class.filter({ teacher_email: user?.email });
-  return base44.entities.Class.list();
+  if (demoEnabled()) {
+    readSources.classes = 'demo';
+    return filterByRole(demoData.classes, user, 'classes');
+  }
+  if (isSupabaseConfigured()) {
+    const { data, error } = await getClasses();
+    if (!error && Array.isArray(data) && data.length > 0) {
+      readSources.classes = 'supabase';
+      return data.map((item) => ({
+        ...item,
+        schedule: item.schedule_note || '',
+      }));
+    }
+  }
+  readSources.classes = 'demo';
+  return filterByRole(demoData.classes, user, 'classes');
 }
 
 export async function listStudents(user) {
-  if (demoEnabled()) return filterByRole(demoData.students, user, 'students');
-  return base44.entities.Student.list();
+  if (demoEnabled()) {
+    readSources.students = 'demo';
+    return filterByRole(demoData.students, user, 'students');
+  }
+  if (isSupabaseConfigured()) {
+    const { data, error } = await getStudents();
+    if (!error && Array.isArray(data) && data.length > 0) {
+      readSources.students = 'supabase';
+      return data.map((item) => ({
+        ...item,
+        name: item.full_name,
+      }));
+    }
+  }
+  readSources.students = 'demo';
+  return filterByRole(demoData.students, user, 'students');
 }
 
 export async function listStudentsByClass(user, classId) {
@@ -723,4 +767,8 @@ export function getTeacherTaskCompletionOverview(user) {
 
 export function getDemoSummary() {
   return demoData;
+}
+
+export function getReadDataSource(type) {
+  return readSources[type] || 'demo';
 }

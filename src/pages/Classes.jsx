@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useOutletContext } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { listClasses, listBranches, listStaff, createClass } from '@/services/dataService';
+import { listClasses, listBranches, listStaff, createClass, getReadDataSource } from '@/services/dataService';
 import { canManageClasses, isTeacherRole } from '@/services/permissionService';
 import { BookOpen, Plus, Clock, User } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -50,6 +50,7 @@ export default function Classes() {
   });
 
   const getBranchName = (id) => branches.find(b => b.id === id)?.name || '—';
+  const sourceLabel = getReadDataSource('classes') === 'supabase' ? 'Loaded from Supabase test data' : 'Demo data';
 
   return (
     <div>
@@ -62,6 +63,7 @@ export default function Classes() {
           </Button>
         )}
       />
+      <p className="text-xs text-muted-foreground mb-3">{sourceLabel}</p>
 
       {classes.length === 0 && !isLoading ? (
         <EmptyState

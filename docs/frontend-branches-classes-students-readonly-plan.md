@@ -145,6 +145,7 @@ Implemented in this checkpoint:
 
 Still intentionally not done in this checkpoint:
 
-- No `dataService` Supabase wiring for branches/classes/students yet.
-- No UI/page wiring changes in `Classes.jsx`, `Students.jsx`, or `Dashboard.jsx`.
+- `Classes.jsx` and `Students.jsx` now use existing `dataService` methods that can return guarded Supabase read data with demo fallback.
+- Supabase remains optional and fallback-first (`demoRole`, missing config, read error, empty result -> demo data).
+- `Dashboard.jsx` remains demo-only and was not wired in this slice.
 - No write/upload/auth UI changes.
