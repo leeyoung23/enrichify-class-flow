@@ -22,17 +22,24 @@ const users = [
 ];
 
 const tableChecks = [
-  "profiles",
-  "branches",
-  "classes",
-  "students",
-  "attendance_records",
-  "homework_records",
-  "parent_comments",
-  "weekly_progress_reports",
-  "fee_records",
-  "teacher_tasks",
-  "sales_kit_resources",
+  { name: "profiles" },
+  { name: "branches" },
+  { name: "classes" },
+  { name: "students" },
+  { name: "attendance_records" },
+  { name: "homework_records" },
+  { name: "parent_comments" },
+  { name: "weekly_progress_reports" },
+  { name: "fee_records" },
+  {
+    name: "teacher_tasks",
+    // Use explicit known schema fields only.
+    // Current schema columns: id, branch_id, class_id, student_id, created_by_profile_id,
+    // title, details, status, due_at, created_at, updated_at.
+    selectColumns:
+      "id,title,branch_id,class_id,student_id,created_by_profile_id,status,created_at,updated_at",
+  },
+  { name: "sales_kit_resources" },
 ];
 
 function resolvePassword(user) {
@@ -52,8 +59,8 @@ function formatSupabaseError(error) {
   return `message="${message}" code="${code}" details="${details}" hint="${hint}"`;
 }
 
-async function countRows(client, tableName, filterBuilder = (q) => q) {
-  let query = client.from(tableName).select("*", { count: "exact", head: true });
+async function countRows(client, tableName, filterBuilder = (q) => q, selectColumns = "*") {
+  let query = client.from(tableName).select(selectColumns, { count: "exact", head: true });
   query = filterBuilder(query);
   const { count, error } = await query;
   if (error) {
@@ -158,8 +165,9 @@ async function runForUser(user) {
   statusLine("PASS", `${user.email}: sign-in success`);
   const counts = {};
 
-  for (const table of tableChecks) {
-    const result = await countRows(client, table);
+  for (const tableCheck of tableChecks) {
+    const table = tableCheck.name;
+    const result = await countRows(client, table, (q) => q, tableCheck.selectColumns || "*");
     if (!result.ok) {
       statusLine(
         "WARNING",
