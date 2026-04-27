@@ -1,5 +1,5 @@
 import React, { useCallback, useState } from "react";
-import { useNavigate, useSearchParams } from "react-router-dom";
+import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -96,6 +96,11 @@ export default function AuthPreview() {
       <div className="mx-auto max-w-lg space-y-6">
         <div>
           <h1 className="text-2xl font-semibold tracking-tight">Supabase Auth Preview</h1>
+          <p className="mt-2 text-sm">
+            <Link to="/login" className="text-primary font-medium underline-offset-4 hover:underline">
+              Use polished login page
+            </Link>
+          </p>
           <p className="mt-2 text-sm text-muted-foreground">
             Development and testing only. Uses fake demo accounts from your Supabase project seed—never
             production or real child data. Enter the same password you use for{" "}

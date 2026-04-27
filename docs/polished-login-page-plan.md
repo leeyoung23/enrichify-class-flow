@@ -1,6 +1,6 @@
 # Polished login page plan (`/login`)
 
-**Planning only:** no new routes, redirects, or UI are added by this document. **`/auth-preview`**, **`demoRole`**, demo/local fallbacks, and Phase **3C-1** behaviour remain as implemented until a future coding task executes the phases below.
+**Phase 1 implemented:** public **`/login`** (`src/pages/Login.jsx`) — polished Young’s Learners portal sign-in using **`supabaseAuthService`** + **`returnUrl`** via **`supabaseAuthReturnUrl.js`** (**`/login`** excluded from valid **`returnUrl`** to prevent loops). **`/auth-preview`** remains dev-only; a **“Use polished login page”** link points to **`/login`**. **Phase 3C-1** protected-route redirect **still** targets **`/auth-preview`** until **Phase 2**.
 
 **Related:** `docs/supabase-auth-phase-3c-login-hardening-plan.md`, `docs/supabase-auth-phase-3c-checkpoint.md`, `src/pages/AuthPreview.jsx`, `src/services/supabaseAuthService.js`, `src/lib/supabaseAuthReturnUrl.js`, `src/App.jsx`.
 
@@ -65,7 +65,7 @@
 | **Signed-out protected access** | Eventually **`Navigate`** to **`/login?returnUrl=…`** (sanitised) instead of **`/auth-preview`**, so customers never see the dev page by default. |
 | **`/auth-preview`** | Remains **reachable directly** for developers and CI-style manual checks; not removed. |
 | **Public routes** | **`/welcome`** (and any future marketing pages) stay **outside** the authenticated gate — no login required. |
-| **Phase 3C-1 until Phase 2 below** | Redirect may still point at **`/auth-preview`** until implementation explicitly switches the destination constant / helper. |
+| **Current (post–Phase 1)** | Protected redirect **still** uses **`/auth-preview?returnUrl=…`** (**Phase 3C-1** unchanged). **Phase 2** switches it to **`/login`**. |
 
 ---
 
@@ -82,7 +82,7 @@
 
 | Phase | Scope |
 |-------|--------|
-| **Phase 1** | Add **`/login`** route and page component: reuse **`signInWithEmailPassword`**, **`getCurrentProfile`**, **`mapProfileToAppUser`** / **`signOut`** from **`supabaseAuthService`**; polished layout and errors; **`returnUrl`** post-login navigation using existing URL helpers; register route **outside** heavy dev-only copy (or thin wrapper over shared sign-in logic extracted from **`AuthPreview`**). **Do not** remove **`/auth-preview`**. |
+| **Phase 1** | **Done** — **`src/pages/Login.jsx`**, public **`/login`** route in **`App.jsx`** (with **`/welcome`** / **`/auth-preview`**); **`refreshAuthState`** after sign-in; **`parseReturnUrlQueryParam`** for post-login **`navigate`**; “already signed in” / profile-gap states; footer links to **`/welcome`** and **`/auth-preview`**. |
 | **Phase 2** | In **`AuthenticatedApp`** (or shared helper), change unauthenticated redirect target from **`/auth-preview`** to **`/login`** (same query contract). Keep **`/auth-preview`** valid for direct navigation. |
 | **Phase 3** | Optional **role-based landing** after login (e.g. parent → **`/parent-view`**) when **`returnUrl`** absent — still honour **`returnUrl`** when present and safe. |
 | **Phase 4** | **Password reset**, email templates, accessibility audit, rate-limit messaging, analytics — production polish. |
@@ -96,6 +96,8 @@ Copy-paste for a future coding task:
 > **Phase 1 — Add polished `/login` page (keep `/auth-preview`).**  
 > Create **`src/pages/Login.jsx`** (or similar) and register **`/login`** in **`src/App.jsx`** as a **public** route (same level as **`/welcome`** / **`/auth-preview`**, outside the **`/*`** + **`AuthProvider`** gate if that keeps routing simple). Use **`signInWithEmailPassword`**, **`getCurrentProfile`**, **`mapProfileToAppUser`**, and **`signOut`** from **`supabaseAuthService.js`**. Brand the page for **Young’s Learners** with staff/parent portal positioning; email/password form; clean errors and loading state; after successful sign-in, **`navigate`** to **`parseReturnUrlQueryParam(searchParams.get('returnUrl'))`** or **`/`**. Reuse **`parseReturnUrlQueryParam`** / **`sanitizeReturnUrlForRedirect`** from **`src/lib/supabaseAuthReturnUrl.js`**; extend helpers if **`/login`** must be excluded from **`returnUrl`** targets. **Do not** remove or break **`/auth-preview`**. **Do not** remove **`demoRole`** or demo fallbacks. **Do not** add writes, uploads, AI calls, or service role. **Do not** change Phase **3C-1** redirect destination yet (that is Phase 2). Run **`npm run build`**, **`lint`**, **`typecheck`**, **`test:supabase:read`**, **`test:supabase:auth`**.
 
+*(Phase 1 delivered as above; **`refreshAuthState`** is used after sign-in so **`useSupabaseAuthState`** reflects the session before navigation.)*
+
 ---
 
-*Document type: planning. No runtime behaviour is changed by this file alone.*
+*Document type: planning + implementation notes. Phase **1** is in code; **Phase 2** (redirect target → **`/login`**) is next.*

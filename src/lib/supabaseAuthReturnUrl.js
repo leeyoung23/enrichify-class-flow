@@ -10,6 +10,7 @@ export function isSafeInternalAppPath(pathWithSearch) {
   const noHash = t.split("#")[0];
   const pathOnly = noHash.split("?")[0];
   if (pathOnly === "/auth-preview" || pathOnly.startsWith("/auth-preview/")) return false;
+  if (pathOnly === "/login" || pathOnly.startsWith("/login/")) return false;
   return true;
 }
 

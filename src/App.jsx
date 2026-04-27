@@ -29,6 +29,7 @@ import PrototypeSummary from '@/pages/PrototypeSummary';
 import FeeTracking from '@/pages/FeeTracking';
 import PublicWelcome from '@/pages/PublicWelcome';
 import AuthPreview from '@/pages/AuthPreview';
+import Login from '@/pages/Login';
 import SalesKit from '@/pages/SalesKit';
 import StaffTimeClock from '@/pages/StaffTimeClock';
 import { SupabaseAuthStateProvider, useSupabaseAuthState } from '@/hooks/useSupabaseAuthState';
@@ -149,6 +150,7 @@ function App() {
         <Routes>
           <Route path="/auth-preview" element={<AuthPreview />} />
           <Route path="/welcome" element={<PublicWelcome />} />
+          <Route path="/login" element={<Login />} />
           <Route path="/*" element={(
             <AuthProvider>
               <AuthenticatedApp />
