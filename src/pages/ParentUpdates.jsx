@@ -1,7 +1,7 @@
 import React, { useMemo, useState } from 'react';
 import { useOutletContext } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { listClasses, listStudentsByClass, listParentUpdates, createParentUpdate, generateParentMessage } from '@/services/dataService';
+import { listClasses, listStudentsByClass, listParentUpdates, createParentUpdate, generateParentMessage, listAttendanceRecords, listHomeworkAttachments } from '@/services/dataService';
 import { ROLES, isTeacherRole } from '@/services/permissionService';
 import { Sparkles, Save, Loader2, CheckCircle2, Share2, MessageSquarePlus, Eye, Pencil } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -75,7 +75,67 @@ export default function ParentUpdates() {
     enabled: !!user,
   });
 
+  const { data: attendanceRecords = [] } = useQuery({
+    queryKey: ['attendance-source-updates', user?.role, user?.email],
+    queryFn: () => listAttendanceRecords(user),
+    enabled: !!user,
+  });
+
+  const { data: homeworkAttachments = [] } = useQuery({
+    queryKey: ['homework-source-updates', user?.role, user?.email],
+    queryFn: () => listHomeworkAttachments(user),
+    enabled: !!user,
+    initialData: [],
+  });
+
   const selectedStudent = students.find((s) => s.id === selectedStudentId);
+  const selectedClass = classes.find((c) => c.id === selectedClassId);
+
+  const sourceSnapshot = useMemo(() => {
+    if (!selectedStudentId) {
+      return null;
+    }
+
+    const studentAttendance = attendanceRecords
+      .filter((item) => item.student_id === selectedStudentId)
+      .sort((a, b) => new Date(b.date || b.session_date || 0) - new Date(a.date || a.session_date || 0));
+    const latestAttendance = studentAttendance[0] || null;
+
+    const studentUploads = homeworkAttachments
+      .filter((item) => item.student_id === selectedStudentId)
+      .sort((a, b) => new Date(b.upload_date || 0) - new Date(a.upload_date || 0));
+    const latestUpload = studentUploads[0] || null;
+
+    const studentUpdates = updates
+      .filter((item) => item.student_id === selectedStudentId)
+      .sort((a, b) => new Date(b.created_date || 0) - new Date(a.created_date || 0));
+    const latestTeacherNote = studentUpdates.find((item) => item.note_text?.trim())?.note_text || latestAttendance?.notes || '';
+    const previousFeedback = studentUpdates.find((item) => item.shared_report || item.approved_report || item.final_message);
+    const previousFeedbackSummary = previousFeedback
+      ? (previousFeedback.shared_report || previousFeedback.approved_report || previousFeedback.final_message || '').trim()
+      : '';
+
+    const tags = [];
+    if (latestAttendance?.status === 'late' || latestAttendance?.status === 'absent') {
+      tags.push({ label: 'Progress concern', value: latestAttendance.status === 'late' ? 'Punctuality' : 'Attendance consistency' });
+    }
+    if (latestAttendance?.homework_status === 'completed') {
+      tags.push({ label: 'Strength', value: 'Homework completion' });
+    }
+    if (latestUpload?.status === 'feedback_released') {
+      tags.push({ label: 'Strength', value: 'Homework feedback cycle complete' });
+    }
+
+    return {
+      latestAttendance,
+      latestUpload,
+      latestTeacherNote,
+      previousFeedbackSummary,
+      tags,
+    };
+  }, [selectedStudentId, attendanceRecords, homeworkAttachments, updates]);
+
+  const needsMoreSourceData = selectedStudentId && (!notes.trim() || !sourceSnapshot?.latestAttendance?.status || !sourceSnapshot?.latestAttendance?.homework_status);
 
   const filteredUpdates = useMemo(() => {
     const filtered = statusFilter === 'all'
@@ -170,6 +230,40 @@ export default function ParentUpdates() {
 
                 {step === 'notes' && (
                   <>
+                    <Card className="p-4 mb-4 border-dashed">
+                      <h4 className="font-medium mb-2">Report Source Data (Demo)</h4>
+                      <p className="text-xs text-muted-foreground mb-3">AI draft uses teacher note + attendance + homework + previous feedback + student/class profile.</p>
+                      {!selectedStudentId ? (
+                        <p className="text-sm text-muted-foreground">Select a class and student to load source data.</p>
+                      ) : (
+                        <div className="space-y-3 text-sm">
+                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                            <p><span className="text-muted-foreground">Student:</span> {selectedStudent?.name || '—'}</p>
+                            <p><span className="text-muted-foreground">Class:</span> {selectedClass?.name || selectedClassId || '—'}</p>
+                            <p><span className="text-muted-foreground">Latest attendance:</span> {sourceSnapshot?.latestAttendance?.status || 'Not recorded'}</p>
+                            <p><span className="text-muted-foreground">Homework status:</span> {sourceSnapshot?.latestAttendance?.homework_status || 'Not recorded'}</p>
+                            <p><span className="text-muted-foreground">Homework upload/review:</span> {sourceSnapshot?.latestUpload?.status_label || sourceSnapshot?.latestUpload?.status || 'No upload yet'}</p>
+                            <p><span className="text-muted-foreground">Previous feedback:</span> {sourceSnapshot?.previousFeedbackSummary ? 'Available' : 'None yet'}</p>
+                          </div>
+                          <div>
+                            <p className="text-muted-foreground mb-1">Latest teacher note</p>
+                            <p className="rounded-md bg-accent/40 p-2 text-xs">
+                              {sourceSnapshot?.latestTeacherNote || 'No saved teacher note yet.'}
+                            </p>
+                          </div>
+                          <div className="flex flex-wrap gap-2">
+                            {sourceSnapshot?.tags?.length
+                              ? sourceSnapshot.tags.map((tag, idx) => (
+                                  <Badge key={`${tag.label}-${idx}`} variant="outline" className="text-xs">
+                                    {tag.label}: {tag.value}
+                                  </Badge>
+                                ))
+                              : <Badge variant="outline" className="text-xs">No strength/concern tags yet</Badge>}
+                          </div>
+                        </div>
+                      )}
+                      <p className="text-xs text-muted-foreground mt-3">Demo only: in the future, this AI draft will use saved attendance, homework, marking results, and teacher-approved notes.</p>
+                    </Card>
                     <div className="mb-4">
                       <div className="flex items-center gap-2 mb-2">
                         <span className="text-sm font-medium">1. Teacher note created</span>
@@ -182,6 +276,11 @@ export default function ParentUpdates() {
                         className="min-h-[160px]"
                       />
                     </div>
+                    {needsMoreSourceData && (
+                      <p className="text-xs text-amber-700 mb-3">
+                        Add a lesson note or confirm homework/attendance before generating a stronger draft.
+                      </p>
+                    )}
                     <Button
                       onClick={handleGenerate}
                       disabled={!notes.trim() || !selectedStudentId || generating}
@@ -198,6 +297,9 @@ export default function ParentUpdates() {
 
                 {step === 'review' && (
                   <>
+                    <p className="text-xs text-muted-foreground mb-2">
+                      Draft generated from available student/class profile, attendance record, homework status, previous feedback, and your teacher note.
+                    </p>
                     <div className="space-y-4">
                       <div>
                         <div className="flex items-center gap-2 mb-2">
