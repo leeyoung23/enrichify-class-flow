@@ -87,8 +87,9 @@ using (
 );
 
 -- Sales kit resources:
--- - HQ manage all
+-- - HQ create/update/approve/archive and manage files
 -- - Branch supervisor read approved-only resources
+-- - Archived/draft resources remain HQ-only by default
 drop policy if exists sales_kit_resources_select_storage on storage.objects;
 create policy sales_kit_resources_select_storage
 on storage.objects for select
@@ -98,7 +99,7 @@ using (
     select 1
     from public.sales_kit_resources skr
     where skr.storage_bucket = 'sales-kit-resources'
-      and skr.storage_path = storage.objects.name
+      and skr.file_path = storage.objects.name
       and (
         public.is_hq_admin()
         or (

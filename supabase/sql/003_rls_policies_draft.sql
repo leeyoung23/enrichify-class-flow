@@ -287,7 +287,8 @@ create policy trial_schedules_staff_scope on trial_schedules for select using (
   or exists (select 1 from teachers t where t.id = assigned_teacher_id and t.profile_id = auth.uid())
 );
 
--- Sales Kit: HQ + Branch Supervisor only.
+-- Sales Kit: HQ can create/update/approve/archive. Branch Supervisor reads approved only.
+-- Archived resources are HQ-only by default.
 drop policy if exists sales_kit_resources_select on sales_kit_resources;
 create policy sales_kit_resources_select on sales_kit_resources for select using (
   public.is_hq_admin()

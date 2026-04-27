@@ -20,7 +20,7 @@ Reminder: **Frontend filtering is not security. RLS must enforce access at datab
 - Payment receipt screenshot metadata and files are visible for all branches under admin scope.
 - Can verify receipts across all branches.
 - Teacher tasks visibility is global.
-- Sales Kit resources can be created/updated/approved by HQ only.
+- Sales Kit resources can be created/updated/approved/archived by HQ only.
 - Storage access is restricted to allowed admin scope.
 - Negative test: HQ token should still fail for deleted/disabled account state.
 
@@ -103,6 +103,7 @@ Reminder: **Frontend filtering is not security. RLS must enforce access at datab
 - Student must not read parent-only contact details.
 - Branch supervisor must not read HQ-global rows outside own branch.
 - Branch supervisor must not access unapproved Sales Kit resources.
+- Branch supervisor must not access archived Sales Kit resources.
 - Any role must fail reads/writes when JWT role is mismatched to row scope.
 
 ## Storage Policy Checks
@@ -113,7 +114,7 @@ Reminder: **Frontend filtering is not security. RLS must enforce access at datab
 - Test read: unlinked/unassigned file fails.
 - Test delete/update metadata: only authorized roles succeed.
 - Test `fee-receipts` bucket: parent upload own linked-child receipt succeeds; teacher upload/read fails.
-- Test `sales-kit-resources` bucket: HQ upload/manage succeeds; branch supervisor read approved succeeds; non-approved read fails.
+- Test `sales-kit-resources` bucket: HQ upload/manage/archive succeeds; branch supervisor read approved succeeds; draft/archived read fails.
 
 ## Execution Notes
 

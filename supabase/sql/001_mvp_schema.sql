@@ -34,6 +34,10 @@ do $$ begin
   create type trial_status as enum ('enquiry', 'scheduled', 'attended', 'converted', 'lost');
 exception when duplicate_object then null; end $$;
 
+do $$ begin
+  create type sales_kit_status as enum ('draft', 'approved', 'archived');
+exception when duplicate_object then null; end $$;
+
 create table if not exists branches (
   id uuid primary key default gen_random_uuid(),
   name text not null,
@@ -294,15 +298,16 @@ create table if not exists sales_kit_resources (
   title text not null,
   resource_type text not null default 'pdf',
   description text,
-  resource_url text,
+  file_path text not null,
+  external_url text,
   storage_bucket text not null default 'sales-kit-resources',
-  storage_path text not null,
-  status communication_status not null default 'draft',
+  status sales_kit_status not null default 'draft',
   is_global boolean not null default false,
   branch_scope text not null default 'scoped',
-  created_by_profile_id uuid references profiles(id),
+  uploaded_by_profile_id uuid references profiles(id),
   approved_by_profile_id uuid references profiles(id),
   approved_at timestamptz,
+  archived_at timestamptz,
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
 );

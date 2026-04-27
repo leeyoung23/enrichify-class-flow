@@ -197,11 +197,11 @@ Each group below includes:
 
 ## 24) sales_kit_resources
 
-- **Purpose:** test HQ-managed Sales Kit resource lifecycle (upload/approve/publish) and branch supervisor consumption.
+- **Purpose:** test HQ-managed Sales Kit lifecycle (upload/approve/archive) and branch supervisor consumption.
 - **Minimum fake records:** 4 (draft, approved-global, approved-branch, archived).
-- **Relationships:** links to uploader/approver profiles, optional branch scope, and future `sales-kit-resources` storage object path.
+- **Relationships:** links to uploader/approver profiles, optional branch/global scope, status lifecycle (`draft`/`approved`/`archived`), and future `sales-kit-resources` storage object path.
 - **Roles that should see it:** HQ full manage; Branch Supervisor read approved only; Teacher/Parent/Student blocked.
-- **Negative test:** Branch Supervisor cannot read draft/unapproved resource; Teacher cannot read any Sales Kit record.
+- **Negative test:** Branch Supervisor cannot read draft/archived resource; Teacher cannot read any Sales Kit record.
 
 ## Final seed rule
 

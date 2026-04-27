@@ -92,8 +92,10 @@ Follow these non-negotiable rules during migration:
 ### Sales Kit management planning
 
 - Sales Kit files/links should be managed in backend metadata + Supabase Storage (bucket candidate: `sales-kit-resources`).
-- HQ Admin should create/upload/manage Sales Kit resources and approvals.
+- Sales Kit resource metadata should include: title, resource type, description, file path, external URL, status, uploaded by, approved by, approved at, archived at, and branch/global scope.
+- HQ Admin should create/upload/manage Sales Kit resources and approvals, including archive actions.
 - Branch Supervisor should read/open only approved resources in allowed scope.
+- Draft and archived resources should remain HQ-only by default.
 - Teachers, Parents, and Students must not read Sales Kit resources.
 - Service-layer methods should keep upload/review/read rules out of page components and enforce role scope through Supabase RLS-backed queries.
 

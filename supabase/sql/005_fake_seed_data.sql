@@ -134,9 +134,9 @@ on conflict (id) do nothing;
 
 -- Sales kit resources
 insert into sales_kit_resources (
-  id, branch_id, title, resource_type, description, resource_url,
-  storage_bucket, storage_path, status, is_global, branch_scope,
-  created_by_profile_id, approved_by_profile_id, approved_at
+  id, branch_id, title, resource_type, description, file_path, external_url,
+  storage_bucket, status, is_global, branch_scope,
+  uploaded_by_profile_id, approved_by_profile_id, approved_at, archived_at
 ) values
   (
     '80808080-8080-8080-8080-808080808080',
@@ -144,15 +144,16 @@ insert into sales_kit_resources (
     'Demo Sales Brochure',
     'pdf',
     'Global approved demo brochure',
+    'demo/global/sales-brochure.pdf',
     null,
     'sales-kit-resources',
-    'demo/global/sales-brochure.pdf',
     'approved',
     true,
     'global',
     'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaa1',
     'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaa1',
-    now() - interval '2 days'
+    now() - interval '2 days',
+    null
   ),
   (
     '81818181-8181-8181-8181-818181818181',
@@ -160,15 +161,16 @@ insert into sales_kit_resources (
     'Demo North Campaign Deck',
     'pdf',
     'Branch scoped approved demo deck',
+    'demo/north/campaign-deck.pdf',
     null,
     'sales-kit-resources',
-    'demo/north/campaign-deck.pdf',
     'approved',
     false,
     'branch',
     'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaa1',
     'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaa1',
-    now() - interval '1 day'
+    now() - interval '1 day',
+    null
   ),
   (
     '82828282-8282-8282-8282-828282828282',
@@ -176,15 +178,33 @@ insert into sales_kit_resources (
     'Demo Draft Sales Notes',
     'link',
     'Draft example not visible to branch supervisors',
+    'demo/north/draft-sales-notes.txt',
     'https://example.test/demo-draft-sales-notes',
     'sales-kit-resources',
-    'demo/north/draft-sales-notes.txt',
     'draft',
     false,
     'branch',
     'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaa1',
     null,
+    null,
     null
+  ),
+  (
+    '83838383-8383-8383-8383-838383838383',
+    null,
+    'Demo Archived Promo Pack',
+    'pdf',
+    'Archived pack; HQ-only visibility by policy',
+    'demo/global/archived-promo-pack.pdf',
+    null,
+    'sales-kit-resources',
+    'archived',
+    true,
+    'global',
+    'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaa1',
+    'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaa1',
+    now() - interval '20 days',
+    now() - interval '5 days'
   )
 on conflict (id) do nothing;
 
