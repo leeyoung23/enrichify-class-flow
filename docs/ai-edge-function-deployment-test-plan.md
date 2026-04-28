@@ -92,10 +92,25 @@ Script behavior target:
 ## 8) Recommended implementation sequence
 
 - **Phase 1:** planning doc (this file).
-- **Phase 2:** add optional mock invocation smoke script.
+- **Phase 2:** add optional mock invocation smoke script. - implemented.
 - **Phase 3:** manually deploy or serve function.
 - **Phase 4:** run smoke script against local/deployed function.
 - **Phase 5:** only then plan real provider secret rollout.
+
+## Phase 2 status update
+
+- Added optional script: `scripts/ai-edge-function-mock-invocation-test.mjs`.
+- Added npm command: `test:ai:edge:mock`.
+- Script behavior:
+  - loads `.env.local`
+  - uses `VITE_SUPABASE_URL` + `VITE_SUPABASE_ANON_KEY` only
+  - optionally signs in as `teacher.demo@example.test` if test password env exists
+  - invokes `generate-parent-comment-draft` with fake payload
+  - validates mock response shape (`draft_comment`, tag arrays, `source_summary`, `is_mock: true`)
+- Non-blocking behavior when function is not deployed/reachable:
+  - prints clear `SKIP`/`WARNING`
+  - exits `0` for optional local workflow continuity
+- Real provider integration remains future and not part of this phase.
 
 ## 9) Next implementation prompt (Phase 2 only)
 
