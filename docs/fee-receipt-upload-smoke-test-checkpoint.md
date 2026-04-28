@@ -1,6 +1,6 @@
 # Fee receipt upload smoke test checkpoint
 
-This checkpoint captures the service-level fee receipt upload milestone and smoke-test validation. It does not include Fee Tracking UI wiring.
+This checkpoint captures the fee receipt upload milestone with service + smoke-test validation and parent Fee Tracking upload UI wiring.
 
 ## 1) What was implemented
 
@@ -9,6 +9,7 @@ This checkpoint captures the service-level fee receipt upload milestone and smok
   - `getFeeReceiptSignedUrl({ feeRecordId, expiresIn })`
 - Added a dedicated smoke script for fee receipt upload lifecycle using fake tiny blob data only.
 - Added npm script to run the smoke test.
+- Wired parent Fee Tracking receipt upload action to `uploadFeeReceipt(...)` for authenticated non-demo Supabase users.
 - Updated planning/checkpoint docs to reflect service+smoke-test readiness and remaining UI work.
 
 ## 2) Files changed
@@ -53,11 +54,11 @@ This checkpoint captures the service-level fee receipt upload milestone and smok
 
 ## 7) What remains
 
-- Fee Tracking UI upload wiring.
 - Verification/rejection UI workflow and status actions.
 - Production-grade file validation.
 - File size/type limits and stricter sanitization controls.
 - Signed URL display/download handling in UI.
+- Supervisor/HQ verification UI wiring.
 
 ## 8) Recommended next milestone
 

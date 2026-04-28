@@ -122,7 +122,8 @@ Use a consistent secure pattern:
 - Fee receipt upload remains planning/draft only.
 - SQL/storage draft exists and has been manually applied in dev.
 - Fee receipt upload service + smoke test now exist (service-level only).
-- UI upload wiring is still not implemented.
+- Parent Fee Tracking upload UI wiring is now implemented (authenticated non-demo parent + fee record id required).
+- Supervisor/HQ verification UI remains not implemented.
 - Real files are still not used in this phase (fake tiny test blob only).
 
 ## 10) Next implementation prompt (readiness review for first vertical)

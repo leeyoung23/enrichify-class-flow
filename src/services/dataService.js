@@ -577,7 +577,65 @@ export async function listParentUpdatesByStudent(user, studentId) {
 }
 
 export async function listFeeRecords(user) {
-  if (!demoEnabled()) return [];
+  if (!demoEnabled() && isSupabaseConfigured() && supabase) {
+    try {
+      const { data, error } = await supabase
+        .from('fee_records')
+        .select(`
+          id,
+          branch_id,
+          class_id,
+          student_id,
+          fee_period,
+          amount,
+          status,
+          receipt_file_path,
+          receipt_storage_bucket,
+          uploaded_by_profile_id,
+          uploaded_at,
+          verified_by_profile_id,
+          verified_at,
+          verification_status,
+          internal_note,
+          student:students!fee_records_student_id_fkey(full_name),
+          class:classes!fee_records_class_id_fkey(name),
+          branch:branches!fee_records_branch_id_fkey(name)
+        `)
+        .order('updated_at', { ascending: false });
+
+      if (!error && Array.isArray(data)) {
+        return data.map((row) => ({
+          id: row.id,
+          fee_record_id: row.id,
+          student_id: row.student_id,
+          student_name: row.student?.full_name || row.student_id,
+          parent_guardian_name: 'Linked Parent/Guardian',
+          branch_id: row.branch_id,
+          branch_name: row.branch?.name || row.branch_id,
+          class_id: row.class_id,
+          class_name: row.class?.name || row.class_id,
+          fee_period: row.fee_period,
+          fee_amount: Number(row.amount ?? 0),
+          due_date: '',
+          payment_status: row.status === 'pending_verification' ? 'pending verification' : row.status,
+          payment_method: 'not_set',
+          receipt_uploaded: Boolean(row.receipt_file_path),
+          receipt_reference_note: row.receipt_file_path || '',
+          verified_by: row.verified_by_profile_id || '',
+          verified_date: row.verified_at ? new Date(row.verified_at).toISOString().slice(0, 10) : '',
+          internal_note: row.internal_note || '',
+          receipt_storage_bucket: row.receipt_storage_bucket || 'fee-receipts',
+          uploaded_by_profile_id: row.uploaded_by_profile_id || null,
+          uploaded_at: row.uploaded_at || null,
+          verification_status: row.verification_status || 'not_uploaded',
+          data_source: 'supabase_fee_records',
+        }));
+      }
+    } catch {
+      // Fallback below
+    }
+    return [];
+  }
   const role = user?.role;
   if (role === ROLES.HQ_ADMIN) return demoData.feeRecords;
   if (role === ROLES.BRANCH_SUPERVISOR) return demoData.feeRecords.filter((item) => item.branch_id === user?.branch_id);
