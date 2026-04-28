@@ -175,3 +175,81 @@ export async function releaseParentComment({ commentId, message } = {}) {
   }
 }
 
+/**
+ * Update weekly progress report draft fields using Supabase anon client + RLS.
+ * Only safe weekly report fields are writable here.
+ */
+export async function updateWeeklyProgressReportDraft({ reportId, reportText, status } = {}) {
+  if (!isSupabaseConfigured() || !supabase) {
+    return { data: null, error: { message: "Supabase is not configured" } };
+  }
+
+  if (!reportId || typeof reportId !== "string") {
+    return { data: null, error: { message: "reportId is required" } };
+  }
+
+  if (typeof reportText !== "string" || !reportText.trim()) {
+    return { data: null, error: { message: "reportText is required" } };
+  }
+
+  if (!COMMUNICATION_STATUS_VALUES.has(status)) {
+    return { data: null, error: { message: "Invalid weekly report status value" } };
+  }
+
+  const payload = {
+    report_text: reportText,
+    status,
+    updated_at: new Date().toISOString(),
+  };
+
+  try {
+    const { data, error } = await supabase
+      .from("weekly_progress_reports")
+      .update(payload)
+      .eq("id", reportId)
+      .select("id,branch_id,class_id,student_id,teacher_id,week_start_date,report_text,status,updated_at")
+      .maybeSingle();
+
+    return { data: data ?? null, error: error ?? null };
+  } catch (err) {
+    return { data: null, error: { message: err?.message || String(err) } };
+  }
+}
+
+/**
+ * Release weekly progress report for parent-visible access using Supabase anon client + RLS.
+ * Only safe weekly report fields are writable here.
+ */
+export async function releaseWeeklyProgressReport({ reportId, reportText } = {}) {
+  if (!isSupabaseConfigured() || !supabase) {
+    return { data: null, error: { message: "Supabase is not configured" } };
+  }
+
+  if (!reportId || typeof reportId !== "string") {
+    return { data: null, error: { message: "reportId is required" } };
+  }
+
+  if (typeof reportText !== "string" || !reportText.trim()) {
+    return { data: null, error: { message: "reportText is required" } };
+  }
+
+  const payload = {
+    report_text: reportText,
+    status: "released",
+    updated_at: new Date().toISOString(),
+  };
+
+  try {
+    const { data, error } = await supabase
+      .from("weekly_progress_reports")
+      .update(payload)
+      .eq("id", reportId)
+      .select("id,branch_id,class_id,student_id,teacher_id,week_start_date,report_text,status,updated_at")
+      .maybeSingle();
+
+    return { data: data ?? null, error: error ?? null };
+  } catch (err) {
+    return { data: null, error: { message: err?.message || String(err) } };
+  }
+}
+

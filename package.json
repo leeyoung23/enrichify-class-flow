@@ -15,6 +15,7 @@
     "test:supabase:tasks:write": "node scripts/supabase-teacher-task-write-smoke-test.mjs",
     "test:supabase:attendance:write": "node scripts/supabase-attendance-write-smoke-test.mjs",
     "test:supabase:parent-updates:write": "node scripts/supabase-parent-updates-write-smoke-test.mjs",
+    "test:supabase:weekly-report:write": "node scripts/supabase-weekly-report-write-smoke-test.mjs",
     "preview": "vite preview"
   },
   "dependencies": {

@@ -181,7 +181,7 @@ Coverage:
 ## 8) Recommended implementation sequence
 
 - Phase 1: planning doc (`docs/weekly-progress-report-write-plan.md`) - current phase.
-- Phase 2: service write methods + smoke test (`updateWeeklyProgressReportDraft` + weekly write smoke).
+- Phase 2: service write methods + smoke test (`updateWeeklyProgressReportDraft` + weekly write smoke). - implemented.
 - Phase 3: wire Weekly Progress Report Save Draft in UI for authenticated non-demo teacher only.
 - Phase 4: wire Weekly Progress Report Release in UI with parent-visible status transition.
 - Phase 5: AI generation later via secure Edge Function (server-side only, approval-gated).
@@ -240,3 +240,14 @@ Tasks:
 Do not change app UI in this phase.
 
 ---
+
+## Implementation status snapshot
+
+- Phase 2 implemented:
+  - `src/services/supabaseWriteService.js`
+    - `updateWeeklyProgressReportDraft({ reportId, reportText, status })`
+    - `releaseWeeklyProgressReport({ reportId, reportText })`
+  - `scripts/supabase-weekly-report-write-smoke-test.mjs`
+  - npm script: `test:supabase:weekly-report:write`
+- Weekly Progress Report UI wiring is still not done (intentionally unchanged in this phase).
+- AI generation remains demo/local only (no AI API wiring in this phase).
