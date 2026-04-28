@@ -204,21 +204,24 @@ Suggested first implementation scope (Phase 2):
 
 ---
 
-## 6) Smoke test plan (future script)
+## 6) Smoke test plan
 
-Planned script:
+Implemented script:
 
 - `scripts/supabase-parent-updates-write-smoke-test.mjs`
 
-Coverage targets:
+Current coverage targets:
 
-1. Teacher can update/release assigned-student parent comment when policy allows.
-2. Parent can read released update for linked child.
-3. Parent cannot read draft update.
+1. Teacher can update assigned-student draft parent comment and verify.
+2. Parent cannot read draft update.
 4. Parent cannot write parent comments.
 5. Student remains conservative/read-only with no write access.
 6. Revert changed rows for repeatability.
 7. Use anon key only; never service role key.
+
+Deferred to later phase:
+
+- release-to-parent read verification (after release method implementation).
 
 ---
 
@@ -238,7 +241,12 @@ Coverage targets:
 
 - **Phase 1:** planning doc (this file).
 - **Phase 2:** service write method + smoke test for Quick Parent Comment only.
+  - **Status:** Implemented.
+  - `src/services/supabaseWriteService.js` -> `updateParentCommentDraft({ commentId, message, status })`
+  - `scripts/supabase-parent-updates-write-smoke-test.mjs`
+  - npm script `test:supabase:parent-updates:write`
 - **Phase 3:** wire Parent Updates Quick Comment save/release UI.
+  - **Status:** Not started (intentionally unchanged in this checkpoint).
 - **Phase 4:** weekly report real save/release path.
 - **Phase 5:** AI draft via Edge Function later.
 - **Phase 6:** Memories attachment later.
@@ -301,3 +309,20 @@ Do not add runtime parent update UI writes in this phase.
 ---
 
 *Document type: planning only; no runtime behavior changes are introduced by this file.*
+
+## Implementation status snapshot
+
+- Service write method implemented:
+  - `updateParentCommentDraft({ commentId, message, status })`
+  - validates allowed `communication_status` values
+  - updates safe fields only (`comment_text`, `status`, `updated_at`)
+  - returns predictable `{ data, error }` with safe exception handling
+- Authenticated smoke test implemented:
+  - teacher can update visible `parent_comments` draft row and verify
+  - parent cannot read draft row
+  - parent/student write attempts are blocked (RLS error or 0 visible updated rows)
+  - teacher revert step restores original row for repeatability
+- UI wiring still intentionally not done:
+  - Parent Updates page remains unchanged in this phase
+  - release/approval runtime wiring remains later
+  - AI remains demo/local only
