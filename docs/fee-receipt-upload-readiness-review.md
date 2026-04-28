@@ -129,6 +129,7 @@ Reason:
 - Added draft/manual patch: `supabase/sql/009_fee_receipt_upload_policies.sql`.
 - Scope of the draft patch:
   - parent row-scope update policy for linked-student fee receipt metadata flow
+  - parent-safe field DB trigger guard for fee_records updates
   - explicit staff verification update policy (HQ + own-branch supervisor)
   - path-based private storage policies for `fee-receipts`
   - helper function for path authorization checks

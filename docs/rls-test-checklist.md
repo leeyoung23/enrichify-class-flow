@@ -120,6 +120,7 @@ Reminder: **Frontend filtering is not security. RLS must enforce access at datab
 
 - Draft patch reference: `supabase/sql/009_fee_receipt_upload_policies.sql` (manual review/apply only).
 - Parent receipt upload path is being prepared via policy draft.
+- Parent safe-field update guard is enforced in draft via DB trigger for `fee_records`.
 - Service method and UI upload flow are still not implemented.
 - Continue using fake test files/data only during policy validation.
 

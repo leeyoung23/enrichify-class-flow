@@ -25,10 +25,8 @@
 -- -----------------------------------------------------------------------------
 -- 1) Parent receipt metadata update policy (row scope only)
 -- -----------------------------------------------------------------------------
--- Column-level restrictions cannot be enforced by RLS policy alone.
--- Therefore:
--- - RLS policy below restricts WHICH rows parent can update (linked student only).
--- - Service layer must restrict WHICH columns are updated (safe fields only).
+-- RLS policy below restricts WHICH rows parent can update (linked student only).
+-- A trigger (added below) enforces safe-field-only updates for parent role.
 -- Safe parent-update fields (service-level contract):
 --   receipt_file_path, receipt_storage_bucket, uploaded_by_profile_id, uploaded_at, verification_status
 -- Parent should set verification_status to submitted only.
@@ -46,6 +44,61 @@ with check (
   and coalesce(receipt_storage_bucket, 'fee-receipts') = 'fee-receipts'
   and verification_status in ('not_uploaded', 'not_submitted', 'submitted', 'under_review', 'verified', 'rejected')
 );
+
+-- Parent-safe field enforcement trigger:
+-- - Applies only when current_user_role() = 'parent'
+-- - Blocks parent from changing non-upload fields
+-- - Restricts parent verification_status to submitted
+create or replace function public.enforce_parent_fee_receipt_safe_update()
+returns trigger
+language plpgsql
+security definer
+set search_path = public
+as $$
+begin
+  if public.current_user_role() = 'parent'
+     and public.is_guardian_for_student(old.student_id) then
+
+    -- Immutable business fields for parent updates
+    if new.branch_id is distinct from old.branch_id
+      or new.student_id is distinct from old.student_id
+      or new.class_id is distinct from old.class_id
+      or new.fee_period is distinct from old.fee_period
+      or new.amount is distinct from old.amount
+      or new.status is distinct from old.status
+      or new.verified_by_profile_id is distinct from old.verified_by_profile_id
+      or new.verified_at is distinct from old.verified_at
+      or new.internal_note is distinct from old.internal_note
+    then
+      raise exception 'Parent updates are restricted to receipt upload metadata fields only';
+    end if;
+
+    if coalesce(new.receipt_storage_bucket, 'fee-receipts') <> 'fee-receipts' then
+      raise exception 'Parent must use fee-receipts bucket only';
+    end if;
+
+    if coalesce(new.verification_status, '') <> 'submitted' then
+      raise exception 'Parent can only set verification_status to submitted';
+    end if;
+
+    if new.uploaded_by_profile_id is null or new.uploaded_by_profile_id <> auth.uid() then
+      raise exception 'uploaded_by_profile_id must match current authenticated profile';
+    end if;
+
+    if new.uploaded_at is null then
+      raise exception 'uploaded_at is required for parent receipt submission';
+    end if;
+  end if;
+
+  return new;
+end;
+$$;
+
+drop trigger if exists trg_parent_fee_receipt_safe_update on fee_records;
+create trigger trg_parent_fee_receipt_safe_update
+before update on fee_records
+for each row
+execute function public.enforce_parent_fee_receipt_safe_update();
 
 -- -----------------------------------------------------------------------------
 -- 2) Staff verification policy (HQ + own-branch supervisor)
@@ -148,6 +201,7 @@ grant execute on function public.can_access_fee_receipt_path(text) to authentica
 -- - Avoids requiring pre-written receipt_file_path before upload.
 
 drop policy if exists fee_receipts_select_storage_v2 on storage.objects;
+drop policy if exists fee_receipts_select_storage on storage.objects;
 create policy fee_receipts_select_storage_v2
 on storage.objects
 for select
@@ -157,6 +211,7 @@ using (
 );
 
 drop policy if exists fee_receipts_insert_storage_v2 on storage.objects;
+drop policy if exists fee_receipts_insert_storage on storage.objects;
 create policy fee_receipts_insert_storage_v2
 on storage.objects
 for insert
