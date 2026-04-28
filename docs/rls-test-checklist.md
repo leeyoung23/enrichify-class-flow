@@ -116,6 +116,13 @@ Reminder: **Frontend filtering is not security. RLS must enforce access at datab
 - Test `fee-receipts` bucket: parent upload own linked-child receipt succeeds; teacher upload/read fails.
 - Test `sales-kit-resources` bucket: HQ upload/manage/archive succeeds; branch supervisor read approved succeeds; draft/archived read fails.
 
+### Fee receipt draft patch note
+
+- Draft patch reference: `supabase/sql/009_fee_receipt_upload_policies.sql` (manual review/apply only).
+- Parent receipt upload path is being prepared via policy draft.
+- Service method and UI upload flow are still not implemented.
+- Continue using fake test files/data only during policy validation.
+
 ## Execution Notes
 
 - Run tests with fake users for each role.

@@ -111,11 +111,17 @@ Use a consistent secure pattern:
 ## 9) Implementation sequence
 
 - **Phase 1:** planning doc (this file).
-- **Phase 2:** choose one vertical and review schema + storage policy readiness.
-- **Phase 3:** add SQL/storage policy patch if needed.
+- **Phase 2:** choose one vertical and review schema + storage policy readiness. - completed for Fee Receipt Upload.
+- **Phase 3:** add SQL/storage policy patch if needed. - draft added (`supabase/sql/009_fee_receipt_upload_policies.sql`).
 - **Phase 4:** implement service upload method + smoke test.
 - **Phase 5:** wire UI upload action.
 - **Phase 6:** add review/approval flow and audit checks.
+
+## Status note
+
+- Fee receipt upload remains planning/draft only.
+- SQL/storage draft exists, but runtime upload service and UI are not implemented yet.
+- Real files are still not used in this phase.
 
 ## 10) Next implementation prompt (readiness review for first vertical)
 

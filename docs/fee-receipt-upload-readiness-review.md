@@ -123,3 +123,16 @@ Reason:
 - Current blockers are policy-level (parent upload metadata write and storage flow alignment), not UI-level.
 - Service/runtime code should only be added after RLS/storage behavior is explicitly secured and testable.
 - This keeps the first upload implementation safe and avoids rework.
+
+## 10) Draft patch status
+
+- Added draft/manual patch: `supabase/sql/009_fee_receipt_upload_policies.sql`.
+- Scope of the draft patch:
+  - parent row-scope update policy for linked-student fee receipt metadata flow
+  - explicit staff verification update policy (HQ + own-branch supervisor)
+  - path-based private storage policies for `fee-receipts`
+  - helper function for path authorization checks
+- Still not implemented:
+  - service upload method
+  - UI wiring
+  - real file uploads
