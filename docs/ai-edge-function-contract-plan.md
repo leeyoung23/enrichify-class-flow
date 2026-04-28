@@ -168,7 +168,7 @@ Use or extend existing foundation tables:
 ## 9) Implementation sequence
 
 - **Phase 1:** contract planning doc (this file).
-- **Phase 2:** Supabase Edge Function scaffold only, no OpenAI/LLM provider call.
+- **Phase 2:** Supabase Edge Function scaffold only, no OpenAI/LLM provider call. - implemented.
 - **Phase 3:** mock AI response through Edge Function (deterministic placeholder output).
 - **Phase 4:** connect Parent Updates "Generate AI Draft" UI action to mock Edge Function.
 - **Phase 5:** replace mock with real AI provider securely (server-side only).
@@ -230,3 +230,17 @@ Tasks:
 Do not implement real AI provider integration in this phase.
 
 ---
+
+## Implementation status snapshot
+
+- Phase 2 scaffold implemented at:
+  - `supabase/functions/generate-parent-comment-draft/index.ts`
+- Current scaffold behavior:
+  - Accepts POST payload (`student_id`, `class_id`, `teacher_note`, optional `tone`, optional `language`).
+  - Returns deterministic mock output only.
+  - Includes explicit TODOs for JWT verification, profile/role load, scope checks, authorised context fetch, server-side provider call, and AI request/output persistence.
+- Not implemented in this phase:
+  - No external AI provider call.
+  - No real key usage.
+  - No frontend wiring.
+  - No automatic deployment; function deployment/testing remains a manual next step.
