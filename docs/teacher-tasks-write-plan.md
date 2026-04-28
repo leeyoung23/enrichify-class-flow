@@ -1,10 +1,10 @@
-# Teacher Tasks Supabase write plan (planning only)
+# Teacher Tasks Supabase write plan
 
-This document plans the first real Supabase write vertical for Teacher Tasks while preserving current UI/route behavior, `demoRole`, and demo/local fallbacks.
+This document plans and tracks implementation progress for the first real Supabase write vertical for Teacher Tasks while preserving current UI/route behavior, `demoRole`, and demo/local fallbacks.
 
 Scope in this plan:
 
-- Planning only (no runtime writes added in this document)
+- Planning + service/smoke-test tracking (no runtime UI writes in this phase)
 - No UI redesign
 - No service-role usage in frontend
 - No real data, no AI API calls
@@ -219,15 +219,18 @@ Add authenticated smoke write test using existing fake users + anon client (no s
 - Add service-layer write method only:
   - `updateTeacherTaskAssignmentStatus(...)`
   - no UI wiring yet.
+- **Status:** Implemented via `src/services/supabaseWriteService.js` using anon Supabase client + RLS.
 
 ### Phase 3
 
 - Add authenticated smoke write test with fake teacher and role-deny checks.
+- **Status:** Implemented via `scripts/supabase-teacher-task-write-smoke-test.mjs` and npm script `test:supabase:tasks:write`.
 
 ### Phase 4
 
 - Wire `MyTasks` teacher `Mark Complete` button to service method.
 - Keep demoRole branch local/demo behavior unchanged.
+- **Status:** Not started (intentionally deferred).
 
 ### Phase 5
 
@@ -281,3 +284,16 @@ Do not add runtime UI writes in this phase.
 ---
 
 *Document type: planning only. No application behavior change is intended by this file.*
+
+## Implementation status snapshot
+
+- Service method implemented: `updateTeacherTaskAssignmentStatus({ assignmentId, status, completedAt })`
+  - updates only `teacher_task_assignments`
+  - safe fields only (`status`, `completed_at`, `updated_at`)
+  - returns predictable `{ data, error }`, no unhandled throws
+- Authenticated smoke write test implemented:
+  - teacher can update own assignment to completed, verify, and revert
+  - parent/student update attempts are expected blocked by RLS or return 0 updated rows
+- UI wiring remains intentionally undone:
+  - `MyTasks` button is still not connected to real write path
+  - `demoRole` preview remains demo/local and does not write to Supabase
