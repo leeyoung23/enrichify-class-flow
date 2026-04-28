@@ -1,6 +1,6 @@
-# Attendance Supabase write plan (planning only)
+# Attendance Supabase write plan
 
-This document plans the attendance real-write vertical using Supabase anon client + RLS, while keeping current UI contracts and `demoRole` preview behavior unchanged until implementation phases.
+This document plans and tracks the attendance real-write vertical using Supabase anon client + RLS, while keeping current UI contracts and `demoRole` preview behavior unchanged until implementation phases.
 
 Related context:
 
@@ -198,7 +198,12 @@ Coverage targets:
 
 - **Phase 1:** planning doc (this file).
 - **Phase 2:** service write method + smoke test only.
+- **Status:** Implemented via:
+  - `src/services/supabaseWriteService.js` -> `updateAttendanceRecord({ recordId, status, note })`
+  - `scripts/supabase-attendance-write-smoke-test.mjs`
+  - npm script `test:supabase:attendance:write`
 - **Phase 3:** wire Attendance UI for one safe row/action only.
+- **Status:** Not started (intentionally deferred).
 - **Phase 4:** expand into bulk save/session attendance behaviors.
 - **Phase 5:** parent-facing attendance summary refinements later.
 
@@ -252,3 +257,17 @@ Do not add runtime attendance UI writes in this phase.
 ---
 
 *Document type: planning only; no runtime behavior changes are introduced by this file.*
+
+## Implementation status snapshot
+
+- Service write method implemented:
+  - `updateAttendanceRecord({ recordId, status, note })`
+  - validates allowed status values (`present|absent|late|leave`)
+  - updates safe fields only (`status`, `note`, `updated_at`)
+  - returns predictable `{ data, error }`, catches exceptions safely
+- Authenticated smoke test implemented:
+  - teacher can update visible attendance row and revert
+  - parent/student write attempts are blocked (RLS error or 0 visible updated rows)
+- UI wiring still intentionally not done:
+  - Attendance page remains unchanged in this phase
+  - `demoRole` remains local/demo only and does not write

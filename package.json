@@ -13,6 +13,7 @@
     "test:supabase:read": "node scripts/supabase-readonly-smoke-test.mjs",
     "test:supabase:auth": "node scripts/supabase-auth-smoke-test.mjs",
     "test:supabase:tasks:write": "node scripts/supabase-teacher-task-write-smoke-test.mjs",
+    "test:supabase:attendance:write": "node scripts/supabase-attendance-write-smoke-test.mjs",
     "preview": "vite preview"
   },
   "dependencies": {
