@@ -120,8 +120,10 @@ Use a consistent secure pattern:
 ## Status note
 
 - Fee receipt upload remains planning/draft only.
-- SQL/storage draft exists, but runtime upload service and UI are not implemented yet.
-- Real files are still not used in this phase.
+- SQL/storage draft exists and has been manually applied in dev.
+- Fee receipt upload service + smoke test now exist (service-level only).
+- UI upload wiring is still not implemented.
+- Real files are still not used in this phase (fake tiny test blob only).
 
 ## 10) Next implementation prompt (readiness review for first vertical)
 

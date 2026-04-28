@@ -134,6 +134,19 @@ Reason:
   - path-based private storage policies for `fee-receipts`
   - helper function for path authorization checks
 - Still not implemented:
-  - service upload method
   - UI wiring
   - real file uploads
+
+## 11) Service and smoke test status
+
+- Added service file: `src/services/supabaseUploadService.js`
+  - `uploadFeeReceipt({ feeRecordId, file, fileName, contentType })`
+  - `getFeeReceiptSignedUrl({ feeRecordId })`
+- Added smoke test: `scripts/supabase-fee-receipt-upload-smoke-test.mjs`
+  - uses fake tiny text blob only
+  - validates parent upload metadata update flow + teacher block + cleanup attempts
+- Added npm command:
+  - `test:supabase:fee-receipt:upload`
+- Still not implemented:
+  - UI wiring
+  - real receipt file usage (fake test blob only)
