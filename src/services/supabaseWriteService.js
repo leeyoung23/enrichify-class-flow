@@ -138,3 +138,40 @@ export async function updateParentCommentDraft({ commentId, message, status } = 
   }
 }
 
+/**
+ * Release a parent comment for parent-visible access using Supabase anon client + RLS.
+ * Only safe parent comment fields are writable here.
+ */
+export async function releaseParentComment({ commentId, message } = {}) {
+  if (!isSupabaseConfigured() || !supabase) {
+    return { data: null, error: { message: "Supabase is not configured" } };
+  }
+
+  if (!commentId || typeof commentId !== "string") {
+    return { data: null, error: { message: "commentId is required" } };
+  }
+
+  if (typeof message !== "string" || !message.trim()) {
+    return { data: null, error: { message: "message is required" } };
+  }
+
+  const payload = {
+    comment_text: message,
+    status: "released",
+    updated_at: new Date().toISOString(),
+  };
+
+  try {
+    const { data, error } = await supabase
+      .from("parent_comments")
+      .update(payload)
+      .eq("id", commentId)
+      .select("id,branch_id,class_id,student_id,teacher_id,comment_text,status,updated_at")
+      .maybeSingle();
+
+    return { data: data ?? null, error: error ?? null };
+  } catch (err) {
+    return { data: null, error: { message: err?.message || String(err) } };
+  }
+}
+

@@ -38,7 +38,7 @@ async function signInRole({ label, email, passwordVar }, deps) {
 async function run() {
   const [
     { signInWithEmailPassword, signOut },
-    { updateParentCommentDraft },
+    { updateParentCommentDraft, releaseParentComment },
     { supabase },
   ] = await Promise.all([
     import("../src/services/supabaseAuthService.js"),
@@ -70,8 +70,9 @@ async function run() {
   let failureCount = 0;
   let warningCount = 0;
   let targetComment = null;
-  let teacherUpdatedMessage = "";
-  const testStatus = "draft";
+  let teacherDraftMessage = "";
+  let teacherReleasedMessage = "";
+  const draftStatus = "draft";
 
   const teacherSignIn = await signInRole(teacherUser, { signInWithEmailPassword, signOut });
   if (!teacherSignIn.ok) {
@@ -98,11 +99,11 @@ async function run() {
   }
 
   if (targetComment) {
-    teacherUpdatedMessage = `parent update draft smoke test ${new Date().toISOString()}`;
+    teacherDraftMessage = `parent update draft smoke test ${new Date().toISOString()}`;
     const teacherUpdate = await updateParentCommentDraft({
       commentId: targetComment.id,
-      message: teacherUpdatedMessage,
-      status: testStatus,
+      message: teacherDraftMessage,
+      status: draftStatus,
     });
 
     if (teacherUpdate.error) {
@@ -128,8 +129,8 @@ async function run() {
       failureCount += 1;
     } else if (
       !verifyTeacherQuery.data ||
-      verifyTeacherQuery.data.status !== testStatus ||
-      verifyTeacherQuery.data.comment_text !== teacherUpdatedMessage
+      verifyTeacherQuery.data.status !== draftStatus ||
+      verifyTeacherQuery.data.comment_text !== teacherDraftMessage
     ) {
       printResult("CHECK", "Teacher: verify did not show expected draft status + updated comment_text");
       failureCount += 1;
@@ -144,8 +145,8 @@ async function run() {
     warningCount += 1;
   }
 
-  const parentSignIn = await signInRole(parentUser, { signInWithEmailPassword, signOut });
-  if (!parentSignIn.ok) {
+  const parentSignInDraftCheck = await signInRole(parentUser, { signInWithEmailPassword, signOut });
+  if (!parentSignInDraftCheck.ok) {
     failureCount += 1;
   } else if (!targetComment) {
     printResult("CHECK", "Parent: skipped draft visibility check (no parent comment id from teacher step)");
@@ -184,9 +185,93 @@ async function run() {
     }
   }
 
-  const parentSignOut = await signOut();
-  if (parentSignOut.error) {
-    printResult("WARNING", `Parent: sign-out warning (${parentSignOut.error.message || "unknown"})`);
+  const parentSignOutDraftCheck = await signOut();
+  if (parentSignOutDraftCheck.error) {
+    printResult("WARNING", `Parent: sign-out warning (${parentSignOutDraftCheck.error.message || "unknown"})`);
+    warningCount += 1;
+  }
+
+  const teacherSignInRelease = await signInRole(teacherUser, { signInWithEmailPassword, signOut });
+  if (!teacherSignInRelease.ok) {
+    failureCount += 1;
+  } else if (!targetComment) {
+    printResult("CHECK", "Teacher: skipped release step (no parent comment id from earlier step)");
+    failureCount += 1;
+  } else {
+    teacherReleasedMessage = `parent update released smoke test ${new Date().toISOString()}`;
+    const releaseResult = await releaseParentComment({
+      commentId: targetComment.id,
+      message: teacherReleasedMessage,
+    });
+
+    if (releaseResult.error) {
+      printResult("WARNING", `Teacher: release failed (${releaseResult.error.message || "unknown"})`);
+      warningCount += 1;
+      failureCount += 1;
+    } else if (!releaseResult.data) {
+      printResult("CHECK", "Teacher: release returned no row (unexpected for own parent comment)");
+      failureCount += 1;
+    } else if (releaseResult.data.status !== "released") {
+      printResult("CHECK", `Teacher: release returned unexpected status=${releaseResult.data.status}`);
+      failureCount += 1;
+    } else {
+      printResult("PASS", `Teacher: released parent comment ${releaseResult.data.id} to status=released`);
+    }
+  }
+
+  const teacherSignOutRelease = await signOut();
+  if (teacherSignOutRelease.error) {
+    printResult("WARNING", `Teacher: sign-out warning (${teacherSignOutRelease.error.message || "unknown"})`);
+    warningCount += 1;
+  }
+
+  const parentSignInReleaseCheck = await signInRole(parentUser, { signInWithEmailPassword, signOut });
+  if (!parentSignInReleaseCheck.ok) {
+    failureCount += 1;
+  } else if (!targetComment) {
+    printResult("CHECK", "Parent: skipped released visibility check (no parent comment id from teacher step)");
+    failureCount += 1;
+  } else {
+    const parentReadReleased = await supabase
+      .from("parent_comments")
+      .select("id,status,comment_text")
+      .eq("id", targetComment.id)
+      .maybeSingle();
+
+    if (parentReadReleased.error) {
+      printResult("WARNING", `Parent: failed to read released row (${parentReadReleased.error.message || "unknown"})`);
+      warningCount += 1;
+      failureCount += 1;
+    } else if (!parentReadReleased.data) {
+      printResult("CHECK", "Parent: released row not visible (unexpected)");
+      failureCount += 1;
+    } else if (parentReadReleased.data.status !== "released") {
+      printResult("CHECK", `Parent: expected released status but found ${parentReadReleased.data.status}`);
+      failureCount += 1;
+    } else {
+      printResult("PASS", "Parent: released row is visible");
+    }
+
+    const parentWriteAttemptAfterRelease = await updateParentCommentDraft({
+      commentId: targetComment.id,
+      message: "blocked parent write test after release",
+      status: "draft",
+    });
+
+    if (parentWriteAttemptAfterRelease.error) {
+      printResult("PASS", `Parent: write blocked by RLS (${parentWriteAttemptAfterRelease.error.message || "error"})`);
+    } else if (!parentWriteAttemptAfterRelease.data) {
+      printResult("PASS", "Parent: write blocked (0 visible updated rows)");
+    } else {
+      printResult("WARNING", `Parent: unexpectedly updated parent comment ${parentWriteAttemptAfterRelease.data.id}`);
+      warningCount += 1;
+      failureCount += 1;
+    }
+  }
+
+  const parentSignOutReleaseCheck = await signOut();
+  if (parentSignOutReleaseCheck.error) {
+    printResult("WARNING", `Parent: sign-out warning (${parentSignOutReleaseCheck.error.message || "unknown"})`);
     warningCount += 1;
   }
 

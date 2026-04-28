@@ -135,7 +135,11 @@ Future script intent (can extend current parent updates write smoke test or add 
 
 - **Phase 1:** planning doc (this file).
 - **Phase 2:** service wrapper + smoke test for Quick Parent Comment release.
+  - **Status:** Implemented.
+  - `src/services/supabaseWriteService.js` -> `releaseParentComment({ commentId, message })`
+  - `scripts/supabase-parent-updates-write-smoke-test.mjs` now verifies draft -> released parent visibility lifecycle.
 - **Phase 3:** wire Quick Comment release button in Parent Updates UI.
+  - **Status:** Not started (intentionally unchanged in this checkpoint).
 - **Phase 4:** parent-view verification flow.
 - **Phase 5:** Weekly Progress Report write/release later.
 
@@ -198,3 +202,20 @@ Do not wire runtime release button behavior in this phase.
 ---
 
 *Document type: planning only; no runtime behavior changes are introduced by this file.*
+
+## Implementation status snapshot
+
+- Release service wrapper implemented:
+  - `releaseParentComment({ commentId, message })`
+  - uses anon Supabase client + RLS only
+  - updates safe fields only (`comment_text`, `status='released'`, `updated_at`)
+  - returns predictable `{ data, error }` with safe exception handling
+- Smoke lifecycle coverage implemented:
+  - teacher sets draft, parent cannot see draft
+  - teacher releases, parent can see released row
+  - parent/student cannot write
+  - teacher revert step restores original row for repeatability
+- UI wiring still intentionally not done:
+  - release button runtime wiring remains pending
+  - Weekly Progress Report runtime wiring remains pending
+  - AI remains demo/local only
