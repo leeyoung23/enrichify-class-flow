@@ -2,7 +2,7 @@ import { base44 } from '@/api/base44Client';
 import { getSelectedDemoRole } from './authService';
 import { ROLES } from './permissionService';
 import { getApprovedSalesKitResources, getBranches, getClasses, getStudents } from './supabaseReadService';
-import { isSupabaseConfigured } from './supabaseClient';
+import { isSupabaseConfigured, supabase } from './supabaseClient';
 
 const demoEnabled = () => Boolean(getSelectedDemoRole());
 const readSources = {
@@ -797,6 +797,80 @@ export function getTeacherNotifications(user) {
       });
   }
   return [];
+}
+
+function toDueLabel(dueAt) {
+  if (!dueAt) return 'No due date';
+  const date = new Date(dueAt);
+  if (Number.isNaN(date.getTime())) return 'No due date';
+  return date.toLocaleString();
+}
+
+function sortTeacherNotifications(items = []) {
+  const order = { overdue: 0, pending: 1, in_progress: 2, completed: 3 };
+  return [...items].sort((a, b) => {
+    const left = order[a.status] ?? 9;
+    const right = order[b.status] ?? 9;
+    if (left !== right) return left - right;
+    return (a.due_at || '').localeCompare(b.due_at || '');
+  });
+}
+
+export async function listTeacherNotifications(user) {
+  if (demoEnabled()) {
+    return getTeacherNotifications(user).map((item) => ({
+      ...item,
+      assignmentId: null,
+    }));
+  }
+
+  if (!isSupabaseConfigured() || !supabase) {
+    return getTeacherNotifications(user).map((item) => ({
+      ...item,
+      assignmentId: null,
+    }));
+  }
+
+  try {
+    const { data, error } = await supabase
+      .from('teacher_task_assignments')
+      .select('id,status,completed_at,updated_at,teacher_id,task:teacher_tasks!inner(id,title,due_at,class_id,student_id)')
+      .order('updated_at', { ascending: false });
+
+    if (error || !Array.isArray(data)) {
+      return getTeacherNotifications(user).map((item) => ({
+        ...item,
+        assignmentId: null,
+      }));
+    }
+
+    const rows = data.map((row) => {
+      const relatedLabel = row?.task?.class_id
+        ? 'Class task'
+        : row?.task?.student_id
+          ? 'Student task'
+          : 'General task';
+      return {
+        id: row.id,
+        assignmentId: row.id,
+        status: row.status || 'pending',
+        priority: row.status === 'overdue' ? 'high' : 'medium',
+        title: row?.task?.title || 'Teacher task',
+        related_label: relatedLabel,
+        related_type: row?.task?.class_id ? 'class' : (row?.task?.student_id ? 'student' : 'task'),
+        due_at: row?.task?.due_at || '',
+        due_label: toDueLabel(row?.task?.due_at),
+        completed_at: row?.completed_at || null,
+      };
+    });
+
+    return sortTeacherNotifications(rows);
+  } catch {
+    return getTeacherNotifications(user).map((item) => ({
+      ...item,
+      assignmentId: null,
+    }));
+  }
 }
 
 export function getTeacherTaskCompletionOverview(user) {
