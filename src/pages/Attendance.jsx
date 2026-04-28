@@ -5,6 +5,8 @@ import { listClasses, listStudentsByClass, listAttendanceRecords } from '@/servi
 import { saveAttendanceRecord, saveAttendanceNotes } from '@/services/classSessionService';
 import { isTeacherRole } from '@/services/permissionService';
 import { getSelectedDemoRole } from '@/services/authService';
+import { updateAttendanceRecord } from '@/services/supabaseWriteService';
+import { useSupabaseAuthState } from '@/hooks/useSupabaseAuthState';
 import { ClipboardCheck, Check, X, Clock, Umbrella } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
@@ -26,6 +28,7 @@ export default function Attendance() {
   const isBranchSupervisor = user?.role === 'branch_supervisor';
   const canEdit = isTeacher || isBranchSupervisor;
   const demoMode = Boolean(getSelectedDemoRole());
+  const { session, appUser, isSupabaseAuthAvailable } = useSupabaseAuthState();
 
   const { data: classes = [] } = useQuery({
     queryKey: ['classes-for-attendance', user?.role, user?.email],
@@ -52,6 +55,21 @@ export default function Attendance() {
 
   const notesMutation = useMutation({
     mutationFn: ({ studentId, notes }) => saveAttendanceNotes(existingRecords, selectedClassId, selectedDate, studentId, notes),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['attendance'] }),
+  });
+  const supabaseSaveMutation = useMutation({
+    mutationFn: async (changedRows) => {
+      for (const row of changedRows) {
+        const { error } = await updateAttendanceRecord({
+          recordId: row.recordId,
+          status: row.status,
+          note: row.note,
+        });
+        if (error) {
+          throw new Error(error.message || 'Attendance update failed');
+        }
+      }
+    },
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['attendance'] }),
   });
 
@@ -125,6 +143,34 @@ export default function Attendance() {
 
     if (changedStudents.length === 0) {
       toast.info('No attendance changes to save.');
+      return;
+    }
+
+    if (!demoMode) {
+      if (!isSupabaseAuthAvailable || !session?.user || !appUser) {
+        toast.info('Attendance save requires an authenticated Supabase session.');
+        return;
+      }
+      const changedRows = changedStudents.map((student) => {
+        const savedRecord = existingRecords.find((record) => record.student_id === student.id);
+        const draftRecord = draftRecords[student.id] || {};
+        return {
+          recordId: savedRecord?.id || null,
+          status: draftRecord.status ?? savedRecord?.status ?? '',
+          note: draftRecord.notes ?? savedRecord?.notes ?? '',
+        };
+      });
+      if (changedRows.some((row) => !row.recordId)) {
+        toast.error('Some attendance rows are missing record ids. Save was not attempted.');
+        return;
+      }
+      try {
+        await supabaseSaveMutation.mutateAsync(changedRows);
+        await queryClient.invalidateQueries({ queryKey: ['attendance'] });
+        toast.success('Attendance changes saved.');
+      } catch (error) {
+        toast.error(error?.message || 'Failed to save attendance changes.');
+      }
       return;
     }
 
@@ -251,9 +297,9 @@ export default function Attendance() {
             <div className="flex justify-end pt-2">
               <Button
                 onClick={handleSaveDemoChanges}
-                disabled={!hasUnsavedChanges || saveMutation.isPending || notesMutation.isPending}
+                disabled={!hasUnsavedChanges || saveMutation.isPending || notesMutation.isPending || supabaseSaveMutation.isPending}
               >
-                Save Demo Changes
+                {(saveMutation.isPending || notesMutation.isPending || supabaseSaveMutation.isPending) ? 'Saving...' : 'Save Demo Changes'}
               </Button>
             </div>
           )}

@@ -373,6 +373,28 @@ export async function listAttendanceRecords(user, filters = {}) {
     let items = filterByRole(demoData.attendance, user, 'attendance');
     return items.filter(item => Object.entries(filters).every(([key, value]) => !value || item[key] === value));
   }
+  if (isSupabaseConfigured() && supabase) {
+    try {
+      let query = supabase
+        .from('attendance_records')
+        .select('id,branch_id,class_id,student_id,teacher_id,session_date,status,note,updated_at')
+        .order('session_date', { ascending: false });
+      if (filters.class_id) query = query.eq('class_id', filters.class_id);
+      if (filters.student_id) query = query.eq('student_id', filters.student_id);
+      if (filters.date) query = query.eq('session_date', filters.date);
+
+      const { data, error } = await query;
+      if (!error && Array.isArray(data)) {
+        return data.map((row) => ({
+          ...row,
+          date: row.session_date,
+          notes: row.note ?? '',
+        }));
+      }
+    } catch {
+      // Fallback to legacy source below
+    }
+  }
   return base44.entities.Attendance.filter(filters);
 }
 
