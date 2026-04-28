@@ -2,7 +2,11 @@ import React, { useMemo, useState } from 'react';
 import { useOutletContext } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { listClasses, listStudentsByClass, listParentUpdates, createParentUpdate, generateParentMessage, listAttendanceRecords, listHomeworkAttachments } from '@/services/dataService';
+import { getSelectedDemoRole } from '@/services/authService';
 import { ROLES, isTeacherRole } from '@/services/permissionService';
+import { isSupabaseConfigured } from '@/services/supabaseClient';
+import { updateParentCommentDraft } from '@/services/supabaseWriteService';
+import { useSupabaseAuthState } from '@/hooks/useSupabaseAuthState';
 import { Sparkles, Save, Loader2, CheckCircle2, Share2, MessageSquarePlus, Eye, Pencil } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
@@ -44,6 +48,7 @@ function getActionLabel(role) {
 
 export default function ParentUpdates() {
   const { user } = useOutletContext();
+  const { appUser: supabaseAppUser } = useSupabaseAuthState();
   const [communicationType, setCommunicationType] = useState('comment');
   const [selectedClassId, setSelectedClassId] = useState('');
   const [selectedStudentId, setSelectedStudentId] = useState('');
@@ -165,6 +170,15 @@ export default function ParentUpdates() {
     () => filteredUpdates.filter((item) => item.update_type === 'weekly_report'),
     [filteredUpdates],
   );
+  const selectedCommentRecord = useMemo(() => {
+    if (!selectedStudentId || !selectedClassId) return null;
+    return updates.find((item) =>
+      item.update_type !== 'weekly_report'
+      && item.student_id === selectedStudentId
+      && item.class_id === selectedClassId
+      && item.data_source === 'supabase_parent_comments'
+    ) || null;
+  }, [updates, selectedStudentId, selectedClassId]);
 
   const handleGenerate = async () => {
     if (!notes.trim() || !selectedStudentId) return;
@@ -179,16 +193,62 @@ export default function ParentUpdates() {
   };
 
   const saveMutation = useMutation({
-    mutationFn: (data) => createParentUpdate(data),
-    onSuccess: () => {
+    mutationFn: async (payload) => {
+      if (payload.mode === 'supabase-draft') {
+        const { commentId, message } = payload;
+        const result = await updateParentCommentDraft({ commentId, message, status: 'draft' });
+        if (result.error) {
+          throw new Error(result.error.message || 'Failed to save draft');
+        }
+        return result.data;
+      }
+      return createParentUpdate(payload.data);
+    },
+    onSuccess: (_data, payload) => {
       queryClient.invalidateQueries({ queryKey: ['parent-updates'] });
-      toast.success('Parent update saved successfully');
+      if (payload?.mode === 'supabase-draft') {
+        toast.success('Draft saved to Supabase successfully');
+      } else {
+        toast.success('Parent update saved successfully');
+      }
       resetForm();
+    },
+    onError: (error) => {
+      toast.error(error?.message || 'Unable to save parent update');
     },
   });
 
   const handleSave = (statusOverride = 'edited') => {
+    const isDemoMode = Boolean(getSelectedDemoRole());
+    const hasSupabaseSession = Boolean(supabaseAppUser?.id);
+    const canUseSupabaseDraftSave = (
+      statusOverride === 'edited'
+      && communicationType === 'comment'
+      && !isDemoMode
+      && isSupabaseConfigured()
+      && hasSupabaseSession
+    );
+
+    if (canUseSupabaseDraftSave) {
+      if (!selectedCommentRecord?.id) {
+        toast.message('No real parent comment record available for Supabase draft save yet.');
+        return;
+      }
+      if (!editedMessage.trim()) {
+        toast.message('Edited message is required before saving draft.');
+        return;
+      }
+      saveMutation.mutate({
+        mode: 'supabase-draft',
+        commentId: selectedCommentRecord.id,
+        message: editedMessage.trim(),
+      });
+      return;
+    }
+
     saveMutation.mutate({
+      mode: 'legacy',
+      data: {
       student_id: selectedStudentId,
       class_id: selectedClassId,
       branch_id: user?.branch_id,
@@ -202,6 +262,7 @@ export default function ParentUpdates() {
       shared_report: sharedReport,
       status: statusOverride,
       update_type: 'comment',
+      },
     });
   };
 

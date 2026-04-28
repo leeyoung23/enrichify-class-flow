@@ -246,7 +246,11 @@ Deferred to later phase:
   - `scripts/supabase-parent-updates-write-smoke-test.mjs`
   - npm script `test:supabase:parent-updates:write`
 - **Phase 3:** wire Parent Updates Quick Comment save/release UI.
-  - **Status:** Not started (intentionally unchanged in this checkpoint).
+  - **Status:** Partially implemented.
+  - Quick Parent Comment **draft save/update** is wired for authenticated non-demo users when a real `parent_comments.id` is available.
+  - `demoRole` remains local/demo only and does not call Supabase writes.
+  - Weekly Progress Report UI wiring is still not implemented.
+  - release/share runtime wiring is still not implemented.
 - **Phase 4:** weekly report real save/release path.
 - **Phase 5:** AI draft via Edge Function later.
 - **Phase 6:** Memories attachment later.
@@ -323,6 +327,7 @@ Do not add runtime parent update UI writes in this phase.
   - parent/student write attempts are blocked (RLS error or 0 visible updated rows)
   - teacher revert step restores original row for repeatability
 - UI wiring still intentionally not done:
-  - Parent Updates page remains unchanged in this phase
-  - release/approval runtime wiring remains later
+  - Parent Updates page now has Quick Parent Comment draft-save Supabase wiring only (no redesign).
+  - Weekly Progress Report runtime wiring remains later.
+  - release/approval runtime wiring remains later.
   - AI remains demo/local only

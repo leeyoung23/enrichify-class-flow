@@ -400,6 +400,32 @@ export async function listAttendanceRecords(user, filters = {}) {
 
 export async function listParentUpdates(user) {
   if (demoEnabled()) return filterByRole(demoData.parentUpdates, user, 'parentUpdates');
+  if (isSupabaseConfigured() && supabase) {
+    try {
+      const { data, error } = await supabase
+        .from('parent_comments')
+        .select('id,branch_id,class_id,student_id,teacher_id,comment_text,status,created_at,updated_at')
+        .order('updated_at', { ascending: false });
+
+      if (!error && Array.isArray(data)) {
+        return data.map((row) => ({
+          id: row.id,
+          branch_id: row.branch_id,
+          class_id: row.class_id,
+          student_id: row.student_id,
+          teacher_id: row.teacher_id,
+          note_text: row.comment_text ?? '',
+          final_message: row.comment_text ?? '',
+          status: row.status,
+          created_date: row.updated_at || row.created_at,
+          update_type: 'comment',
+          data_source: 'supabase_parent_comments',
+        }));
+      }
+    } catch {
+      // Fallback to legacy source below
+    }
+  }
   return base44.entities.ParentUpdate.list('-created_date', 20);
 }
 
