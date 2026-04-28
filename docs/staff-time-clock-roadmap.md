@@ -92,11 +92,35 @@ All enforcement at **Postgres RLS**; UI checks are never sufficient.
 
 ## 7) Reporting (future)
 
-- **Daily staff attendance** — who clocked in/out per day per branch.
-- **Branch staff summary** — totals, late counts, open punches.
-- **Late / missed clock-out list** — actionable queue for supervisors.
-- **Monthly work hours** — per profile / per branch for HQ and payroll handoff (export later).
-- **Export** — CSV or controlled download for HQ (post–storage/RLS review).
+### HQ reporting (branch-categorised)
+
+- **All branches overview** — organisation-wide summary cards first.
+- **Branch filter** — narrow all report widgets/tables by selected branch.
+- **Branch-grouped staff time table** — grouped sections per branch with staff rows under each branch.
+- **Branch-level summaries** — totals, late arrivals, missed clock-outs, and open corrections by branch.
+- **Monthly branch comparison (later)** — compare total hours / late patterns across branches.
+
+### Branch Supervisor reporting (own branch only)
+
+- **Branch daily staff attendance** — who clocked in/out for today in that branch.
+- **Late arrivals queue** — actionable list for follow-up.
+- **Missed clock-outs queue** — open punch rows needing closure/correction.
+- **Pending correction requests** — review list scoped to supervisor’s branch only.
+
+### Teacher / staff reporting (self only)
+
+- **Own clock in/out actions** — staff can punch for themselves only.
+- **Own daily status** — on-time/late/open punch status.
+- **Own recent history** — personal recent entries list.
+- **Correction request flow (later)** — request changes for own entries only.
+
+### Future HQ report structure
+
+- **Overall summary cards**
+- **Branch-grouped report sections**
+- **Staff rows nested under each branch**
+- **Filters:** branch / date / month / status
+- **Export later** (after storage/RLS review)
 
 ---
 
@@ -105,6 +129,20 @@ All enforcement at **Postgres RLS**; UI checks are never sufficient.
 - **Separate from student attendance:** Student records stay in **`attendance_records`** (or successor); staff time lives in **`staff_time_entries`** (or renamed table)—no mixing in one row type.
 - **Teacher KPI:** Staff hours and punctuality can **feed** KPI dashboards later as an aggregated signal—design joins carefully to avoid leaking raw clock data into parent-facing surfaces.
 - **Depends on real auth:** Clock in/out must bind to **`profiles.id`** and RLS; **implement after** reliable **Supabase Auth + `AppLayout` integration** (see `docs/supabase-auth-route-guard-integration-plan.md`) so punches are not anonymous or demo-only in production. **`demoRole`** can still drive **fake** clock demos in non-prod if ever needed.
+
+### Data model implication for branch categorisation
+
+- `staff_time_entries` should include both:
+  - `branch_id` (for branch categorisation and report filtering)
+  - `profile_id` (for identity binding and self-scope checks)
+- Reporting queries should use `branch_id` as a first-class scope/filter dimension.
+- RLS target model:
+  - **HQ:** all branches
+  - **Branch Supervisor:** own branch only
+  - **Staff:** own records only
+  - **Parent / student:** blocked
+
+**Current note:** `/staff-time-clock` remains a demo placeholder only. Real branch-categorised reporting comes after `staff_time_entries` SQL + RLS implementation.
 
 ---
 
