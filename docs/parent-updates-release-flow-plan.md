@@ -139,7 +139,9 @@ Future script intent (can extend current parent updates write smoke test or add 
   - `src/services/supabaseWriteService.js` -> `releaseParentComment({ commentId, message })`
   - `scripts/supabase-parent-updates-write-smoke-test.mjs` now verifies draft -> released parent visibility lifecycle.
 - **Phase 3:** wire Quick Comment release button in Parent Updates UI.
-  - **Status:** Not started (intentionally unchanged in this checkpoint).
+  - **Status:** Implemented for Quick Parent Comment only.
+  - Authenticated non-demo release action now uses `releaseParentComment({ commentId, message })` when the selected record is Supabase-backed.
+  - `demoRole` remains local/demo only and does not call Supabase release writes.
 - **Phase 4:** parent-view verification flow.
 - **Phase 5:** Weekly Progress Report write/release later.
 
@@ -216,6 +218,6 @@ Do not wire runtime release button behavior in this phase.
   - parent/student cannot write
   - teacher revert step restores original row for repeatability
 - UI wiring still intentionally not done:
-  - release button runtime wiring remains pending
+  - release button runtime wiring is now implemented for Quick Parent Comment only
   - Weekly Progress Report runtime wiring remains pending
   - AI remains demo/local only

@@ -5,7 +5,7 @@ import { listClasses, listStudentsByClass, listParentUpdates, createParentUpdate
 import { getSelectedDemoRole } from '@/services/authService';
 import { ROLES, isTeacherRole } from '@/services/permissionService';
 import { isSupabaseConfigured } from '@/services/supabaseClient';
-import { updateParentCommentDraft } from '@/services/supabaseWriteService';
+import { updateParentCommentDraft, releaseParentComment } from '@/services/supabaseWriteService';
 import { useSupabaseAuthState } from '@/hooks/useSupabaseAuthState';
 import { Sparkles, Save, Loader2, CheckCircle2, Share2, MessageSquarePlus, Eye, Pencil } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -73,6 +73,7 @@ export default function ParentUpdates() {
   const [weeklyDraftGenerated, setWeeklyDraftGenerated] = useState(false);
   const queryClient = useQueryClient();
   const isTeacher = isTeacherRole(user);
+  const isDemoMode = Boolean(getSelectedDemoRole());
 
   const { data: classes = [] } = useQuery({
     queryKey: ['classes-updates', user?.role, user?.email],
@@ -202,12 +203,22 @@ export default function ParentUpdates() {
         }
         return result.data;
       }
+      if (payload.mode === 'supabase-release') {
+        const { commentId, message } = payload;
+        const result = await releaseParentComment({ commentId, message });
+        if (result.error) {
+          throw new Error(result.error.message || 'Failed to release parent comment');
+        }
+        return result.data;
+      }
       return createParentUpdate(payload.data);
     },
     onSuccess: (_data, payload) => {
       queryClient.invalidateQueries({ queryKey: ['parent-updates'] });
       if (payload?.mode === 'supabase-draft') {
         toast.success('Draft saved to Supabase successfully');
+      } else if (payload?.mode === 'supabase-release') {
+        toast.success('Parent comment released successfully');
       } else {
         toast.success('Parent update saved successfully');
       }
@@ -219,7 +230,6 @@ export default function ParentUpdates() {
   });
 
   const handleSave = (statusOverride = 'edited') => {
-    const isDemoMode = Boolean(getSelectedDemoRole());
     const hasSupabaseSession = Boolean(supabaseAppUser?.id);
     const canUseSupabaseDraftSave = (
       statusOverride === 'edited'
@@ -240,6 +250,31 @@ export default function ParentUpdates() {
       }
       saveMutation.mutate({
         mode: 'supabase-draft',
+        commentId: selectedCommentRecord.id,
+        message: editedMessage.trim(),
+      });
+      return;
+    }
+
+    const canUseSupabaseRelease = (
+      statusOverride === 'shared'
+      && communicationType === 'comment'
+      && !isDemoMode
+      && isSupabaseConfigured()
+      && hasSupabaseSession
+    );
+
+    if (canUseSupabaseRelease) {
+      if (!selectedCommentRecord?.id) {
+        toast.message('No real parent comment record available for Supabase release yet.');
+        return;
+      }
+      if (!editedMessage.trim()) {
+        toast.message('Edited message is required before release.');
+        return;
+      }
+      saveMutation.mutate({
+        mode: 'supabase-release',
         commentId: selectedCommentRecord.id,
         message: editedMessage.trim(),
       });
@@ -522,7 +557,7 @@ export default function ParentUpdates() {
                       <Button variant="outline" onClick={() => handleSave('approved')} disabled={saveMutation.isPending || !approvedReport.trim()}>
                         Approve Comment
                       </Button>
-                      <Button variant="outline" onClick={() => handleSave('shared')} disabled={saveMutation.isPending || !sharedReport.trim()}>
+                      <Button variant="outline" onClick={() => handleSave('shared')} disabled={saveMutation.isPending || (isDemoMode && !sharedReport.trim())}>
                         Approve & Release to Parent
                       </Button>
                       <Button variant="outline" onClick={() => setStep('notes')}>
