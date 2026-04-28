@@ -182,8 +182,8 @@ Coverage:
 
 - Phase 1: planning doc (`docs/weekly-progress-report-write-plan.md`) - current phase.
 - Phase 2: service write methods + smoke test (`updateWeeklyProgressReportDraft` + weekly write smoke). - implemented.
-- Phase 3: wire Weekly Progress Report Save Draft in UI for authenticated non-demo teacher only.
-- Phase 4: wire Weekly Progress Report Release in UI with parent-visible status transition.
+- Phase 3: wire Weekly Progress Report Save Draft in UI for authenticated non-demo teacher only. - implemented.
+- Phase 4: wire Weekly Progress Report Release in UI with parent-visible status transition. - implemented.
 - Phase 5: AI generation later via secure Edge Function (server-side only, approval-gated).
 
 ## 9) Next implementation prompt (Phase 2 only)
@@ -249,5 +249,9 @@ Do not change app UI in this phase.
     - `releaseWeeklyProgressReport({ reportId, reportText })`
   - `scripts/supabase-weekly-report-write-smoke-test.mjs`
   - npm script: `test:supabase:weekly-report:write`
-- Weekly Progress Report UI wiring is still not done (intentionally unchanged in this phase).
+- Weekly Progress Report UI wiring now implemented for authenticated non-demo users when a real Supabase-backed `weekly_progress_reports.id` is available:
+  - Save Draft -> `updateWeeklyProgressReportDraft(...)`
+  - Release to Parent -> `releaseWeeklyProgressReport(...)`
+  - demoRole path remains local/demo-only and non-writing.
 - AI generation remains demo/local only (no AI API wiring in this phase).
+- Memories attachment remains future scope (not wired here).

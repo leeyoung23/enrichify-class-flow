@@ -402,13 +402,18 @@ export async function listParentUpdates(user) {
   if (demoEnabled()) return filterByRole(demoData.parentUpdates, user, 'parentUpdates');
   if (isSupabaseConfigured() && supabase) {
     try {
-      const { data, error } = await supabase
+      const { data: parentCommentRows, error: parentCommentsError } = await supabase
         .from('parent_comments')
         .select('id,branch_id,class_id,student_id,teacher_id,comment_text,status,created_at,updated_at')
         .order('updated_at', { ascending: false });
 
-      if (!error && Array.isArray(data)) {
-        return data.map((row) => ({
+      const { data: weeklyReportRows, error: weeklyReportsError } = await supabase
+        .from('weekly_progress_reports')
+        .select('id,branch_id,class_id,student_id,teacher_id,week_start_date,report_text,status,created_at,updated_at')
+        .order('updated_at', { ascending: false });
+
+      if (!parentCommentsError && !weeklyReportsError && Array.isArray(parentCommentRows) && Array.isArray(weeklyReportRows)) {
+        const parentComments = parentCommentRows.map((row) => ({
           id: row.id,
           branch_id: row.branch_id,
           class_id: row.class_id,
@@ -421,6 +426,27 @@ export async function listParentUpdates(user) {
           update_type: 'comment',
           data_source: 'supabase_parent_comments',
         }));
+
+        const weeklyReports = weeklyReportRows.map((row) => ({
+          id: row.id,
+          branch_id: row.branch_id,
+          class_id: row.class_id,
+          student_id: row.student_id,
+          teacher_id: row.teacher_id,
+          note_text: row.report_text ?? '',
+          final_message: row.report_text ?? '',
+          approved_report: row.report_text ?? '',
+          shared_report: row.report_text ?? '',
+          status: row.status,
+          created_date: row.updated_at || row.created_at,
+          update_type: 'weekly_report',
+          data_source: 'supabase_weekly_progress_reports',
+          week_start_date: row.week_start_date,
+        }));
+
+        return [...parentComments, ...weeklyReports].sort(
+          (a, b) => new Date(b.created_date || 0) - new Date(a.created_date || 0),
+        );
       }
     } catch {
       // Fallback to legacy source below

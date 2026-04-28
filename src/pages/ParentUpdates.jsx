@@ -5,7 +5,7 @@ import { listClasses, listStudentsByClass, listParentUpdates, createParentUpdate
 import { getSelectedDemoRole } from '@/services/authService';
 import { ROLES, isTeacherRole } from '@/services/permissionService';
 import { isSupabaseConfigured } from '@/services/supabaseClient';
-import { updateParentCommentDraft, releaseParentComment } from '@/services/supabaseWriteService';
+import { updateParentCommentDraft, releaseParentComment, updateWeeklyProgressReportDraft, releaseWeeklyProgressReport } from '@/services/supabaseWriteService';
 import { useSupabaseAuthState } from '@/hooks/useSupabaseAuthState';
 import { Sparkles, Save, Loader2, CheckCircle2, Share2, MessageSquarePlus, Eye, Pencil } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -44,6 +44,20 @@ function getActionLabel(role) {
   if (role === ROLES.TEACHER) return 'Edit';
   if (role === ROLES.BRANCH_SUPERVISOR || role === ROLES.HQ_ADMIN) return 'View';
   return 'View';
+}
+
+function buildWeeklyReportText({ weeklyReport, sourceSnapshot }) {
+  return [
+    `Week ${weeklyReport.weekRange}`,
+    `Attendance summary: ${sourceSnapshot?.latestAttendance?.status || 'Not recorded'}`,
+    `Homework completion: ${sourceSnapshot?.latestAttendance?.homework_status || 'Not recorded'}`,
+    `Learning focus: ${weeklyReport.learningFocus}`,
+    `Strengths: ${weeklyReport.strengths}`,
+    `Areas to improve: ${weeklyReport.areasToImprove}`,
+    `Teacher comment: ${weeklyReport.teacherComment}`,
+    `Suggested home practice: ${weeklyReport.suggestedHomePractice}`,
+    `Next week focus: ${weeklyReport.nextWeekFocus}`,
+  ].join('\n');
 }
 
 export default function ParentUpdates() {
@@ -180,6 +194,15 @@ export default function ParentUpdates() {
       && item.data_source === 'supabase_parent_comments'
     ) || null;
   }, [updates, selectedStudentId, selectedClassId]);
+  const selectedWeeklyRecord = useMemo(() => {
+    if (!selectedStudentId || !selectedClassId) return null;
+    return updates.find((item) =>
+      item.update_type === 'weekly_report'
+      && item.student_id === selectedStudentId
+      && item.class_id === selectedClassId
+      && item.data_source === 'supabase_weekly_progress_reports'
+    ) || null;
+  }, [updates, selectedStudentId, selectedClassId]);
 
   const handleGenerate = async () => {
     if (!notes.trim() || !selectedStudentId) return;
@@ -211,6 +234,22 @@ export default function ParentUpdates() {
         }
         return result.data;
       }
+      if (payload.mode === 'supabase-weekly-draft') {
+        const { reportId, reportText } = payload;
+        const result = await updateWeeklyProgressReportDraft({ reportId, reportText, status: 'draft' });
+        if (result.error) {
+          throw new Error(result.error.message || 'Failed to save weekly report draft');
+        }
+        return result.data;
+      }
+      if (payload.mode === 'supabase-weekly-release') {
+        const { reportId, reportText } = payload;
+        const result = await releaseWeeklyProgressReport({ reportId, reportText });
+        if (result.error) {
+          throw new Error(result.error.message || 'Failed to release weekly progress report');
+        }
+        return result.data;
+      }
       return createParentUpdate(payload.data);
     },
     onSuccess: (_data, payload) => {
@@ -219,8 +258,15 @@ export default function ParentUpdates() {
         toast.success('Draft saved to Supabase successfully');
       } else if (payload?.mode === 'supabase-release') {
         toast.success('Parent comment released successfully');
+      } else if (payload?.mode === 'supabase-weekly-draft') {
+        toast.success('Weekly report draft saved to Supabase successfully');
+      } else if (payload?.mode === 'supabase-weekly-release') {
+        toast.success('Weekly progress report released successfully');
       } else {
         toast.success('Parent update saved successfully');
+      }
+      if (payload?.mode === 'supabase-weekly-draft' || payload?.mode === 'supabase-weekly-release') {
+        return;
       }
       resetForm();
     },
@@ -323,6 +369,31 @@ export default function ParentUpdates() {
 
   const handleReleaseWeeklyReport = () => {
     if (!selectedStudentId) return;
+    const hasSupabaseSession = Boolean(supabaseAppUser?.id);
+    const canUseSupabaseWeeklyRelease = (
+      !isDemoMode
+      && isSupabaseConfigured()
+      && hasSupabaseSession
+    );
+    const reportText = buildWeeklyReportText({ weeklyReport, sourceSnapshot });
+
+    if (canUseSupabaseWeeklyRelease) {
+      if (!selectedWeeklyRecord?.id) {
+        toast.message('No real weekly report record available for Supabase release yet.');
+        return;
+      }
+      if (!reportText.trim()) {
+        toast.message('Weekly report text is required before release.');
+        return;
+      }
+      saveMutation.mutate({
+        mode: 'supabase-weekly-release',
+        reportId: selectedWeeklyRecord.id,
+        reportText,
+      });
+      return;
+    }
+
     saveMutation.mutate({
       student_id: selectedStudentId,
       class_id: selectedClassId,
@@ -349,6 +420,38 @@ export default function ParentUpdates() {
         next_week_focus: weeklyReport.nextWeekFocus,
         report_status: 'Released',
       },
+    });
+  };
+
+  const handleSaveWeeklyDraft = () => {
+    if (!selectedStudentId) return;
+    const hasSupabaseSession = Boolean(supabaseAppUser?.id);
+    const canUseSupabaseWeeklyDraft = (
+      !isDemoMode
+      && isSupabaseConfigured()
+      && hasSupabaseSession
+    );
+
+    if (!canUseSupabaseWeeklyDraft) {
+      toast.message('Weekly report draft save remains demo/local in this mode.');
+      return;
+    }
+
+    if (!selectedWeeklyRecord?.id) {
+      toast.message('No real weekly report record available for Supabase draft save yet.');
+      return;
+    }
+
+    const reportText = buildWeeklyReportText({ weeklyReport, sourceSnapshot });
+    if (!reportText.trim()) {
+      toast.message('Weekly report text is required before saving draft.');
+      return;
+    }
+
+    saveMutation.mutate({
+      mode: 'supabase-weekly-draft',
+      reportId: selectedWeeklyRecord.id,
+      reportText,
     });
   };
 
@@ -597,6 +700,10 @@ export default function ParentUpdates() {
                       <Button onClick={handleGenerateWeeklyDraft} disabled={!selectedStudentId} className="gap-2">
                         <Sparkles className="h-4 w-4" />
                         Generate Weekly Report Draft
+                      </Button>
+                      <Button variant="outline" onClick={handleSaveWeeklyDraft} disabled={!selectedStudentId || saveMutation.isPending} className="gap-2">
+                        <Save className="h-4 w-4" />
+                        Save Draft
                       </Button>
                       <Button variant="outline" onClick={handleApproveWeeklyReport} disabled={!weeklyDraftGenerated}>
                         Approve Weekly Report
