@@ -80,7 +80,7 @@ Recommended normalized return shape from service:
 ## 6) Implementation sequence
 
 - **Phase 1:** planning doc (this file).
-- **Phase 2:** add `aiDraftService` wrapper with demo/local fallback and Edge Function call path.
+- **Phase 2:** add `aiDraftService` wrapper with demo/local fallback and Edge Function call path. - implemented.
 - **Phase 3:** add service-level smoke test or manual mock-call verification (if function deployed).
 - **Phase 4:** wire Parent Updates `Generate AI Comment Draft` action to wrapper.
 - **Phase 5:** replace mock Edge Function internals with secure real AI provider integration (server-side only).
@@ -136,3 +136,19 @@ Run:
 - `npm run test:supabase:weekly-report:write`
 
 ---
+
+## Implementation status snapshot
+
+- Phase 2 wrapper implemented:
+  - `src/services/aiDraftService.js`
+  - `generateParentCommentDraft({ studentId, classId, teacherNote, tone, language })`
+- Wrapper behavior now:
+  - returns demo/local mock draft when `demoRole` is active
+  - returns demo/local mock draft when Supabase is not configured
+  - attempts anon-session Edge Function invoke (`generate-parent-comment-draft`) when available
+  - catches invocation failures and returns safe mock fallback
+- Optional smoke test was deferred to Phase 3 to avoid requiring Node alias shims in this phase.
+- Not implemented in this phase:
+  - no Parent Updates UI wiring to wrapper
+  - no real AI provider/API call
+  - no dependency on deployed Edge Function for fallback behavior
