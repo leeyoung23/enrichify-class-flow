@@ -1,11 +1,12 @@
 import React, { useMemo, useState } from 'react';
 import { useOutletContext } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { listClasses, listStudentsByClass, listParentUpdates, createParentUpdate, generateParentMessage, listAttendanceRecords, listHomeworkAttachments } from '@/services/dataService';
+import { listClasses, listStudentsByClass, listParentUpdates, createParentUpdate, listAttendanceRecords, listHomeworkAttachments } from '@/services/dataService';
 import { getSelectedDemoRole } from '@/services/authService';
 import { ROLES, isTeacherRole } from '@/services/permissionService';
 import { isSupabaseConfigured } from '@/services/supabaseClient';
 import { updateParentCommentDraft, releaseParentComment, updateWeeklyProgressReportDraft, releaseWeeklyProgressReport } from '@/services/supabaseWriteService';
+import { generateParentCommentDraft } from '@/services/aiDraftService';
 import { useSupabaseAuthState } from '@/hooks/useSupabaseAuthState';
 import { Sparkles, Save, Loader2, CheckCircle2, Share2, MessageSquarePlus, Eye, Pencil } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -205,15 +206,49 @@ export default function ParentUpdates() {
   }, [updates, selectedStudentId, selectedClassId]);
 
   const handleGenerate = async () => {
-    if (!notes.trim() || !selectedStudentId) return;
+    if (!notes.trim()) {
+      toast.message('Teacher note is required before generating a draft.');
+      return;
+    }
+    if (!selectedStudentId) return;
+
     setGenerating(true);
-    const result = await generateParentMessage(selectedStudent, notes);
-    setAiDraft(result);
-    setEditedMessage(result);
-    setApprovedReport('');
-    setSharedReport('');
-    setStep('review');
-    setGenerating(false);
+    try {
+      const { data, error } = await generateParentCommentDraft({
+        studentId: selectedStudentId,
+        classId: selectedClassId || selectedClass?.id || '',
+        teacherNote: notes.trim(),
+        tone: 'supportive',
+        language: 'en',
+      });
+
+      if (error && !data) {
+        toast.error(error.message || 'Unable to generate draft right now.');
+        return;
+      }
+
+      const draftComment = data?.draft_comment?.trim();
+      if (!draftComment) {
+        toast.error('Draft generation returned empty content.');
+        return;
+      }
+
+      setAiDraft(draftComment);
+      setEditedMessage(draftComment);
+      setApprovedReport('');
+      setSharedReport('');
+      setStep('review');
+
+      if (error) {
+        toast.message(error.message || 'Generated fallback mock draft.');
+      } else if (data?.is_mock) {
+        toast.success('Mock draft generated. Please review and edit before saving.');
+      } else {
+        toast.success('Draft generated. Please review and edit before saving.');
+      }
+    } finally {
+      setGenerating(false);
+    }
   };
 
   const saveMutation = useMutation({
