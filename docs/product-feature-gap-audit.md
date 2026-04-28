@@ -74,6 +74,7 @@ When **`demoRole` is not** forcing demo datasets, and Supabase env is configured
 | **Class Memories backend** | `class_media` (or equivalent), approval workflow, signed URLs — planning in 007/008 checkpoint. |
 | **School / curriculum CRUD UI** | Foundation tables exist in DB; **no** first-class onboarding UI for schools/curriculum mappings in app. |
 | **Homework marking results / AI outputs in UI** | Tables seeded in **008**; **no** dedicated parent/teacher surfaces reading `homework_marking_results` / `ai_generation_outputs` in production UI paths yet. |
+| **Dedicated student portal route / gamification journey** | Not implemented yet; current student post-login landing uses `/parent-view` (same shell as parent) until a separate student journey is productised. |
 | **Production login / marketing auth** | `/auth-preview` is dev-oriented; no shipped `/login` product. |
 | **HQ Sales Kit authoring** | Read path for **approved** resources exists; **management** (draft/upload/approve) not a completed staff workflow in app. |
 

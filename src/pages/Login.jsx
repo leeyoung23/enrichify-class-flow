@@ -7,10 +7,12 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { isSupabaseConfigured } from "@/services/supabaseClient.js";
 import {
   getCurrentProfile,
+  mapProfileToAppUser,
   signInWithEmailPassword,
   signOut,
 } from "@/services/supabaseAuthService.js";
 import { parseReturnUrlQueryParam } from "@/lib/supabaseAuthReturnUrl.js";
+import { getDefaultLandingPathForRole } from "@/lib/roleLanding.js";
 import { useSupabaseAuthState } from "@/hooks/useSupabaseAuthState";
 
 export default function Login() {
@@ -25,9 +27,10 @@ export default function Login() {
 
   const configured = isSupabaseConfigured();
 
-  const goAfterSignIn = () => {
-    const next = parseReturnUrlQueryParam(searchParams.get("returnUrl"));
-    navigate(next || "/", { replace: true });
+  const goAfterSignIn = (nextAppUser = null) => {
+    const returnUrl = parseReturnUrlQueryParam(searchParams.get("returnUrl"));
+    const roleLanding = getDefaultLandingPathForRole(nextAppUser ?? appUser);
+    navigate(returnUrl || roleLanding || "/", { replace: true });
   };
 
   const handleSignIn = async (e) => {
@@ -53,7 +56,7 @@ export default function Login() {
         return;
       }
       await refreshAuthState();
-      goAfterSignIn();
+      goAfterSignIn(mapProfileToAppUser(profile));
     } catch (err) {
       setFormError(err?.message || "Something went wrong. Please try again.");
     } finally {

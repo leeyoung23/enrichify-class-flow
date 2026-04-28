@@ -1,6 +1,6 @@
-# Supabase auth: role-based post-login landing (plan only)
+# Supabase auth: role-based post-login landing
 
-This document plans **where signed-in users land after successful real Supabase login**. It does **not** change UI, protected-route gate logic, `demoRole`, or demo/local fallbacks. Implementation is a future step; see [§7 Next implementation prompt](#7-next-implementation-prompt).
+This document records the implemented **role-based post-login landing** behaviour for real Supabase login while keeping existing auth guard and preview contracts intact.
 
 **Related:** `docs/product-feature-gap-audit.md` remains the master product checklist. Phase 3C context: `docs/supabase-auth-phase-3c-login-hardening-plan.md` (3C-3 = post-login routing).
 
@@ -28,22 +28,22 @@ This document plans **where signed-in users land after successful real Supabase 
 
 ---
 
-## 2. Target landing behaviour
+## 2. Final landing behaviour (implemented)
 
 After **successful real Supabase login** (session + profile + mapped **`appUser`**):
 
 1. **If a safe `returnUrl` exists** in the login query string, navigate there **first** (same rules as today: internal path only, no open redirect).
 2. **Otherwise** navigate to the **role default** derived from **`profiles.role`** via **`mapProfileToAppUser`** → **`appUser.role`** (normalised through **`permissionService.getRole`**).
 
-### Suggested default landing by role
+### Default landing by role
 
 | `profiles.role` (normalised app role) | Default path | Notes |
 |--------------------------------------|--------------|--------|
 | `hq_admin` | `/` | Dashboard under `AppLayout`. |
 | `branch_supervisor` | `/` | Same. |
 | `teacher` | `/` | Same. |
-| `parent` | `/parent-view` | Aligns with **`permissionService`** parent nav (`/parent-view`). Real accounts may need **`?student=<uuid>`** once linked child is known (see risks). |
-| `student` | `/parent-view` | **There is no `/student-portal` route** in `src/App.jsx`. Product already uses **`ParentView`** at **`/parent-view`** for student demo (`PublicWelcome`, `Students.jsx`, sidebar). Treat **student default = `/parent-view`** (optional hash later, e.g. `#student-learning-portal`, out of scope unless product asks). |
+| `parent` | `/parent-view` (or `/parent-view?student=<id>`) | Landing helper appends `student` query when `linked_student_id`/`student_id` is present on `appUser`. |
+| `student` | `/parent-view` (or `/parent-view?student=<id>`) | **There is no `/student-portal` route** in `src/App.jsx`. Student currently lands on `ParentView` path. |
 
 **Route inspection summary:** `src/App.jsx` defines **`/parent-view`** → **`ParentView`** only for family/student shell; no separate student path exists today.
 
@@ -82,9 +82,9 @@ After **successful real Supabase login** (session + profile + mapped **`appUser`
 
 ---
 
-## 6. Acceptance criteria (later implementation)
+## 6. Acceptance criteria status
 
-When role-based landing is implemented **without** changing protected-route rules (`AuthenticatedApp` session gate stays as today except where explicitly agreed):
+Implemented without changing protected-route rules (`AuthenticatedApp` session gate remains as-is):
 
 - **`/login`** remains **public**.
 - **`/auth-preview`** remains **public** / dev-only.
@@ -98,30 +98,18 @@ When role-based landing is implemented **without** changing protected-route rule
 
 ---
 
-## 7. Next implementation prompt
+## 7. Implementation notes
 
-Copy-paste for a future session:
+Implemented in:
 
----
+- `src/lib/roleLanding.js` (`getDefaultLandingPathForRole`)
+- `src/pages/Login.jsx` (`goAfterSignIn` now prioritises safe `returnUrl`, then role default)
 
-**Task:** Implement **role-based post-login landing only** for real Supabase sign-in on **`/login`**.
+Behaviour details:
 
-**Constraints:**
-
-- Do **not** change **`AuthenticatedApp`** protected-route / session gate logic except if strictly necessary for compilation (prefer no change).
-- Do **not** remove **`demoRole`** or demo/local fallback paths.
-- Do **not** add writes, uploads, or AI API calls.
-- Do **not** use service role in the frontend or expose secrets.
-- Single source of role for real users: **`profiles.role`** via **`mapProfileToAppUser`** / **`appUser.role`** after **`refreshAuthState()`**.
-
-**Behaviour:**
-
-1. After successful login + profile + **`refreshAuthState()`**, compute **`next`**:
-   - If **`parseReturnUrlQueryParam(returnUrl)`** is non-null, **`next`** = that path.
-   - Else **`next`** = role default: **`hq_admin`**, **`branch_supervisor`**, **`teacher`** → **`/`**; **`parent`**, **`student`** → **`/parent-view`** (optional: append **`?student=`** from **`appUser.linked_student_id`** when present).
-2. **`navigate(next, { replace: true })`** — update **`goAfterSignIn`** and the “already signed in → Continue” path to use the same helper so behaviour is consistent.
-3. Add/adjust **unit tests** for the pure “resolve post-login path” helper if extracted (returnUrl wins; unsafe URL falls through; role defaults; `/login` blocked).
-
-**Verify:** `npm run build`, `npm run lint`, `npm run typecheck`, `npm run test:supabase:read`, `npm run test:supabase:auth`.
-
----
+1. After successful sign-in + profile load + `refreshAuthState`, login computes destination:
+   - Safe `returnUrl` (via `parseReturnUrlQueryParam`) first.
+   - Else `getDefaultLandingPathForRole(mappedAppUser)`.
+   - Else `/`.
+2. Role remains sourced from `profiles.role` through `mapProfileToAppUser`.
+3. `demoRole` preview override remains unchanged and separate.
