@@ -117,6 +117,14 @@ Script behavior should:
 - Never call real AI provider.
 - Fail only on unsafe access, regression in blocked cases, or broken expected allowed access.
 
+Implementation update:
+
+- Script now exists at `scripts/ai-homework-edge-function-deployed-regression-test.mjs`.
+- Package command now exists: `npm run test:ai:homework-edge:deployed`.
+- Script prints only `PASS` / `WARNING` / `CHECK`.
+- If deployed function is unavailable in dev, script exits gracefully with `CHECK`.
+- If role fixtures are unavailable, script marks role tests as `CHECK` and skips without broadening access.
+
 ## 9) Safety/secrets rules
 
 - Never print JWT tokens.

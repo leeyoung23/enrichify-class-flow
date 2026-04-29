@@ -70,6 +70,13 @@ Validated in implementation milestone:
 - Rubric-based marking.
 - Internal Communications / Announcements module (later milestone).
 
+Update:
+
+- Deployed regression script is now added at `scripts/ai-homework-edge-function-deployed-regression-test.mjs`.
+- New command: `npm run test:ai:homework-edge:deployed`.
+- Script keeps provider integration disabled and uses anon/JWT path only.
+- Feature-flagged UI wiring remains future and local mock remains default.
+
 ## 8) Recommended next milestone
 
 Recommendation: **B. Deployed Edge Function auth/scope regression test plan**.

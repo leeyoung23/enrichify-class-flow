@@ -33,6 +33,7 @@
     "test:ai:homework-feedback:mock": "node scripts/ai-homework-feedback-mock-test.mjs",
     "test:ai:homework-edge:stub": "node scripts/ai-homework-edge-function-stub-test.mjs",
     "test:ai:homework-edge:wrapper": "node scripts/ai-homework-edge-function-wrapper-test.mjs",
+    "test:ai:homework-edge:deployed": "node scripts/ai-homework-edge-function-deployed-regression-test.mjs",
     "preview": "vite preview"
   },
   "dependencies": {
