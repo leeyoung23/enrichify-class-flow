@@ -1,9 +1,17 @@
 import React, { useMemo, useState, useEffect } from 'react';
 import { getCurrentUser, getSelectedDemoRole } from '@/services/authService';
-import { getStudentById, getClassById, listAttendanceRecords, listParentUpdatesByStudent, getStudentFeeStatus, listHomeworkAttachmentsByStudent, uploadHomeworkAttachment } from '@/services/dataService';
+import { getStudentById, getClassById, listAttendanceRecords, listParentUpdatesByStudent, getStudentFeeStatus } from '@/services/dataService';
 import { canAccessStudentRecord, ROLES } from '@/services/permissionService';
 import { getStudentLearningContext, getClassLearningContext, listCurriculumProfiles } from '@/services/supabaseReadService';
-import { uploadFeeReceipt, getFeeReceiptSignedUrl, listClassMemories, getClassMemorySignedUrl } from '@/services/supabaseUploadService';
+import {
+  uploadFeeReceipt,
+  getFeeReceiptSignedUrl,
+  listClassMemories,
+  getClassMemorySignedUrl,
+  listHomeworkTasks,
+  listHomeworkSubmissions,
+  listHomeworkFeedback,
+} from '@/services/supabaseUploadService';
 import { useSupabaseAuthState } from '@/hooks/useSupabaseAuthState';
 import { isSupabaseConfigured } from '@/services/supabaseClient';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -12,7 +20,7 @@ import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
 import {
   GraduationCap, CheckCircle2, XCircle, Clock, Umbrella,
-  BookOpen, BookX, Minus, Upload, ExternalLink, FileText, Loader2, Sparkles
+  BookOpen, BookX, Minus, ExternalLink, FileText, Loader2, Sparkles
 } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -29,6 +37,116 @@ const HOMEWORK_ICONS = {
   not_submitted: { icon: XCircle, label: 'Not submitted', color: 'text-red-500' },
   not_assigned: { icon: Minus, label: 'N/A', color: 'text-muted-foreground' },
 };
+
+const PARENT_HOMEWORK_STATUS_META = {
+  not_submitted: { label: 'Not submitted', className: 'bg-slate-100 text-slate-700 border-slate-200' },
+  submitted: { label: 'Submitted', className: 'bg-blue-100 text-blue-700 border-blue-200' },
+  under_review: { label: 'Under review', className: 'bg-amber-100 text-amber-700 border-amber-200' },
+  reviewed: { label: 'Reviewed', className: 'bg-green-100 text-green-700 border-green-200' },
+  returned_for_revision: { label: 'Returned for revision', className: 'bg-orange-100 text-orange-700 border-orange-200' },
+  approved_for_parent: { label: 'Feedback released', className: 'bg-purple-100 text-purple-700 border-purple-200' },
+};
+
+function ParentHomeworkStatusSection({
+  isDemoMode,
+  loading,
+  error,
+  tasks,
+  feedbackBySubmissionId,
+}) {
+  if (loading) {
+    return (
+      <Card id="parent-homework-status">
+        <CardHeader className="pb-3">
+          <CardTitle className="text-base">Homework</CardTitle>
+        </CardHeader>
+        <CardContent className="text-sm text-muted-foreground">Loading homework status...</CardContent>
+      </Card>
+    );
+  }
+
+  if (isDemoMode) {
+    return (
+      <Card id="parent-homework-status">
+        <CardHeader className="pb-3">
+          <CardTitle className="text-base">Homework</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-3">
+          <p className="text-sm text-muted-foreground">
+            Demo-only homework status preview. Parent demo mode does not call Supabase.
+          </p>
+          <div className="rounded-lg border p-3 space-y-2">
+            <div className="flex items-start justify-between gap-3">
+              <p className="text-sm font-medium">Reading reflection worksheet</p>
+              <Badge variant="outline" className={PARENT_HOMEWORK_STATUS_META.not_submitted.className}>
+                Not submitted
+              </Badge>
+            </div>
+            <p className="text-xs text-muted-foreground">Due date: 12 May 2026</p>
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  if (error) {
+    return (
+      <Card id="parent-homework-status" className="border-dashed">
+        <CardHeader className="pb-3">
+          <CardTitle className="text-base">Homework</CardTitle>
+        </CardHeader>
+        <CardContent className="text-sm text-muted-foreground">{error}</CardContent>
+      </Card>
+    );
+  }
+
+  if (!tasks.length) {
+    return (
+      <Card id="parent-homework-status" className="border-dashed">
+        <CardHeader className="pb-3">
+          <CardTitle className="text-base">Homework</CardTitle>
+        </CardHeader>
+        <CardContent className="text-sm text-muted-foreground">
+          No assigned homework is available right now for your linked child.
+        </CardContent>
+      </Card>
+    );
+  }
+
+  return (
+    <Card id="parent-homework-status">
+      <CardHeader className="pb-3">
+        <CardTitle className="text-base">Homework</CardTitle>
+      </CardHeader>
+      <CardContent className="space-y-3">
+        <p className="text-sm text-muted-foreground">
+          This is a read-only status view. Upload actions will be added in a later phase.
+        </p>
+        {tasks.map((task) => {
+          const statusMeta = PARENT_HOMEWORK_STATUS_META[task.parentStatus] || PARENT_HOMEWORK_STATUS_META.not_submitted;
+          const feedbackRow = task.latestSubmissionId ? feedbackBySubmissionId[task.latestSubmissionId] : null;
+          return (
+            <div key={task.id} className="rounded-lg border p-3 space-y-2">
+              <div className="flex items-start justify-between gap-3">
+                <p className="text-sm font-medium leading-snug">{task.title || 'Homework task'}</p>
+                <Badge variant="outline" className={statusMeta.className}>
+                  {statusMeta.label}
+                </Badge>
+              </div>
+              <p className="text-xs text-muted-foreground">Due date: {task.dueDateLabel}</p>
+              {feedbackRow ? (
+                <div className="rounded-md bg-muted/40 border px-2.5 py-2">
+                  <p className="text-[11px] uppercase tracking-wide text-muted-foreground mb-1">Released feedback</p>
+                  <p className="text-xs text-foreground">{feedbackRow.feedback_text || feedbackRow.next_step || 'Feedback released by teacher.'}</p>
+                </div>
+              ) : null}
+            </div>
+          );
+        })}
+      </CardContent>
+    </Card>
+  );
+}
 
 function AttendanceSummary({ records }) {
   const counts = { present: 0, absent: 0, late: 0, leave: 0 };
@@ -354,68 +472,6 @@ function StudentPortalSummary({ attendance, updates }) {
   );
 }
 
-function HomeworkUpload({ items }) {
-  const [uploading, setUploading] = useState(false);
-  const [uploaded, setUploaded] = useState(null);
-
-  const handleFileChange = async (e) => {
-    const file = e.target.files[0];
-    if (!file) return;
-    setUploading(true);
-    await uploadHomeworkAttachment(file, items?.[0]?.student_id);
-    setUploaded(file.name);
-    setUploading(false);
-  };
-
-  return (
-    <Card id="homework-upload">
-      <CardHeader className="pb-3">
-        <CardTitle className="text-base">Upload Homework</CardTitle>
-      </CardHeader>
-      <CardContent>
-        <p className="text-sm text-muted-foreground mb-4">
-          Submit your child's completed homework here. Your teacher will be notified.
-        </p>
-        {uploaded ? (
-          <div className="flex items-center gap-2 text-sm text-green-700 bg-green-50 rounded-lg px-3 py-2 border border-green-200">
-            <CheckCircle2 className="h-4 w-4" />
-            <span className="font-medium">{uploaded}</span> uploaded successfully.
-          </div>
-        ) : (
-          <label className="cursor-pointer">
-            <input type="file" className="hidden" onChange={handleFileChange} accept=".pdf,.jpg,.jpeg,.png,.doc,.docx" />
-            <Button asChild variant="outline" className="gap-2" disabled={uploading}>
-              <span>
-                {uploading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Upload className="h-4 w-4" />}
-                {uploading ? 'Uploading…' : 'Choose File to Upload'}
-              </span>
-            </Button>
-          </label>
-        )}
-        {uploaded && (
-          <Button variant="ghost" size="sm" className="mt-2 text-xs text-muted-foreground" onClick={() => setUploaded(null)}>
-            Upload another file
-          </Button>
-        )}
-        <div className="mt-5 border-t pt-4">
-          <p className="text-sm font-medium mb-3">Upload History</p>
-          <div className="space-y-2">
-            {items.length > 0 ? items.map((item) => (
-              <div key={item.id} className="rounded-lg border p-3 text-sm">
-                <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
-                  <span className="font-medium">{item.file_name}</span>
-                  <span className="text-xs text-muted-foreground">{item.upload_date}</span>
-                </div>
-                <p className="text-xs text-muted-foreground mt-1">Status: {item.status_label}</p>
-              </div>
-            )) : <p className="text-sm text-muted-foreground">No demo uploads yet for this linked child.</p>}
-          </div>
-        </div>
-      </CardContent>
-    </Card>
-  );
-}
-
 const DEMO_CLASS_MEMORIES_HISTORY = [
   {
     id: 'm1',
@@ -663,15 +719,38 @@ export default function ParentView() {
   const [selectedReceiptFile, setSelectedReceiptFile] = useState(null);
   const [receiptUploadLoading, setReceiptUploadLoading] = useState(false);
   const [receiptLinkLoading, setReceiptLinkLoading] = useState(false);
-  const [homeworkAttachments, setHomeworkAttachments] = useState([]);
   const [realClassMemories, setRealClassMemories] = useState([]);
   const [classMemorySignedUrls, setClassMemorySignedUrls] = useState({});
   const [classMemoriesLoading, setClassMemoriesLoading] = useState(false);
   const [classMemoriesError, setClassMemoriesError] = useState('');
   const [learningFocus, setLearningFocus] = useState({ hasData: false });
   const [learningFocusLoading, setLearningFocusLoading] = useState(false);
+  const [parentHomeworkLoading, setParentHomeworkLoading] = useState(false);
+  const [parentHomeworkError, setParentHomeworkError] = useState('');
+  const [parentHomeworkTasks, setParentHomeworkTasks] = useState([]);
+  const [parentHomeworkSubmissions, setParentHomeworkSubmissions] = useState([]);
+  const [parentHomeworkFeedbackBySubmissionId, setParentHomeworkFeedbackBySubmissionId] = useState({});
 
   const latestApprovedUpdate = useMemo(() => updates[0], [updates]);
+  const parentHomeworkTasksWithStatus = useMemo(() => {
+    const latestSubmissionByTaskId = new Map(
+      parentHomeworkSubmissions.map((submission) => [submission.homework_task_id, submission])
+    );
+    return parentHomeworkTasks.map((task) => {
+      const latestSubmission = latestSubmissionByTaskId.get(task.id);
+      const releasedFeedback = latestSubmission?.id
+        ? parentHomeworkFeedbackBySubmissionId[latestSubmission.id]
+        : null;
+      const status = releasedFeedback ? 'approved_for_parent' : (latestSubmission?.status || 'not_submitted');
+      return {
+        id: task.id,
+        title: task.title || 'Homework task',
+        dueDateLabel: task?.due_date ? new Date(`${task.due_date}T00:00:00`).toLocaleDateString('en-AU') : 'No due date',
+        parentStatus: status,
+        latestSubmissionId: latestSubmission?.id || null,
+      };
+    });
+  }, [parentHomeworkTasks, parentHomeworkSubmissions, parentHomeworkFeedbackBySubmissionId]);
 
   useEffect(() => {
     if (!studentId) { setNotFound(true); setLoading(false); return; }
@@ -687,18 +766,16 @@ export default function ParentView() {
           return;
         }
         setStudent(s);
-        const [classRecord, att, pu, attachments] = await Promise.all([
+        const [classRecord, att, pu] = await Promise.all([
           getClassById(currentUser, s.class_id),
           listAttendanceRecords(currentUser, { student_id: s.id }),
           listParentUpdatesByStudent(currentUser, s.id),
-          listHomeworkAttachmentsByStudent(currentUser, s.id),
         ]);
         setCls(classRecord || null);
         setAttendance(att || []);
         setUpdates((pu || [])
           .filter((item) => ['approved', 'shared'].includes(item.status))
           .sort((a, b) => new Date(b.created_date) - new Date(a.created_date)));
-        setHomeworkAttachments(attachments || []);
         const fee = await getStudentFeeStatus(currentUser, s.id);
         setFeeStatus(fee || null);
       } catch {
@@ -774,6 +851,114 @@ export default function ParentView() {
       cancelled = true;
     };
   }, [isDemoMode, hasSupabaseSession, student?.id, cls?.id]);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    const loadParentHomeworkStatus = async () => {
+      if (isDemoStudentPreview) {
+        setParentHomeworkLoading(false);
+        setParentHomeworkError('');
+        setParentHomeworkTasks([]);
+        setParentHomeworkSubmissions([]);
+        setParentHomeworkFeedbackBySubmissionId({});
+        return;
+      }
+      if (isDemoMode) {
+        setParentHomeworkLoading(false);
+        setParentHomeworkError('');
+        setParentHomeworkTasks([
+          {
+            id: 'demo-homework-task-1',
+            title: 'Reading reflection worksheet',
+            due_date: '2026-05-12',
+            status: 'assigned',
+          },
+        ]);
+        setParentHomeworkSubmissions([]);
+        setParentHomeworkFeedbackBySubmissionId({});
+        return;
+      }
+      if (!hasSupabaseSession || !isSupabaseConfigured() || !student?.id || !cls?.id) {
+        setParentHomeworkLoading(false);
+        setParentHomeworkError('');
+        setParentHomeworkTasks([]);
+        setParentHomeworkSubmissions([]);
+        setParentHomeworkFeedbackBySubmissionId({});
+        return;
+      }
+      if (!isUuidLike(student.id) || !isUuidLike(cls.id)) {
+        setParentHomeworkLoading(false);
+        setParentHomeworkError('Homework status is not available for this parent context yet.');
+        setParentHomeworkTasks([]);
+        setParentHomeworkSubmissions([]);
+        setParentHomeworkFeedbackBySubmissionId({});
+        return;
+      }
+
+      setParentHomeworkLoading(true);
+      setParentHomeworkError('');
+      try {
+        const [taskResult, submissionResult] = await Promise.all([
+          listHomeworkTasks({ classId: cls.id, status: 'assigned' }),
+          listHomeworkSubmissions({ classId: cls.id, studentId: student.id }),
+        ]);
+        if (taskResult.error) {
+          throw new Error(taskResult.error.message || 'Unable to load assigned homework tasks.');
+        }
+        if (submissionResult.error) {
+          throw new Error(submissionResult.error.message || 'Unable to load homework submissions.');
+        }
+
+        const tasks = Array.isArray(taskResult.data) ? taskResult.data : [];
+        const submissions = Array.isArray(submissionResult.data) ? submissionResult.data : [];
+        const latestSubmissionByTaskId = new Map();
+        submissions.forEach((row) => {
+          const existing = latestSubmissionByTaskId.get(row.homework_task_id);
+          const rowTime = new Date(row.created_at || row.submitted_at || 0).getTime();
+          const existingTime = new Date(existing?.created_at || existing?.submitted_at || 0).getTime();
+          if (!existing || rowTime > existingTime) {
+            latestSubmissionByTaskId.set(row.homework_task_id, row);
+          }
+        });
+
+        const feedbackEntries = await Promise.all(
+          submissions
+            .filter((row) => isUuidLike(row.id))
+            .map(async (row) => {
+              const feedbackResult = await listHomeworkFeedback({
+                homeworkSubmissionId: row.id,
+                parentVisibleOnly: true,
+              });
+              if (feedbackResult.error) return [row.id, null];
+              const latestFeedback = Array.isArray(feedbackResult.data) ? feedbackResult.data[0] : null;
+              return [row.id, latestFeedback || null];
+            })
+        );
+
+        if (cancelled) return;
+        setParentHomeworkTasks(tasks);
+        setParentHomeworkSubmissions(Array.from(latestSubmissionByTaskId.values()));
+        setParentHomeworkFeedbackBySubmissionId(
+          Object.fromEntries(feedbackEntries.filter((entry) => entry[1]))
+        );
+      } catch (error) {
+        if (!cancelled) {
+          setParentHomeworkTasks([]);
+          setParentHomeworkSubmissions([]);
+          setParentHomeworkFeedbackBySubmissionId({});
+          setParentHomeworkError(error?.message || 'Unable to load homework status.');
+        }
+      } finally {
+        if (!cancelled) setParentHomeworkLoading(false);
+      }
+    };
+
+    void loadParentHomeworkStatus();
+    return () => {
+      cancelled = true;
+    };
+  }, [isDemoStudentPreview, isDemoMode, hasSupabaseSession, student?.id, cls?.id]);
 
   useEffect(() => {
     let cancelled = false;
@@ -1020,7 +1205,7 @@ export default function ParentView() {
         {!isDemoStudentPreview && (
           <Card className="mb-6">
             <CardHeader className="pb-3">
-              <CardTitle className="text-base">Learning Portal & Uploads</CardTitle>
+              <CardTitle className="text-base">Learning Portal</CardTitle>
             </CardHeader>
             <CardContent>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -1028,9 +1213,9 @@ export default function ParentView() {
                   <ExternalLink className="h-4 w-4" />
                   Open Student Learning Portal
                 </Button>
-                <Button variant="outline" className="justify-start gap-2" onClick={() => document.getElementById('homework-upload')?.scrollIntoView({ behavior: 'smooth' })}>
-                  <Upload className="h-4 w-4" />
-                  Upload Homework / Learning Materials
+                <Button variant="outline" className="justify-start gap-2" onClick={() => document.getElementById('parent-homework-status')?.scrollIntoView({ behavior: 'smooth' })}>
+                  <BookOpen className="h-4 w-4" />
+                  View Homework Status
                 </Button>
                 <Button variant="outline" className="justify-start gap-2" onClick={() => document.getElementById('homework-history')?.scrollIntoView({ behavior: 'smooth' })}>
                   <BookOpen className="h-4 w-4" />
@@ -1071,6 +1256,13 @@ export default function ParentView() {
                 isDemoMode={isDemoMode}
                 learningFocus={learningFocus}
                 loading={learningFocusLoading}
+              />
+              <ParentHomeworkStatusSection
+                isDemoMode={isDemoMode}
+                loading={parentHomeworkLoading}
+                error={parentHomeworkError}
+                tasks={parentHomeworkTasksWithStatus}
+                feedbackBySubmissionId={parentHomeworkFeedbackBySubmissionId}
               />
               <LatestParentComment updates={updates} />
               <LatestWeeklyProgressReport updates={updates} />
@@ -1133,7 +1325,6 @@ export default function ParentView() {
               )}
               <AttendanceSummary records={attendance} />
               <HomeworkSummary records={attendance} />
-              <HomeworkUpload items={homeworkAttachments} />
               <TeacherFeedback updates={updates} />
 
               <Card id="student-learning-portal">

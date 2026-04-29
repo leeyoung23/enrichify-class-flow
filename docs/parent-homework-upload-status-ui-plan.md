@@ -214,3 +214,20 @@ Validation efficiency:
 - If runtime/UI files changed: run build/lint/typecheck
 - Do not run unrelated smoke suites unless service/backend behavior changed
 ```
+
+## 16) Implementation checkpoint (A complete)
+
+- Parent read-only homework status/list UI is now wired on `src/pages/ParentView.jsx`.
+- Parent view now shows assigned homework tasks (class/linked-child scoped), due date, and parent-safe submission/review status badges.
+- Parent-safe status wording now includes:
+  - Not submitted
+  - Submitted
+  - Under review
+  - Reviewed
+  - Returned for revision
+  - Feedback released
+- Released feedback snippet is shown only when available via `listHomeworkFeedback({ parentVisibleOnly: true })`.
+- `internal_note` and teacher-only review data remain hidden.
+- Demo mode remains local-only and does not call Supabase for homework reads.
+- Upload form/buttons remain intentionally unwired in this phase.
+- AI homework feedback remains future.
