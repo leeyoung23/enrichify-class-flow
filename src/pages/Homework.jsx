@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { useOutletContext } from 'react-router-dom';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { AlertCircle, BookOpen, CheckCircle2, ExternalLink, RefreshCw, Send } from 'lucide-react';
+import { AlertCircle, BookOpen, CheckCircle2, ExternalLink, RefreshCw, Send, Sparkles } from 'lucide-react';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -14,6 +14,8 @@ import { getSelectedDemoRole } from '@/services/authService';
 import { ROLES, getRole } from '@/services/permissionService';
 import { isSupabaseConfigured } from '@/services/supabaseClient';
 import { useSupabaseAuthState } from '@/hooks/useSupabaseAuthState';
+import { getClassLearningContext, getStudentLearningContext } from '@/services/supabaseReadService';
+import { buildHomeworkFeedbackDraftContext, generateMockHomeworkFeedbackDraft } from '@/services/aiDraftService';
 import {
   getHomeworkFileSignedUrl,
   listHomeworkFeedback,
@@ -45,6 +47,11 @@ const SUBMISSION_STATUS_BADGE = {
   approved_for_parent: 'bg-purple-100 text-purple-700 border-purple-200',
 };
 
+function isUuidLike(value) {
+  return typeof value === 'string'
+    && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(value.trim());
+}
+
 export default function Homework() {
   const { user } = useOutletContext();
   const { appUser: supabaseAppUser } = useSupabaseAuthState();
@@ -62,6 +69,8 @@ export default function Homework() {
   const [nextStep, setNextStep] = useState('');
   const [internalNote, setInternalNote] = useState('');
   const [feedbackBoundSubmissionId, setFeedbackBoundSubmissionId] = useState('');
+  const [aiDraftLoading, setAiDraftLoading] = useState(false);
+  const [aiDraftSafetyNote, setAiDraftSafetyNote] = useState('');
 
   const { data: tasks = [], isLoading: tasksLoading } = useQuery({
     queryKey: ['homework-review-tasks', role, supabaseAppUser?.id],
@@ -109,6 +118,10 @@ export default function Homework() {
   const selectedSubmission = useMemo(
     () => submissions.find((item) => item.id === selectedSubmissionId) || null,
     [submissions, selectedSubmissionId]
+  );
+  const selectedTask = useMemo(
+    () => tasks.find((item) => item.id === selectedSubmission?.homework_task_id) || null,
+    [tasks, selectedSubmission?.homework_task_id]
   );
   const selectedFeedback = feedbackRows[0] || null;
 
@@ -223,6 +236,59 @@ export default function Homework() {
       return;
     }
     window.open(result.data.signed_url, '_blank', 'noopener,noreferrer');
+  };
+
+  const draftFeedbackWithAi = async () => {
+    if (!selectedSubmission) {
+      toast.message('Select a submission before generating an AI draft.');
+      return;
+    }
+    try {
+      setAiDraftLoading(true);
+      setAiDraftSafetyNote('');
+      let studentLearningContext = {};
+      let classLearningContext = {};
+
+      if (
+        !isDemoMode
+        && canUseSupabaseHomework
+        && isUuidLike(selectedSubmission.student_id)
+        && isUuidLike(selectedSubmission.class_id)
+      ) {
+        const [studentContextResult, classContextResult] = await Promise.all([
+          getStudentLearningContext({ studentId: selectedSubmission.student_id }),
+          getClassLearningContext({ classId: selectedSubmission.class_id }),
+        ]);
+        studentLearningContext = studentContextResult?.data || {};
+        classLearningContext = classContextResult?.data || {};
+      }
+
+      const context = buildHomeworkFeedbackDraftContext({
+        homeworkTask: selectedTask || {},
+        homeworkSubmission: selectedSubmission,
+        studentLearningContext,
+        classLearningContext,
+        teacherObservation: '',
+        uploadedFileSummary: submissionFiles,
+        mode: 'teacher_homework_mock',
+        tone: 'supportive',
+        length: 'short',
+      });
+      const draft = generateMockHomeworkFeedbackDraft(context);
+
+      setFeedbackText(draft.feedbackText || '');
+      setNextStep(draft.nextStep || '');
+      if (draft.teacherNotes) {
+        setInternalNote(draft.teacherNotes);
+      }
+      setAiDraftSafetyNote(draft.safetyNotes || 'AI draft generated. Teacher review is required before any save/release.');
+      setFeedbackBoundSubmissionId(selectedSubmissionId);
+      toast.success('Mock AI draft generated. Please review and edit before saving.');
+    } catch (error) {
+      toast.error(error?.message || 'Unable to generate AI draft right now.');
+    } finally {
+      setAiDraftLoading(false);
+    }
   };
 
   return (
@@ -371,6 +437,27 @@ export default function Homework() {
                     <Badge variant="outline">
                       {feedbackLoading ? 'Loading...' : (selectedFeedback?.status || 'no feedback yet')}
                     </Badge>
+                  </div>
+                  <div className="rounded-lg border border-dashed p-3 space-y-2 bg-muted/20">
+                    <div className="flex flex-wrap items-center justify-between gap-2">
+                      <p className="text-sm font-medium">AI draft assist (mock only)</p>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        className="min-h-10"
+                        onClick={draftFeedbackWithAi}
+                        disabled={aiDraftLoading}
+                      >
+                        <Sparkles className="h-4 w-4 mr-1" />
+                        {aiDraftLoading ? 'Generating...' : 'Draft feedback with AI'}
+                      </Button>
+                    </div>
+                    <p className="text-xs text-muted-foreground">
+                      Generates a mock AI draft from safe metadata/context only. Teacher review and edit are required before save/release.
+                    </p>
+                    {aiDraftSafetyNote ? (
+                      <p className="text-xs text-amber-700">{aiDraftSafetyNote}</p>
+                    ) : null}
                   </div>
                   <div>
                     <p className="text-xs text-muted-foreground mb-1">Feedback text</p>

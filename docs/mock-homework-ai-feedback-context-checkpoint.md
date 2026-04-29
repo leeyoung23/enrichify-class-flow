@@ -2,7 +2,7 @@
 
 ## 1) What was implemented
 
-Mock homework AI context assembly and mock feedback draft generation are now implemented in the service layer, with no real provider integration and no UI wiring changes in this milestone. The output remains draft-only and preserves teacher-controlled release boundaries.
+Mock homework AI context assembly and mock feedback draft generation are implemented in service layer, and teacher Homework review UI now includes a mock-only AI draft button to populate editable draft fields. Output remains draft-only with teacher-controlled save/release boundaries.
 
 ## 2) Files changed
 
@@ -76,12 +76,10 @@ Validated in the implementation milestone:
 
 ## 8) Recommended next milestone
 
-Recommendation: **A. Teacher Homework UI AI draft button using mock only**
+Recommendation: **B. Supabase Edge Function real provider contract plan**
 
-Why A first:
+Why B next:
 
-- mock context builder now exists
-- teacher review UI already exists
-- button can populate existing draft fields without real provider
-- keeps teacher approval gate intact
-- safer than immediate real provider integration
+- mock context builder and teacher UI mock draft action are now in place
+- next safe step is contract hardening before any real provider connection
+- preserves draft-only + teacher approval gate while planning server-side boundaries

@@ -50,6 +50,10 @@ This checkpoint records the teacher/staff homework review UI milestone and curre
 - Return for revision using `returnHomeworkForRevision(...)`
 - Release to parent using `releaseHomeworkFeedbackToParent(...)` for Branch Supervisor/HQ only
 - Teacher release is restricted in this milestone
+- Mock-only `Draft feedback with AI` action now exists in `Homework` review panel:
+  - fills teacher-editable draft fields only
+  - no auto-save and no auto-release
+  - no real provider/API call in this phase
 
 ## 7) Internal note protection
 

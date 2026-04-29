@@ -291,3 +291,16 @@ Validation efficiency:
 - Focused test added:
   - `scripts/ai-homework-feedback-mock-test.mjs`
   - run via `npm run test:ai:homework-feedback:mock`
+
+## 18) Implementation checkpoint (teacher UI mock button complete)
+
+- Teacher Homework review panel now includes mock-only action:
+  - `Draft feedback with AI`
+- Implemented in `src/pages/Homework.jsx` using local mock generator path only.
+- Button behavior:
+  - no real provider call,
+  - no Edge Function/provider wiring,
+  - populates editable draft fields (`feedbackText`, `nextStep`, and staff-only note),
+  - does not auto-save,
+  - does not auto-release.
+- Output remains clearly draft-only with teacher review/edit required before save/release.

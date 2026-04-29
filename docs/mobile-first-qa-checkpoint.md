@@ -74,6 +74,7 @@ Scope note:
 - Verify queue and detail stack cleanly on ~390px (no dense table dependency).
 - Verify feedback textareas (feedback/next step/internal note) remain readable and editable on phone widths.
 - Verify action buttons (`Save draft`, `Mark reviewed`, `Return for revision`, conditional `Release to parent`) wrap without clipping.
+- Verify mock-only `Draft feedback with AI` action remains clear, tap-friendly, and does not crowd existing teacher actions on ~390px.
 - Verify file-view action card remains tap-friendly and understandable on small screens.
 
 ### Sidebar / `AppLayout`
@@ -133,6 +134,7 @@ Status update:
 - `ParentUpdates` minimal Teacher Add Memory upload card: implemented; include in mobile QA pass.
 - `ParentUpdates` minimal HQ/Branch Supervisor Class Memories review card: implemented; include in mobile QA pass.
 - `Homework` staff review cards are implemented; include in mobile QA pass.
+- `Homework` mock-only AI draft button is implemented; include in mobile QA pass.
 - Remaining mobile QA/polish items:
   - `ParentUpdates` mobile review flow density
 
