@@ -88,12 +88,19 @@ Related context:
 
 ## 4) Data/read method plan
 
-Planned read methods (future implementation):
+Implemented service methods (Phase 2 read foundation):
 
 - `listStaffTimeEntries({ branchId, date, status, page, pageSize })`
 - `getStaffTimeEntryById(entryId)`
-- `getStaffTimeSelfieSignedUrl({ entryId, clockType })`
-- `getStaffTimeSummary({ dateRange, branchId })` (optional summary endpoint/helper)
+- `getStaffTimeSummary({ branchId, dateRange })`
+- `getStaffTimeSelfieSignedUrl({ entryId, clockType })` (already available)
+
+Planned read usage in dashboard UI:
+
+- `listStaffTimeEntries(...)` for filtered table/card list.
+- `getStaffTimeEntryById(...)` for detail panel.
+- `getStaffTimeSelfieSignedUrl(...)` for evidence preview action.
+- `getStaffTimeSummary(...)` for summary cards.
 
 Read model rules:
 
@@ -149,11 +156,18 @@ Action design notes:
 ## 8) Recommended implementation sequence
 
 1. **Phase 1 (this doc):** review dashboard plan.
-2. **Phase 2:** read service + smoke test for `staff_time_entries` visibility and selfie signed URL access.
-3. **Phase 3:** HQ/supervisor read-only dashboard (summary + filters + entry list/detail).
+2. **Phase 2 (implemented):** read service + smoke test for `staff_time_entries` visibility and selfie signed URL access.
+3. **Phase 3:** HQ/supervisor read-only dashboard (summary + filters + entry list/detail). **UI still future.**
 4. **Phase 4:** exception review actions (approve/reject/missed clock-out).
 5. **Phase 5:** exports/monthly reporting.
 6. **Phase 6:** adjustment request workflow.
+
+Phase 2 artifacts:
+
+- Service reads in `src/services/staffTimeClockService.js`
+- Review smoke test: `scripts/supabase-staff-time-clock-review-smoke-test.mjs`
+- Script: `npm run test:supabase:staff-time-clock:review`
+- Fake/demo test data only; anon key + end-user JWT only.
 
 ---
 

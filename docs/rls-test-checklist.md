@@ -133,7 +133,13 @@ Reminder: **Frontend filtering is not security. RLS must enforce access at datab
   - `src/services/staffTimeClockService.js`
   - `scripts/supabase-staff-time-clock-smoke-test.mjs`
   - `npm run test:supabase:staff-time-clock`
-- Runtime location/camera access is still not implemented.
+- Review-read service + smoke references:
+  - `listStaffTimeEntries(...)`
+  - `getStaffTimeEntryById(...)`
+  - `getStaffTimeSummary(...)`
+  - `scripts/supabase-staff-time-clock-review-smoke-test.mjs`
+  - `npm run test:supabase:staff-time-clock:review`
+- Dashboard UI and review action writes are still not implemented.
 - Continue using fake users and fake selfie blobs only for future validation.
 
 #### Staff Time Clock role checks (after manual apply in dev only)

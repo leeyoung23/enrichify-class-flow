@@ -78,6 +78,7 @@ Supporting pieces (not repeated in every checklist but relevant): `src/services/
 - **Status consistency depends on submit inputs:** `clockInStaff` / `clockOutStaff` now accept `geofenceStatus` + `radiusMeters` from UI and validate status (`valid`, `outside_geofence`, `pending_review`); if absent/invalid, service falls back to shared `evaluateGeofence` with `distanceMeters`/`accuracyMeters` and default radius. Avoid bypassing UI checks when integrating new clients.
 - **HQ/supervisor** live **review dashboard** is not wired; teacher page still includes **mock** reporting cards for those roles.
 - **`getStaffTimeSelfieSignedUrl`** exists in the service but is **not** surfaced in teacher review/history UI.
+- **Review read foundation exists** (`listStaffTimeEntries`, `getStaffTimeEntryById`, `getStaffTimeSummary`, plus review smoke test), but **dashboard UI** for HQ/branch supervisor is still future.
 - **Exception approval workflow** (supervisor decisions on `outside_geofence` / `pending_review` rows) is **not** wired in product UI.
 - **Adjustment / correction requests** are **not** wired.
 - **Production consent copy and policy** (exact permission strings, regional employment nuances) still need **legal/product final review** beyond engineering placeholders.

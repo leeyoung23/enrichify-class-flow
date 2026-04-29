@@ -3,6 +3,10 @@ import { evaluateGeofence, DEFAULT_GEOFENCE_RADIUS_METERS } from "./locationVeri
 
 const STAFF_CLOCK_SELFIES_BUCKET = "staff-clock-selfies";
 const ALLOWED_GEOFENCE_STATUSES = new Set(["valid", "outside_geofence", "pending_review"]);
+const STAFF_TIME_ENTRY_LIST_FIELDS =
+  "id,profile_id,branch_id,clock_in_at,clock_out_at,clock_in_latitude,clock_in_longitude,clock_in_accuracy_meters,clock_in_distance_meters,clock_out_latitude,clock_out_longitude,clock_out_accuracy_meters,clock_out_distance_meters,status,exception_reason,reviewed_by_profile_id,reviewed_at,created_at,updated_at";
+const STAFF_TIME_ENTRY_DETAIL_FIELDS =
+  "id,profile_id,branch_id,clock_in_at,clock_out_at,clock_in_latitude,clock_in_longitude,clock_in_accuracy_meters,clock_in_distance_meters,clock_in_selfie_path,clock_out_latitude,clock_out_longitude,clock_out_accuracy_meters,clock_out_distance_meters,clock_out_selfie_path,status,exception_reason,reviewed_by_profile_id,reviewed_at,created_at,updated_at";
 
 function toIsoDate(value = new Date()) {
   return new Date(value).toISOString().slice(0, 10);
@@ -42,6 +46,64 @@ function resolveStatusFromGeofence({ geofenceStatus, distanceMeters, accuracyMet
   }
 
   return { status: "pending_review", source: "fallback" };
+}
+
+function normalizePositiveInt(value, fallback) {
+  const n = Number(value);
+  if (!Number.isFinite(n) || n <= 0) return fallback;
+  return Math.floor(n);
+}
+
+function isUuidLike(value) {
+  if (typeof value !== "string") return false;
+  return /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(value.trim());
+}
+
+function normalizeDateOnly(dateValue) {
+  if (typeof dateValue !== "string") return null;
+  const trimmed = dateValue.trim();
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(trimmed)) return null;
+  const dt = new Date(`${trimmed}T00:00:00.000Z`);
+  if (Number.isNaN(dt.getTime())) return null;
+  return trimmed;
+}
+
+function addOneDay(dateOnly) {
+  const dt = new Date(`${dateOnly}T00:00:00.000Z`);
+  dt.setUTCDate(dt.getUTCDate() + 1);
+  return dt.toISOString().slice(0, 10);
+}
+
+function applyStaffTimeFilters(query, { branchId, status, date, dateRange } = {}) {
+  let next = query;
+  const safeBranchId = isUuidLike(branchId) ? String(branchId).trim() : null;
+  if (safeBranchId) {
+    next = next.eq("branch_id", safeBranchId);
+  }
+
+  const safeStatus = normalizeGeofenceStatus(status);
+  if (safeStatus) {
+    next = next.eq("status", safeStatus);
+  }
+
+  const safeDate = normalizeDateOnly(date);
+  if (safeDate) {
+    const endDate = addOneDay(safeDate);
+    next = next.gte("clock_in_at", `${safeDate}T00:00:00.000Z`).lt("clock_in_at", `${endDate}T00:00:00.000Z`);
+    return next;
+  }
+
+  const startDate = normalizeDateOnly(dateRange?.startDate);
+  const endDate = normalizeDateOnly(dateRange?.endDate);
+  if (startDate) {
+    next = next.gte("clock_in_at", `${startDate}T00:00:00.000Z`);
+  }
+  if (endDate) {
+    const endExclusive = addOneDay(endDate);
+    next = next.lt("clock_in_at", `${endExclusive}T00:00:00.000Z`);
+  }
+
+  return next;
 }
 
 function buildSelfiePath({ branchId, profileId, entryId, clockType, fileName }) {
@@ -375,6 +437,108 @@ export async function getStaffTimeSelfieSignedUrl({ entryId, clockType } = {}) {
     };
   } catch (err) {
     return { data: null, error: { message: err?.message || String(err) } };
+  }
+}
+
+export async function listStaffTimeEntries({
+  branchId,
+  date,
+  status,
+  page = 1,
+  pageSize = 20,
+  dateRange,
+} = {}) {
+  if (!isSupabaseConfigured() || !supabase) {
+    return { data: [], error: { message: "Supabase is not configured" } };
+  }
+
+  const safePage = normalizePositiveInt(page, 1);
+  const safePageSize = Math.min(normalizePositiveInt(pageSize, 20), 100);
+  const from = (safePage - 1) * safePageSize;
+  const to = from + safePageSize - 1;
+
+  try {
+    let query = supabase
+      .from("staff_time_entries")
+      .select(STAFF_TIME_ENTRY_LIST_FIELDS, { count: "exact" })
+      .order("clock_in_at", { ascending: false, nullsFirst: false })
+      .order("created_at", { ascending: false, nullsFirst: false })
+      .range(from, to);
+
+    query = applyStaffTimeFilters(query, { branchId, status, date, dateRange });
+    const { data, error, count } = await query;
+    if (error) {
+      return { data: [], error };
+    }
+
+    return {
+      data: Array.isArray(data) ? data : [],
+      error: null,
+      pagination: {
+        page: safePage,
+        pageSize: safePageSize,
+        total: typeof count === "number" ? count : null,
+      },
+    };
+  } catch (error) {
+    return { data: [], error };
+  }
+}
+
+export async function getStaffTimeEntryById(entryId) {
+  if (!isSupabaseConfigured() || !supabase) {
+    return { data: null, error: { message: "Supabase is not configured" } };
+  }
+  if (!entryId || typeof entryId !== "string") {
+    return { data: null, error: { message: "entryId is required" } };
+  }
+
+  try {
+    const { data, error } = await supabase
+      .from("staff_time_entries")
+      .select(STAFF_TIME_ENTRY_DETAIL_FIELDS)
+      .eq("id", entryId)
+      .maybeSingle();
+
+    if (error) {
+      return { data: null, error };
+    }
+    return { data: data ?? null, error: null };
+  } catch (error) {
+    return { data: null, error };
+  }
+}
+
+export async function getStaffTimeSummary({ branchId, dateRange } = {}) {
+  if (!isSupabaseConfigured() || !supabase) {
+    return { data: null, error: { message: "Supabase is not configured" } };
+  }
+
+  try {
+    let query = supabase
+      .from("staff_time_entries")
+      .select("id,status,clock_out_at")
+      .order("created_at", { ascending: false });
+
+    query = applyStaffTimeFilters(query, { branchId, dateRange });
+    const { data, error } = await query;
+    if (error) {
+      return { data: null, error };
+    }
+
+    const rows = Array.isArray(data) ? data : [];
+    const summary = {
+      totalEntries: rows.length,
+      onShiftCount: rows.filter((row) => !row.clock_out_at).length,
+      completedCount: rows.filter((row) => Boolean(row.clock_out_at)).length,
+      validCount: rows.filter((row) => row.status === "valid").length,
+      outsideGeofenceCount: rows.filter((row) => row.status === "outside_geofence").length,
+      pendingReviewCount: rows.filter((row) => row.status === "pending_review").length,
+      missedClockOutCount: rows.filter((row) => row.status === "missed_clock_out").length,
+    };
+    return { data: summary, error: null };
+  } catch (error) {
+    return { data: null, error };
   }
 }
 
