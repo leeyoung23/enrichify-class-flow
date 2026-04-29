@@ -6,19 +6,20 @@ Planning and terminology reference for the **staff** clock experience. HQ/superv
 
 **Implemented (teacher `StaffTimeClock.jsx`):**
 
-- Mobile-first **teacher** flow: large Clock In / Clock Out (mock shift, **local state only**), current shift status card, branch + **mock** punch preview (fake distance after mock punch), selfie placeholder, exception / **pending supervisor review** demo messaging, recent clock history.
+- Mobile-first **teacher** flow: large Clock In / Clock Out (mock shift, **local state only**), current shift status card, branch + **mock** punch preview (fake distance after mock punch), exception / **pending supervisor review** demo messaging, recent clock history.
 - **Browser GPS (real, explicit tap only):** “Check clock-in location (GPS)” and “Check clock-out location (GPS)” call `getCurrentPositionForClockEvent` → `calculateDistanceMeters` → `evaluateGeofence` using **labelled placeholder branch coordinates** in the page until Supabase branch geofence fields are wired. **No** `watchPosition`, **no** background tracking, **no** Supabase writes from these buttons.
+- **Browser selfie (real, explicit tap only):** “Start camera” → live `<video>` preview → “Capture selfie” uses `requestCameraStream` / `captureSelfieBlob` / `stopCameraStream` from `selfieCaptureService.js`. **No** automatic camera open; **no** upload; **no** `clockInStaff` / `clockOutStaff`. Preview via `URL.createObjectURL`; tracks stopped on Stop / Clear / unmount / full demo reset.
 - **HQ** and **branch supervisor** views: **reporting placeholder** card; stacked cards on small screens for demo lists.
 
 **Browser helpers (services):**
 
-- **`src/services/locationVerificationService.js`** — as above; invoked from `StaffTimeClock` only on those button clicks.
-- **`src/services/selfieCaptureService.js`** — **not** wired from UI yet; `getUserMedia` only when a future button calls it.
+- **`src/services/locationVerificationService.js`** — as above; invoked from `StaffTimeClock` only on GPS check button clicks.
+- **`src/services/selfieCaptureService.js`** — invoked from `StaffTimeClock` only on **Start camera** / **Capture selfie** (user gestures); `getUserMedia` never on page load.
 - **Smoke (pure math only):** `npm run test:staff-time-clock:helpers`
 
 **Still future:**
 
-- **Camera / selfie** capture wired from UI; uploads; **`clockInStaff` / `clockOutStaff` / `getStaffTimeSelfieSignedUrl`** from the page.
+- Passing selfie blob + GPS evidence into **`clockInStaff` / `clockOutStaff`** and **Supabase storage** upload from the page; **`getStaffTimeSelfieSignedUrl`** for review UI.
 - **Real branch** latitude/longitude/radius from app data instead of UI placeholders.
 - Supervisor / HQ **review dashboard** with live exception queues, signed-url selfie viewer, and exports.
 

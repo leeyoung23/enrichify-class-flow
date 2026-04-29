@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { useOutletContext } from 'react-router-dom';
 import PageHeader from '@/components/shared/PageHeader';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -11,10 +11,15 @@ import {
   calculateDistanceMeters,
   evaluateGeofence,
 } from '@/services/locationVerificationService';
+import {
+  requestCameraStream,
+  captureSelfieBlob,
+  stopCameraStream,
+} from '@/services/selfieCaptureService';
 import { AlertTriangle, Camera, Clock, Loader2, MapPin, Monitor, Timer } from 'lucide-react';
 
 const DEMO_NOTE =
-  'Local demo — optional browser GPS check below (tap only; no background tracking). Mock Clock In/Out stays on this device. No camera, no Supabase writes yet.';
+  'Local demo — optional browser GPS (tap) and optional selfie preview (tap; not uploaded). Mock Clock In/Out stays on this device. No Supabase writes yet.';
 
 /** Placeholder branch centre for UI-only distance math until real `branches` lat/lng/radius are loaded from Supabase. Not a production coordinate. */
 const DEMO_BRANCH_CENTRE_LABEL = 'Demo North Branch (placeholder coordinates)';
@@ -94,6 +99,256 @@ function geofenceStatusBadgeVariant(status) {
   return 'secondary';
 }
 
+function humanizeCameraError(error) {
+  if (!error?.code) return error?.message || 'Camera error.';
+  const hints = {
+    PERMISSION_DENIED:
+      'Camera permission denied. Allow camera for this site in your browser or system settings, then try Start Camera again.',
+    NO_CAMERA: 'No camera was found on this device.',
+    HARDWARE_ERROR: 'The camera could not be started. It may be in use by another app.',
+    OVERCONSTRAINED: 'Camera constraints could not be satisfied. Try again or use another device.',
+    UNSUPPORTED: 'This browser does not support camera access here. Mock Clock In/Out still works.',
+    INSECURE_CONTEXT: 'Camera needs a secure (HTTPS) page. Mock shift controls still work.',
+    CAPTURE_FAILED: error.message || 'Could not capture selfie.',
+    UNKNOWN: error.message || 'Camera error.',
+  };
+  return hints[error.code] || error.message || 'Camera error.';
+}
+
+/**
+ * Explicit user-action selfie preview only — no upload, no clockInStaff.
+ * Remount via key from parent to reset on full demo reset.
+ */
+function StaffSelfieCaptureSection() {
+  const videoRef = useRef(null);
+  const streamRef = useRef(null);
+  const previewUrlRef = useRef(null);
+
+  const [cameraActive, setCameraActive] = useState(false);
+  const [cameraStarting, setCameraStarting] = useState(false);
+  const [capturing, setCapturing] = useState(false);
+  const [previewUrl, setPreviewUrl] = useState(null);
+  const [cameraError, setCameraError] = useState(null);
+
+  const revokePreview = () => {
+    if (previewUrlRef.current) {
+      URL.revokeObjectURL(previewUrlRef.current);
+      previewUrlRef.current = null;
+    }
+    setPreviewUrl(null);
+  };
+
+  const detachAndStopStream = () => {
+    if (videoRef.current) {
+      videoRef.current.srcObject = null;
+    }
+    if (streamRef.current) {
+      stopCameraStream(streamRef.current);
+      streamRef.current = null;
+    }
+    setCameraActive(false);
+  };
+
+  useEffect(() => {
+    return () => {
+      if (videoRef.current) {
+        videoRef.current.srcObject = null;
+      }
+      if (streamRef.current) {
+        stopCameraStream(streamRef.current);
+        streamRef.current = null;
+      }
+      if (previewUrlRef.current) {
+        URL.revokeObjectURL(previewUrlRef.current);
+        previewUrlRef.current = null;
+      }
+    };
+  }, []);
+
+  const handleStartCamera = async () => {
+    setCameraError(null);
+    setCameraStarting(true);
+    detachAndStopStream();
+    revokePreview();
+
+    const res = await requestCameraStream();
+    setCameraStarting(false);
+    if (res.error) {
+      setCameraError(res.error);
+      return;
+    }
+    streamRef.current = res.data.stream;
+    const el = videoRef.current;
+    if (el) {
+      el.srcObject = res.data.stream;
+      el.playsInline = true;
+      el.muted = true;
+      try {
+        await el.play();
+      } catch {
+        /* autoplay policies; user may need interaction */
+      }
+    }
+    setCameraActive(true);
+  };
+
+  const handleStopCamera = () => {
+    setCameraError(null);
+    detachAndStopStream();
+  };
+
+  const handleCapture = async () => {
+    setCameraError(null);
+    const el = videoRef.current;
+    if (!el || !streamRef.current) {
+      setCameraError({ code: 'CAPTURE_FAILED', message: 'Start the camera first.' });
+      return;
+    }
+    setCapturing(true);
+    const res = await captureSelfieBlob(el, { maxWidth: 720, fileName: 'selfie-preview.jpg' });
+    setCapturing(false);
+    if (res.error) {
+      setCameraError(res.error);
+      return;
+    }
+    revokePreview();
+    const url = URL.createObjectURL(res.data.blob);
+    previewUrlRef.current = url;
+    setPreviewUrl(url);
+  };
+
+  const handleRetake = () => {
+    setCameraError(null);
+    revokePreview();
+  };
+
+  const handleClear = () => {
+    setCameraError(null);
+    revokePreview();
+    detachAndStopStream();
+  };
+
+  const showVideo = cameraActive && streamRef.current;
+
+  return (
+    <Card className="border-dashed">
+      <CardHeader className="pb-2">
+        <CardTitle className="flex items-center gap-2 text-base">
+          <Camera className="h-4 w-4 shrink-0" />
+          Selfie proof (local preview)
+        </CardTitle>
+      </CardHeader>
+      <CardContent className="space-y-3 text-sm text-muted-foreground">
+        <p>
+          <strong className="text-foreground">Selfie proof</strong> for attendance is captured only when you use the buttons below.
+          The camera does <strong className="text-foreground">not</strong> open automatically. Images stay on this device —{' '}
+          <strong className="text-foreground">not uploaded</strong> and <strong className="text-foreground">not</strong> sent to Supabase from this screen.
+        </p>
+
+        {cameraError && (
+          <div className="rounded-md border border-destructive/40 bg-destructive/10 px-3 py-2 text-xs text-destructive">
+            <p>{humanizeCameraError(cameraError)}</p>
+            {cameraError.code && (
+              <p className="mt-1 font-mono text-[10px] opacity-80">Code: {cameraError.code}</p>
+            )}
+          </div>
+        )}
+
+        <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap">
+          <Button
+            type="button"
+            size="lg"
+            variant="default"
+            className="min-h-12 w-full sm:min-w-[160px] sm:flex-1"
+            disabled={cameraStarting}
+            onClick={handleStartCamera}
+          >
+            {cameraStarting ? (
+              <>
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                Starting…
+              </>
+            ) : (
+              'Start camera'
+            )}
+          </Button>
+          <Button
+            type="button"
+            size="lg"
+            variant="secondary"
+            className="min-h-12 w-full sm:min-w-[160px] sm:flex-1"
+            disabled={!cameraActive || cameraStarting || capturing}
+            onClick={handleCapture}
+          >
+            {capturing ? (
+              <>
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                Capturing…
+              </>
+            ) : (
+              'Capture selfie'
+            )}
+          </Button>
+          <Button
+            type="button"
+            size="lg"
+            variant="outline"
+            className="min-h-12 w-full sm:min-w-[140px] sm:flex-1"
+            disabled={!previewUrl}
+            onClick={handleRetake}
+          >
+            Retake
+          </Button>
+          <Button
+            type="button"
+            size="lg"
+            variant="outline"
+            className="min-h-12 w-full sm:min-w-[140px] sm:flex-1"
+            onClick={handleClear}
+          >
+            Clear
+          </Button>
+          <Button
+            type="button"
+            size="lg"
+            variant="ghost"
+            className="min-h-12 w-full sm:min-w-[140px] sm:flex-1"
+            disabled={!cameraActive}
+            onClick={handleStopCamera}
+          >
+            Stop camera
+          </Button>
+        </div>
+
+        <div className="space-y-2">
+          <p className="text-xs font-medium text-foreground">Live preview</p>
+          <video
+            ref={videoRef}
+            className="mx-auto aspect-video w-full max-h-64 rounded-md border bg-black object-cover"
+            playsInline
+            muted
+            aria-label="Camera preview"
+          />
+          {!showVideo && !cameraStarting && (
+            <p className="text-center text-xs text-muted-foreground">Tap Start camera to open the preview (user action only).</p>
+          )}
+        </div>
+
+        {previewUrl && (
+          <div className="space-y-2">
+            <p className="text-xs font-medium text-foreground">Captured preview (not submitted)</p>
+            <img
+              src={previewUrl}
+              alt="Captured selfie preview"
+              className="mx-auto max-h-64 w-full max-w-md rounded-md border object-contain"
+            />
+          </div>
+        )}
+      </CardContent>
+    </Card>
+  );
+}
+
 function TeacherClockDemo() {
   const isDemoRole = Boolean(getSelectedDemoRole());
 
@@ -108,6 +363,7 @@ function TeacherClockDemo() {
   const [liveClockInResult, setLiveClockInResult] = useState(null);
   const [liveClockOutResult, setLiveClockOutResult] = useState(null);
   const [liveLocationError, setLiveLocationError] = useState(null);
+  const [selfieResetKey, setSelfieResetKey] = useState(0);
 
   const statusLabel = useMemo(() => {
     if (!clockInAt) return 'Not clocked in';
@@ -168,6 +424,7 @@ function TeacherClockDemo() {
     setLiveClockOutResult(null);
     setLiveLocationError(null);
     setLiveCheckKind(null);
+    setSelfieResetKey((k) => k + 1);
   };
 
   const canClockIn = !clockInAt || Boolean(clockOutAt);
@@ -237,7 +494,7 @@ function TeacherClockDemo() {
     <div className="mx-auto max-w-lg space-y-4 pb-8 md:max-w-2xl">
       <PageHeader
         title="Staff Time Clock"
-        description="Evidence-based attendance (mock): GPS/geofence verification at clock-in and clock-out, plus selfie proof — local preview only."
+        description="Evidence-based attendance (mock): GPS/geofence checks and optional selfie preview on this device only — no Supabase punch yet."
       />
 
       <Card className="border-primary/20">
@@ -301,7 +558,7 @@ function TeacherClockDemo() {
           <div className="rounded-lg border border-primary/30 bg-primary/5 px-3 py-3 space-y-3">
             <p className="font-medium text-foreground">Browser: clock-in / clock-out location check</p>
             <p className="text-xs text-muted-foreground">
-              Uses your device location once per tap against the placeholder branch centre above. Does not save to Supabase. No camera.
+              Uses your device location once per tap against the placeholder branch centre above. Does not save to Supabase. Camera is optional below.
             </p>
             {isDemoRole && (
               <p className="text-xs text-muted-foreground">
@@ -448,22 +705,7 @@ function TeacherClockDemo() {
         </CardContent>
       </Card>
 
-      <Card className="border-dashed">
-        <CardHeader className="pb-2">
-          <CardTitle className="flex items-center gap-2 text-base">
-            <Camera className="h-4 w-4 shrink-0" />
-            Selfie proof (placeholder)
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-2 text-sm text-muted-foreground">
-          <p>
-            Selfie proof will be captured at clock-in (and optionally at clock-out per policy). This preview does not use the camera or upload files.
-          </p>
-          <div className="flex min-h-[120px] items-center justify-center rounded-lg border border-dashed bg-muted/20 px-4 py-6 text-center text-xs">
-            No image — mock only. No continuous background tracking; verification runs when you punch in or out.
-          </div>
-        </CardContent>
-      </Card>
+      <StaffSelfieCaptureSection key={selfieResetKey} />
 
       <Card className={showPendingReview ? 'border-amber-500/50 bg-amber-500/5' : ''}>
         <CardHeader className="pb-2">

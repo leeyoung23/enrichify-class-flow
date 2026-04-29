@@ -1,6 +1,6 @@
 # Staff Time Clock — browser permission & client helper plan
 
-Defines browser-side wrappers for **active GPS/geofence verification** and **selfie capture**, plus permission UX. **Helper modules are implemented** (`src/services/locationVerificationService.js`, `src/services/selfieCaptureService.js`). **`StaffTimeClock.jsx` (teacher)** calls **`getCurrentPositionForClockEvent` only from explicit “Check clock-in/out location (GPS)” button clicks** — no `watchPosition`, no background tracking, no Supabase. **Camera helper** is still **not** wired from UI. No uploads from these helpers.
+Defines browser-side wrappers for **active GPS/geofence verification** and **selfie capture**, plus permission UX. **Helper modules are implemented** (`src/services/locationVerificationService.js`, `src/services/selfieCaptureService.js`). **`StaffTimeClock.jsx` (teacher)** calls **`getCurrentPositionForClockEvent` only from explicit “Check clock-in/out location (GPS)”** taps, and **`requestCameraStream` / `captureSelfieBlob` / `stopCameraStream` only from explicit “Start camera” / “Capture selfie”** (and stop/clear/reset paths). No `watchPosition`, no background tracking, **no Supabase writes or uploads** from this page.
 
 Related docs:
 
@@ -19,7 +19,7 @@ Plan **safe**, **explicit** browser APIs for:
 - **Permission states** and recovery (denied, timeout, retry, route to pending review).
 - **Predictable `{ data, error }`** shapes aligned with existing Supabase service style.
 
-**Non-goals (still):** `clockInStaff` / `clockOutStaff` / uploads from `StaffTimeClock`, camera wiring from UI, SQL/storage changes, service role usage. **Pure-function smoke:** `npm run test:staff-time-clock:helpers` (Haversine + `evaluateGeofence` in Node only).
+**Non-goals (still):** `clockInStaff` / `clockOutStaff` / **uploads** from `StaffTimeClock`, SQL/storage changes, service role usage. **Pure-function smoke:** `npm run test:staff-time-clock:helpers` (Haversine + `evaluateGeofence` in Node only).
 
 ---
 

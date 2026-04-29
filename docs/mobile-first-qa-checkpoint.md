@@ -64,7 +64,7 @@ Scope note:
 
 ### `StaffTimeClock`
 
-- **Teacher:** mobile-first mock shift + **optional real browser GPS** via explicit “Check clock-in/out location (GPS)” buttons (`locationVerificationService`); placeholder branch centre until Supabase branch data; no camera, no `clockInStaff`/`clockOutStaff`, no Supabase writes from this page.
+- **Teacher:** mobile-first mock shift + **optional real browser GPS** (explicit GPS check buttons) + **optional real camera selfie preview** (explicit Start camera / Capture selfie; `selfieCaptureService`); placeholder branch centre until Supabase branch data; **no** `clockInStaff`/`clockOutStaff`, **no** upload, **no** Supabase writes from this page.
 - **Branch supervisor / HQ:** summary cards, reporting placeholder, demo lists; tables hidden on small breakpoints in favour of stacked cards — verify tap targets and readability at ~390px.
 
 ## 3) Role-based mobile priorities
