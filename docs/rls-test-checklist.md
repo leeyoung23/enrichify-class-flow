@@ -302,7 +302,13 @@ Reminder: **Frontend filtering is not security. RLS must enforce access at datab
   - manually applied in Supabase dev (SQL Editor success)
   - application checkpoint: `docs/homework-task-assignees-sql-application-checkpoint.md`
   - fake/dev data validation only
-  - runtime service/UI behavior remains unchanged until later migration
+  - write-service MVP now added in `src/services/supabaseWriteService.js`:
+    - `createHomeworkTaskWithAssignees(...)`
+    - `assignHomeworkTaskToStudents(...)`
+  - write smoke test:
+    - `scripts/supabase-homework-assignment-write-smoke-test.mjs`
+    - `npm run test:supabase:homework:assignment:write`
+  - runtime assignment-creation UI remains future
 - Draft scope:
   - additive `homework_tasks.assignment_scope`
   - new `homework_task_assignees` with unique (`homework_task_id`, `student_id`)

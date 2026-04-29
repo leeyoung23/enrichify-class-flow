@@ -107,7 +107,7 @@ Each assigned item:
 
 ## 9) What remains future
 
-- write-side assignment services for selected/individual homework
+- assignment creation UI flow for selected/individual/class homework
 - parent assigned-but-not-submitted UI consumption
 - manual marked-file upload path
 - AI marking integration with flexible assignment context

@@ -202,6 +202,11 @@ Current status note:
   - `listHomeworkTrackerByClass(...)`
   - `listHomeworkTrackerByStudent(...)`
 - Tracker-read smoke test is now added at `scripts/supabase-homework-tracker-read-smoke-test.mjs` with package command `npm run test:supabase:homework:tracker:read`.
+- Homework assignment write-service MVP is now added in `src/services/supabaseWriteService.js`:
+  - `createHomeworkTaskWithAssignees(...)`
+  - `assignHomeworkTaskToStudents(...)`
+- Assignment write-service MVP supports class, selected-student, and individual homework creation paths via anon client + JWT + RLS only.
+- Assignment-write smoke test is now added at `scripts/supabase-homework-assignment-write-smoke-test.mjs` with package command `npm run test:supabase:homework:assignment:write`.
 - Teacher Homework UI shell now includes `By Task` / `By Student` segmented structure with demo parity in `src/pages/Homework.jsx`.
 - Demo mode now shows local fake task/student tracker cards and quick status badges while preserving no-Supabase/no-provider behavior.
 - Authenticated non-demo Homework now wires real `By Task` tracker read using `listHomeworkTrackerByClass(...)` with UUID-safe class handling.
@@ -210,6 +215,10 @@ Current status note:
 - Selected-student assignment write services remain future.
 - Manual marked-file upload remains future.
 - Existing homework runtime/UI workflow remains unchanged until later service/UI migration; parent assigned-but-not-submitted visibility should later move to assignee-row based reads.
+- Assignment creation UI flow remains future (service proof completed first).
+- Manual marked-file upload remains future.
+- AI provider integration remains future.
+- Announcements/Internal Communications remains future.
 - Homework feedback write service + smoke test are now started (`src/services/supabaseWriteService.js`, `scripts/supabase-homework-feedback-smoke-test.mjs`) for draft/create-update, review transition, release-to-parent, and parent draft-hidden checks.
 - Parent-visible feedback read path now omits `internal_note` from service response when `parentVisibleOnly` is requested.
 - Teacher homework review UI is now minimally wired on `src/pages/Homework.jsx` for staff-only queue/detail/draft workflow using existing homework read/write services.

@@ -225,3 +225,31 @@ Validation:
   - npm run test:supabase:homework:assignees:read
 - do not run unrelated full suites unless shared behavior changed.
 ```
+
+## 17) Implementation checkpoint (write-service MVP)
+
+Write-service MVP is now implemented in `src/services/supabaseWriteService.js`:
+
+- `createHomeworkTaskWithAssignees({ ... })`
+- `assignHomeworkTaskToStudents({ ... })`
+
+Current implemented MVP behavior:
+
+- class-level task creation with `assignment_scope = 'class'` and no required assignee rows
+- selected-student task creation with `assignment_scope = 'selected_students'` and explicit assignee row inserts
+- individual task creation with `assignment_scope = 'individual'` and exactly one assignee row
+- strict validation for UUIDs, title, assignment scope, student ID dedupe, and optional `YYYY-MM-DD` due date
+- anon client + JWT + RLS only (no service-role use)
+- explicit safe rollback limitation note when task insert succeeds but assignee insert fails
+
+Smoke checkpoint:
+
+- `scripts/supabase-homework-assignment-write-smoke-test.mjs`
+- package command: `npm run test:supabase:homework:assignment:write`
+
+Scope note:
+
+- assignment creation UI remains future
+- manual marked-file upload remains future
+- AI provider integration remains future
+- Announcements/Internal Communications remains future

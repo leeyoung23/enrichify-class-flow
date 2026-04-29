@@ -27,6 +27,16 @@ const HOMEWORK_SUBMISSION_STATUS_VALUES = new Set([
   "approved_for_parent",
   "archived",
 ]);
+const HOMEWORK_ASSIGNMENT_SCOPE_VALUES = new Set(["class", "selected_students", "individual"]);
+const HOMEWORK_ASSIGNEE_STATUS_VALUES = new Set([
+  "assigned",
+  "submitted",
+  "under_review",
+  "returned_for_revision",
+  "reviewed",
+  "feedback_released",
+  "archived",
+]);
 const HOMEWORK_FEEDBACK_EDITABLE_STATUSES = new Set(["draft", "approved"]);
 const HOMEWORK_FEEDBACK_STATUS_VALUES = new Set(["draft", "approved", "released_to_parent", "archived"]);
 
@@ -56,6 +66,17 @@ function normalizeNullableDate(value) {
   const parsed = new Date(`${trimmed}T00:00:00.000Z`);
   if (Number.isNaN(parsed.getTime())) return null;
   return parsed.toISOString().slice(0, 10);
+}
+
+function normalizeStudentIds(studentIds) {
+  if (!Array.isArray(studentIds)) return [];
+  const unique = new Set();
+  for (const rawId of studentIds) {
+    const normalized = trimString(rawId);
+    if (!normalized) continue;
+    unique.add(normalized);
+  }
+  return [...unique];
 }
 
 function buildClassCurriculumWritableFields({ learningFocus, termLabel, startDate, endDate } = {}) {
@@ -545,6 +566,204 @@ export async function releaseHomeworkFeedbackToParent({ homeworkFeedbackId } = {
       .select("id,homework_submission_id,teacher_profile_id,feedback_text,next_step,status,released_to_parent_at,created_at,updated_at")
       .maybeSingle();
     return { data: data ?? null, error: error ?? null };
+  } catch (err) {
+    return { data: null, error: { message: err?.message || String(err) } };
+  }
+}
+
+/**
+ * Create homework task with optional selected/individual assignee rows.
+ * Uses anon client + current JWT only (no service role).
+ */
+export async function createHomeworkTaskWithAssignees({
+  branchId,
+  classId,
+  title,
+  instructions,
+  subject,
+  dueDate,
+  assignmentScope = "class",
+  studentIds,
+  notes,
+} = {}) {
+  if (!isSupabaseConfigured() || !supabase) {
+    return { data: null, error: { message: "Supabase is not configured" } };
+  }
+  if (!isUuidLike(branchId)) return { data: null, error: { message: "branchId must be a UUID" } };
+  if (!isUuidLike(classId)) return { data: null, error: { message: "classId must be a UUID" } };
+  if (!trimString(title)) return { data: null, error: { message: "title is required" } };
+
+  const normalizedScope = trimString(assignmentScope) || "class";
+  if (!HOMEWORK_ASSIGNMENT_SCOPE_VALUES.has(normalizedScope)) {
+    return { data: null, error: { message: "assignmentScope must be class, selected_students, or individual" } };
+  }
+
+  const normalizedDueDate = normalizeNullableDate(dueDate);
+  if (dueDate != null && normalizedDueDate == null) {
+    return { data: null, error: { message: "dueDate must be YYYY-MM-DD when provided" } };
+  }
+
+  const dedupedStudentIds = normalizeStudentIds(studentIds);
+  if (dedupedStudentIds.some((id) => !isUuidLike(id))) {
+    return { data: null, error: { message: "studentIds must contain UUID values only" } };
+  }
+  if (normalizedScope === "selected_students" && dedupedStudentIds.length === 0) {
+    return { data: null, error: { message: "selected_students assignmentScope requires at least one studentId" } };
+  }
+  if (normalizedScope === "individual" && dedupedStudentIds.length !== 1) {
+    return { data: null, error: { message: "individual assignmentScope requires exactly one studentId" } };
+  }
+
+  try {
+    const { profileId, error: authError } = await getAuthenticatedProfileId();
+    if (authError || !profileId) {
+      return { data: null, error: authError || { message: "Authenticated user is required" } };
+    }
+
+    const nowIso = new Date().toISOString();
+    const taskInsert = await supabase
+      .from("homework_tasks")
+      .insert({
+        branch_id: trimString(branchId),
+        class_id: trimString(classId),
+        created_by_profile_id: profileId,
+        title: trimString(title).slice(0, 240),
+        instructions: normalizeNullableText(instructions, { maxLength: 4000 }),
+        subject: normalizeNullableText(subject, { maxLength: 120 }),
+        due_date: normalizedDueDate,
+        status: "assigned",
+        assignment_scope: normalizedScope,
+        created_at: nowIso,
+        updated_at: nowIso,
+      })
+      .select("id,branch_id,class_id,created_by_profile_id,title,instructions,subject,due_date,status,assignment_scope,created_at,updated_at")
+      .maybeSingle();
+
+    if (taskInsert.error || !taskInsert.data?.id) {
+      return { data: null, error: taskInsert.error || { message: "Unable to create homework task" } };
+    }
+
+    const shouldInsertAssignees = normalizedScope === "selected_students" || normalizedScope === "individual";
+    if (!shouldInsertAssignees) {
+      return { data: { task: taskInsert.data, assignees: [] }, error: null };
+    }
+
+    const assigneeRows = dedupedStudentIds.map((studentId) => ({
+      homework_task_id: taskInsert.data.id,
+      branch_id: trimString(branchId),
+      class_id: trimString(classId),
+      student_id: trimString(studentId),
+      assigned_by_profile_id: profileId,
+      assignment_status: "assigned",
+      due_date: normalizedDueDate,
+      notes: normalizeNullableText(notes, { maxLength: 2000 }),
+      created_at: nowIso,
+      updated_at: nowIso,
+    }));
+
+    const assigneeInsert = await supabase
+      .from("homework_task_assignees")
+      .insert(assigneeRows)
+      .select("id,homework_task_id,branch_id,class_id,student_id,assigned_by_profile_id,assignment_status,due_date,notes,created_at,updated_at");
+
+    if (assigneeInsert.error) {
+      return {
+        data: { task: taskInsert.data, assignees: [] },
+        error: {
+          message: assigneeInsert.error.message || "Task created but assignee insert failed",
+          rollback_note: "No service-role cleanup or rollback is performed in this flow.",
+        },
+      };
+    }
+
+    return {
+      data: {
+        task: taskInsert.data,
+        assignees: Array.isArray(assigneeInsert.data) ? assigneeInsert.data : [],
+      },
+      error: null,
+    };
+  } catch (err) {
+    return { data: null, error: { message: err?.message || String(err) } };
+  }
+}
+
+/**
+ * Add assignee rows to an existing homework task without destructive edits.
+ * Uses anon client + current JWT only (no service role).
+ */
+export async function assignHomeworkTaskToStudents({
+  homeworkTaskId,
+  branchId,
+  classId,
+  studentIds,
+  dueDate,
+  notes,
+} = {}) {
+  if (!isSupabaseConfigured() || !supabase) {
+    return { data: null, error: { message: "Supabase is not configured" } };
+  }
+  if (!isUuidLike(homeworkTaskId)) {
+    return { data: null, error: { message: "homeworkTaskId must be a UUID" } };
+  }
+  if (!isUuidLike(branchId)) return { data: null, error: { message: "branchId must be a UUID" } };
+  if (!isUuidLike(classId)) return { data: null, error: { message: "classId must be a UUID" } };
+
+  const dedupedStudentIds = normalizeStudentIds(studentIds);
+  if (dedupedStudentIds.length === 0) {
+    return { data: null, error: { message: "studentIds must include at least one UUID" } };
+  }
+  if (dedupedStudentIds.some((id) => !isUuidLike(id))) {
+    return { data: null, error: { message: "studentIds must contain UUID values only" } };
+  }
+
+  const normalizedDueDate = normalizeNullableDate(dueDate);
+  if (dueDate != null && normalizedDueDate == null) {
+    return { data: null, error: { message: "dueDate must be YYYY-MM-DD when provided" } };
+  }
+  if (!HOMEWORK_ASSIGNEE_STATUS_VALUES.has("assigned")) {
+    return { data: null, error: { message: "Invalid default assignment status value" } };
+  }
+
+  try {
+    const { profileId, error: authError } = await getAuthenticatedProfileId();
+    if (authError || !profileId) {
+      return { data: null, error: authError || { message: "Authenticated user is required" } };
+    }
+
+    const nowIso = new Date().toISOString();
+    const rows = dedupedStudentIds.map((studentId) => ({
+      homework_task_id: trimString(homeworkTaskId),
+      branch_id: trimString(branchId),
+      class_id: trimString(classId),
+      student_id: trimString(studentId),
+      assigned_by_profile_id: profileId,
+      assignment_status: "assigned",
+      due_date: normalizedDueDate,
+      notes: normalizeNullableText(notes, { maxLength: 2000 }),
+      created_at: nowIso,
+      updated_at: nowIso,
+    }));
+
+    const insertResult = await supabase
+      .from("homework_task_assignees")
+      .upsert(rows, {
+        onConflict: "homework_task_id,student_id",
+        ignoreDuplicates: true,
+      })
+      .select("id,homework_task_id,branch_id,class_id,student_id,assigned_by_profile_id,assignment_status,due_date,notes,created_at,updated_at");
+
+    if (insertResult.error) {
+      return { data: null, error: insertResult.error };
+    }
+
+    return {
+      data: {
+        homeworkTaskId: trimString(homeworkTaskId),
+        assignees: Array.isArray(insertResult.data) ? insertResult.data : [],
+      },
+      error: null,
+    };
   } catch (err) {
     return { data: null, error: { message: err?.message || String(err) } };
   }
