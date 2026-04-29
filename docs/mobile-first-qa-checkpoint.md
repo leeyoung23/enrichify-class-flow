@@ -101,13 +101,12 @@ Status update:
 
 - `ParentView` payment proof mobile polish: implemented.
 - `FeeTracking` staff action button wrap/stack polish: implemented.
+- `AppLayout`/sidebar responsive behavior review: implemented with minimal fix to avoid content squeeze on small screens while preserving desktop sidebar behavior.
 - Remaining mobile QA/polish items:
-  - `AppLayout`/sidebar mobile review
   - `ParentUpdates` mobile review flow density
 
-1. `AppLayout`/sidebar mobile behavior polish.
-2. `ParentUpdates` mobile review flow density polish.
-3. Replace `window.prompt` rejection input later with inline reason field/modal.
+1. `ParentUpdates` mobile review flow density polish.
+2. Replace `window.prompt` rejection input later with inline reason field/modal.
 
 ## 7) What not to do yet
 
@@ -118,34 +117,34 @@ Status update:
 
 ## 8) Recommended next implementation step
 
-Recommendation: **C. AppLayout/sidebar mobile audit**
+Recommendation: **D. ParentUpdates mobile review flow density polish**
 
 Why next:
 
-- ParentView and FeeTracking mobile action clarity are now improved, so layout-level navigation behavior is the highest remaining cross-page risk.
-- Sidebar/collapsed behavior can affect every route at mobile/tablet widths.
-- A focused audit can stay low-risk and avoid runtime/business-logic changes.
+- ParentView, FeeTracking, and AppLayout/sidebar responsiveness are now covered.
+- ParentUpdates still has the highest mobile interaction density (multi-step drafting, many textareas/actions).
+- A focused UI-density polish can improve phone usability without changing report workflow logic.
 
 ## 9) Next implementation prompt
 
 Copy-paste prompt:
 
 ```text
-Mobile audit/polish only for AppLayout/sidebar behavior.
+Mobile polish only for ParentUpdates review flow density.
 
 Constraints:
 - Do not change runtime logic or backend behavior.
 - Do not add services or SQL.
 - Keep demoRole/local fallback behavior unchanged.
-- Keep existing route access controls and role behavior unchanged.
+- Keep existing parent update workflow logic and permissions unchanged.
 - Do not modify unrelated pages.
 
 Task:
-Polish only layout/navigation behavior in src/components/layout/AppLayout.jsx (and Sidebar styles if strictly required):
-1) Validate and improve mobile/tablet behavior around sidebar visibility, collapsed state, and content width at ~390px and ~768px.
-2) Ensure main content remains readable without forced squeeze or hidden overflow.
+Polish only layout density in src/pages/ParentUpdates.jsx for mobile-first readability:
+1) Improve spacing/grouping for multi-step comment/report controls on ~390px width.
+2) Ensure action rows wrap cleanly with no clipped labels.
 3) Keep desktop behavior intact (>=1280px).
-4) Preserve existing routing and permission checks exactly.
+4) Preserve existing draft/approve/release behavior exactly.
 5) Avoid redesign; apply minimal layout fixes only.
 
 Validation:

@@ -67,11 +67,13 @@ export default function AppLayout() {
     return (
       <div className="min-h-screen bg-background">
         {showSidebar && (
-          <Sidebar user={effectiveUser} collapsed={collapsed} onToggle={() => setCollapsed(!collapsed)} />
+          <div className="hidden lg:block">
+            <Sidebar user={effectiveUser} collapsed={collapsed} onToggle={() => setCollapsed(!collapsed)} />
+          </div>
         )}
         <main className={cn(
           "transition-all duration-300 min-h-screen",
-          collapsed ? 'ml-[72px]' : 'ml-[260px]'
+          showSidebar ? (collapsed ? 'ml-0 lg:ml-[72px]' : 'ml-0 lg:ml-[260px]') : 'ml-0'
         )}>
           <div className="p-6 md:p-8 max-w-[1400px] mx-auto">
             <DemoRoleSwitcher />
@@ -89,11 +91,13 @@ export default function AppLayout() {
   return (
     <div className="min-h-screen bg-background">
       {showSidebar && (
-        <Sidebar user={effectiveUser} collapsed={collapsed} onToggle={() => setCollapsed(!collapsed)} />
+        <div className="hidden lg:block">
+          <Sidebar user={effectiveUser} collapsed={collapsed} onToggle={() => setCollapsed(!collapsed)} />
+        </div>
       )}
       <main className={cn(
         "transition-all duration-300 min-h-screen",
-        showSidebar ? (collapsed ? 'ml-[72px]' : 'ml-[260px]') : 'ml-0'
+        showSidebar ? (collapsed ? 'ml-0 lg:ml-[72px]' : 'ml-0 lg:ml-[260px]') : 'ml-0'
       )}>
         <div className="p-6 md:p-8 max-w-[1400px] mx-auto">
           <DemoRoleSwitcher />
