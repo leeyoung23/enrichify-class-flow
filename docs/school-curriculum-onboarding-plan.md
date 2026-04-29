@@ -329,6 +329,10 @@ Planning status: ready for Phase 2 SQL/RLS draft.
 
 - Fake onboarding seed draft added: `supabase/sql/013_school_curriculum_fake_seed_data.sql`.
 - Scope: manual/dev-only fake school/curriculum rows for smoke stability.
-- Not applied automatically.
+- Manual apply status: applied in Supabase dev (SQL Editor result: Success / No rows returned).
+- Not applied automatically (manual apply only).
 - Uses fake/demo entities only (no real school/student/curriculum data).
 - UI remains not implemented.
+- AI integration remains not implemented.
+- Fake seed application checkpoint: `docs/school-curriculum-fake-seed-application-checkpoint.md`.
+- Next milestone: `Classes` curriculum assignment UI or `Students` school profile UI.
