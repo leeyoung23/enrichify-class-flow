@@ -299,7 +299,8 @@ Reminder: **Frontend filtering is not security. RLS must enforce access at datab
 
 - Draft patch reference: `supabase/sql/017_homework_task_assignees_foundation.sql` (manual review/apply only).
 - Draft status:
-  - SQL drafted only; not auto-applied in this step
+  - manually applied in Supabase dev (SQL Editor success)
+  - application checkpoint: `docs/homework-task-assignees-sql-application-checkpoint.md`
   - fake/dev data validation only
   - runtime service/UI behavior remains unchanged until later migration
 - Draft scope:

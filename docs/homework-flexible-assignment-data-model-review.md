@@ -233,12 +233,14 @@ Why A first:
 - services and UI should be built on explicit assignment semantics, not submission-side inference
 - additive SQL/RLS draft can be prepared safely without runtime/UI breakage
 
-## 16) SQL draft checkpoint (manual/dev-first)
+## 16) SQL application checkpoint (manual/dev-first)
 
-- Draft file now exists: `supabase/sql/017_homework_task_assignees_foundation.sql`.
-- `017` is **manual/dev-first draft only** and is **not auto-applied**.
-- Validation intent is fake/dev data only before any runtime wiring.
-- Student-specific and selected-student assignment support is now SQL-drafted through:
+- Applied file: `supabase/sql/017_homework_task_assignees_foundation.sql`.
+- `017` has now been manually applied in Supabase dev (SQL Editor success).
+- Application checkpoint is recorded at `docs/homework-task-assignees-sql-application-checkpoint.md`.
+- Production apply remains out of scope.
+- Validation intent remains fake/dev data only before runtime migration.
+- Student-specific and selected-student assignment support is now active at DB schema level in dev through:
   - additive `homework_tasks.assignment_scope`
   - new `homework_task_assignees` table + helper functions + RLS
   - assignee row alignment enforcement (task + student must match branch/class scope)

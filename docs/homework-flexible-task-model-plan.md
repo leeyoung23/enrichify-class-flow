@@ -153,8 +153,10 @@ Reason:
 
 ## 14) SQL draft progress checkpoint
 
-- Manual/dev-first additive SQL draft is now prepared at `supabase/sql/017_homework_task_assignees_foundation.sql`.
-- The draft is not auto-applied and should be reviewed/manual-run in dev only.
+- Manual/dev-first additive SQL (`017`) is now manually applied in Supabase dev:
+  - `supabase/sql/017_homework_task_assignees_foundation.sql`
+- Application checkpoint:
+  - `docs/homework-task-assignees-sql-application-checkpoint.md`
 - Scope drafted in SQL:
   - optional `homework_tasks.assignment_scope` (`class`, `selected_students`, `individual`, `curriculum_profile`)
   - new `homework_task_assignees` join table

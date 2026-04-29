@@ -189,9 +189,11 @@ Current status note:
 - Homework runtime service + fake file smoke test are now started (`src/services/supabaseUploadService.js`, `scripts/supabase-homework-upload-smoke-test.mjs`) with metadata-first upload and private signed URL checks using fake files only.
 - `015` has been manually applied in dev to fix UUID path-prefix matching for metadata-first homework file insert.
 - Parent direct submission insert investigation found policy recursion for first parent submission; patch draft exists at `supabase/sql/016_fix_homework_parent_submission_insert.sql` (manual apply only, not applied yet).
-- Homework flexible assignment additive SQL/RLS draft now exists at `supabase/sql/017_homework_task_assignees_foundation.sql` (manual/dev-first draft only; not auto-applied in this step).
-- `017` introduces optional `homework_tasks.assignment_scope` and draft `homework_task_assignees` RLS model to support explicit student/small-group assignment rows.
-- `017` now also includes an assignee alignment guard so task/branch/class/student mismatch rows are rejected at write time.
+- Homework flexible assignment additive SQL/RLS (`017`) is now manually applied in Supabase dev:
+  - `supabase/sql/017_homework_task_assignees_foundation.sql`
+  - checkpoint doc: `docs/homework-task-assignees-sql-application-checkpoint.md`
+- `017` introduces optional `homework_tasks.assignment_scope` and `homework_task_assignees` RLS model to support explicit student/small-group assignment rows.
+- `017` includes an assignee alignment guard so task/branch/class/student mismatch rows are rejected at write time.
 - Existing homework runtime/UI workflow remains unchanged until later service/UI migration; parent assigned-but-not-submitted visibility should later move to assignee-row based reads.
 - Homework feedback write service + smoke test are now started (`src/services/supabaseWriteService.js`, `scripts/supabase-homework-feedback-smoke-test.mjs`) for draft/create-update, review transition, release-to-parent, and parent draft-hidden checks.
 - Parent-visible feedback read path now omits `internal_note` from service response when `parentVisibleOnly` is requested.
