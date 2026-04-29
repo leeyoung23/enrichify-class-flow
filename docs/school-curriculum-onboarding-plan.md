@@ -360,8 +360,9 @@ Planning status: ready for Phase 2 SQL/RLS draft.
   - teacher write blocking in current MVP policy shape
   - optional HQ write verification
   - cleanup/revert to original fake assignment values
-- Scope remains unchanged:
-  - `Classes` assignment/edit UI is still future
+- Scope status after current UI milestone:
+  - `Classes` assignment/edit UI is now wired for HQ + branch supervisor
   - `Students` school profile edit UI is still future
+  - curriculum profile/template creation UI is still future
   - AI context integration is still future
 - Fake/dev data only.

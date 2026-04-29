@@ -284,7 +284,30 @@ Planning status: ready for Phase 2 class-assignment write service and smoke vali
   - package script: `npm run test:supabase:school-curriculum:write`
 - Smoke path checks branch-supervisor write success, read-back verification, parent/student write blocking, teacher write blocking (MVP read-only), optional HQ check, and cleanup/revert of fake class assignment values.
 - Scope remains intentionally limited:
-  - no `Classes` assignment/edit UI wiring yet
+- `Classes` assignment/edit UI is now implemented for HQ + branch supervisor only
   - no `Students` school profile edit UI yet
   - no AI context integration changes yet
 - Validation and smoke data remain fake/dev-only; no real school/student/curriculum data is used.
+
+## 15) Phase 3 implementation status update (`Classes` assign/edit UI)
+
+- `Classes` curriculum assign/edit controls are now wired on class cards for:
+  - HQ admin
+  - branch supervisor
+- Teacher/parent/student users remain read-only with no assignment/edit controls.
+- Controls now include:
+  - curriculum profile select
+  - learning focus input
+  - term label input
+  - optional start/end date
+  - save and cancel actions
+- Write routing behavior:
+  - `updateClassCurriculumAssignment(...)` when assignment exists and profile is unchanged
+  - `assignCurriculumToClass(...)` for new assignment or profile replacement by class
+- Demo/local behavior remains safe:
+  - demo/local mode does not call Supabase write methods
+  - local/demo message is shown instead of remote write
+- Scope remains intentionally limited:
+  - `Students` school profile edit UI remains future
+  - curriculum profile/template creation UI remains future
+  - AI context integration remains future

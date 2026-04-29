@@ -178,9 +178,10 @@ Current status note:
 - ParentView parent-friendly learning focus summary is now started (read-only bridge from curriculum context to parent-facing language).
 - School/curriculum class assignment write service is now added in `src/services/supabaseWriteService.js` (service layer only; no UI wiring).
 - School/curriculum class assignment write smoke test is now added at `scripts/supabase-school-curriculum-write-smoke-test.mjs`.
-- School/curriculum UI is now in early read-only preview stage on `Classes` + `Students` + `ParentView`; assignment/edit UI is still unwired and AI integration is still unwired.
+- `Classes` curriculum assignment/edit UI is now wired for HQ + branch supervisor using existing write services (teacher/parent/student remain without write controls).
+- School/curriculum UI now has read/write coverage on `Classes`; `Students` edit UI and AI integration remain unwired.
 - Application checkpoint is documented at `docs/school-curriculum-sql-application-checkpoint.md`.
-- Recommended next milestone: curriculum assignment/edit UI planning (write phase with strict role boundaries).
+- Recommended next milestone: `Students` school profile edit UI planning/wiring (with strict role boundaries).
 
 ## 12) Next immediate milestone prompt (copy-paste)
 

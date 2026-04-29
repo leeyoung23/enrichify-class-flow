@@ -3,8 +3,10 @@ import { useOutletContext } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { listClasses, listBranches, listStaff, createClass, getReadDataSource } from '@/services/dataService';
 import { getClassLearningContext, listCurriculumProfiles } from '@/services/supabaseReadService';
-import { canManageClasses, isTeacherRole } from '@/services/permissionService';
+import { assignCurriculumToClass, updateClassCurriculumAssignment } from '@/services/supabaseWriteService';
+import { canManageClasses, isTeacherRole, getRole, ROLES } from '@/services/permissionService';
 import { BookOpen, Plus, Clock, User } from 'lucide-react';
+import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -17,14 +19,39 @@ import EmptyState from '@/components/shared/EmptyState';
 
 const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const isUuid = (value) => typeof value === 'string' && UUID_REGEX.test(value.trim());
+const trimToNull = (value) => {
+  if (typeof value !== 'string') return null;
+  const trimmed = value.trim();
+  return trimmed || null;
+};
+
+const DEMO_CURRICULUM_OPTIONS = [
+  {
+    id: '11111111-1111-4111-8111-111111111111',
+    name: 'Demo Literacy Profile',
+    subject: 'English',
+    level_year_grade: 'Year 4',
+  },
+  {
+    id: '22222222-2222-4222-8222-222222222222',
+    name: 'Demo Numeracy Profile',
+    subject: 'Mathematics',
+    level_year_grade: 'Year 4',
+  },
+];
 
 export default function Classes() {
   const { user } = useOutletContext();
   const [dialogOpen, setDialogOpen] = useState(false);
   const [form, setForm] = useState({ name: '', branch_id: '', subject: '', teacher_email: '', schedule: '' });
+  const [editingCurriculumClassId, setEditingCurriculumClassId] = useState(null);
+  const [curriculumFormByClassId, setCurriculumFormByClassId] = useState({});
+  const [savingCurriculumClassId, setSavingCurriculumClassId] = useState(null);
   const queryClient = useQueryClient();
   const isAdmin = canManageClasses(user);
   const isTeacher = isTeacherRole(user);
+  const role = getRole(user);
+  const canManageClassCurriculum = role === ROLES.HQ_ADMIN || role === ROLES.BRANCH_SUPERVISOR;
 
   const { data: classes = [], isLoading } = useQuery({
     queryKey: ['classes', user?.role, user?.email],
@@ -60,7 +87,7 @@ export default function Classes() {
     () => classes.map((cls) => cls?.id).filter(isUuid),
     [classes]
   );
-  const isDemoRole = String(user?.role || '').trim().toLowerCase() === 'demorole';
+  const isDemoRole = !isSupabaseClassSource || String(user?.role || '').trim().toLowerCase() === 'demorole';
   const shouldReadSupabaseCurriculum = Boolean(user) && isSupabaseClassSource && !isDemoRole && validClassIds.length > 0;
 
   const { data: curriculumProfiles = [] } = useQuery({
@@ -72,10 +99,11 @@ export default function Classes() {
       return Array.isArray(data) ? data : [];
     },
   });
+  const availableCurriculumProfiles = shouldReadSupabaseCurriculum ? curriculumProfiles : DEMO_CURRICULUM_OPTIONS;
 
   const profileMap = useMemo(
-    () => new Map(curriculumProfiles.map((profile) => [profile.id, profile])),
-    [curriculumProfiles]
+    () => new Map(availableCurriculumProfiles.map((profile) => [profile.id, profile])),
+    [availableCurriculumProfiles]
   );
 
   const { data: classContextById = {} } = useQuery({
@@ -92,6 +120,110 @@ export default function Classes() {
       return Object.fromEntries(entries);
     },
   });
+
+  const startEditCurriculum = (classId, assignment) => {
+    if (!classId) return;
+    setEditingCurriculumClassId(classId);
+    setCurriculumFormByClassId((prev) => ({
+      ...prev,
+      [classId]: {
+        curriculumProfileId: assignment?.curriculum_profile_id || '',
+        learningFocus: assignment?.learning_focus || '',
+        termLabel: assignment?.term_label || '',
+        startDate: assignment?.start_date || '',
+        endDate: assignment?.end_date || '',
+      },
+    }));
+  };
+
+  const cancelEditCurriculum = (classId) => {
+    setEditingCurriculumClassId((prev) => (prev === classId ? null : prev));
+    setCurriculumFormByClassId((prev) => {
+      const next = { ...prev };
+      delete next[classId];
+      return next;
+    });
+  };
+
+  const updateCurriculumForm = (classId, patch) => {
+    setCurriculumFormByClassId((prev) => ({
+      ...prev,
+      [classId]: {
+        ...(prev[classId] || {
+          curriculumProfileId: '',
+          learningFocus: '',
+          termLabel: '',
+          startDate: '',
+          endDate: '',
+        }),
+        ...patch,
+      },
+    }));
+  };
+
+  const handleSaveCurriculum = async ({ classId, assignment }) => {
+    const formState = curriculumFormByClassId[classId] || {};
+    const curriculumProfileId = formState.curriculumProfileId;
+    const startDate = trimToNull(formState.startDate);
+    const endDate = trimToNull(formState.endDate);
+    const learningFocus = trimToNull(formState.learningFocus);
+    const termLabel = trimToNull(formState.termLabel);
+
+    if (!isUuid(classId)) {
+      toast.message('Class id is invalid. Please refresh and try again.');
+      return;
+    }
+    if (!isUuid(curriculumProfileId)) {
+      toast.message('Please select a curriculum profile.');
+      return;
+    }
+    if (startDate && endDate && startDate > endDate) {
+      toast.message('End date cannot be before start date.');
+      return;
+    }
+
+    if (isDemoRole) {
+      toast.message('Demo/local mode keeps curriculum assignment changes local and does not write to Supabase.');
+      cancelEditCurriculum(classId);
+      return;
+    }
+
+    setSavingCurriculumClassId(classId);
+    try {
+      const profileChanged = assignment?.curriculum_profile_id !== curriculumProfileId;
+      let result;
+      if (assignment?.id && !profileChanged) {
+        result = await updateClassCurriculumAssignment({
+          assignmentId: assignment.id,
+          learningFocus,
+          termLabel,
+          startDate,
+          endDate,
+        });
+      } else {
+        result = await assignCurriculumToClass({
+          classId,
+          curriculumProfileId,
+          learningFocus,
+          termLabel,
+          startDate,
+          endDate,
+        });
+      }
+
+      if (result?.error) {
+        toast.error(result.error.message || 'Unable to save class curriculum assignment.');
+        return;
+      }
+      toast.success('Class curriculum assignment saved.');
+      cancelEditCurriculum(classId);
+      await queryClient.invalidateQueries({ queryKey: ['class-curriculum-context'] });
+    } catch (error) {
+      toast.error(error?.message || 'Unable to save class curriculum assignment.');
+    } finally {
+      setSavingCurriculumClassId(null);
+    }
+  };
 
   return (
     <div>
@@ -166,31 +298,47 @@ export default function Classes() {
                   const activeClassGoals = Array.isArray(context?.learning_goals)
                     ? context.learning_goals.filter((goal) => goal?.status === 'active' && !goal?.student_id)
                     : [];
-
-                  if (!assignment || !profile) {
-                    return <p className="text-sm text-muted-foreground">No curriculum profile assigned yet.</p>;
-                  }
+                  const isEditingCurriculum = editingCurriculumClassId === cls.id;
+                  const classCurriculumForm = curriculumFormByClassId[cls.id] || {
+                    curriculumProfileId: assignment?.curriculum_profile_id || '',
+                    learningFocus: assignment?.learning_focus || '',
+                    termLabel: assignment?.term_label || '',
+                    startDate: assignment?.start_date || '',
+                    endDate: assignment?.end_date || '',
+                  };
+                  const profileOptions = availableCurriculumProfiles
+                    .filter((candidate) => (isUuid(candidate?.id) ? true : false))
+                    .map((candidate) => ({
+                      id: candidate.id,
+                      label: `${candidate.name || 'Unnamed profile'}${candidate.subject ? ` • ${candidate.subject}` : ''}${candidate.level_year_grade ? ` • ${candidate.level_year_grade}` : ''}`,
+                    }));
 
                   return (
                     <div className="space-y-1.5">
-                      <p className="text-sm">
-                        <span className="text-muted-foreground">Profile:</span> {profile.name || '—'}
-                      </p>
-                      <p className="text-sm">
-                        <span className="text-muted-foreground">Subject:</span> {profile.subject || '—'}
-                      </p>
-                      <p className="text-sm">
-                        <span className="text-muted-foreground">Level/Year/Grade:</span> {profile.level_year_grade || '—'}
-                      </p>
-                      <p className="text-sm">
-                        <span className="text-muted-foreground">Skill focus:</span> {profile.skill_focus || '—'}
-                      </p>
-                      {profile.assessment_style ? (
-                        <p className="text-sm">
-                          <span className="text-muted-foreground">Assessment style:</span> {profile.assessment_style}
-                        </p>
-                      ) : null}
-                      {assignment.learning_focus ? (
+                      {!assignment || !profile ? (
+                        <p className="text-sm text-muted-foreground">No curriculum profile assigned yet.</p>
+                      ) : (
+                        <>
+                          <p className="text-sm">
+                            <span className="text-muted-foreground">Profile:</span> {profile.name || '—'}
+                          </p>
+                          <p className="text-sm">
+                            <span className="text-muted-foreground">Subject:</span> {profile.subject || '—'}
+                          </p>
+                          <p className="text-sm">
+                            <span className="text-muted-foreground">Level/Year/Grade:</span> {profile.level_year_grade || '—'}
+                          </p>
+                          <p className="text-sm">
+                            <span className="text-muted-foreground">Skill focus:</span> {profile.skill_focus || '—'}
+                          </p>
+                          {profile.assessment_style ? (
+                            <p className="text-sm">
+                              <span className="text-muted-foreground">Assessment style:</span> {profile.assessment_style}
+                            </p>
+                          ) : null}
+                        </>
+                      )}
+                      {assignment?.learning_focus ? (
                         <p className="text-sm">
                           <span className="text-muted-foreground">Class learning focus:</span> {assignment.learning_focus}
                         </p>
@@ -203,6 +351,95 @@ export default function Classes() {
                               <li key={goal.id}>{goal.goal_title || 'Untitled goal'}</li>
                             ))}
                           </ul>
+                        </div>
+                      ) : null}
+                      {canManageClassCurriculum ? (
+                        <div className="pt-2 border-t mt-2 space-y-2">
+                          {!isEditingCurriculum ? (
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              className="w-full sm:w-auto"
+                              onClick={() => startEditCurriculum(cls.id, assignment)}
+                            >
+                              {assignment ? 'Edit Curriculum' : 'Assign Curriculum'}
+                            </Button>
+                          ) : (
+                            <div className="space-y-3">
+                              <div className="space-y-1">
+                                <Label className="text-xs">Curriculum Profile</Label>
+                                <Select
+                                  value={classCurriculumForm.curriculumProfileId}
+                                  onValueChange={(value) => updateCurriculumForm(cls.id, { curriculumProfileId: value })}
+                                >
+                                  <SelectTrigger>
+                                    <SelectValue placeholder="Select curriculum profile" />
+                                  </SelectTrigger>
+                                  <SelectContent>
+                                    {profileOptions.map((option) => (
+                                      <SelectItem key={option.id} value={option.id}>
+                                        {option.label}
+                                      </SelectItem>
+                                    ))}
+                                  </SelectContent>
+                                </Select>
+                              </div>
+                              <div className="space-y-1">
+                                <Label className="text-xs">Learning Focus (optional)</Label>
+                                <textarea
+                                  value={classCurriculumForm.learningFocus}
+                                  onChange={(event) => updateCurriculumForm(cls.id, { learningFocus: event.target.value })}
+                                  placeholder="Add a concise class learning focus"
+                                  className="w-full min-h-[80px] rounded-md border bg-background px-3 py-2 text-sm"
+                                />
+                              </div>
+                              <div className="space-y-1">
+                                <Label className="text-xs">Term Label (optional)</Label>
+                                <Input
+                                  value={classCurriculumForm.termLabel}
+                                  onChange={(event) => updateCurriculumForm(cls.id, { termLabel: event.target.value })}
+                                  placeholder="e.g. Term 2"
+                                />
+                              </div>
+                              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                                <div className="space-y-1">
+                                  <Label className="text-xs">Start Date (optional)</Label>
+                                  <Input
+                                    type="date"
+                                    value={classCurriculumForm.startDate}
+                                    onChange={(event) => updateCurriculumForm(cls.id, { startDate: event.target.value })}
+                                  />
+                                </div>
+                                <div className="space-y-1">
+                                  <Label className="text-xs">End Date (optional)</Label>
+                                  <Input
+                                    type="date"
+                                    value={classCurriculumForm.endDate}
+                                    onChange={(event) => updateCurriculumForm(cls.id, { endDate: event.target.value })}
+                                  />
+                                </div>
+                              </div>
+                              <div className="flex flex-col sm:flex-row gap-2">
+                                <Button
+                                  size="sm"
+                                  className="w-full sm:w-auto"
+                                  disabled={savingCurriculumClassId === cls.id}
+                                  onClick={() => handleSaveCurriculum({ classId: cls.id, assignment })}
+                                >
+                                  {savingCurriculumClassId === cls.id ? 'Saving...' : 'Save'}
+                                </Button>
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  className="w-full sm:w-auto"
+                                  disabled={savingCurriculumClassId === cls.id}
+                                  onClick={() => cancelEditCurriculum(cls.id)}
+                                >
+                                  Cancel
+                                </Button>
+                              </div>
+                            </div>
+                          )}
                         </div>
                       ) : null}
                     </div>
