@@ -6,7 +6,7 @@ This checkpoint records the service-layer and smoke-test milestone for homework 
 
 - Homework upload/review service methods were added for lean MVP task/submission/file operations.
 - Metadata-first upload flow was implemented for private homework file handling.
-- Dedicated fake-file smoke test was added and is now passing in dev after `015` patch apply.
+- Dedicated fake-file smoke test was added and is now passing in dev after `015` + `016` manual patch apply.
 - No homework UI wiring was included in this milestone.
 - AI homework feedback remains future.
 
@@ -47,7 +47,7 @@ This checkpoint records the service-layer and smoke-test milestone for homework 
 ## 6) Smoke test proof
 
 - Homework task creation passes.
-- Submission fallback path works.
+- Parent direct submission creation passes.
 - Homework file metadata insert passes.
 - Private object upload passes.
 - Signed URL creation passes.
@@ -57,18 +57,10 @@ This checkpoint records the service-layer and smoke-test milestone for homework 
 
 ## 7) Remaining CHECK notes
 
-- Parent direct submission insert is still blocked in current dev dataset/policy context.
-- Branch supervisor fallback is used for submission creation in current smoke run.
+- `016` has been manually applied in dev and parent direct submission insert now works.
+- Smoke auth/session issue was fixed by keeping the active parent session through `uploadHomeworkFile(...)` in the script flow.
 - Unrelated parent/student credentials were unavailable in env, so those checks were skipped.
-- Parent direct submission behavior should be revisited during parent upload UI stage.
-
-### Parent submission insert investigation update
-
-- Investigation indicates parent insert block is policy-level recursion, not a fake seed linkage mismatch.
-- In `014`, `homework_submissions_insert_014` validates task status/alignment by reading `homework_tasks` directly.
-- Parent `homework_tasks` visibility is itself submission-dependent, so first parent insert is blocked by circular RLS gating.
-- Patch draft created: `supabase/sql/016_fix_homework_parent_submission_insert.sql` (manual apply only, not applied yet).
-- `016` adds security-definer helper `homework_task_allows_submission(...)` and redefines parent insert policy to use it while preserving linked-child and assigned/open requirements.
+- Unrelated-role negative checks should be rerun when additional fake credentials are available.
 
 ## 8) Security/RLS notes
 

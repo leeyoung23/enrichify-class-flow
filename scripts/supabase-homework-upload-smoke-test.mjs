@@ -202,9 +202,9 @@ async function run() {
     uploadActorProfileId = parentProfileId;
     printResult("PASS", "Parent: homework submission created");
   }
-  await signOut();
 
   if (!createdSubmission) {
+    await signOut();
     const supervisorFallbackSignIn = await signInRole(supervisorUser, { signInWithEmailPassword, signOut });
     if (!supervisorFallbackSignIn.ok) {
       printResult("WARNING", "Branch Supervisor: fallback submission create failed (sign-in)");
