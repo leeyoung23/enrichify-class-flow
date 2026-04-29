@@ -59,6 +59,7 @@ Scope note:
 - Card-based layout is mobile-leaning, but action button groups in student cards can wrap aggressively.
 - Add dialogs include multiple fields/selects; need viewport-height and keyboard overlap checks on phones.
 - Fee status mini-grid in student cards may feel dense with long values.
+- Classes page now includes read-only curriculum context preview cards; verify profile/learning-focus/goals text wrapping and scanability on ~390px.
 
 ### Sidebar / `AppLayout`
 

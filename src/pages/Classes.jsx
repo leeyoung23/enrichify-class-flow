@@ -1,7 +1,8 @@
-import React, { useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import { useOutletContext } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { listClasses, listBranches, listStaff, createClass, getReadDataSource } from '@/services/dataService';
+import { getClassLearningContext, listCurriculumProfiles } from '@/services/supabaseReadService';
 import { canManageClasses, isTeacherRole } from '@/services/permissionService';
 import { BookOpen, Plus, Clock, User } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -13,6 +14,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import PageHeader from '@/components/shared/PageHeader';
 import EmptyState from '@/components/shared/EmptyState';
+
+const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+const isUuid = (value) => typeof value === 'string' && UUID_REGEX.test(value.trim());
 
 export default function Classes() {
   const { user } = useOutletContext();
@@ -50,7 +54,44 @@ export default function Classes() {
   });
 
   const getBranchName = (id) => branches.find(b => b.id === id)?.name || '—';
-  const sourceLabel = getReadDataSource('classes') === 'supabase' ? 'Loaded from Supabase test data' : 'Demo data';
+  const isSupabaseClassSource = getReadDataSource('classes') === 'supabase';
+  const sourceLabel = isSupabaseClassSource ? 'Loaded from Supabase test data' : 'Demo data';
+  const validClassIds = useMemo(
+    () => classes.map((cls) => cls?.id).filter(isUuid),
+    [classes]
+  );
+  const isDemoRole = String(user?.role || '').trim().toLowerCase() === 'demorole';
+  const shouldReadSupabaseCurriculum = Boolean(user) && isSupabaseClassSource && !isDemoRole && validClassIds.length > 0;
+
+  const { data: curriculumProfiles = [] } = useQuery({
+    queryKey: ['curriculum-profiles', user?.role, user?.branch_id],
+    enabled: shouldReadSupabaseCurriculum,
+    queryFn: async () => {
+      const { data, error } = await listCurriculumProfiles({});
+      if (error) return [];
+      return Array.isArray(data) ? data : [];
+    },
+  });
+
+  const profileMap = useMemo(
+    () => new Map(curriculumProfiles.map((profile) => [profile.id, profile])),
+    [curriculumProfiles]
+  );
+
+  const { data: classContextById = {} } = useQuery({
+    queryKey: ['class-curriculum-context', validClassIds.join('|')],
+    enabled: shouldReadSupabaseCurriculum,
+    queryFn: async () => {
+      const entries = await Promise.all(
+        validClassIds.map(async (classId) => {
+          const result = await getClassLearningContext({ classId });
+          if (result?.error || !result?.data) return [classId, null];
+          return [classId, result.data];
+        })
+      );
+      return Object.fromEntries(entries);
+    },
+  });
 
   return (
     <div>
@@ -99,6 +140,74 @@ export default function Classes() {
                     <Clock className="h-3 w-3" /> {cls.schedule}
                   </p>
                 )}
+              </div>
+              <div className="mt-4 border-t pt-3 space-y-2">
+                <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Curriculum Context</p>
+                {!isSupabaseClassSource ? (
+                  <div className="space-y-1">
+                    <p className="text-sm text-muted-foreground">Demo-only curriculum preview.</p>
+                    <p className="text-sm">
+                      <span className="text-muted-foreground">Profile:</span>{' '}
+                      {cls.subject ? `Demo ${cls.subject} Foundations` : 'Demo Curriculum Foundations'}
+                    </p>
+                    <p className="text-sm">
+                      <span className="text-muted-foreground">Learning focus:</span>{' '}
+                      {cls.level ? `${cls.level} core skill reinforcement` : 'No curriculum profile assigned yet.'}
+                    </p>
+                  </div>
+                ) : !isUuid(cls?.id) ? (
+                  <p className="text-sm text-muted-foreground">No curriculum profile assigned yet.</p>
+                ) : (() => {
+                  const context = classContextById[cls.id];
+                  const assignment = Array.isArray(context?.class_curriculum_assignments)
+                    ? context.class_curriculum_assignments[0]
+                    : null;
+                  const profile = assignment?.curriculum_profile_id ? profileMap.get(assignment.curriculum_profile_id) : null;
+                  const activeClassGoals = Array.isArray(context?.learning_goals)
+                    ? context.learning_goals.filter((goal) => goal?.status === 'active' && !goal?.student_id)
+                    : [];
+
+                  if (!assignment || !profile) {
+                    return <p className="text-sm text-muted-foreground">No curriculum profile assigned yet.</p>;
+                  }
+
+                  return (
+                    <div className="space-y-1.5">
+                      <p className="text-sm">
+                        <span className="text-muted-foreground">Profile:</span> {profile.name || '—'}
+                      </p>
+                      <p className="text-sm">
+                        <span className="text-muted-foreground">Subject:</span> {profile.subject || '—'}
+                      </p>
+                      <p className="text-sm">
+                        <span className="text-muted-foreground">Level/Year/Grade:</span> {profile.level_year_grade || '—'}
+                      </p>
+                      <p className="text-sm">
+                        <span className="text-muted-foreground">Skill focus:</span> {profile.skill_focus || '—'}
+                      </p>
+                      {profile.assessment_style ? (
+                        <p className="text-sm">
+                          <span className="text-muted-foreground">Assessment style:</span> {profile.assessment_style}
+                        </p>
+                      ) : null}
+                      {assignment.learning_focus ? (
+                        <p className="text-sm">
+                          <span className="text-muted-foreground">Class learning focus:</span> {assignment.learning_focus}
+                        </p>
+                      ) : null}
+                      {activeClassGoals.length > 0 ? (
+                        <div className="pt-1">
+                          <p className="text-xs text-muted-foreground">Active class goals</p>
+                          <ul className="list-disc pl-5 text-sm space-y-0.5">
+                            {activeClassGoals.map((goal) => (
+                              <li key={goal.id}>{goal.goal_title || 'Untitled goal'}</li>
+                            ))}
+                          </ul>
+                        </div>
+                      ) : null}
+                    </div>
+                  );
+                })()}
               </div>
             </Card>
           ))}

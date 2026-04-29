@@ -162,11 +162,11 @@ Key quality principle:
 
 ---
 
-## 6) UI placement proposal (future implementation)
+## 6) UI placement proposal
 
 Recommended placement across existing pages:
 
-- `Classes` page: class curriculum assignment section/card.
+- `Classes` page: class curriculum assignment section/card (read-only preview now implemented).
 - `Students` page: student school profile section/card.
 - `ParentView` page: parent-friendly learning focus summary.
 - `ParentUpdates` and weekly report flow: curriculum context reference block for teacher drafting.
@@ -335,4 +335,8 @@ Planning status: ready for Phase 2 SQL/RLS draft.
 - UI remains not implemented.
 - AI integration remains not implemented.
 - Fake seed application checkpoint: `docs/school-curriculum-fake-seed-application-checkpoint.md`.
-- Next milestone: `Classes` curriculum assignment UI or `Students` school profile UI.
+- Classes page read-only curriculum context preview is now implemented.
+- Assignment/edit/create curriculum UI remains future.
+- Students page school profile UI remains future.
+- ParentView learning focus summary remains future.
+- Next milestone: `Students` school profile UI, then `ParentView` learning focus summary.

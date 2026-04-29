@@ -173,9 +173,10 @@ Current status note:
 - School/curriculum fake seed draft exists at `supabase/sql/013_school_curriculum_fake_seed_data.sql` (manual/dev-only).
 - School/curriculum fake seed is now manually applied in Supabase dev (Success / No rows returned).
 - Fake seed application checkpoint is documented at `docs/school-curriculum-fake-seed-application-checkpoint.md`.
-- There is still no school/curriculum UI wiring and no AI integration wiring for this domain yet.
+- Classes page read-only curriculum context preview is now started (RLS-scoped read only; no assignment/edit writes).
+- School/curriculum UI is now in early read-only preview stage on `Classes`; assignment/edit UI is still unwired and AI integration is still unwired.
 - Application checkpoint is documented at `docs/school-curriculum-sql-application-checkpoint.md`.
-- Recommended next milestone: `Classes` curriculum assignment UI or `Students` school profile UI.
+- Recommended next milestone: `Students` school profile UI or `ParentView` learning focus summary.
 
 ## 12) Next immediate milestone prompt (copy-paste)
 
