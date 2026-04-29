@@ -1,7 +1,8 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { useNavigate, useOutletContext } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { listStudents, listClasses, createStudent, invokeParentReport, getStudentFeeStatus, listHomeworkAttachments, getReadDataSource } from '@/services/dataService';
+import { getStudentLearningContext, listCurriculumProfiles } from '@/services/supabaseReadService';
 import { canManageStudents, isTeacherRole } from '@/services/permissionService';
 import { GraduationCap, Plus, Phone, Mail, Send, ExternalLink } from 'lucide-react';
 import { toast } from 'sonner';
@@ -18,6 +19,8 @@ import HomeworkReviewInbox from '@/components/students/HomeworkReviewInbox';
 import StudentHomeworkUploadHistory from '@/components/students/StudentHomeworkUploadHistory';
 
 const initialForm = { name: '', class_id: '', branch_id: '', parent_name: '', parent_phone: '', parent_email: '' };
+const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+const isUuid = (value) => typeof value === 'string' && UUID_REGEX.test(value.trim());
 
 async function sendReport(student) {
   if (!student.parent_email) {
@@ -87,7 +90,44 @@ export default function Students() {
     const cls = classes.find(c => c.id === classId);
     setForm({ ...form, class_id: classId, branch_id: cls?.branch_id || '' });
   };
-  const sourceLabel = getReadDataSource('students') === 'supabase' ? 'Loaded from Supabase test data' : 'Demo data';
+  const isSupabaseStudentSource = getReadDataSource('students') === 'supabase';
+  const sourceLabel = isSupabaseStudentSource ? 'Loaded from Supabase test data' : 'Demo data';
+  const validStudentIds = useMemo(
+    () => classStudents.map((student) => student?.id).filter(isUuid),
+    [classStudents]
+  );
+  const isDemoRole = String(user?.role || '').trim().toLowerCase() === 'demorole';
+  const shouldReadSupabaseLearningContext = Boolean(user) && isSupabaseStudentSource && !isDemoRole && validStudentIds.length > 0;
+
+  const { data: curriculumProfiles = [] } = useQuery({
+    queryKey: ['student-curriculum-profiles', user?.role, user?.branch_id],
+    enabled: shouldReadSupabaseLearningContext,
+    queryFn: async () => {
+      const { data, error } = await listCurriculumProfiles({});
+      if (error) return [];
+      return Array.isArray(data) ? data : [];
+    },
+  });
+
+  const curriculumProfileById = useMemo(
+    () => new Map(curriculumProfiles.map((profile) => [profile.id, profile])),
+    [curriculumProfiles]
+  );
+
+  const { data: studentContextById = {} } = useQuery({
+    queryKey: ['student-learning-context', validStudentIds.join('|')],
+    enabled: shouldReadSupabaseLearningContext,
+    queryFn: async () => {
+      const entries = await Promise.all(
+        validStudentIds.map(async (studentId) => {
+          const result = await getStudentLearningContext({ studentId });
+          if (result?.error || !result?.data) return [studentId, null];
+          return [studentId, result.data];
+        })
+      );
+      return Object.fromEntries(entries);
+    },
+  });
 
   return (
     <div>
@@ -182,6 +222,81 @@ export default function Students() {
                     Demo Report Link
                   </Button>
                 )}
+              </div>
+              <div className="mt-3 border-t pt-3 space-y-2">
+                <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">School / Learning Context</p>
+                {!isSupabaseStudentSource ? (
+                  <div className="space-y-1 text-sm">
+                    <p className="text-muted-foreground">Demo-only school/learning preview.</p>
+                    <p>
+                      <span className="text-muted-foreground">School:</span> Demo Learning School
+                    </p>
+                    <p>
+                      <span className="text-muted-foreground">Grade/Year:</span> Demo Year Level
+                    </p>
+                    <p>
+                      <span className="text-muted-foreground">Learning focus:</span> Demo profile context only (no live Supabase read).
+                    </p>
+                  </div>
+                ) : !isUuid(student?.id) ? (
+                  <p className="text-sm text-muted-foreground">No school profile added yet.</p>
+                ) : (() => {
+                  const context = studentContextById[student.id];
+                  const schoolProfile = context?.student_school_profile || null;
+                  const curriculumProfile = schoolProfile?.curriculum_profile_id
+                    ? curriculumProfileById.get(schoolProfile.curriculum_profile_id)
+                    : null;
+                  const activeStudentGoals = Array.isArray(context?.learning_goals)
+                    ? context.learning_goals.filter((goal) => goal?.status === 'active' && goal?.student_id === student.id)
+                    : [];
+
+                  if (!schoolProfile) {
+                    return <p className="text-sm text-muted-foreground">No school profile added yet.</p>;
+                  }
+
+                  return (
+                    <div className="space-y-1.5 text-sm">
+                      <p>
+                        <span className="text-muted-foreground">School:</span> {schoolProfile.school_name || '—'}
+                      </p>
+                      <p>
+                        <span className="text-muted-foreground">Grade/Year:</span> {schoolProfile.grade_year || '—'}
+                      </p>
+                      <p>
+                        <span className="text-muted-foreground">Curriculum profile:</span> {curriculumProfile?.name || '—'}
+                      </p>
+                      <p>
+                        <span className="text-muted-foreground">Subject:</span> {curriculumProfile?.subject || '—'}
+                      </p>
+                      <p>
+                        <span className="text-muted-foreground">Level/Year/Grade:</span> {curriculumProfile?.level_year_grade || '—'}
+                      </p>
+                      <p>
+                        <span className="text-muted-foreground">Skill focus:</span> {curriculumProfile?.skill_focus || '—'}
+                      </p>
+                      {schoolProfile.parent_goals ? (
+                        <p>
+                          <span className="text-muted-foreground">Parent goals:</span> {schoolProfile.parent_goals}
+                        </p>
+                      ) : null}
+                      {schoolProfile.teacher_notes ? (
+                        <p>
+                          <span className="text-muted-foreground">Teacher notes:</span> {schoolProfile.teacher_notes}
+                        </p>
+                      ) : null}
+                      {activeStudentGoals.length > 0 ? (
+                        <div className="pt-1">
+                          <p className="text-xs text-muted-foreground">Active student goals</p>
+                          <ul className="list-disc pl-5 text-sm space-y-0.5">
+                            {activeStudentGoals.map((goal) => (
+                              <li key={goal.id}>{goal.goal_title || 'Untitled goal'}</li>
+                            ))}
+                          </ul>
+                        </div>
+                      ) : null}
+                    </div>
+                  );
+                })()}
               </div>
               <StudentHomeworkUploadHistory items={homeworkInboxItems.filter((item) => item.student_id === student.id)} />
               </Card>

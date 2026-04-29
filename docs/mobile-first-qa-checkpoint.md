@@ -60,6 +60,7 @@ Scope note:
 - Add dialogs include multiple fields/selects; need viewport-height and keyboard overlap checks on phones.
 - Fee status mini-grid in student cards may feel dense with long values.
 - Classes page now includes read-only curriculum context preview cards; verify profile/learning-focus/goals text wrapping and scanability on ~390px.
+- Students page now includes read-only school/learning context preview; verify school/grade/profile/goals plus parent-goals/teacher-notes readability and wrapping on ~390px.
 
 ### Sidebar / `AppLayout`
 
