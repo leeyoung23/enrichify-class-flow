@@ -187,6 +187,7 @@ Reminder: **Frontend filtering is not security. RLS must enforce access at datab
 ### School/Curriculum onboarding draft patch note
 
 - Draft patch reference: `supabase/sql/012_school_curriculum_foundation.sql` (manual review/apply only).
+- Fake seed reference: `supabase/sql/013_school_curriculum_fake_seed_data.sql` (manual/dev-only; fake data only).
 - Draft scope (lean MVP):
   - normalizes/extends `schools`
   - normalizes/extends `student_school_profiles`

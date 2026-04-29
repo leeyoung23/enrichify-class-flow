@@ -324,3 +324,11 @@ Planning status: ready for Phase 2 SQL/RLS draft.
 - UI work remains future.
 - AI integration remains future.
 - Continue fake/dev-safe data only for role-scope verification.
+
+## 14) Fake seed data status update
+
+- Fake onboarding seed draft added: `supabase/sql/013_school_curriculum_fake_seed_data.sql`.
+- Scope: manual/dev-only fake school/curriculum rows for smoke stability.
+- Not applied automatically.
+- Uses fake/demo entities only (no real school/student/curriculum data).
+- UI remains not implemented.

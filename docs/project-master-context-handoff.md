@@ -170,6 +170,7 @@ Current status note:
 - School/curriculum SQL/RLS draft now exists at `supabase/sql/012_school_curriculum_foundation.sql`.
 - It is additive/manual draft and is now manually applied in Supabase dev.
 - School/curriculum read service + read smoke test are now added for role-scoped read validation.
+- School/curriculum fake seed draft exists at `supabase/sql/013_school_curriculum_fake_seed_data.sql` (manual/dev-only).
 - There is still no school/curriculum UI wiring and no AI integration wiring for this domain yet.
 - Application checkpoint is documented at `docs/school-curriculum-sql-application-checkpoint.md`.
 

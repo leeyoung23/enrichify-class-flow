@@ -96,6 +96,8 @@ Why this next:
 Current status alignment:
 
 - `012` is applied in dev (manual apply complete).
+- `013` fake seed draft now exists at `supabase/sql/013_school_curriculum_fake_seed_data.sql`.
+- `013` is manual/dev-only and not applied automatically.
 - No school/curriculum UI exists yet.
 - No school/curriculum runtime service exists yet.
 - AI integration remains future.
