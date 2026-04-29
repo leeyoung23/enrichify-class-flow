@@ -1,133 +1,304 @@
-# School and Curriculum Onboarding Plan
+# School/Curriculum Onboarding Foundation Plan
 
-This document plans the school and curriculum data layer needed for future AI personalisation. No runtime implementation, SQL migration, or AI API work is implied by this plan alone.
+Planning-only document for the next foundation milestone.
 
-## 1) Why school/curriculum data matters
+Scope constraints:
 
-AI-generated parent comments, weekly progress reports, homework marking hints, and learning recommendations all degrade to generic text without grounding in:
+- No app UI changes in this step.
+- No runtime logic changes in this step.
+- No new services in this step.
+- No Supabase SQL changes in this step.
+- No uploads in this step.
+- No AI API usage in this step.
+- No real student/parent/teacher/school/curriculum/homework/payment/media data.
 
-- the student’s school context (name, type, region expectations),
-- grade/year and pathway (e.g. Cambridge vs local syllabus),
-- subject and module/unit alignment,
-- learning objectives and tags (strengths, weaknesses).
+---
 
-School and curriculum fields constrain prompts and outputs so drafts stay relevant, defensible, and easier for teachers to approve. They also support auditability: future AI outputs can be traced to explicit profile inputs rather than free-form guesses.
+## 1) Product purpose
 
-## 2) User flow
+School/curriculum onboarding is a core product layer, not a side feature.
 
-### Parent onboarding
+Why it matters:
 
-- Parent enters child name (or selects linked child if already in system).
-- Parent provides:
-  - school name,
-  - school type (e.g. primary, secondary, international),
-  - grade/year,
-  - curriculum pathway if known (optional or guided picklist later),
-  - subjects enrolled (or derived from class enrolment where applicable).
+- It makes Enrichify Class Flow more than an operations portal.
+- It enables personalised learning evidence tied to each learner's school context.
+- It gives future AI features structured context so outputs are less generic.
+- It supports school-specific expectations for subject scope, level progression, and assessment style.
 
-Data should be validated for format and completeness; sensitive free text should be minimised where structured choices exist.
+Product impact:
 
-### Staff/admin flow
+- Better teacher-parent communication quality in Parent Updates and Weekly Reports.
+- Better coherence between class activity, homework, and school outcomes.
+- Better long-term readiness for curriculum-aware AI learning intelligence.
 
-- **HQ Admin**: can review and edit school records and student school profiles across branches.
-- **Branch Supervisor**: can review and edit profiles for students in own branch; may link or normalise school records.
-- **Teacher**: can view assigned students’ learning/school profile context needed for class and communication (read-heavy; edits only where policy allows).
-- **Parent**: can view own child’s profile; may update limited fields if policy allows (e.g. school change, grade advance) with optional staff re-approval.
-- **Student** (later): simplified read-only view of own pathway and goals where age-appropriate.
+---
 
-## 3) Data model
+## 2) Core entities to model
 
-### Tables to reference or refine
+Keep model size practical: define MVP entities first, then future extension entities.
 
-| Table | Role |
-|-------|------|
-| `schools` | Canonical school identity and type. |
-| `student_school_profiles` | Per-student link to school + grade/pathway. |
-| `curriculum_mappings` | **Planned** — pathway/subject/module to objectives and tags (not in current draft SQL). |
-| `students` | Core student record; links to branch/class. |
-| `classes` | Subject, level, schedule context. |
-| `learning_objectives` | **Planned** — reusable objective library keyed by pathway/subject/grade. |
-| `student_learning_profiles` | **Planned** — aggregated tags, summaries, teacher notes for AI and UI. |
+### MVP entities (recommended)
 
-### Suggested fields (target state; some exist today, see §4)
+1. `schools`
+2. `curriculum_profiles`
+3. `class_curriculum_assignments`
+4. `student_school_profiles`
+5. `learning_goals`
 
-**Schools**
+### Future extension entities (later)
 
-- `school_name` (maps to `schools.name` today)
-- `school_type` (exists as `schools.school_type`)
-- `country` / `state` or region (likely **future** — not in current `schools` draft)
+1. `subject_skill_strands`
+2. `assessment_expectations`
+3. `curriculum_template_versions`
+4. `student_goal_progress_snapshots`
 
-**Student school profile**
+MVP boundary rule:
 
-- `student_id`, `school_id` (exist)
-- `grade_year` (align naming with existing `year_grade` or migrate to clearer name)
-- `curriculum_pathway` (exists on `student_school_profiles`)
-- `subject` / subjects — may live on enrolment/class rows or a junction table later
-- `textbook_module` — **future** optional
-- `learning_objective_tags` — **future** (array or junction)
-- `strength_tags`, `weakness_tags` — **future**
-- `teacher_notes_summary` — **future** (or derived from approved notes)
+- Start with enough structure to drive class/student context and parent-friendly focus.
+- Avoid deep standards trees or heavy assessment engines in first release.
 
-**Curriculum mappings (planned)**
+---
 
-- pathway, subject, grade band, module/unit, linked objective IDs, optional textbook reference.
+## 3) MVP data fields
 
-## 4) Supabase readiness (draft schema today)
+Recommended minimum field set for first implementation slice.
 
-From `supabase/sql/001_mvp_schema.sql`:
+### School
 
-**Already present**
+- `name`
+- `branch_id`
+- `school_type`
+- `country`
+- `state`
+- `curriculum_system`
+- `notes`
 
-- `schools`: `id`, `name`, `school_type`, timestamps.
-- `student_school_profiles`: `id`, `student_id`, `school_id`, `year_grade`, `curriculum_pathway`, timestamps, unique `(student_id)`.
+### Curriculum profile
 
-**Likely gaps for full onboarding and AI (no SQL in this doc — gaps only)**
+- `name`
+- `provider_system`
+- `level_year_grade`
+- `subject`
+- `skill_focus`
+- `assessment_style`
+- `notes`
 
-- No `curriculum_mappings` table in current draft SQL.
-- No `learning_objectives` or `student_learning_profiles` tables.
-- `schools` lacks region (`country`/`state`), external IDs, or deduplication keys.
-- Subjects enrolled may need explicit modelling (junction vs class-only).
-- RLS policies for `schools` / `student_school_profiles` must be verified or added when onboarding is implemented.
+### Student school profile
 
-Seed data (`005_fake_seed_data.sql`) may or may not populate these tables; verify before assuming UI reads.
+- `student_id`
+- `school_id` (preferred) with optional temporary `school_name` fallback during migration
+- `grade_year`
+- `curriculum_profile_id` (nullable)
+- `parent_goals`
+- `teacher_notes`
 
-## 5) RLS / access model (target)
+### Class curriculum assignment
 
-- **HQ Admin**: full read/write on schools and student school profiles (and future mapping tables) within product rules.
-- **Branch Supervisor**: manage students and profiles in own branch; create/update school links where allowed.
-- **Teacher**: read assigned students’ school/profile context; limited or no direct edit unless policy allows.
-- **Parent**: read own child’s profile; update limited fields if allowed (with optional staff approval workflow).
-- **Student** (later): read simplified self profile only.
+- `class_id`
+- `curriculum_profile_id`
+- `term_label` or `date_from` / `date_to`
+- `learning_focus`
 
-RLS must enforce branch and guardian links; frontend filtering is never a substitute for policy.
+### Learning goals (lightweight MVP)
 
-## 6) AI connection later (no implementation now)
+- `student_id`
+- `class_id` (nullable for cross-class goal)
+- `goal_title`
+- `goal_description`
+- `status` (e.g. draft/active/completed/archived)
+- `target_date` (nullable)
 
-This layer feeds secure, server-side AI (e.g. Supabase Edge Functions) with minimal, authorised context:
+---
 
-- **Parent comment draft**: student profile + school/type/pathway + recent teacher notes + class context.
-- **Weekly progress report**: attendance/homework signals + objective tags from profile/mappings.
-- **Homework marking assistant**: submission metadata + pathway/subject + marking rubric hints from `curriculum_mappings` / objectives.
-- **Learning gap detector**: trends vs `student_learning_profiles` and tagged objectives.
-- **Next-week recommendation**: weaknesses + pathway-appropriate practice templates.
+## 4) Role workflows
 
-All flows remain draft → teacher/staff approval → parent visibility; no automatic parent send.
+Align workflows to existing role model in `permissionService` and current navigation/routes.
 
-## 7) Implementation sequence
+### HQ
 
-| Phase | Focus |
-|-------|--------|
-| **1** | Planning and schema gap review (this doc + diff vs `001_mvp_schema.sql` and RLS). |
-| **2** | Read-only display of student school profile in app (service layer, fake data first, then Supabase read with fallback). |
-| **3** | Parent onboarding form (writes behind RLS + validation; still fake-first in dev). |
-| **4** | Staff review/edit workflows and audit trail. |
-| **5** | AI consumes this context only through secure Edge Function with role checks and least-data prompts. |
+- Manage curriculum templates/profiles across branches.
+- Define normalized curriculum naming and baseline quality.
+- View cross-branch curriculum coverage and consistency.
 
-## 8) Next implementation prompt (schema gap review only)
+### Branch supervisor
 
-Use this prompt for the next coding/documentation step:
+- Assign curriculum profiles to classes in own branch.
+- Review class/student alignment quality and missing profile coverage.
+- Coach teacher implementation consistency at branch level.
 
-> Perform a **read-only schema gap review** for school and curriculum onboarding.  
-> Compare `docs/school-curriculum-onboarding-plan.md` and `docs/ai-learning-engine-architecture-plan.md` against `supabase/sql/001_mvp_schema.sql`, `003_rls_policies_draft.sql`, and `005_fake_seed_data.sql`.  
-> Deliver a short markdown or checklist: which columns/tables exist, which are missing, RLS gaps for `schools` and `student_school_profiles`, and recommended **additive** migration order (no implementation of AI, Edge Functions, or UI in this step).  
-> Do not change app UI, do not add AI API calls, do not add writes to production paths yet.
+### Teacher
+
+- View assigned class curriculum context.
+- View/update student school profile notes within allowed scope.
+- Use curriculum context for weekly reports, parent comments, and later homework feedback.
+
+### Parent
+
+- Read simple parent-friendly learning focus only.
+- See learning direction and next focus without admin-heavy details.
+
+### Student
+
+- Optional later: read simplified own learning focus and goals.
+
+---
+
+## 5) AI connection
+
+School/curriculum onboarding is a prerequisite context layer for useful AI.
+
+How this supports later AI milestones:
+
+- **AI parent comments:** draft can reference learner level, school expectations, and relevant subject focus.
+- **AI weekly reports:** draft can align strengths/areas and next steps to curriculum profile.
+- **Homework feedback:** future AI can evaluate against expected grade/subject/skill focus.
+- **Learning gap detection:** compare observed progress vs target curriculum pathway.
+- **Next-week recommendations:** generate less generic and more class-appropriate actions.
+- **Curriculum-aware learning evidence:** tie classroom evidence and parent-facing language to school context.
+
+Key quality principle:
+
+- Better structured curriculum input produces safer, less generic, and more actionable AI output.
+
+---
+
+## 6) UI placement proposal (future implementation)
+
+Recommended placement across existing pages:
+
+- `Classes` page: class curriculum assignment section/card.
+- `Students` page: student school profile section/card.
+- `ParentView` page: parent-friendly learning focus summary.
+- `ParentUpdates` and weekly report flow: curriculum context reference block for teacher drafting.
+- HQ/Admin settings area (later): curriculum templates/profiles management.
+
+UI behavior rules:
+
+- Keep parent view simple and plain-language.
+- Keep staff controls role-scoped and branch-safe.
+- Keep mobile-first readability for parent/teacher while preserving desktop reporting for HQ/supervisor.
+
+---
+
+## 7) Data/RLS expectations
+
+Target access model for schema/policy design:
+
+- HQ: manage/read all schools/curriculum entities across branches.
+- Branch supervisor: manage/read own-branch entities only.
+- Teacher: read assigned class/student curriculum context; limited scoped note updates only if explicitly allowed.
+- Parent: read simplified linked-child context only.
+- Student: optional read own simplified context later.
+- Parent/student: no edit rights.
+- Frontend: no service role usage; anon client + JWT only.
+
+RLS planning notes:
+
+- Reuse existing branch/class/student scope patterns in current RLS draft style.
+- Keep parent/student visibility constrained to linked child.
+- Keep write policies staff-scoped and explicit per entity.
+- Add role-by-role smoke checks before any UI wiring.
+
+---
+
+## 8) Implementation sequence
+
+Recommended phase order:
+
+1. **Phase 1:** planning doc (this file).
+2. **Phase 2:** SQL/RLS draft for school/curriculum entities and role scope.
+3. **Phase 3:** read service mapping + focused smoke tests.
+4. **Phase 4:** `Classes` page curriculum assignment UI.
+5. **Phase 5:** `Students` page school profile UI.
+6. **Phase 6:** `ParentView` learning focus summary.
+7. **Phase 7:** AI context integration (parent comments first, then weekly report, then homework feedback).
+
+Execution rule:
+
+- Keep read-first and policy-first ordering to reduce rework and role leakage risk.
+
+---
+
+## 9) Privacy and product risks
+
+Primary risks to manage:
+
+- Avoid exposing one family's school/curriculum details to other parents.
+- Avoid parent-facing copy that feels judgmental or labels children.
+- Ensure curriculum context supports learning guidance, not student profiling.
+- Data quality is critical because poor curriculum mapping degrades future AI output.
+- Avoid hardcoding one country/system path; keep model adaptable for multi-region/multi-curriculum usage.
+
+Mitigation direction:
+
+- Strict RLS scoping, simple parent summaries, and explicit data quality ownership by HQ/branch leads.
+
+---
+
+## 10) Recommended next step
+
+Recommended option: **A. SQL/RLS draft for school/curriculum entities**.
+
+Why A is best next:
+
+- It defines the secure data boundary first, before UI or AI behaviors depend on it.
+- Existing project architecture already relies on RLS-first patterns for safe expansion.
+- UI mock-first risks building flows without policy-safe entity shape.
+- AI prompt-design-first risks generic contracts without grounded curriculum schema.
+
+---
+
+## 11) Next implementation prompt (copy-paste)
+
+```text
+Continue this same project only.
+
+Project folder:
+~/Desktop/enrichify-class-flow
+
+Branch:
+cursor/safe-lint-typecheck-486d
+
+Task:
+SQL/RLS draft for school/curriculum entities only.
+
+Constraints:
+- Do not change app UI.
+- Do not change runtime logic.
+- Do not add runtime services.
+- Do not wire frontend pages in this step.
+- Do not upload files.
+- Do not call AI APIs.
+- Do not use real student, parent, teacher, school, curriculum, homework, photo, or payment data.
+- Do not expose env values or passwords.
+- Do not commit .env.local.
+- Do not use service role key in frontend.
+- Do not remove demoRole.
+- Do not remove demo/local fallback.
+
+Tasks:
+1) Draft SQL entity additions/normalization for:
+   - schools (branch-aware)
+   - curriculum_profiles
+   - class_curriculum_assignments
+   - student_school_profiles (with curriculum profile link)
+   - learning_goals (lightweight MVP)
+2) Draft RLS policies by role:
+   - HQ full manage
+   - branch supervisor own-branch manage
+   - teacher scoped read (and limited note updates only if intentionally allowed)
+   - parent/student read-only simplified linked scope
+3) Add/update one planning/checkpoint doc with:
+   - policy intent matrix
+   - non-goals
+   - smoke test checklist for role boundaries
+
+Validation efficiency rule:
+- SQL/planning change: run targeted validation only as needed for changed files.
+- If docs-only changes occur in this step, run only:
+  - git diff --name-only
+```
+
+---
+
+Planning status: ready for Phase 2 SQL/RLS draft.
