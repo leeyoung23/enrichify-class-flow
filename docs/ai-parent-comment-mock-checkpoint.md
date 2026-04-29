@@ -64,3 +64,19 @@ Why this next:
 - The highest-risk remaining area is security/privacy design for real model calls.
 - Planning first keeps key decisions explicit: server-side key management, authorised context fetch, and audit logging boundaries.
 - Storage/upload vertical can follow after real AI contract and governance are locked.
+
+## 8) Curriculum-aware mock context upgrade
+
+- Added curriculum-aware context builder path: `buildParentCommentDraftContext(...)` in `src/services/aiDraftService.js`.
+- Mock draft now uses safe context where available:
+  - student display label
+  - class name and subject
+  - school/grade (if present)
+  - curriculum profile + skill focus (if present)
+  - class learning focus
+  - active student learning goals
+  - teacher observation
+- Draft output remains supportive, parent-friendly, short, and clearly editable by teacher/staff.
+- Missing context now degrades safely to supportive generic draft; workflow does not fail.
+- `demoRole` remains local/demo only and does not perform Supabase curriculum reads.
+- Real provider integration remains future; no external AI API call was added.

@@ -207,3 +207,11 @@ Validation efficiency:
 - If only docs changed, stop there.
 - If runtime files changed, run targeted build/lint/typecheck and relevant AI mock tests only.
 ```
+
+## Implementation checkpoint (Phase A complete)
+
+- Curriculum-aware mock context assembly is now implemented in `src/services/aiDraftService.js`.
+- New helper path added: `buildParentCommentDraftContext(...)` for safe context composition.
+- Mock generation now prioritizes curriculum/student/class context when available and falls back gracefully when context is missing.
+- Parent comment flow remains draft-only and teacher-approved in `src/pages/ParentUpdates.jsx`.
+- No real provider API call, no provider key addition, and no frontend secret exposure were introduced.

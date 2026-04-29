@@ -27,6 +27,7 @@
     "test:supabase:staff-time-clock:review": "node scripts/supabase-staff-time-clock-review-smoke-test.mjs",
     "test:staff-time-clock:helpers": "node scripts/staff-time-clock-browser-helper-smoke-test.mjs",
     "test:ai:edge:mock": "node scripts/ai-edge-function-mock-invocation-test.mjs",
+    "test:ai:parent-comment:curriculum-mock": "node scripts/ai-parent-comment-curriculum-context-mock-test.mjs",
     "preview": "vite preview"
   },
   "dependencies": {

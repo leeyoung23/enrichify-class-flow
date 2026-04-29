@@ -252,7 +252,9 @@ export default function ParentUpdates() {
         studentId: selectedStudentId,
         classId: selectedClassId || selectedClass?.id || '',
         teacherNote: notes.trim(),
+        observation: notes.trim(),
         tone: 'supportive',
+        length: 'short',
         language: 'en',
       });
 

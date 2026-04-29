@@ -183,6 +183,7 @@ Current status note:
 - Student school profile write smoke test is now added at `scripts/supabase-school-profile-write-smoke-test.mjs`.
 - `Students` school profile edit UI is now wired for HQ + branch supervisor using existing student profile upsert service (teacher/parent/student remain without edit controls).
 - School/curriculum UI now has read/write coverage on `Classes` + `Students`; AI integration remains unwired.
+- Parent comment AI mock path now includes curriculum-aware context assembly in `src/services/aiDraftService.js` (provider-free, draft-only, teacher approval still required).
 - Application checkpoint is documented at `docs/school-curriculum-sql-application-checkpoint.md`.
 - Recommended next milestone: homework upload/review planning after school/curriculum staff edit loops.
 
