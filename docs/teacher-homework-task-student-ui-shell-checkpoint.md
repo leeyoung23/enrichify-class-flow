@@ -4,12 +4,13 @@
 
 Teacher Homework UI shell is now implemented with explicit `By Task` / `By Student` structure in `src/pages/Homework.jsx`, with demo-first parity and safety preserved.
 
-This checkpoint captures the UI-shell milestone only:
+This checkpoint originally captured the UI-shell milestone only, and now includes the next safe step for authenticated staff `By Task` tracker wiring.
 
 - demo-mode shell + local fake tracker-like cards/lists are implemented
 - existing review detail/actions are preserved
 - real authenticated flow remains on the existing safe path
-- no real tracker read wiring in this milestone
+- real `By Task` tracker wiring is now added for authenticated non-demo staff mode using `listHomeworkTrackerByClass(...)`
+- real `By Student` tracker wiring remains future
 - no SQL/RLS/service changes in this milestone
 
 ## 2) Files changed in implementation milestone
@@ -84,7 +85,9 @@ Preserved or safely adapted in `Homework`:
 ## 7) Real flow preservation
 
 - real authenticated mode is kept on existing safe workflow
-- no real tracker wiring yet
+- real `By Task` tracker wiring now uses `listHomeworkTrackerByClass(...)` with UUID-safe class gating
+- if no valid class UUID is available, Homework shows a safe empty state and does not call tracker read
+- real `By Student` tracker wiring remains future in this phase
 - no SQL/RLS/service changes
 - no `ParentView` changes
 - fee proof, Memories, Staff Time Clock, curriculum flows, and AI Edge Function remain unchanged
@@ -99,7 +102,6 @@ Preserved or safely adapted in `Homework`:
 
 ## 9) What remains
 
-- real authenticated wiring to `listHomeworkTrackerByClass(...)`
 - real authenticated wiring to `listHomeworkTrackerByStudent(...)`
 - selected-student assignment write services
 - manual marked-file upload flow

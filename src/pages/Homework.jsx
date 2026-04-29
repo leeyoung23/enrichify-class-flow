@@ -14,7 +14,7 @@ import { getSelectedDemoRole } from '@/services/authService';
 import { ROLES, getRole } from '@/services/permissionService';
 import { isSupabaseConfigured } from '@/services/supabaseClient';
 import { useSupabaseAuthState } from '@/hooks/useSupabaseAuthState';
-import { getClassLearningContext, getStudentLearningContext } from '@/services/supabaseReadService';
+import { getClassLearningContext, getStudentLearningContext, listHomeworkTrackerByClass } from '@/services/supabaseReadService';
 import { buildHomeworkFeedbackDraftContext, generateMockHomeworkFeedbackDraft } from '@/services/aiDraftService';
 import {
   getHomeworkFileSignedUrl,
@@ -209,6 +209,7 @@ export default function Homework() {
   const [selectedSubmissionId, setSelectedSubmissionId] = useState('');
   const [activeViewMode, setActiveViewMode] = useState('by_task');
   const [selectedStudentId, setSelectedStudentId] = useState('demo-student-01');
+  const [selectedClassId, setSelectedClassId] = useState('');
   const [submissionStatusFilter, setSubmissionStatusFilter] = useState('all');
   const [feedbackText, setFeedbackText] = useState('');
   const [nextStep, setNextStep] = useState('');
@@ -262,11 +263,39 @@ export default function Homework() {
     },
   });
 
+  const classOptions = useMemo(() => {
+    if (isDemoMode) return [];
+    const classIdSet = new Set();
+    for (const task of tasks) {
+      if (isUuidLike(task?.class_id)) classIdSet.add(task.class_id);
+    }
+    return Array.from(classIdSet);
+  }, [isDemoMode, tasks]);
+
+  const resolvedTrackerClassId = useMemo(() => {
+    if (isDemoMode) return null;
+    if (isUuidLike(selectedClassId)) return selectedClassId;
+    const selectedTaskClassId = tasks.find((task) => task?.id === selectedTaskId)?.class_id;
+    if (isUuidLike(selectedTaskClassId)) return selectedTaskClassId;
+    return classOptions[0] || null;
+  }, [isDemoMode, selectedClassId, tasks, selectedTaskId, classOptions]);
+
+  const { data: trackerByClassRows = [], isLoading: trackerByClassLoading } = useQuery({
+    queryKey: ['homework-tracker-by-class', resolvedTrackerClassId, role, supabaseAppUser?.id],
+    enabled: canUseSupabaseHomework && !isDemoMode && activeViewMode === 'by_task' && isUuidLike(resolvedTrackerClassId),
+    queryFn: async () => {
+      const result = await listHomeworkTrackerByClass({ classId: resolvedTrackerClassId });
+      if (result.error) throw new Error(result.error.message || 'Unable to load homework tracker by class');
+      return Array.isArray(result.data) ? result.data : [];
+    },
+  });
+
   const taskRows = isDemoMode ? DEMO_HOMEWORK_TASKS : tasks;
   const submissionRows = isDemoMode ? demoSubmissions : submissions;
   const feedbackDataRows = isDemoMode ? demoFeedbackRows : feedbackRows;
   const submissionFileRows = isDemoMode ? DEMO_HOMEWORK_FILES : submissionFiles;
   const tasksBusy = isDemoMode ? false : tasksLoading;
+  const trackerBusy = isDemoMode ? false : trackerByClassLoading;
   const submissionsBusy = isDemoMode ? false : submissionsLoading;
   const feedbackBusy = isDemoMode ? false : feedbackLoading;
   const filesBusy = isDemoMode ? false : filesLoading;
@@ -375,6 +404,10 @@ export default function Homework() {
     () => demoTaskTrackerRows.find((row) => row.task.id === selectedTaskId) || demoTaskTrackerRows[0] || null,
     [demoTaskTrackerRows, selectedTaskId]
   );
+  const selectedRealTaskTracker = useMemo(
+    () => trackerByClassRows.find((row) => row?.task?.id === selectedTaskId) || trackerByClassRows[0] || null,
+    [trackerByClassRows, selectedTaskId]
+  );
   const selectedDemoStudentTracker = useMemo(
     () => demoStudentTrackerRows.find((row) => row.student.id === selectedStudentId) || demoStudentTrackerRows[0] || null,
     [demoStudentTrackerRows, selectedStudentId]
@@ -385,6 +418,22 @@ export default function Homework() {
       setSelectedTaskId(taskRows[0].id);
     }
   }, [taskRows, selectedTaskId]);
+
+  useEffect(() => {
+    if (isDemoMode) return;
+    if (!selectedClassId && classOptions.length > 0) {
+      setSelectedClassId(classOptions[0]);
+    }
+  }, [isDemoMode, selectedClassId, classOptions]);
+
+  useEffect(() => {
+    if (isDemoMode || activeViewMode !== 'by_task') return;
+    if (trackerByClassRows.length === 0) return;
+    const hasSelectedTask = trackerByClassRows.some((row) => row?.task?.id === selectedTaskId);
+    if (!hasSelectedTask) {
+      setSelectedTaskId(trackerByClassRows[0]?.task?.id || '');
+    }
+  }, [isDemoMode, activeViewMode, trackerByClassRows, selectedTaskId]);
 
   useEffect(() => {
     if (submissionRows.length === 0) {
@@ -407,6 +456,7 @@ export default function Homework() {
 
   const refreshReviewData = () => {
     if (isDemoMode) return;
+    void queryClient.invalidateQueries({ queryKey: ['homework-tracker-by-class'] });
     void queryClient.invalidateQueries({ queryKey: ['homework-review-submissions'] });
     void queryClient.invalidateQueries({ queryKey: ['homework-review-feedback'] });
   };
@@ -619,6 +669,20 @@ export default function Homework() {
               <>
                 <Card className="p-4">
                   <div className="space-y-3">
+                    {!isDemoMode ? (
+                      <Select value={selectedClassId || resolvedTrackerClassId || ''} onValueChange={setSelectedClassId} disabled={classOptions.length === 0}>
+                        <SelectTrigger>
+                          <SelectValue placeholder={classOptions.length === 0 ? 'No class context available' : 'Select class'} />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {classOptions.map((classId) => (
+                            <SelectItem key={classId} value={classId}>
+                              {classId}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    ) : null}
                     <Select value={selectedTaskId} onValueChange={setSelectedTaskId} disabled={tasksBusy}>
                       <SelectTrigger>
                         <SelectValue placeholder={tasksBusy ? 'Loading tasks...' : 'Filter by task'} />
@@ -682,7 +746,56 @@ export default function Homework() {
                       })}
                     </div>
                   </Card>
-                ) : null}
+                ) : (
+                  <Card className="p-4">
+                    <div className="flex items-center justify-between mb-3">
+                      <p className="font-medium">By Task tracker</p>
+                      <Badge variant="outline">{trackerByClassRows.length}</Badge>
+                    </div>
+                    {!isUuidLike(resolvedTrackerClassId) ? (
+                      <p className="text-sm text-muted-foreground">
+                        No valid class context is available yet. Select a class-scoped task to load tracker rows.
+                      </p>
+                    ) : trackerBusy ? (
+                      <p className="text-sm text-muted-foreground">Loading task tracker...</p>
+                    ) : trackerByClassRows.length === 0 ? (
+                      <p className="text-sm text-muted-foreground">No task tracker rows available for this class.</p>
+                    ) : (
+                      <div className="space-y-2 max-h-[360px] overflow-y-auto pr-1">
+                        {trackerByClassRows.map((row) => {
+                          const task = row?.task || {};
+                          const selected = task.id === selectedTaskId;
+                          const scopeLabel = task.assignment_scope === 'selected_students'
+                            ? 'selected students'
+                            : (task.assignment_scope || 'class');
+                          return (
+                            <button
+                              key={task.id}
+                              type="button"
+                              onClick={() => setSelectedTaskId(task.id)}
+                              className={`w-full text-left rounded-lg border p-3 ${selected ? 'border-primary bg-primary/5' : 'border-border'}`}
+                            >
+                              <div className="flex items-center justify-between gap-2 mb-1">
+                                <p className="text-sm font-medium truncate">{task.title || 'Untitled task'}</p>
+                                <Badge variant="outline">{scopeLabel}</Badge>
+                              </div>
+                              <p className="text-xs text-muted-foreground mb-2">Due {task.due_date || '—'}</p>
+                              <div className="grid grid-cols-2 gap-1 text-xs text-muted-foreground">
+                                <span>Assigned: {row?.counts?.assigned ?? 0}</span>
+                                <span>Submitted: {row?.counts?.submitted ?? 0}</span>
+                                <span>Not submitted: {row?.counts?.notSubmitted ?? 0}</span>
+                                <span>Under review: {row?.counts?.underReview ?? 0}</span>
+                                <span>Returned: {row?.counts?.returned ?? 0}</span>
+                                <span>Reviewed: {row?.counts?.reviewed ?? 0}</span>
+                                <span>Feedback released: {row?.counts?.feedbackReleased ?? 0}</span>
+                              </div>
+                            </button>
+                          );
+                        })}
+                      </div>
+                    )}
+                  </Card>
+                )}
 
                 <Card className="p-4">
                   <div className="flex items-center justify-between mb-3">
@@ -817,6 +930,25 @@ export default function Homework() {
                         <Badge variant="outline">Not submitted {selectedDemoTaskTracker.counts.notSubmitted}</Badge>
                         <Badge variant="outline">Under review {selectedDemoTaskTracker.counts.underReview}</Badge>
                         <Badge variant="outline">Released {selectedDemoTaskTracker.counts.feedbackReleased}</Badge>
+                      </div>
+                    </div>
+                  ) : null}
+                  {!isDemoMode && activeViewMode === 'by_task' && selectedRealTaskTracker ? (
+                    <div className="mb-4 rounded-lg border border-dashed p-3 bg-muted/20">
+                      <p className="text-sm font-medium mb-2">By Task detail</p>
+                      <p className="text-xs text-muted-foreground mb-2">
+                        {selectedRealTaskTracker?.task?.title || selectedTaskByFilter?.title || 'Untitled task'}
+                        {' '}· Scope {selectedRealTaskTracker?.task?.assignment_scope || 'class'}
+                      </p>
+                      <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-xs">
+                        <Badge variant="outline">Assigned {selectedRealTaskTracker?.counts?.assigned ?? 0}</Badge>
+                        <Badge variant="outline">Submitted {selectedRealTaskTracker?.counts?.submitted ?? 0}</Badge>
+                        <Badge variant="outline">Not submitted {selectedRealTaskTracker?.counts?.notSubmitted ?? 0}</Badge>
+                        <Badge variant="outline">Under review {selectedRealTaskTracker?.counts?.underReview ?? 0}</Badge>
+                        <Badge variant="outline">Returned {selectedRealTaskTracker?.counts?.returned ?? 0}</Badge>
+                        <Badge variant="outline">Reviewed {selectedRealTaskTracker?.counts?.reviewed ?? 0}</Badge>
+                        <Badge variant="outline">Released {selectedRealTaskTracker?.counts?.feedbackReleased ?? 0}</Badge>
+                        <Badge variant="outline">Submissions {selectedRealTaskTracker?.submissions?.length ?? 0}</Badge>
                       </div>
                     </div>
                   ) : null}
