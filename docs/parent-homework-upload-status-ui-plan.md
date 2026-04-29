@@ -231,3 +231,21 @@ Validation efficiency:
 - Demo mode remains local-only and does not call Supabase for homework reads.
 - Upload form/buttons remain intentionally unwired in this phase.
 - AI homework feedback remains future.
+
+## 17) Implementation checkpoint (B complete)
+
+- Parent homework upload form is now minimally wired in `src/pages/ParentView.jsx` for assigned/open homework flow.
+- Upload controls appear only when task status is `Not submitted` or `Returned for revision`.
+- Parent upload flow now uses existing services only:
+  - `createHomeworkSubmission(...)`
+  - `uploadHomeworkFile(...)`
+  - followed by homework status/list refresh
+- Parent upload validation allows image/PDF only:
+  - `image/jpeg`
+  - `image/png`
+  - `image/webp`
+  - `application/pdf`
+- Parent upload remains linked-child scoped with Supabase anon client + JWT + RLS only.
+- Teacher review UI remains unchanged as the process layer.
+- Parent-facing full feedback display remains future (released snippet only).
+- AI homework feedback remains future.

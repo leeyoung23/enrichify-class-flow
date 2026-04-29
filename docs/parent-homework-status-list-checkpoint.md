@@ -83,20 +83,26 @@ The milestone validation run (when runtime files changed) covered:
 
 ## 10) What remains
 
-- Parent homework upload form
-- Parent file upload controls
 - richer parent feedback display
 - AI homework feedback
 - production retention/deletion policy
 
 ## 11) Recommended next milestone
 
-Recommendation: Parent homework upload form planning/implementation.
+Recommendation: Parent homework upload form implementation.
 
 Why next:
 
 - Parent can now safely see homework/status in read-only mode.
 - Backend homework upload path is already proven.
 - Teacher review process is already in place.
-- The next input-path milestone is parent upload form wiring.
+- The input-path milestone is now parent upload form wiring in ParentView.
 - This preserves the input -> process -> output safety sequence.
+
+## 12) Upload form update
+
+- Parent homework upload form is now added in `ParentView` task cards for upload-allowed statuses.
+- Upload controls are shown for `Not submitted` and `Returned for revision`.
+- For already submitted/review statuses, parent sees clear non-duplicate submission copy.
+- Upload validation is limited to image/PDF files in parent-friendly flow.
+- Parent-facing full feedback display remains future (current safe snippet model remains).

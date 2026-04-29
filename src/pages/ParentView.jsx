@@ -1,4 +1,4 @@
-import React, { useMemo, useState, useEffect } from 'react';
+import React, { useMemo, useState, useEffect, useCallback } from 'react';
 import { getCurrentUser, getSelectedDemoRole } from '@/services/authService';
 import { getStudentById, getClassById, listAttendanceRecords, listParentUpdatesByStudent, getStudentFeeStatus } from '@/services/dataService';
 import { canAccessStudentRecord, ROLES } from '@/services/permissionService';
@@ -11,6 +11,8 @@ import {
   listHomeworkTasks,
   listHomeworkSubmissions,
   listHomeworkFeedback,
+  createHomeworkSubmission,
+  uploadHomeworkFile,
 } from '@/services/supabaseUploadService';
 import { useSupabaseAuthState } from '@/hooks/useSupabaseAuthState';
 import { isSupabaseConfigured } from '@/services/supabaseClient';
@@ -18,6 +20,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
+import { Textarea } from '@/components/ui/textarea';
 import {
   GraduationCap, CheckCircle2, XCircle, Clock, Umbrella,
   BookOpen, BookX, Minus, ExternalLink, FileText, Loader2, Sparkles
@@ -47,12 +50,25 @@ const PARENT_HOMEWORK_STATUS_META = {
   approved_for_parent: { label: 'Feedback released', className: 'bg-purple-100 text-purple-700 border-purple-200' },
 };
 
+const ALLOWED_HOMEWORK_UPLOAD_TYPES = new Set([
+  'image/jpeg',
+  'image/png',
+  'image/webp',
+  'application/pdf',
+]);
+const MAX_HOMEWORK_UPLOAD_BYTES = 5 * 1024 * 1024;
+
 function ParentHomeworkStatusSection({
   isDemoMode,
   loading,
   error,
   tasks,
   feedbackBySubmissionId,
+  uploadDraftByTaskId,
+  submitLoadingByTaskId,
+  onUploadFileChange,
+  onUploadNoteChange,
+  onSubmitTaskUpload,
 }) {
   if (loading) {
     return (
@@ -120,11 +136,14 @@ function ParentHomeworkStatusSection({
       </CardHeader>
       <CardContent className="space-y-3">
         <p className="text-sm text-muted-foreground">
-          This is a read-only status view. Upload actions will be added in a later phase.
+          Submit your child&apos;s work for assigned tasks and follow review status updates.
         </p>
         {tasks.map((task) => {
           const statusMeta = PARENT_HOMEWORK_STATUS_META[task.parentStatus] || PARENT_HOMEWORK_STATUS_META.not_submitted;
           const feedbackRow = task.latestSubmissionId ? feedbackBySubmissionId[task.latestSubmissionId] : null;
+          const uploadDraft = uploadDraftByTaskId[task.id] || { note: '', file: null };
+          const isUploadAllowed = task.parentStatus === 'not_submitted' || task.parentStatus === 'returned_for_revision';
+          const isSubmitting = Boolean(submitLoadingByTaskId[task.id]);
           return (
             <div key={task.id} className="rounded-lg border p-3 space-y-2">
               <div className="flex items-start justify-between gap-3">
@@ -140,6 +159,36 @@ function ParentHomeworkStatusSection({
                   <p className="text-xs text-foreground">{feedbackRow.feedback_text || feedbackRow.next_step || 'Feedback released by teacher.'}</p>
                 </div>
               ) : null}
+              {isUploadAllowed ? (
+                <div className="rounded-md border border-dashed p-3 space-y-2">
+                  <p className="text-sm font-medium">Upload homework</p>
+                  <p className="text-xs text-muted-foreground">Submit your child&apos;s work in image or PDF format.</p>
+                  <input
+                    type="file"
+                    accept="image/jpeg,image/png,image/webp,application/pdf"
+                    onChange={(event) => onUploadFileChange(task.id, event.target.files?.[0] || null)}
+                    disabled={isSubmitting}
+                    className="block w-full text-sm"
+                  />
+                  <Textarea
+                    value={uploadDraft.note}
+                    onChange={(event) => onUploadNoteChange(task.id, event.target.value)}
+                    placeholder="Optional note for teacher review"
+                    className="min-h-[84px]"
+                    disabled={isSubmitting}
+                  />
+                  <Button
+                    type="button"
+                    className="w-full min-h-10"
+                    disabled={isSubmitting}
+                    onClick={() => onSubmitTaskUpload(task.id)}
+                  >
+                    {isSubmitting ? 'Submitting...' : 'Submit homework'}
+                  </Button>
+                </div>
+              ) : (
+                <p className="text-xs text-muted-foreground">Your child&apos;s work has been submitted for teacher review.</p>
+              )}
             </div>
           );
         })}
@@ -730,6 +779,8 @@ export default function ParentView() {
   const [parentHomeworkTasks, setParentHomeworkTasks] = useState([]);
   const [parentHomeworkSubmissions, setParentHomeworkSubmissions] = useState([]);
   const [parentHomeworkFeedbackBySubmissionId, setParentHomeworkFeedbackBySubmissionId] = useState({});
+  const [homeworkUploadDraftByTaskId, setHomeworkUploadDraftByTaskId] = useState({});
+  const [homeworkSubmitLoadingByTaskId, setHomeworkSubmitLoadingByTaskId] = useState({});
 
   const latestApprovedUpdate = useMemo(() => updates[0], [updates]);
   const parentHomeworkTasksWithStatus = useMemo(() => {
@@ -748,9 +799,12 @@ export default function ParentView() {
         dueDateLabel: task?.due_date ? new Date(`${task.due_date}T00:00:00`).toLocaleDateString('en-AU') : 'No due date',
         parentStatus: status,
         latestSubmissionId: latestSubmission?.id || null,
+        branchId: task.branch_id || cls?.branch_id || null,
+        classId: task.class_id || cls?.id || null,
+        studentId: student?.id || null,
       };
     });
-  }, [parentHomeworkTasks, parentHomeworkSubmissions, parentHomeworkFeedbackBySubmissionId]);
+  }, [parentHomeworkTasks, parentHomeworkSubmissions, parentHomeworkFeedbackBySubmissionId, cls?.branch_id, cls?.id, student?.id]);
 
   useEffect(() => {
     if (!studentId) { setNotFound(true); setLoading(false); return; }
@@ -852,113 +906,105 @@ export default function ParentView() {
     };
   }, [isDemoMode, hasSupabaseSession, student?.id, cls?.id]);
 
-  useEffect(() => {
-    let cancelled = false;
-
-    const loadParentHomeworkStatus = async () => {
-      if (isDemoStudentPreview) {
-        setParentHomeworkLoading(false);
-        setParentHomeworkError('');
-        setParentHomeworkTasks([]);
-        setParentHomeworkSubmissions([]);
-        setParentHomeworkFeedbackBySubmissionId({});
-        return;
-      }
-      if (isDemoMode) {
-        setParentHomeworkLoading(false);
-        setParentHomeworkError('');
-        setParentHomeworkTasks([
-          {
-            id: 'demo-homework-task-1',
-            title: 'Reading reflection worksheet',
-            due_date: '2026-05-12',
-            status: 'assigned',
-          },
-        ]);
-        setParentHomeworkSubmissions([]);
-        setParentHomeworkFeedbackBySubmissionId({});
-        return;
-      }
-      if (!hasSupabaseSession || !isSupabaseConfigured() || !student?.id || !cls?.id) {
-        setParentHomeworkLoading(false);
-        setParentHomeworkError('');
-        setParentHomeworkTasks([]);
-        setParentHomeworkSubmissions([]);
-        setParentHomeworkFeedbackBySubmissionId({});
-        return;
-      }
-      if (!isUuidLike(student.id) || !isUuidLike(cls.id)) {
-        setParentHomeworkLoading(false);
-        setParentHomeworkError('Homework status is not available for this parent context yet.');
-        setParentHomeworkTasks([]);
-        setParentHomeworkSubmissions([]);
-        setParentHomeworkFeedbackBySubmissionId({});
-        return;
-      }
-
-      setParentHomeworkLoading(true);
+  const loadParentHomeworkStatus = useCallback(async () => {
+    if (isDemoStudentPreview) {
+      setParentHomeworkLoading(false);
       setParentHomeworkError('');
-      try {
-        const [taskResult, submissionResult] = await Promise.all([
-          listHomeworkTasks({ classId: cls.id, status: 'assigned' }),
-          listHomeworkSubmissions({ classId: cls.id, studentId: student.id }),
-        ]);
-        if (taskResult.error) {
-          throw new Error(taskResult.error.message || 'Unable to load assigned homework tasks.');
-        }
-        if (submissionResult.error) {
-          throw new Error(submissionResult.error.message || 'Unable to load homework submissions.');
-        }
+      setParentHomeworkTasks([]);
+      setParentHomeworkSubmissions([]);
+      setParentHomeworkFeedbackBySubmissionId({});
+      return;
+    }
+    if (isDemoMode) {
+      setParentHomeworkLoading(false);
+      setParentHomeworkError('');
+      setParentHomeworkTasks([
+        {
+          id: 'demo-homework-task-1',
+          title: 'Reading reflection worksheet',
+          due_date: '2026-05-12',
+          status: 'assigned',
+        },
+      ]);
+      setParentHomeworkSubmissions([]);
+      setParentHomeworkFeedbackBySubmissionId({});
+      return;
+    }
+    if (!hasSupabaseSession || !isSupabaseConfigured() || !student?.id || !cls?.id) {
+      setParentHomeworkLoading(false);
+      setParentHomeworkError('');
+      setParentHomeworkTasks([]);
+      setParentHomeworkSubmissions([]);
+      setParentHomeworkFeedbackBySubmissionId({});
+      return;
+    }
+    if (!isUuidLike(student.id) || !isUuidLike(cls.id)) {
+      setParentHomeworkLoading(false);
+      setParentHomeworkError('Homework status is not available for this parent context yet.');
+      setParentHomeworkTasks([]);
+      setParentHomeworkSubmissions([]);
+      setParentHomeworkFeedbackBySubmissionId({});
+      return;
+    }
 
-        const tasks = Array.isArray(taskResult.data) ? taskResult.data : [];
-        const submissions = Array.isArray(submissionResult.data) ? submissionResult.data : [];
-        const latestSubmissionByTaskId = new Map();
-        submissions.forEach((row) => {
-          const existing = latestSubmissionByTaskId.get(row.homework_task_id);
-          const rowTime = new Date(row.created_at || row.submitted_at || 0).getTime();
-          const existingTime = new Date(existing?.created_at || existing?.submitted_at || 0).getTime();
-          if (!existing || rowTime > existingTime) {
-            latestSubmissionByTaskId.set(row.homework_task_id, row);
-          }
-        });
-
-        const feedbackEntries = await Promise.all(
-          submissions
-            .filter((row) => isUuidLike(row.id))
-            .map(async (row) => {
-              const feedbackResult = await listHomeworkFeedback({
-                homeworkSubmissionId: row.id,
-                parentVisibleOnly: true,
-              });
-              if (feedbackResult.error) return [row.id, null];
-              const latestFeedback = Array.isArray(feedbackResult.data) ? feedbackResult.data[0] : null;
-              return [row.id, latestFeedback || null];
-            })
-        );
-
-        if (cancelled) return;
-        setParentHomeworkTasks(tasks);
-        setParentHomeworkSubmissions(Array.from(latestSubmissionByTaskId.values()));
-        setParentHomeworkFeedbackBySubmissionId(
-          Object.fromEntries(feedbackEntries.filter((entry) => entry[1]))
-        );
-      } catch (error) {
-        if (!cancelled) {
-          setParentHomeworkTasks([]);
-          setParentHomeworkSubmissions([]);
-          setParentHomeworkFeedbackBySubmissionId({});
-          setParentHomeworkError(error?.message || 'Unable to load homework status.');
-        }
-      } finally {
-        if (!cancelled) setParentHomeworkLoading(false);
+    setParentHomeworkLoading(true);
+    setParentHomeworkError('');
+    try {
+      const [taskResult, submissionResult] = await Promise.all([
+        listHomeworkTasks({ classId: cls.id, status: 'assigned' }),
+        listHomeworkSubmissions({ classId: cls.id, studentId: student.id }),
+      ]);
+      if (taskResult.error) {
+        throw new Error(taskResult.error.message || 'Unable to load assigned homework tasks.');
       }
-    };
+      if (submissionResult.error) {
+        throw new Error(submissionResult.error.message || 'Unable to load homework submissions.');
+      }
 
-    void loadParentHomeworkStatus();
-    return () => {
-      cancelled = true;
-    };
+      const tasks = Array.isArray(taskResult.data) ? taskResult.data : [];
+      const submissions = Array.isArray(submissionResult.data) ? submissionResult.data : [];
+      const latestSubmissionByTaskId = new Map();
+      submissions.forEach((row) => {
+        const existing = latestSubmissionByTaskId.get(row.homework_task_id);
+        const rowTime = new Date(row.created_at || row.submitted_at || 0).getTime();
+        const existingTime = new Date(existing?.created_at || existing?.submitted_at || 0).getTime();
+        if (!existing || rowTime > existingTime) {
+          latestSubmissionByTaskId.set(row.homework_task_id, row);
+        }
+      });
+
+      const feedbackEntries = await Promise.all(
+        submissions
+          .filter((row) => isUuidLike(row.id))
+          .map(async (row) => {
+            const feedbackResult = await listHomeworkFeedback({
+              homeworkSubmissionId: row.id,
+              parentVisibleOnly: true,
+            });
+            if (feedbackResult.error) return [row.id, null];
+            const latestFeedback = Array.isArray(feedbackResult.data) ? feedbackResult.data[0] : null;
+            return [row.id, latestFeedback || null];
+          })
+      );
+
+      setParentHomeworkTasks(tasks);
+      setParentHomeworkSubmissions(Array.from(latestSubmissionByTaskId.values()));
+      setParentHomeworkFeedbackBySubmissionId(
+        Object.fromEntries(feedbackEntries.filter((entry) => entry[1]))
+      );
+    } catch (error) {
+      setParentHomeworkTasks([]);
+      setParentHomeworkSubmissions([]);
+      setParentHomeworkFeedbackBySubmissionId({});
+      setParentHomeworkError(error?.message || 'Unable to load homework status.');
+    } finally {
+      setParentHomeworkLoading(false);
+    }
   }, [isDemoStudentPreview, isDemoMode, hasSupabaseSession, student?.id, cls?.id]);
+
+  useEffect(() => {
+    void loadParentHomeworkStatus();
+  }, [loadParentHomeworkStatus]);
 
   useEffect(() => {
     let cancelled = false;
@@ -1046,6 +1092,114 @@ export default function ParentView() {
     if (!viewer || !student?.id) return;
     const fee = await getStudentFeeStatus(viewer, student.id);
     setFeeStatus(fee || null);
+  };
+
+  const handleHomeworkUploadFileChange = (taskId, file) => {
+    if (!taskId) return;
+    if (!file) {
+      setHomeworkUploadDraftByTaskId((prev) => ({
+        ...prev,
+        [taskId]: { ...(prev[taskId] || {}), file: null },
+      }));
+      return;
+    }
+    if (!ALLOWED_HOMEWORK_UPLOAD_TYPES.has(file.type)) {
+      toast.message('Please upload a JPG, PNG, WEBP image, or PDF file.');
+      return;
+    }
+    if (file.size > MAX_HOMEWORK_UPLOAD_BYTES) {
+      toast.message('Homework file must be 5MB or smaller.');
+      return;
+    }
+    setHomeworkUploadDraftByTaskId((prev) => ({
+      ...prev,
+      [taskId]: { ...(prev[taskId] || {}), file },
+    }));
+  };
+
+  const handleHomeworkUploadNoteChange = (taskId, note) => {
+    if (!taskId) return;
+    setHomeworkUploadDraftByTaskId((prev) => ({
+      ...prev,
+      [taskId]: { ...(prev[taskId] || {}), note: note || '' },
+    }));
+  };
+
+  const handleSubmitHomeworkForTask = async (taskId) => {
+    const targetTask = parentHomeworkTasksWithStatus.find((task) => task.id === taskId);
+    if (!targetTask) {
+      toast.message('Homework task is not available for submission.');
+      return;
+    }
+    const currentStatus = targetTask.parentStatus || 'not_submitted';
+    const canSubmit = currentStatus === 'not_submitted' || currentStatus === 'returned_for_revision';
+    if (!canSubmit) {
+      toast.message('This homework is already submitted for teacher review.');
+      return;
+    }
+    const uploadDraft = homeworkUploadDraftByTaskId[taskId] || {};
+    const file = uploadDraft.file || null;
+    const note = (uploadDraft.note || '').trim();
+    if (!file) {
+      toast.message('Please choose a file before submitting homework.');
+      return;
+    }
+
+    if (isDemoMode) {
+      toast.success('Demo mode: homework upload simulated locally.');
+      setHomeworkUploadDraftByTaskId((prev) => ({
+        ...prev,
+        [taskId]: { note: '', file: null },
+      }));
+      return;
+    }
+    if (!isSupabaseConfigured() || !hasSupabaseSession) {
+      toast.message('A Supabase parent session is required to submit homework.');
+      return;
+    }
+    if (!isUuidLike(targetTask.branchId) || !isUuidLike(targetTask.classId) || !isUuidLike(targetTask.studentId)) {
+      toast.message('Linked child homework context is not available yet.');
+      return;
+    }
+
+    try {
+      setHomeworkSubmitLoadingByTaskId((prev) => ({ ...prev, [taskId]: true }));
+      const submissionResult = await createHomeworkSubmission({
+        homeworkTaskId: targetTask.id,
+        branchId: targetTask.branchId,
+        classId: targetTask.classId,
+        studentId: targetTask.studentId,
+        submissionNote: note || null,
+      });
+      if (submissionResult.error || !submissionResult.data?.id) {
+        throw new Error(submissionResult.error?.message || 'Unable to create homework submission.');
+      }
+
+      const fileUploadResult = await uploadHomeworkFile({
+        homeworkSubmissionId: submissionResult.data.id,
+        branchId: targetTask.branchId,
+        classId: targetTask.classId,
+        studentId: targetTask.studentId,
+        homeworkTaskId: targetTask.id,
+        file,
+        fileName: file.name,
+        contentType: file.type || 'application/octet-stream',
+      });
+      if (fileUploadResult.error) {
+        throw new Error(fileUploadResult.error.message || 'Unable to upload homework file.');
+      }
+
+      setHomeworkUploadDraftByTaskId((prev) => ({
+        ...prev,
+        [taskId]: { note: '', file: null },
+      }));
+      toast.success('Your child\'s work has been submitted for teacher review.');
+      await loadParentHomeworkStatus();
+    } catch (error) {
+      toast.error(error?.message || 'Unable to submit homework right now.');
+    } finally {
+      setHomeworkSubmitLoadingByTaskId((prev) => ({ ...prev, [taskId]: false }));
+    }
   };
 
   const handleReceiptFileSelect = (event) => {
@@ -1263,6 +1417,11 @@ export default function ParentView() {
                 error={parentHomeworkError}
                 tasks={parentHomeworkTasksWithStatus}
                 feedbackBySubmissionId={parentHomeworkFeedbackBySubmissionId}
+                uploadDraftByTaskId={homeworkUploadDraftByTaskId}
+                submitLoadingByTaskId={homeworkSubmitLoadingByTaskId}
+                onUploadFileChange={handleHomeworkUploadFileChange}
+                onUploadNoteChange={handleHomeworkUploadNoteChange}
+                onSubmitTaskUpload={handleSubmitHomeworkForTask}
               />
               <LatestParentComment updates={updates} />
               <LatestWeeklyProgressReport updates={updates} />

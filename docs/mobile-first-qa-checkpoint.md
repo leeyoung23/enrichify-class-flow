@@ -25,6 +25,7 @@ Scope note:
 - Latest Memory + Class Memories History now include real approved-memory display for non-demo parent flow; verify hero-card readability and history gallery card wrapping on ~390px and ~768px.
 - ParentView Learning Focus card is now present; verify concise parent-friendly copy, stacked field readability, and empty-state clarity on ~390px.
 - ParentView read-only Homework status list is now present; verify badge readability and card wrapping for multiple tasks on ~390px.
+- ParentView Homework upload form is now present for upload-allowed statuses; verify stacked input + note + submit CTA at ~390px.
 
 ### `ParentUpdates`
 
@@ -122,7 +123,8 @@ Status update:
 
 - `ParentView` payment proof mobile polish: implemented.
 - `ParentView` Latest Memory + Memories History real parent wiring: implemented (gallery/card-grid direction retained).
-- `ParentView` read-only homework status/list section: implemented (no upload controls yet).
+- `ParentView` read-only homework status/list section: implemented.
+- `ParentView` homework upload form for assigned/open tasks: implemented (image/PDF, mobile-stacked controls).
 - `FeeTracking` staff action button wrap/stack polish: implemented.
 - `AppLayout`/sidebar responsive behavior review: implemented with minimal fix to avoid content squeeze on small screens while preserving desktop sidebar behavior.
 - `StaffTimeClock` mobile mock UI: implemented (see `docs/staff-time-clock-mobile-ui-plan.md` §0).

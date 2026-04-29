@@ -193,7 +193,7 @@ Current status note:
 - Parent-visible feedback read path now omits `internal_note` from service response when `parentVisibleOnly` is requested.
 - Teacher homework review UI is now minimally wired on `src/pages/Homework.jsx` for staff-only queue/detail/draft workflow using existing homework read/write services.
 - Parent read-only homework status/list UI is now wired on `src/pages/ParentView.jsx` for linked-child visibility using anon client + RLS reads only.
-- Parent homework upload form is still intentionally unwired (future phase).
+- Parent homework upload form is now minimally wired on `src/pages/ParentView.jsx` for assigned/open tasks using existing submission/upload services.
 - Parent feedback display remains limited to parent-safe released snippets only.
 - Homework teacher/parent UI and AI homework feedback remain future milestones.
 
