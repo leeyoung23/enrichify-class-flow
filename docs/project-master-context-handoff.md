@@ -186,7 +186,9 @@ Current status note:
 - Parent comment AI mock path now includes curriculum-aware context assembly in `src/services/aiDraftService.js` (provider-free, draft-only, teacher approval still required).
 - Homework upload/review foundation SQL/storage/RLS exists at `supabase/sql/014_homework_upload_review_foundation.sql` and is now manually applied in Supabase dev (runtime/UI wiring still pending). Draft includes path-convention validation helper and staff-only submission updates.
 - Application checkpoint is documented at `docs/homework-sql-application-checkpoint.md`.
-- Recommended next milestone: homework upload/review service + fake file smoke test before UI wiring.
+- Homework runtime service + fake file smoke test are now started (`src/services/supabaseUploadService.js`, `scripts/supabase-homework-upload-smoke-test.mjs`) with metadata-first upload and private signed URL checks using fake files only.
+- Smoke blocker identified: `homework_files` metadata insert fails RLS in dev due to UUID path-prefix helper mismatch from 014; patch draft exists at `supabase/sql/015_fix_homework_upload_rls_policies.sql` (manual apply only, not applied yet).
+- Homework teacher/parent UI and AI homework feedback remain future milestones.
 
 ## 12) Next immediate milestone prompt (copy-paste)
 

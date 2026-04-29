@@ -203,12 +203,17 @@ Validation efficiency:
 - If SQL/docs-only, run only targeted SQL/RLS verification notes and avoid unrelated app build/lint/typecheck.
 ```
 
-## Implementation status checkpoint (Phase 2 applied)
+## Implementation status checkpoint (Phase 3 in progress)
 
 - SQL/storage/RLS foundation exists at `supabase/sql/014_homework_upload_review_foundation.sql`.
 - The SQL was manually applied in Supabase dev.
 - The draft is additive only (no table drops, no destructive deletes, no global RLS disable).
-- Runtime service wiring is still not implemented for this new homework foundation.
+- Runtime service wiring is now started in `src/services/supabaseUploadService.js` for homework task/submission/upload/list/signed-url MVP methods.
+- Smoke validation script is now added at `scripts/supabase-homework-upload-smoke-test.mjs`.
+- Package script is now available: `npm run test:supabase:homework:upload`.
+- Current blocker from smoke: `homework_files` metadata insert is blocked by RLS in dev (`new row violates row-level security policy for table "homework_files"`).
+- Patch draft created to fix the 014 path helper mismatch for UUID submission prefixes:
+  - `supabase/sql/015_fix_homework_upload_rls_policies.sql` (manual apply only; not applied yet).
 - Homework upload/review UI flow is still not implemented for this new homework foundation.
 - AI homework feedback remains future and approval-gated.
 - Future smoke validation should use fake files/dev data only.

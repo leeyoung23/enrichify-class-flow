@@ -69,7 +69,10 @@ Why this next:
 Related docs should reflect:
 
 - `014` is applied in dev.
-- No homework runtime service exists yet.
+- Homework runtime service layer is now started with metadata-first upload methods in `src/services/supabaseUploadService.js`.
+- Homework fake file smoke test is now added at `scripts/supabase-homework-upload-smoke-test.mjs`.
+- Smoke run found RLS blocker at `homework_files` insert (`new row violates row-level security policy for table "homework_files"`).
+- SQL patch draft now exists at `supabase/sql/015_fix_homework_upload_rls_policies.sql` (manual apply only, not applied yet).
 - No homework upload/review UI exists yet.
 - Future validation uses fake files/dev data only.
 - AI homework feedback remains future.
