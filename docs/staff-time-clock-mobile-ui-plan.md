@@ -4,22 +4,22 @@ Planning and terminology reference for the **staff** clock experience. HQ/superv
 
 ## 0) Implementation status
 
-**Implemented (Option A — mock only):**
+**Implemented (teacher `StaffTimeClock.jsx`):**
 
-- **`src/pages/StaffTimeClock.jsx`**: mobile-first **teacher** flow with large Clock In / Clock Out actions, current shift status card, branch + **fake** GPS/geofence verification display (clock-in location check / clock-out location check labels), selfie proof placeholder, exception / **pending supervisor review** demo messaging, and recent clock history (local state only). **HQ** and **branch supervisor** views include a **reporting placeholder** card and use **stacked cards on small screens** instead of relying on wide tables alone.
-- **Explicitly not in this mock:** `navigator.geolocation`, `getUserMedia` / camera, file uploads, and any calls to `clockInStaff`, `clockOutStaff`, or `getStaffTimeSelfieSignedUrl`.
+- Mobile-first **teacher** flow: large Clock In / Clock Out (mock shift, **local state only**), current shift status card, branch + **mock** punch preview (fake distance after mock punch), selfie placeholder, exception / **pending supervisor review** demo messaging, recent clock history.
+- **Browser GPS (real, explicit tap only):** “Check clock-in location (GPS)” and “Check clock-out location (GPS)” call `getCurrentPositionForClockEvent` → `calculateDistanceMeters` → `evaluateGeofence` using **labelled placeholder branch coordinates** in the page until Supabase branch geofence fields are wired. **No** `watchPosition`, **no** background tracking, **no** Supabase writes from these buttons.
+- **HQ** and **branch supervisor** views: **reporting placeholder** card; stacked cards on small screens for demo lists.
 
-**Browser helpers (no UI wiring yet):**
+**Browser helpers (services):**
 
-- **`src/services/locationVerificationService.js`** — `getCurrentPositionForClockEvent`, `calculateDistanceMeters`, `evaluateGeofence`; geolocation runs only when that async function is called (e.g. future button handler).
-- **`src/services/selfieCaptureService.js`** — `requestCameraStream`, `captureSelfieBlob`, `stopCameraStream`; camera opens only when `requestCameraStream` is called from user action.
+- **`src/services/locationVerificationService.js`** — as above; invoked from `StaffTimeClock` only on those button clicks.
+- **`src/services/selfieCaptureService.js`** — **not** wired from UI yet; `getUserMedia` only when a future button calls it.
 - **Smoke (pure math only):** `npm run test:staff-time-clock:helpers`
 
 **Still future:**
 
-- Calling helpers from **`StaffTimeClock.jsx`** and permission UX flows.
-- Wiring to Supabase **`clockInStaff` / `clockOutStaff`** from the page after product sign-off.
-- Real uploads triggered from UI (helpers do not upload).
+- **Camera / selfie** capture wired from UI; uploads; **`clockInStaff` / `clockOutStaff` / `getStaffTimeSelfieSignedUrl`** from the page.
+- **Real branch** latitude/longitude/radius from app data instead of UI placeholders.
 - Supervisor / HQ **review dashboard** with live exception queues, signed-url selfie viewer, and exports.
 
 Related checkpoints:

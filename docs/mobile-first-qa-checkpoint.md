@@ -64,7 +64,7 @@ Scope note:
 
 ### `StaffTimeClock`
 
-- **Teacher:** mobile-first mock — large Clock In / Clock Out, shift status, fake GPS/geofence verification copy, selfie placeholder, exception / pending supervisor review demo, recent history (no live GPS, camera, or Supabase).
+- **Teacher:** mobile-first mock shift + **optional real browser GPS** via explicit “Check clock-in/out location (GPS)” buttons (`locationVerificationService`); placeholder branch centre until Supabase branch data; no camera, no `clockInStaff`/`clockOutStaff`, no Supabase writes from this page.
 - **Branch supervisor / HQ:** summary cards, reporting placeholder, demo lists; tables hidden on small breakpoints in favour of stacked cards — verify tap targets and readability at ~390px.
 
 ## 3) Role-based mobile priorities

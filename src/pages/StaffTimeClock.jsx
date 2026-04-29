@@ -5,13 +5,25 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { ROLES } from '@/services/permissionService';
-import { AlertTriangle, Camera, Clock, MapPin, Monitor, Timer } from 'lucide-react';
+import { getSelectedDemoRole } from '@/services/authService';
+import {
+  getCurrentPositionForClockEvent,
+  calculateDistanceMeters,
+  evaluateGeofence,
+} from '@/services/locationVerificationService';
+import { AlertTriangle, Camera, Clock, Loader2, MapPin, Monitor, Timer } from 'lucide-react';
 
 const DEMO_NOTE =
-  'Local demo only — no live GPS, no camera, no Supabase. Real punches will use GPS/geofence verification and selfie proof after service wiring.';
+  'Local demo — optional browser GPS check below (tap only; no background tracking). Mock Clock In/Out stays on this device. No camera, no Supabase writes yet.';
 
-const FAKE_BRANCH_LABEL = 'Demo North Branch';
-const FAKE_GEOFENCE_RADIUS_M = 150;
+/** Placeholder branch centre for UI-only distance math until real `branches` lat/lng/radius are loaded from Supabase. Not a production coordinate. */
+const DEMO_BRANCH_CENTRE_LABEL = 'Demo North Branch (placeholder coordinates)';
+const DEMO_BRANCH_LAT = -33.8688;
+const DEMO_BRANCH_LNG = 151.2093;
+const DEMO_BRANCH_RADIUS_M = 150;
+
+const FAKE_BRANCH_LABEL = DEMO_BRANCH_CENTRE_LABEL;
+const FAKE_GEOFENCE_RADIUS_M = DEMO_BRANCH_RADIUS_M;
 
 const BRANCH_STAFF_ROWS = [
   { name: 'Alex Chen', role: 'Teacher', in: '08:58', out: '17:02', status: 'Normal' },
@@ -62,13 +74,40 @@ function fakeGeofenceCheck() {
   return { distanceM, accuracyM, insideGeofence };
 }
 
+function humanizeLocationError(error) {
+  if (!error?.code) return error?.message || 'Location check failed.';
+  const hints = {
+    PERMISSION_DENIED:
+      'Location permission denied. Allow location for this site in your browser or system settings, then try again.',
+    TIMEOUT: 'Location request timed out. Move to a clearer view of the sky or try again.',
+    POSITION_UNAVAILABLE: 'Position unavailable. Check that location services are enabled.',
+    UNSUPPORTED: 'This browser or environment does not support geolocation. You can still use mock Clock In/Out below.',
+    INSECURE_CONTEXT: 'Geolocation needs a secure (HTTPS) page. Mock shift controls still work.',
+    UNKNOWN: error.message || 'Location check failed.',
+  };
+  return hints[error.code] || error.message || 'Location check failed.';
+}
+
+function geofenceStatusBadgeVariant(status) {
+  if (status === 'valid') return 'default';
+  if (status === 'outside_geofence') return 'destructive';
+  return 'secondary';
+}
+
 function TeacherClockDemo() {
+  const isDemoRole = Boolean(getSelectedDemoRole());
+
   const [clockInAt, setClockInAt] = useState(null);
   const [clockOutAt, setClockOutAt] = useState(null);
   const [clockInCheck, setClockInCheck] = useState(null);
   const [clockOutCheck, setClockOutCheck] = useState(null);
   const [history, setHistory] = useState([]);
   const [demoOutsideGeofence, setDemoOutsideGeofence] = useState(false);
+
+  const [liveCheckKind, setLiveCheckKind] = useState(null);
+  const [liveClockInResult, setLiveClockInResult] = useState(null);
+  const [liveClockOutResult, setLiveClockOutResult] = useState(null);
+  const [liveLocationError, setLiveLocationError] = useState(null);
 
   const statusLabel = useMemo(() => {
     if (!clockInAt) return 'Not clocked in';
@@ -125,10 +164,74 @@ function TeacherClockDemo() {
     setClockOutCheck(null);
     setHistory([]);
     setDemoOutsideGeofence(false);
+    setLiveClockInResult(null);
+    setLiveClockOutResult(null);
+    setLiveLocationError(null);
+    setLiveCheckKind(null);
   };
 
   const canClockIn = !clockInAt || Boolean(clockOutAt);
   const canClockOut = Boolean(clockInAt) && !clockOutAt;
+  const liveBusy = liveCheckKind !== null;
+
+  const runLiveLocationCheck = async (kind) => {
+    setLiveLocationError(null);
+    setLiveCheckKind(kind);
+    try {
+      const pos = await getCurrentPositionForClockEvent();
+      if (pos.error) {
+        setLiveLocationError({ ...pos.error, forCheck: kind });
+        setLiveCheckKind(null);
+        return;
+      }
+
+      const distRes = calculateDistanceMeters({
+        branchLat: DEMO_BRANCH_LAT,
+        branchLng: DEMO_BRANCH_LNG,
+        currentLat: pos.data.latitude,
+        currentLng: pos.data.longitude,
+      });
+      if (distRes.error) {
+        setLiveLocationError({ ...distRes.error, forCheck: kind });
+        setLiveCheckKind(null);
+        return;
+      }
+
+      const ev = evaluateGeofence({
+        distanceMeters: distRes.data.distanceMeters,
+        accuracyMeters: pos.data.accuracyMeters,
+        radiusMeters: DEMO_BRANCH_RADIUS_M,
+      });
+      if (ev.error) {
+        setLiveLocationError({ ...ev.error, forCheck: kind });
+        setLiveCheckKind(null);
+        return;
+      }
+
+      const row = {
+        latitude: pos.data.latitude,
+        longitude: pos.data.longitude,
+        accuracyMeters: pos.data.accuracyMeters,
+        capturedAt: pos.data.capturedAt,
+        distanceMeters: distRes.data.distanceMeters,
+        status: ev.data.status,
+        reasons: ev.data.reasons || [],
+      };
+      if (kind === 'clock_in') {
+        setLiveClockInResult(row);
+      } else {
+        setLiveClockOutResult(row);
+      }
+    } catch (e) {
+      setLiveLocationError({
+        code: 'UNKNOWN',
+        message: e?.message || String(e),
+        forCheck: kind,
+      });
+    } finally {
+      setLiveCheckKind(null);
+    }
+  };
 
   return (
     <div className="mx-auto max-w-lg space-y-4 pb-8 md:max-w-2xl">
@@ -179,7 +282,7 @@ function TeacherClockDemo() {
         <CardHeader className="pb-2">
           <CardTitle className="flex items-center gap-2 text-base">
             <MapPin className="h-4 w-4 shrink-0" />
-            Branch &amp; GPS/geofence verification (mock)
+            Branch &amp; GPS/geofence verification
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-3 text-sm">
@@ -187,9 +290,126 @@ function TeacherClockDemo() {
             <p className="font-medium text-foreground">Assigned branch</p>
             <p className="text-muted-foreground">{FAKE_BRANCH_LABEL}</p>
             <p className="mt-2 text-xs text-muted-foreground">
-              Geofence radius (demo): {FAKE_GEOFENCE_RADIUS_M} m. Production will run a real clock-in location check and clock-out location check against this branch.
+              Geofence radius (placeholder): {FAKE_GEOFENCE_RADIUS_M} m. Branch centre for distance math is a{' '}
+              <strong className="text-foreground">labelled UI placeholder</strong> until real branch latitude/longitude/radius load from Supabase.
+            </p>
+            <p className="mt-2 text-xs text-muted-foreground">
+              Active <strong className="text-foreground">GPS/geofence verification</strong> runs only when you tap a check button below — not in the background.
             </p>
           </div>
+
+          <div className="rounded-lg border border-primary/30 bg-primary/5 px-3 py-3 space-y-3">
+            <p className="font-medium text-foreground">Browser: clock-in / clock-out location check</p>
+            <p className="text-xs text-muted-foreground">
+              Uses your device location once per tap against the placeholder branch centre above. Does not save to Supabase. No camera.
+            </p>
+            {isDemoRole && (
+              <p className="text-xs text-muted-foreground">
+                Demo role: same rules — mock shift buttons remain local-only; this GPS check is optional and still does not write to the server.
+              </p>
+            )}
+            <div className="flex flex-col gap-2 sm:flex-row">
+              <Button
+                type="button"
+                variant="default"
+                size="lg"
+                className="min-h-12 w-full sm:flex-1"
+                disabled={liveBusy}
+                onClick={() => runLiveLocationCheck('clock_in')}
+              >
+                {liveCheckKind === 'clock_in' ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Checking…
+                  </>
+                ) : (
+                  'Check clock-in location (GPS)'
+                )}
+              </Button>
+              <Button
+                type="button"
+                variant="outline"
+                size="lg"
+                className="min-h-12 w-full sm:flex-1"
+                disabled={liveBusy}
+                onClick={() => runLiveLocationCheck('clock_out')}
+              >
+                {liveCheckKind === 'clock_out' ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Checking…
+                  </>
+                ) : (
+                  'Check clock-out location (GPS)'
+                )}
+              </Button>
+            </div>
+            {liveLocationError && (
+              <div className="rounded-md border border-destructive/40 bg-destructive/10 px-3 py-2 text-xs text-destructive">
+                <p className="font-medium">
+                  {liveLocationError.forCheck === 'clock_in' ? 'Clock-in location check' : 'Clock-out location check'}
+                </p>
+                <p className="mt-1">{humanizeLocationError(liveLocationError)}</p>
+                {liveLocationError.code && (
+                  <p className="mt-1 font-mono text-[10px] opacity-80">Code: {liveLocationError.code}</p>
+                )}
+              </div>
+            )}
+            {liveClockInResult && (
+              <div className="rounded-md border bg-card px-3 py-2 text-xs">
+                <p className="font-medium text-foreground">Last clock-in location check (browser)</p>
+                <p className="mt-1 text-muted-foreground">
+                  Lat <span className="font-mono text-foreground">{liveClockInResult.latitude.toFixed(5)}</span>, lng{' '}
+                  <span className="font-mono text-foreground">{liveClockInResult.longitude.toFixed(5)}</span>
+                </p>
+                <p className="text-muted-foreground">
+                  Distance to placeholder branch:{' '}
+                  <span className="font-mono text-foreground">{Math.round(liveClockInResult.distanceMeters)} m</span>
+                </p>
+                <p className="text-muted-foreground">
+                  Accuracy:{' '}
+                  <span className="font-mono text-foreground">
+                    {liveClockInResult.accuracyMeters == null ? '—' : `±${Math.round(liveClockInResult.accuracyMeters)} m`}
+                  </span>
+                </p>
+                <p className="text-muted-foreground">Captured: {formatDemoTime(liveClockInResult.capturedAt)}</p>
+                <div className="mt-2 flex flex-wrap items-center gap-2">
+                  <Badge variant={geofenceStatusBadgeVariant(liveClockInResult.status)}>{liveClockInResult.status}</Badge>
+                  {liveClockInResult.reasons?.length > 0 && (
+                    <span className="text-muted-foreground">({liveClockInResult.reasons.join(', ')})</span>
+                  )}
+                </div>
+              </div>
+            )}
+            {liveClockOutResult && (
+              <div className="rounded-md border bg-card px-3 py-2 text-xs">
+                <p className="font-medium text-foreground">Last clock-out location check (browser)</p>
+                <p className="mt-1 text-muted-foreground">
+                  Lat <span className="font-mono text-foreground">{liveClockOutResult.latitude.toFixed(5)}</span>, lng{' '}
+                  <span className="font-mono text-foreground">{liveClockOutResult.longitude.toFixed(5)}</span>
+                </p>
+                <p className="text-muted-foreground">
+                  Distance to placeholder branch:{' '}
+                  <span className="font-mono text-foreground">{Math.round(liveClockOutResult.distanceMeters)} m</span>
+                </p>
+                <p className="text-muted-foreground">
+                  Accuracy:{' '}
+                  <span className="font-mono text-foreground">
+                    {liveClockOutResult.accuracyMeters == null ? '—' : `±${Math.round(liveClockOutResult.accuracyMeters)} m`}
+                  </span>
+                </p>
+                <p className="text-muted-foreground">Captured: {formatDemoTime(liveClockOutResult.capturedAt)}</p>
+                <div className="mt-2 flex flex-wrap items-center gap-2">
+                  <Badge variant={geofenceStatusBadgeVariant(liveClockOutResult.status)}>{liveClockOutResult.status}</Badge>
+                  {liveClockOutResult.reasons?.length > 0 && (
+                    <span className="text-muted-foreground">({liveClockOutResult.reasons.join(', ')})</span>
+                  )}
+                </div>
+              </div>
+            )}
+          </div>
+
+          <p className="text-xs font-medium text-muted-foreground">Mock punch preview (local only)</p>
           {clockInCheck && (
             <div className="rounded-lg border border-border px-3 py-2">
               <p className="font-medium text-foreground">{clockInCheck.label}</p>
@@ -222,7 +442,9 @@ function TeacherClockDemo() {
               </p>
             </div>
           )}
-          {!clockInCheck && <p className="text-muted-foreground">Clock in to see a mock clock-in location check.</p>}
+          {!clockInCheck && (
+            <p className="text-muted-foreground">Use Clock In above to record a mock shift, or run a real browser GPS check first — both stay on this device only.</p>
+          )}
         </CardContent>
       </Card>
 
