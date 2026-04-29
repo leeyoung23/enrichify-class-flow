@@ -62,6 +62,14 @@ This checkpoint records the service-layer and smoke-test milestone for homework 
 - Unrelated parent/student credentials were unavailable in env, so those checks were skipped.
 - Parent direct submission behavior should be revisited during parent upload UI stage.
 
+### Parent submission insert investigation update
+
+- Investigation indicates parent insert block is policy-level recursion, not a fake seed linkage mismatch.
+- In `014`, `homework_submissions_insert_014` validates task status/alignment by reading `homework_tasks` directly.
+- Parent `homework_tasks` visibility is itself submission-dependent, so first parent insert is blocked by circular RLS gating.
+- Patch draft created: `supabase/sql/016_fix_homework_parent_submission_insert.sql` (manual apply only, not applied yet).
+- `016` adds security-definer helper `homework_task_allows_submission(...)` and redefines parent insert policy to use it while preserving linked-child and assigned/open requirements.
+
 ## 8) Security/RLS notes
 
 - Supabase anon client + JWT only.

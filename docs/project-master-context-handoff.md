@@ -187,7 +187,8 @@ Current status note:
 - Homework upload/review foundation SQL/storage/RLS exists at `supabase/sql/014_homework_upload_review_foundation.sql` and is now manually applied in Supabase dev (runtime/UI wiring still pending). Draft includes path-convention validation helper and staff-only submission updates.
 - Application checkpoint is documented at `docs/homework-sql-application-checkpoint.md`.
 - Homework runtime service + fake file smoke test are now started (`src/services/supabaseUploadService.js`, `scripts/supabase-homework-upload-smoke-test.mjs`) with metadata-first upload and private signed URL checks using fake files only.
-- Smoke blocker identified: `homework_files` metadata insert fails RLS in dev due to UUID path-prefix helper mismatch from 014; patch draft exists at `supabase/sql/015_fix_homework_upload_rls_policies.sql` (manual apply only, not applied yet).
+- `015` has been manually applied in dev to fix UUID path-prefix matching for metadata-first homework file insert.
+- Parent direct submission insert investigation found policy recursion for first parent submission; patch draft exists at `supabase/sql/016_fix_homework_parent_submission_insert.sql` (manual apply only, not applied yet).
 - Homework teacher/parent UI and AI homework feedback remain future milestones.
 
 ## 12) Next immediate milestone prompt (copy-paste)

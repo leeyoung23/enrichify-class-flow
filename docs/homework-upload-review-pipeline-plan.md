@@ -213,7 +213,10 @@ Validation efficiency:
 - Package script is now available: `npm run test:supabase:homework:upload`.
 - Current blocker from smoke: `homework_files` metadata insert is blocked by RLS in dev (`new row violates row-level security policy for table "homework_files"`).
 - Patch draft created to fix the 014 path helper mismatch for UUID submission prefixes:
-  - `supabase/sql/015_fix_homework_upload_rls_policies.sql` (manual apply only; not applied yet).
+  - `supabase/sql/015_fix_homework_upload_rls_policies.sql` (manually applied in dev).
+- Follow-up investigation found parent direct submission insert can still fail due to insert-policy recursion against parent task visibility.
+- Patch draft created:
+  - `supabase/sql/016_fix_homework_parent_submission_insert.sql` (manual apply only; not applied yet).
 - Homework upload/review UI flow is still not implemented for this new homework foundation.
 - AI homework feedback remains future and approval-gated.
 - Future smoke validation should use fake files/dev data only.

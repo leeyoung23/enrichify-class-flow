@@ -262,8 +262,9 @@ Reminder: **Frontend filtering is not security. RLS must enforce access at datab
   - runtime service + upload helpers now started in `src/services/supabaseUploadService.js`
   - fake upload smoke script now added: `scripts/supabase-homework-upload-smoke-test.mjs`
   - package command: `npm run test:supabase:homework:upload`
-  - smoke found `homework_files` insert RLS blocker in dev
-  - patch draft added: `supabase/sql/015_fix_homework_upload_rls_policies.sql` (manual apply only; not applied yet)
+  - smoke found `homework_files` insert RLS blocker in dev and `015` helper patch has been manually applied
+  - parent direct submission insert investigation found insert-policy recursion for parent first submission
+  - patch draft added: `supabase/sql/016_fix_homework_parent_submission_insert.sql` (manual apply only; not applied yet)
   - no homework upload/review UI wiring yet
   - AI homework feedback remains future
 - Parent/student feedback visibility rule in draft:
