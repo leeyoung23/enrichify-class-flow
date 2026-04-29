@@ -6,9 +6,10 @@ Planning and terminology reference for the **staff** clock experience. HQ/superv
 
 **Implemented (teacher `StaffTimeClock.jsx`):**
 
-- Mobile-first **teacher** flow: large Clock In / Clock Out (mock shift, **local state only**), current shift status card, branch + **mock** punch preview (fake distance after mock punch), exception / **pending supervisor review** demo messaging, recent clock history.
+- Mobile-first **teacher** flow: large Clock In / Clock Out (**demo:** mock shift, local state only; **signed-in non-demo:** Clock In → `clockInStaff`, Clock Out still local-only until wired), current shift status card, branch + punch preview (mock or post–Supabase clock-in summary), exception / **pending supervisor review** demo messaging, recent clock history.
 - **Browser GPS (real, explicit tap only):** “Check clock-in location (GPS)” and “Check clock-out location (GPS)” call `getCurrentPositionForClockEvent` → `calculateDistanceMeters` → `evaluateGeofence` using **labelled placeholder branch coordinates** in the page until Supabase branch geofence fields are wired. **No** `watchPosition`, **no** background tracking, **no** Supabase writes from these buttons.
-- **Browser selfie (real, explicit tap only):** “Start camera” → live `<video>` preview → “Capture selfie” uses `requestCameraStream` / `captureSelfieBlob` / `stopCameraStream` from `selfieCaptureService.js`. **No** automatic camera open; **no** upload; **no** `clockInStaff` / `clockOutStaff`. Preview via `URL.createObjectURL`; tracks stopped on Stop / Clear / unmount / full demo reset.
+- **Browser selfie (real, explicit tap only):** “Start camera” → live `<video>` preview → “Capture selfie” uses `requestCameraStream` / `captureSelfieBlob` / `stopCameraStream` from `selfieCaptureService.js`. **No** automatic camera open. Parent holds a **Blob** for non-demo **Clock In** submit. Preview via `URL.createObjectURL`; tracks stopped on Stop / Clear / unmount / full demo reset.
+- **Supabase Clock In (non-demo only):** When **not** using `demoRole`, Supabase is configured, profile (or `VITE_STAFF_TIME_CLOCK_DEV_BRANCH_ID`) supplies a **branch UUID**, and staff has run **Check clock-in location (GPS)** plus captured a **selfie**, **Clock In** calls `clockInStaff(...)` (upload + row insert per `staffTimeClockService`). **Clock Out** to `clockOutStaff` is **not** wired from UI yet.
 - **HQ** and **branch supervisor** views: **reporting placeholder** card; stacked cards on small screens for demo lists.
 
 **Browser helpers (services):**
@@ -19,8 +20,8 @@ Planning and terminology reference for the **staff** clock experience. HQ/superv
 
 **Still future:**
 
-- Passing selfie blob + GPS evidence into **`clockInStaff` / `clockOutStaff`** and **Supabase storage** upload from the page; **`getStaffTimeSelfieSignedUrl`** for review UI.
-- **Real branch** latitude/longitude/radius from app data instead of UI placeholders.
+- **`clockOutStaff`** from UI after a Supabase clock-in; **`getStaffTimeSelfieSignedUrl`** in review/history UI.
+- **Real branch** latitude/longitude/radius from Supabase for GPS distance math (UI still uses labelled placeholder centre for checks until wired).
 - Supervisor / HQ **review dashboard** with live exception queues, signed-url selfie viewer, and exports.
 
 Related checkpoints:

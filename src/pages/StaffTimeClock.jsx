@@ -16,16 +16,38 @@ import {
   captureSelfieBlob,
   stopCameraStream,
 } from '@/services/selfieCaptureService';
+import { clockInStaff } from '@/services/staffTimeClockService';
+import { isSupabaseConfigured } from '@/services/supabaseClient';
+import { toast } from 'sonner';
 import { AlertTriangle, Camera, Clock, Loader2, MapPin, Monitor, Timer } from 'lucide-react';
 
 const DEMO_NOTE =
-  'Local demo — optional browser GPS (tap) and optional selfie preview (tap; not uploaded). Mock Clock In/Out stays on this device. No Supabase writes yet.';
+  'Demo role: mock shift only on this device. Signed-in (non-demo) with Supabase: GPS + selfie + Clock In writes to staff_time_entries; Clock Out to Supabase not wired yet.';
 
 /** Placeholder branch centre for UI-only distance math until real `branches` lat/lng/radius are loaded from Supabase. Not a production coordinate. */
 const DEMO_BRANCH_CENTRE_LABEL = 'Demo North Branch (placeholder coordinates)';
 const DEMO_BRANCH_LAT = -33.8688;
 const DEMO_BRANCH_LNG = 151.2093;
 const DEMO_BRANCH_RADIUS_M = 150;
+
+/** UUID v4-style (loose) for branch_id validation — avoids sending demo string ids to Supabase. */
+function isUuidLike(value) {
+  if (value == null || typeof value !== 'string') return false;
+  return /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(value.trim());
+}
+
+/**
+ * Real clock-in needs a branch UUID (FK). Prefer `profiles.branch_id` from session user; optional dev-only
+ * `VITE_STAFF_TIME_CLOCK_DEV_BRANCH_ID` when profile has no UUID (documented in mobile UI plan).
+ */
+function resolveBranchIdForSupabaseClockIn(user) {
+  const fromProfile = user?.branch_id;
+  if (isUuidLike(fromProfile)) return String(fromProfile).trim();
+  const envId =
+    (typeof import.meta !== 'undefined' && import.meta.env?.VITE_STAFF_TIME_CLOCK_DEV_BRANCH_ID) || '';
+  if (isUuidLike(envId)) return String(envId).trim();
+  return null;
+}
 
 const FAKE_BRANCH_LABEL = DEMO_BRANCH_CENTRE_LABEL;
 const FAKE_GEOFENCE_RADIUS_M = DEMO_BRANCH_RADIUS_M;
@@ -116,10 +138,10 @@ function humanizeCameraError(error) {
 }
 
 /**
- * Explicit user-action selfie preview only — no upload, no clockInStaff.
+ * Explicit user-action selfie capture. Parent holds `selfieBlob` for Supabase clock-in submit when applicable.
  * Remount via key from parent to reset on full demo reset.
  */
-function StaffSelfieCaptureSection() {
+function StaffSelfieCaptureSection({ selfieBlob, onSelfieBlobChange, supabaseClockInPlanned }) {
   const videoRef = useRef(null);
   const streamRef = useRef(null);
   const previewUrlRef = useRef(null);
@@ -130,7 +152,27 @@ function StaffSelfieCaptureSection() {
   const [previewUrl, setPreviewUrl] = useState(null);
   const [cameraError, setCameraError] = useState(null);
 
-  const revokePreview = () => {
+  useEffect(() => {
+    if (previewUrlRef.current) {
+      URL.revokeObjectURL(previewUrlRef.current);
+      previewUrlRef.current = null;
+    }
+    if (selfieBlob) {
+      const url = URL.createObjectURL(selfieBlob);
+      previewUrlRef.current = url;
+      setPreviewUrl(url);
+    } else {
+      setPreviewUrl(null);
+    }
+    return () => {
+      if (previewUrlRef.current) {
+        URL.revokeObjectURL(previewUrlRef.current);
+        previewUrlRef.current = null;
+      }
+    };
+  }, [selfieBlob]);
+
+  const revokePreviewOnly = () => {
     if (previewUrlRef.current) {
       URL.revokeObjectURL(previewUrlRef.current);
       previewUrlRef.current = null;
@@ -169,7 +211,8 @@ function StaffSelfieCaptureSection() {
     setCameraError(null);
     setCameraStarting(true);
     detachAndStopStream();
-    revokePreview();
+    onSelfieBlobChange(null);
+    revokePreviewOnly();
 
     const res = await requestCameraStream();
     setCameraStarting(false);
@@ -211,20 +254,17 @@ function StaffSelfieCaptureSection() {
       setCameraError(res.error);
       return;
     }
-    revokePreview();
-    const url = URL.createObjectURL(res.data.blob);
-    previewUrlRef.current = url;
-    setPreviewUrl(url);
+    onSelfieBlobChange(res.data.blob);
   };
 
   const handleRetake = () => {
     setCameraError(null);
-    revokePreview();
+    onSelfieBlobChange(null);
   };
 
   const handleClear = () => {
     setCameraError(null);
-    revokePreview();
+    onSelfieBlobChange(null);
     detachAndStopStream();
   };
 
@@ -241,8 +281,16 @@ function StaffSelfieCaptureSection() {
       <CardContent className="space-y-3 text-sm text-muted-foreground">
         <p>
           <strong className="text-foreground">Selfie proof</strong> for attendance is captured only when you use the buttons below.
-          The camera does <strong className="text-foreground">not</strong> open automatically. Images stay on this device —{' '}
-          <strong className="text-foreground">not uploaded</strong> and <strong className="text-foreground">not</strong> sent to Supabase from this screen.
+          The camera does <strong className="text-foreground">not</strong> open automatically.{' '}
+          {supabaseClockInPlanned ? (
+            <>
+              When you <strong className="text-foreground">Clock In</strong> (signed-in, non-demo), this image is sent with that action only — not on capture.
+            </>
+          ) : (
+            <>
+              Demo mode: images stay on this device — <strong className="text-foreground">not uploaded</strong> when you use mock Clock In.
+            </>
+          )}
         </p>
 
         {cameraError && (
@@ -294,7 +342,7 @@ function StaffSelfieCaptureSection() {
             size="lg"
             variant="outline"
             className="min-h-12 w-full sm:min-w-[140px] sm:flex-1"
-            disabled={!previewUrl}
+            disabled={!selfieBlob}
             onClick={handleRetake}
           >
             Retake
@@ -336,7 +384,9 @@ function StaffSelfieCaptureSection() {
 
         {previewUrl && (
           <div className="space-y-2">
-            <p className="text-xs font-medium text-foreground">Captured preview (not submitted)</p>
+            <p className="text-xs font-medium text-foreground">
+              {supabaseClockInPlanned ? 'Captured preview (submitted only when you tap Clock In)' : 'Captured preview (not submitted)'}
+            </p>
             <img
               src={previewUrl}
               alt="Captured selfie preview"
@@ -351,6 +401,9 @@ function StaffSelfieCaptureSection() {
 
 function TeacherClockDemo() {
   const isDemoRole = Boolean(getSelectedDemoRole());
+  const { user } = useOutletContext();
+  const supabaseClockInActive = !isDemoRole && isSupabaseConfigured();
+  const resolvedBranchId = useMemo(() => resolveBranchIdForSupabaseClockIn(user), [user]);
 
   const [clockInAt, setClockInAt] = useState(null);
   const [clockOutAt, setClockOutAt] = useState(null);
@@ -364,6 +417,9 @@ function TeacherClockDemo() {
   const [liveClockOutResult, setLiveClockOutResult] = useState(null);
   const [liveLocationError, setLiveLocationError] = useState(null);
   const [selfieResetKey, setSelfieResetKey] = useState(0);
+  const [selfieBlob, setSelfieBlob] = useState(null);
+  const [clockInSubmitting, setClockInSubmitting] = useState(false);
+  const [supabaseOpenEntryId, setSupabaseOpenEntryId] = useState(null);
 
   const statusLabel = useMemo(() => {
     if (!clockInAt) return 'Not clocked in';
@@ -374,12 +430,12 @@ function TeacherClockDemo() {
   const shiftSummary = useMemo(() => {
     if (!clockInAt || !clockOutAt) return null;
     const dur = formatDurationMinutes(clockInAt, clockOutAt);
-    return dur ? `Shift length (demo): ${dur}` : null;
+    return dur ? `Shift length: ${dur}` : null;
   }, [clockInAt, clockOutAt]);
 
   const showPendingReview = demoOutsideGeofence || (clockInCheck && !clockInCheck.insideGeofence);
 
-  const handleClockIn = () => {
+  const handleDemoClockIn = () => {
     if (clockInAt && !clockOutAt) return;
     const now = new Date().toISOString();
     const check = demoOutsideGeofence
@@ -389,6 +445,78 @@ function TeacherClockDemo() {
     setClockOutAt(null);
     setClockInCheck({ ...check, label: 'Clock-in location check' });
     setClockOutCheck(null);
+    setSupabaseOpenEntryId(null);
+  };
+
+  const handleSupabaseClockIn = async () => {
+    if (clockInAt && !clockOutAt) return;
+    if (!supabaseClockInActive) {
+      toast.error('Supabase is not configured. Use demo role for local-only clock in.');
+      return;
+    }
+    const branchId = resolvedBranchId;
+    if (!branchId) {
+      toast.error(
+        'No branch id for clock-in. Set branch_id on your Supabase profile (UUID), or set VITE_STAFF_TIME_CLOCK_DEV_BRANCH_ID in .env.local for dev only.',
+      );
+      return;
+    }
+    if (!liveClockInResult) {
+      toast.error('Run “Check clock-in location (GPS)” first, then try Clock In.');
+      return;
+    }
+    if (!Number.isFinite(Number(liveClockInResult.accuracyMeters))) {
+      toast.error('GPS check did not return accuracy. Run the clock-in location check again.');
+      return;
+    }
+    if (!selfieBlob) {
+      toast.error('Capture selfie proof first, then try Clock In.');
+      return;
+    }
+    const st = liveClockInResult.status;
+    if (st === 'outside_geofence' || st === 'pending_review') {
+      const ok = window.confirm(
+        `Your GPS/geofence result is “${st}”. Submit clock-in for supervisor review anyway?`,
+      );
+      if (!ok) return;
+    }
+
+    setClockInSubmitting(true);
+    try {
+      const result = await clockInStaff({
+        branchId,
+        latitude: liveClockInResult.latitude,
+        longitude: liveClockInResult.longitude,
+        accuracyMeters: liveClockInResult.accuracyMeters,
+        distanceMeters: liveClockInResult.distanceMeters,
+        selfieFile: selfieBlob,
+        fileName: 'clock-in-selfie.jpg',
+        contentType: selfieBlob.type && selfieBlob.type !== '' ? selfieBlob.type : 'image/jpeg',
+      });
+      if (result.error) {
+        toast.error(result.error.message || 'Clock-in failed.');
+        return;
+      }
+      const entry = result.data?.entry;
+      if (!entry?.clock_in_at) {
+        toast.error('Clock-in succeeded but response was unexpected.');
+        return;
+      }
+      toast.success('Clock in saved to Supabase.');
+      setClockInAt(entry.clock_in_at);
+      setClockOutAt(null);
+      setSupabaseOpenEntryId(entry.id);
+      setClockInCheck({
+        distanceM: Math.round(Number(liveClockInResult.distanceMeters)),
+        accuracyM: Math.round(Number(liveClockInResult.accuracyMeters)),
+        insideGeofence: st === 'valid',
+        label: 'Clock-in location check (submitted)',
+      });
+      setClockOutCheck(null);
+      setSelfieBlob(null);
+    } finally {
+      setClockInSubmitting(false);
+    }
   };
 
   const handleClockOut = () => {
@@ -424,11 +552,34 @@ function TeacherClockDemo() {
     setLiveClockOutResult(null);
     setLiveLocationError(null);
     setLiveCheckKind(null);
+    setSelfieBlob(null);
+    setSupabaseOpenEntryId(null);
+    setClockInSubmitting(false);
     setSelfieResetKey((k) => k + 1);
   };
 
-  const canClockIn = !clockInAt || Boolean(clockOutAt);
-  const canClockOut = Boolean(clockInAt) && !clockOutAt;
+  const canClockIn = useMemo(() => {
+    if (clockInSubmitting) return false;
+    if (!( !clockInAt || clockOutAt )) return false;
+    if (isDemoRole) return true;
+    if (!supabaseClockInActive) return false;
+    if (!resolvedBranchId) return false;
+    if (!liveClockInResult) return false;
+    if (!Number.isFinite(Number(liveClockInResult.accuracyMeters))) return false;
+    if (!selfieBlob) return false;
+    return true;
+  }, [
+    clockInSubmitting,
+    clockInAt,
+    clockOutAt,
+    isDemoRole,
+    supabaseClockInActive,
+    resolvedBranchId,
+    liveClockInResult,
+    selfieBlob,
+  ]);
+
+  const canClockOut = Boolean(clockInAt) && !clockOutAt && (isDemoRole || !supabaseOpenEntryId);
   const liveBusy = liveCheckKind !== null;
 
   const runLiveLocationCheck = async (kind) => {
@@ -494,7 +645,7 @@ function TeacherClockDemo() {
     <div className="mx-auto max-w-lg space-y-4 pb-8 md:max-w-2xl">
       <PageHeader
         title="Staff Time Clock"
-        description="Evidence-based attendance (mock): GPS/geofence checks and optional selfie preview on this device only — no Supabase punch yet."
+        description="Evidence-based attendance: demo role uses local mock punches only; signed-in (non-demo) with Supabase can save Clock In with GPS + selfie. Clock Out to Supabase is not wired yet."
       />
 
       <Card className="border-primary/20">
@@ -513,15 +664,37 @@ function TeacherClockDemo() {
         </CardContent>
       </Card>
 
+      {supabaseClockInActive && !resolvedBranchId && (
+        <p className="rounded-md border border-amber-500/40 bg-amber-500/10 px-3 py-2 text-xs text-amber-950 dark:text-amber-100">
+          Signed-in Supabase clock-in needs a <strong>branch UUID</strong> on your profile (<code className="font-mono">branch_id</code>) or{' '}
+          <code className="font-mono">VITE_STAFF_TIME_CLOCK_DEV_BRANCH_ID</code> in <code className="font-mono">.env.local</code> for dev. Placeholder map lat/lng alone are not enough.
+        </p>
+      )}
+      {supabaseClockInActive && resolvedBranchId && (
+        <p className="text-xs text-muted-foreground">
+          Supabase clock-in: run <strong>Check clock-in location (GPS)</strong>, capture a <strong>selfie</strong>, then tap Clock In. Clock out to Supabase is not wired yet.
+        </p>
+      )}
+
       <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap">
         <Button
           type="button"
           size="lg"
           className="min-h-14 w-full flex-1 text-base sm:min-w-[200px]"
-          onClick={handleClockIn}
+          onClick={() => {
+            if (isDemoRole) handleDemoClockIn();
+            else void handleSupabaseClockIn();
+          }}
           disabled={!canClockIn}
         >
-          Clock In
+          {clockInSubmitting ? (
+            <>
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              Saving…
+            </>
+          ) : (
+            'Clock In'
+          )}
         </Button>
         <Button
           type="button"
@@ -530,6 +703,7 @@ function TeacherClockDemo() {
           className="min-h-14 w-full flex-1 text-base sm:min-w-[200px]"
           onClick={handleClockOut}
           disabled={!canClockOut}
+          title={!isDemoRole && supabaseOpenEntryId ? 'Supabase clock-out is not wired yet — use Reset demo to clear local state only.' : undefined}
         >
           Clock Out
         </Button>
@@ -558,7 +732,7 @@ function TeacherClockDemo() {
           <div className="rounded-lg border border-primary/30 bg-primary/5 px-3 py-3 space-y-3">
             <p className="font-medium text-foreground">Browser: clock-in / clock-out location check</p>
             <p className="text-xs text-muted-foreground">
-              Uses your device location once per tap against the placeholder branch centre above. Does not save to Supabase. Camera is optional below.
+              Uses your device location once per tap against the placeholder branch centre above (distance math only; not persisted until you Clock In with Supabase). Camera is optional for demo; required for signed-in non-demo Clock In.
             </p>
             {isDemoRole && (
               <p className="text-xs text-muted-foreground">
@@ -700,12 +874,19 @@ function TeacherClockDemo() {
             </div>
           )}
           {!clockInCheck && (
-            <p className="text-muted-foreground">Use Clock In above to record a mock shift, or run a real browser GPS check first — both stay on this device only.</p>
+            <p className="text-muted-foreground">
+              Demo: use Clock In for a mock shift. Signed-in Supabase: run the clock-in GPS check and capture a selfie; mock punch preview below updates after a successful Clock In.
+            </p>
           )}
         </CardContent>
       </Card>
 
-      <StaffSelfieCaptureSection key={selfieResetKey} />
+      <StaffSelfieCaptureSection
+        key={selfieResetKey}
+        selfieBlob={selfieBlob}
+        onSelfieBlobChange={setSelfieBlob}
+        supabaseClockInPlanned={supabaseClockInActive}
+      />
 
       <Card className={showPendingReview ? 'border-amber-500/50 bg-amber-500/5' : ''}>
         <CardHeader className="pb-2">

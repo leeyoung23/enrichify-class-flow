@@ -1,6 +1,6 @@
 # Staff Time Clock smoke test checkpoint
 
-This checkpoint records what was validated for Staff Time Clock **after** SQL foundation application in dev, using **service-layer methods**, a **Node smoke script**, and **fake GPS plus fake tiny selfie blobs only**. No app UI wiring, no live browser location, and no camera access are part of this phase.
+This checkpoint records what was validated for Staff Time Clock **after** SQL foundation application in dev, using **service-layer methods**, a **Node smoke script**, and **fake GPS plus fake tiny selfie blobs only**. Later: the **teacher** `StaffTimeClock` page can call **`clockInStaff`** for **signed-in non-demo** users (real browser GPS + selfie) in addition to this scripted smoke path.
 
 Scope note:
 
