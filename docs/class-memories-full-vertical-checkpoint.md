@@ -101,3 +101,12 @@ Why this is next:
 ---
 
 Checkpoint status: Class Memories vertical is functionally connected from teacher submit, through staff approval gate, to parent approved-memory display, with security guardrails and demo fallback preserved.
+
+## 8) Demo Memories layout parity update
+
+- Parent demo Class Memories History layout now uses gallery/grid style for preview parity:
+  - `1` column on small screens,
+  - `2` columns on tablet/desktop.
+- Latest Memory demo hero card is preserved.
+- Demo uses placeholder gradients/fake copy only; no real media or Supabase demo writes.
+- Real approved-memory parent display path remains unchanged.

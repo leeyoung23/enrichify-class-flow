@@ -188,3 +188,14 @@ Validation:
 ---
 
 Checkpoint status: ready to run mobile-first QA pass before new backend vertical work.
+
+## 10) Demo parity update (Homework + Memories)
+
+- Demo preview parity is improved for `ParentView` and `Homework` using local-only fake data.
+- Parent demo Homework now shows:
+  - visible upload/submit control for a `Not submitted` task,
+  - local simulated submit status behavior,
+  - released-feedback example card with teacher feedback and next step.
+- Teacher demo Homework now shows review workflow shape (queue/detail/attachment/feedback fields/actions) instead of placeholder-only card.
+- Demo Class Memories History now uses gallery/grid style (`1` column small, `2` columns tablet/desktop) instead of stacked cards.
+- `demoRole` remains local-only; no Supabase writes are executed in demo actions.

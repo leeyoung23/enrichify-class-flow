@@ -89,3 +89,15 @@ Why A first:
 - Parent status UI completes the parent-side input loop.
 - Feedback display can follow once parent can see submissions/status.
 - AI should remain later after the full human workflow is visible.
+
+## 11) Demo preview parity update
+
+- Teacher demo role no longer shows only a placeholder card.
+- Demo now presents local-only teacher review workflow shape:
+  - fake submission queue,
+  - selected submission detail,
+  - fake attachment card,
+  - editable feedback/next-step/internal-note fields,
+  - local action buttons for draft/review/revision/release simulation.
+- `Draft feedback with AI` remains mock-only and provider-free in demo mode.
+- Real authenticated Supabase teacher workflow remains unchanged.

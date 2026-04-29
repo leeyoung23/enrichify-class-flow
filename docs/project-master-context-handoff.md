@@ -196,6 +196,10 @@ Current status note:
 - Parent homework upload form is now minimally wired on `src/pages/ParentView.jsx` for assigned/open tasks using existing submission/upload services.
 - Parent released homework feedback display is now wired on `src/pages/ParentView.jsx` using `listHomeworkFeedback({ parentVisibleOnly: true })` with parent-safe fields only (`feedback_text`, `next_step`, release date).
 - `internal_note` remains protected from parent-visible service/UI path.
+- Demo preview parity is now improved for Homework + Memories:
+  - parent demo Homework shows local upload/submit workflow shape and released-feedback example,
+  - teacher demo Homework shows local review queue/detail/feedback workflow shape (no Supabase calls),
+  - demo Class Memories History now uses gallery/grid style instead of stacked cards.
 - Mock homework AI feedback context builder is now added in `src/services/aiDraftService.js` (`buildHomeworkFeedbackDraftContext(...)`, `generateMockHomeworkFeedbackDraft(...)`) with safe context assembly and draft-only output.
 - Homework AI mock test is now added at `scripts/ai-homework-feedback-mock-test.mjs` and package command `npm run test:ai:homework-feedback:mock`.
 - `Homework` teacher review panel now includes mock-only `Draft feedback with AI` action that fills editable draft fields only (no auto-save/release, no real provider/API call).

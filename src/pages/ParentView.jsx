@@ -88,45 +88,6 @@ function ParentHomeworkStatusSection({
     );
   }
 
-  if (isDemoMode) {
-    return (
-      <Card id="parent-homework-status">
-        <CardHeader className="pb-3">
-          <CardTitle className="text-base">Homework</CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-3">
-          <p className="text-sm text-muted-foreground">
-            Demo-only homework status preview. Parent demo mode does not call Supabase.
-          </p>
-          <div className="rounded-lg border p-3 space-y-2">
-            <div className="flex items-start justify-between gap-3">
-              <p className="text-sm font-medium">Reading reflection worksheet</p>
-              <Badge variant="outline" className={PARENT_HOMEWORK_STATUS_META.not_submitted.className}>
-                Not submitted
-              </Badge>
-            </div>
-            <p className="text-xs text-muted-foreground">Due date: 12 May 2026</p>
-          </div>
-          <div className="rounded-lg border p-3 space-y-2">
-            <div className="flex items-start justify-between gap-3">
-              <p className="text-sm font-medium">Spelling practice worksheet</p>
-              <Badge variant="outline" className={PARENT_HOMEWORK_STATUS_META.approved_for_parent.className}>
-                Feedback released
-              </Badge>
-            </div>
-            <p className="text-xs text-muted-foreground">Due date: 10 May 2026</p>
-            <div className="rounded-md bg-muted/40 border px-2.5 py-2 space-y-1.5">
-              <p className="text-[11px] uppercase tracking-wide text-muted-foreground">Teacher feedback</p>
-              <p className="text-xs text-foreground">Great effort. Letter sounds are improving and handwriting is clearer.</p>
-              <p className="text-xs text-muted-foreground"><span className="font-medium text-foreground">Next step:</span> Practice 5 challenge words and read them aloud once daily.</p>
-              <p className="text-[11px] text-muted-foreground">Released: 11 May 2026</p>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-    );
-  }
-
   if (error) {
     return (
       <Card id="parent-homework-status" className="border-dashed">
@@ -158,7 +119,9 @@ function ParentHomeworkStatusSection({
       </CardHeader>
       <CardContent className="space-y-3">
         <p className="text-sm text-muted-foreground">
-          Submit your child&apos;s work for assigned tasks and follow review status updates.
+          {isDemoMode
+            ? 'Demo-only preview: submit controls and status updates are simulated locally and do not upload to Supabase.'
+            : 'Submit your child\'s work for assigned tasks and follow review status updates.'}
         </p>
         {tasks.map((task) => {
           const statusMeta = PARENT_HOMEWORK_STATUS_META[task.parentStatus] || PARENT_HOMEWORK_STATUS_META.not_submitted;
@@ -210,7 +173,11 @@ function ParentHomeworkStatusSection({
               {isUploadAllowed ? (
                 <div className="rounded-md border border-dashed p-3 space-y-2">
                   <p className="text-sm font-medium">Upload homework</p>
-                  <p className="text-xs text-muted-foreground">Submit your child&apos;s work in image or PDF format.</p>
+                  <p className="text-xs text-muted-foreground">
+                    {isDemoMode
+                      ? 'Demo only: file selection and submit are local simulation only.'
+                      : 'Submit your child\'s work in image or PDF format.'}
+                  </p>
                   <input
                     type="file"
                     accept="image/jpeg,image/png,image/webp,application/pdf"
@@ -231,7 +198,7 @@ function ParentHomeworkStatusSection({
                     disabled={isSubmitting}
                     onClick={() => onSubmitTaskUpload(task.id)}
                   >
-                    {isSubmitting ? 'Submitting...' : 'Submit homework'}
+                    {isSubmitting ? 'Submitting...' : 'Submit your child\'s work'}
                   </Button>
                 </div>
               ) : task.parentStatus !== 'approved_for_parent' ? (
@@ -649,23 +616,25 @@ function ClassMemoriesDemoSection({ className }) {
           <p className="text-sm text-muted-foreground font-normal">Past Class Memories for your child&apos;s class (demo).</p>
         </CardHeader>
         <CardContent className="space-y-4">
-          {DEMO_CLASS_MEMORIES_HISTORY.map((item) => (
-            <div
-              key={item.id}
-              className="rounded-lg border border-border/80 overflow-hidden bg-card"
-            >
-              <div className="h-28 w-full bg-gradient-to-r from-sky-50 via-indigo-50 to-fuchsia-50 flex items-center justify-center text-[11px] text-muted-foreground/80 px-3 text-center">
-                Activity placeholder (demo)
-              </div>
-              <div className="p-3 space-y-1.5">
-                <div className="flex flex-wrap gap-2 text-xs text-muted-foreground">
-                  <span>{item.date}</span>
-                  <Badge variant="secondary" className="text-xs font-normal">{item.label}</Badge>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {DEMO_CLASS_MEMORIES_HISTORY.map((item) => (
+              <div
+                key={item.id}
+                className="rounded-lg border border-border/80 overflow-hidden bg-card"
+              >
+                <div className="h-28 w-full bg-gradient-to-r from-sky-50 via-indigo-50 to-fuchsia-50 flex items-center justify-center text-[11px] text-muted-foreground/80 px-3 text-center">
+                  Activity placeholder (demo)
                 </div>
-                <p className="text-sm leading-relaxed">{item.caption}</p>
+                <div className="p-3 space-y-1.5">
+                  <div className="flex flex-wrap gap-2 text-xs text-muted-foreground">
+                    <span>{item.date}</span>
+                    <Badge variant="secondary" className="text-xs font-normal">{item.label}</Badge>
+                  </div>
+                  <p className="text-sm leading-relaxed">{item.caption}</p>
+                </div>
               </div>
-            </div>
-          ))}
+            ))}
+          </div>
           <p className="text-xs text-muted-foreground pt-1">
             Demo only — real Class Memories will use a future class_media-style metadata table and Supabase Storage after the
             write phase. No uploads or real media in this preview.
@@ -973,9 +942,28 @@ export default function ParentView() {
           due_date: '2026-05-12',
           status: 'assigned',
         },
+        {
+          id: 'demo-homework-task-2',
+          title: 'Spelling practice worksheet',
+          due_date: '2026-05-10',
+          status: 'assigned',
+        },
       ]);
-      setParentHomeworkSubmissions([]);
-      setParentHomeworkFeedbackBySubmissionId({});
+      setParentHomeworkSubmissions([
+        {
+          id: 'demo-homework-submission-2',
+          homework_task_id: 'demo-homework-task-2',
+          status: 'reviewed',
+        },
+      ]);
+      setParentHomeworkFeedbackBySubmissionId({
+        'demo-homework-submission-2': {
+          id: 'demo-homework-feedback-2',
+          feedback_text: 'Great effort. Letter sounds are improving and handwriting is clearer.',
+          next_step: 'Practice 5 challenge words and read them aloud once daily.',
+          released_to_parent_at: '2026-05-11T10:00:00.000Z',
+        },
+      });
       return;
     }
     if (!hasSupabaseSession || !isSupabaseConfigured() || !student?.id || !cls?.id) {
@@ -1194,11 +1182,23 @@ export default function ParentView() {
     }
 
     if (isDemoMode) {
-      toast.success('Demo mode: homework upload simulated locally.');
+      const simulatedSubmissionId = `demo-homework-submission-${taskId}`;
+      setParentHomeworkSubmissions((prev) => {
+        const withoutTask = prev.filter((row) => row.homework_task_id !== taskId);
+        return [
+          ...withoutTask,
+          {
+            id: simulatedSubmissionId,
+            homework_task_id: taskId,
+            status: 'submitted',
+          },
+        ];
+      });
       setHomeworkUploadDraftByTaskId((prev) => ({
         ...prev,
         [taskId]: { note: '', file: null },
       }));
+      toast.success('Demo mode: homework submit simulated locally. Teacher review status is preview-only.');
       return;
     }
     if (!isSupabaseConfigured() || !hasSupabaseSession) {

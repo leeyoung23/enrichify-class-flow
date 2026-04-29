@@ -47,6 +47,48 @@ const SUBMISSION_STATUS_BADGE = {
   approved_for_parent: 'bg-purple-100 text-purple-700 border-purple-200',
 };
 
+const DEMO_HOMEWORK_TASKS = [
+  {
+    id: 'demo-homework-task-1',
+    title: 'Reading reflection worksheet',
+    subject: 'Literacy',
+    due_date: '2026-05-12',
+  },
+];
+
+const DEMO_HOMEWORK_SUBMISSIONS = [
+  {
+    id: 'demo-homework-submission-1',
+    homework_task_id: 'demo-homework-task-1',
+    class_id: 'demo-class-1',
+    student_id: 'demo-student-01',
+    submitted_at: '2026-05-11T10:30:00.000Z',
+    submission_note: 'Demo parent note: completed with support at home.',
+    status: 'submitted',
+  },
+];
+
+const DEMO_HOMEWORK_FILES = [
+  {
+    id: 'demo-homework-file-1',
+    homework_submission_id: 'demo-homework-submission-1',
+    file_name: 'reading-reflection-demo.pdf',
+    content_type: 'application/pdf',
+    file_size_bytes: 256000,
+  },
+];
+
+const DEMO_HOMEWORK_FEEDBACK = [
+  {
+    id: 'demo-homework-feedback-1',
+    homework_submission_id: 'demo-homework-submission-1',
+    status: 'draft',
+    feedback_text: '',
+    next_step: '',
+    internal_note: '',
+  },
+];
+
 function isUuidLike(value) {
   return typeof value === 'string'
     && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(value.trim());
@@ -71,6 +113,8 @@ export default function Homework() {
   const [feedbackBoundSubmissionId, setFeedbackBoundSubmissionId] = useState('');
   const [aiDraftLoading, setAiDraftLoading] = useState(false);
   const [aiDraftSafetyNote, setAiDraftSafetyNote] = useState('');
+  const [demoSubmissions, setDemoSubmissions] = useState(() => DEMO_HOMEWORK_SUBMISSIONS);
+  const [demoFeedbackRows, setDemoFeedbackRows] = useState(() => DEMO_HOMEWORK_FEEDBACK);
 
   const { data: tasks = [], isLoading: tasksLoading } = useQuery({
     queryKey: ['homework-review-tasks', role, supabaseAppUser?.id],
@@ -115,44 +159,72 @@ export default function Homework() {
     },
   });
 
+  const taskRows = isDemoMode ? DEMO_HOMEWORK_TASKS : tasks;
+  const submissionRows = isDemoMode ? demoSubmissions : submissions;
+  const feedbackDataRows = isDemoMode ? demoFeedbackRows : feedbackRows;
+  const submissionFileRows = isDemoMode ? DEMO_HOMEWORK_FILES : submissionFiles;
+  const tasksBusy = isDemoMode ? false : tasksLoading;
+  const submissionsBusy = isDemoMode ? false : submissionsLoading;
+  const feedbackBusy = isDemoMode ? false : feedbackLoading;
+  const filesBusy = isDemoMode ? false : filesLoading;
+
   const selectedSubmission = useMemo(
-    () => submissions.find((item) => item.id === selectedSubmissionId) || null,
-    [submissions, selectedSubmissionId]
+    () => submissionRows.find((item) => item.id === selectedSubmissionId) || null,
+    [submissionRows, selectedSubmissionId]
   );
   const selectedTask = useMemo(
-    () => tasks.find((item) => item.id === selectedSubmission?.homework_task_id) || null,
-    [tasks, selectedSubmission?.homework_task_id]
+    () => taskRows.find((item) => item.id === selectedSubmission?.homework_task_id) || null,
+    [taskRows, selectedSubmission?.homework_task_id]
   );
-  const selectedFeedback = feedbackRows[0] || null;
+  const selectedFeedback = feedbackDataRows[0] || null;
 
   useEffect(() => {
-    if (!selectedTaskId && tasks.length > 0) {
-      setSelectedTaskId(tasks[0].id);
+    if (!selectedTaskId && taskRows.length > 0) {
+      setSelectedTaskId(taskRows[0].id);
     }
-  }, [tasks, selectedTaskId]);
+  }, [taskRows, selectedTaskId]);
 
   useEffect(() => {
-    if (submissions.length === 0) {
+    if (submissionRows.length === 0) {
       setSelectedSubmissionId('');
       return;
     }
-    if (!selectedSubmissionId || !submissions.some((item) => item.id === selectedSubmissionId)) {
-      setSelectedSubmissionId(submissions[0].id);
+    if (!selectedSubmissionId || !submissionRows.some((item) => item.id === selectedSubmissionId)) {
+      setSelectedSubmissionId(submissionRows[0].id);
     }
-  }, [submissions, selectedSubmissionId]);
+  }, [submissionRows, selectedSubmissionId]);
 
   useEffect(() => {
     if (!selectedSubmissionId || feedbackBoundSubmissionId === selectedSubmissionId) return;
-    const seedFeedback = feedbackRows[0] || null;
+    const seedFeedback = feedbackDataRows[0] || null;
     setFeedbackText(seedFeedback?.feedback_text || '');
     setNextStep(seedFeedback?.next_step || '');
     setInternalNote(seedFeedback?.internal_note || '');
     setFeedbackBoundSubmissionId(selectedSubmissionId);
-  }, [selectedSubmissionId, feedbackRows, feedbackBoundSubmissionId]);
+  }, [selectedSubmissionId, feedbackDataRows, feedbackBoundSubmissionId]);
 
   const refreshReviewData = () => {
+    if (isDemoMode) return;
     void queryClient.invalidateQueries({ queryKey: ['homework-review-submissions'] });
     void queryClient.invalidateQueries({ queryKey: ['homework-review-feedback'] });
+  };
+
+  const updateDemoSubmissionStatus = (status) => {
+    if (!selectedSubmissionId) return;
+    setDemoSubmissions((prev) => prev.map((row) => (
+      row.id === selectedSubmissionId ? { ...row, status } : row
+    )));
+    setDemoFeedbackRows((prev) => prev.map((row) => (
+      row.homework_submission_id === selectedSubmissionId
+        ? {
+          ...row,
+          status: status === 'approved_for_parent' ? 'released_to_parent' : 'draft',
+          feedback_text: feedbackText,
+          next_step: nextStep,
+          internal_note: internalNote,
+        }
+        : row
+    )));
   };
 
   const saveDraftMutation = useMutation({
@@ -230,6 +302,10 @@ export default function Homework() {
   });
 
   const openFile = async (homeworkFileId) => {
+    if (isDemoMode) {
+      toast.message(`Demo mode: preview-only file ${homeworkFileId}. No signed URL call is made.`);
+      return;
+    }
     const result = await getHomeworkFileSignedUrl({ homeworkFileId, expiresIn: 120 });
     if (result.error || !result.data?.signed_url) {
       toast.error(result.error?.message || 'Unable to open submitted file');
@@ -269,7 +345,7 @@ export default function Homework() {
         studentLearningContext,
         classLearningContext,
         teacherObservation: '',
-        uploadedFileSummary: submissionFiles,
+        uploadedFileSummary: submissionFileRows,
         mode: 'teacher_homework_mock',
         tone: 'supportive',
         length: 'short',
@@ -304,14 +380,7 @@ export default function Homework() {
           title="Homework review is staff-only"
           description="Teacher/staff homework review UI is not available for this role."
         />
-      ) : isDemoMode ? (
-        <Card className="p-5 border-dashed">
-          <p className="font-medium mb-2">Demo-only homework review placeholder</p>
-          <p className="text-sm text-muted-foreground">
-            Demo role keeps this page local-only. No Supabase task/submission/file/feedback reads or writes are executed in demo mode.
-          </p>
-        </Card>
-      ) : !canUseSupabaseHomework ? (
+      ) : !isDemoMode && !canUseSupabaseHomework ? (
         <Card className="p-5 border-dashed">
           <p className="text-sm text-muted-foreground">
             Supabase authenticated staff session is required to use homework review.
@@ -322,12 +391,12 @@ export default function Homework() {
           <div className="xl:col-span-2 space-y-4">
             <Card className="p-4">
               <div className="space-y-3">
-                <Select value={selectedTaskId} onValueChange={setSelectedTaskId} disabled={tasksLoading}>
+                <Select value={selectedTaskId} onValueChange={setSelectedTaskId} disabled={tasksBusy}>
                   <SelectTrigger>
-                    <SelectValue placeholder={tasksLoading ? 'Loading tasks...' : 'Filter by task'} />
+                    <SelectValue placeholder={tasksBusy ? 'Loading tasks...' : 'Filter by task'} />
                   </SelectTrigger>
                   <SelectContent>
-                    {tasks.map((task) => (
+                    {taskRows.map((task) => (
                       <SelectItem key={task.id} value={task.id}>
                         {task.title || 'Untitled task'}
                       </SelectItem>
@@ -352,15 +421,15 @@ export default function Homework() {
             <Card className="p-4">
               <div className="flex items-center justify-between mb-3">
                 <p className="font-medium">Submission queue</p>
-                <Badge variant="outline">{submissions.length}</Badge>
+                <Badge variant="outline">{submissionRows.length}</Badge>
               </div>
-              {submissionsLoading ? (
+              {submissionsBusy ? (
                 <p className="text-sm text-muted-foreground">Loading submissions...</p>
-              ) : submissions.length === 0 ? (
+              ) : submissionRows.length === 0 ? (
                 <p className="text-sm text-muted-foreground">No submissions available for this filter.</p>
               ) : (
                 <div className="space-y-2 max-h-[480px] overflow-y-auto pr-1">
-                  {submissions.map((submission) => {
+                  {submissionRows.map((submission) => {
                     const selected = submission.id === selectedSubmissionId;
                     const statusClass = SUBMISSION_STATUS_BADGE[submission.status] || 'bg-muted text-muted-foreground border-border';
                     return (
@@ -408,13 +477,13 @@ export default function Homework() {
                   </div>
                   <div className="mt-4 space-y-2">
                     <p className="text-sm font-medium">Uploaded files</p>
-                    {filesLoading ? (
+                    {filesBusy ? (
                       <p className="text-sm text-muted-foreground">Loading files...</p>
-                    ) : submissionFiles.length === 0 ? (
+                    ) : submissionFileRows.length === 0 ? (
                       <p className="text-sm text-muted-foreground">No files found for this submission.</p>
                     ) : (
                       <div className="space-y-2">
-                        {submissionFiles.map((fileRow) => (
+                        {submissionFileRows.map((fileRow) => (
                           <div key={fileRow.id} className="rounded-lg border p-3 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
                             <div>
                               <p className="text-sm font-medium">{fileRow.file_name || 'Unnamed file'}</p>
@@ -435,9 +504,14 @@ export default function Homework() {
                   <div className="flex items-center justify-between gap-2">
                     <p className="font-medium">Feedback draft</p>
                     <Badge variant="outline">
-                      {feedbackLoading ? 'Loading...' : (selectedFeedback?.status || 'no feedback yet')}
+                      {feedbackBusy ? 'Loading...' : (selectedFeedback?.status || 'no feedback yet')}
                     </Badge>
                   </div>
+                  {isDemoMode ? (
+                    <p className="text-xs text-muted-foreground">
+                      Demo preview only: all actions are local and do not call Supabase.
+                    </p>
+                  ) : null}
                   <div className="rounded-lg border border-dashed p-3 space-y-2 bg-muted/20">
                     <div className="flex flex-wrap items-center justify-between gap-2">
                       <p className="text-sm font-medium">AI draft assist (mock only)</p>
@@ -490,8 +564,15 @@ export default function Homework() {
                     <Button
                       type="button"
                       className="min-h-10"
-                      onClick={() => saveDraftMutation.mutate()}
-                      disabled={saveDraftMutation.isPending}
+                      onClick={() => {
+                        if (isDemoMode) {
+                          updateDemoSubmissionStatus('under_review');
+                          toast.success('Demo mode: draft saved locally.');
+                          return;
+                        }
+                        saveDraftMutation.mutate();
+                      }}
+                      disabled={isDemoMode ? false : saveDraftMutation.isPending}
                     >
                       <RefreshCw className="h-4 w-4 mr-1" />
                       Save draft feedback
@@ -500,8 +581,15 @@ export default function Homework() {
                       type="button"
                       variant="outline"
                       className="min-h-10"
-                      onClick={() => markReviewedMutation.mutate()}
-                      disabled={markReviewedMutation.isPending}
+                      onClick={() => {
+                        if (isDemoMode) {
+                          updateDemoSubmissionStatus('reviewed');
+                          toast.success('Demo mode: submission marked reviewed locally.');
+                          return;
+                        }
+                        markReviewedMutation.mutate();
+                      }}
+                      disabled={isDemoMode ? false : markReviewedMutation.isPending}
                     >
                       <CheckCircle2 className="h-4 w-4 mr-1" />
                       Mark reviewed
@@ -510,8 +598,15 @@ export default function Homework() {
                       type="button"
                       variant="outline"
                       className="min-h-10"
-                      onClick={() => returnRevisionMutation.mutate()}
-                      disabled={returnRevisionMutation.isPending}
+                      onClick={() => {
+                        if (isDemoMode) {
+                          updateDemoSubmissionStatus('returned_for_revision');
+                          toast.success('Demo mode: returned for revision locally.');
+                          return;
+                        }
+                        returnRevisionMutation.mutate();
+                      }}
+                      disabled={isDemoMode ? false : returnRevisionMutation.isPending}
                     >
                       <AlertCircle className="h-4 w-4 mr-1" />
                       Return for revision
@@ -521,8 +616,15 @@ export default function Homework() {
                         type="button"
                         variant="outline"
                         className="min-h-10"
-                        onClick={() => releaseMutation.mutate()}
-                        disabled={releaseMutation.isPending || !selectedFeedback?.id}
+                        onClick={() => {
+                          if (isDemoMode) {
+                            updateDemoSubmissionStatus('approved_for_parent');
+                            toast.success('Demo mode: release action simulated locally.');
+                            return;
+                          }
+                          releaseMutation.mutate();
+                        }}
+                        disabled={isDemoMode ? !selectedFeedback?.id : (releaseMutation.isPending || !selectedFeedback?.id)}
                       >
                         <Send className="h-4 w-4 mr-1" />
                         Release to parent

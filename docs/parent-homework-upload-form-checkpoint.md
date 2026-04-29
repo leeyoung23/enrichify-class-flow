@@ -96,3 +96,12 @@ Why next:
 - Parent upload and released feedback display are now wired.
 - The next low-risk UX improvement is clearer parent guidance in returned-for-revision paths.
 - AI feedback should stay later, after the full human review-and-release workflow is fully polished.
+
+## 11) Demo preview parity update
+
+- Parent demo mode now renders visible homework upload controls inside the normal Homework status section (local-only simulation).
+- Demo now includes:
+  - one `Not submitted` task with visible submit CTA,
+  - one released-feedback example task with feedback + next step copy.
+- Demo submit action updates local status only and does not upload files to Supabase.
+- Real authenticated parent upload behavior remains unchanged.
