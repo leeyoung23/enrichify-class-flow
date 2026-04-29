@@ -14,7 +14,7 @@ Related docs:
 ## 1) What was implemented
 
 - **Teacher `StaffTimeClock` page** (`src/pages/StaffTimeClock.jsx`): mobile-first Clock In / Clock Out, branch + GPS cards, selfie card, mock history and supervisor/HQ placeholders on other roles.
-- **Explicit GPS checks** per punch type: **Check clock-in location (GPS)** and **Check clock-out location (GPS)** call `getCurrentPositionForClockEvent` → distance vs a **labelled placeholder** branch centre → `evaluateGeofence` (no `watchPosition`, no background tracking).
+- **Explicit GPS checks** per punch type: **Check clock-in location (GPS)** and **Check clock-out location (GPS)** call `getCurrentPositionForClockEvent` → distance vs **assigned branch centre** (from **`getBranchGeofenceById`** when lat/lng/radius exist) **or** a **labelled dev placeholder** with warning → `evaluateGeofence` (no `watchPosition`, no background tracking).
 - **Explicit selfie flow**: **Start camera** / **Capture selfie** via `selfieCaptureService` (no auto-open camera); blob held in React state until submit.
 - **Signed-in, non-demo, Supabase configured**:
   - **Clock In** requires latest **clock-in** GPS result + selfie + resolvable **branch UUID** (`profiles.branch_id` or dev-only `VITE_STAFF_TIME_CLOCK_DEV_BRANCH_ID`); calls **`clockInStaff`**; stores **`supabaseOpenEntryId`** on success; optional confirm when geofence status is `outside_geofence` or `pending_review`.
@@ -34,6 +34,7 @@ These paths form the end-to-end mobile staff clock story (implementation landed 
 | GPS / Haversine / geofence helpers | `src/services/locationVerificationService.js` |
 | Camera stream + capture blob | `src/services/selfieCaptureService.js` |
 | Automated regression (fake GPS/blobs) | `scripts/supabase-staff-time-clock-smoke-test.mjs` |
+| Read-only branch geofence (RLS) | `src/services/supabaseReadService.js` (`getBranchGeofenceById`), `scripts/supabase-readonly-smoke-test.mjs` (Teacher spot-check) |
 | Mobile UI plan + status | `docs/staff-time-clock-mobile-ui-plan.md` |
 | Browser permission + helper contract | `docs/staff-time-clock-browser-permission-plan.md` |
 | Smoke test checkpoint | `docs/staff-time-clock-smoke-test-checkpoint.md` |
@@ -44,7 +45,7 @@ Supporting pieces (not repeated in every checklist but relevant): `src/services/
 
 ## 3) Staff mobile clock-in lifecycle
 
-1. **Explicit clock-in GPS/geofence check** — User taps **Check clock-in location (GPS)**; one `getCurrentPosition` read; distance and `evaluateGeofence` status shown in UI.
+1. **Explicit clock-in GPS/geofence check** — User taps **Check clock-in location (GPS)**; one `getCurrentPosition` read; distance and `evaluateGeofence` status vs **loaded branch geofence** (or dev fallback) shown in UI.
 2. **Selfie capture** — User taps **Start camera**, then **Capture selfie**; preview is local until submit.
 3. **`clockInStaff` backend submit** — User taps **Clock In** (non-demo only when gates pass); service validates session, inserts `staff_time_entries` with clock-in coordinates, accuracy, distance, status rule, reserved selfie path.
 4. **Private selfie storage** — Selfie uploaded to private bucket **`staff-clock-selfies`** (path convention owned by service; anon JWT + RLS-aligned policies — see SQL checkpoint).
@@ -54,7 +55,7 @@ Supporting pieces (not repeated in every checklist but relevant): `src/services/
 
 ## 4) Staff mobile clock-out lifecycle
 
-1. **Explicit clock-out GPS/geofence check again** — User taps **Check clock-out location (GPS)**; fresh fix and evaluation (same placeholder centre for distance math until real branch load).
+1. **Explicit clock-out GPS/geofence check again** — User taps **Check clock-out location (GPS)**; fresh fix and evaluation against the **same** branch geofence source as clock-in (Supabase row or fallback).
 2. **Selfie capture again** — New blob for clock-out proof (clock-in clears prior blob after success).
 3. **`clockOutStaff` backend submit** — User taps **Clock Out**; service verifies entry belongs to caller, is still open, stages/finalizes clock-out fields and optional selfie upload per implementation.
 4. **Open entry cleared after success** — **`supabaseOpenEntryId`** set to `null`; local shift shows end time; user may start a new cycle with a new clock-in GPS check + selfie.
@@ -74,7 +75,7 @@ Supporting pieces (not repeated in every checklist but relevant): `src/services/
 
 ## 6) Known limitations
 
-- **Real assigned branch geofence coordinates** are **not** loaded from Supabase yet; UI distance math uses a **labelled placeholder** centre and fixed radius for browser checks, while **`branch_id`** for inserts comes from profile/env UUID. Client and server distance rules may need alignment when branch geometry is authoritative.
+- **Client vs server geofence rule:** Teacher UI uses **`branches.geofence_radius_meters`** (when loaded) for `evaluateGeofence`; **`clockInStaff` / `clockOutStaff`** still derive `status` with a **fixed distance threshold** in the service until that layer reads branch radius (out of scope for the geofence-load task). Staff may see UI **valid** while server row uses a different status, or the reverse — verify before relying on status for payroll.
 - **HQ/supervisor** live **review dashboard** is not wired; teacher page still includes **mock** reporting cards for those roles.
 - **`getStaffTimeSelfieSignedUrl`** exists in the service but is **not** surfaced in teacher review/history UI.
 - **Exception approval workflow** (supervisor decisions on `outside_geofence` / `pending_review` rows) is **not** wired in product UI.
@@ -88,7 +89,7 @@ Supporting pieces (not repeated in every checklist but relevant): `src/services/
 Use **demo accounts** or a **dedicated dev project** only. Do **not** use real production PII or payment data. Do **not** commit `.env.local`.
 
 - [ ] Log in as **teacher/staff** (not `demoRole`) with Supabase configured and a **valid `branch_id`** (or dev branch env) on the profile.
-- [ ] Open **Staff Time Clock**.
+- [ ] Open **Staff Time Clock**; confirm branch card shows **Assigned branch geofence loaded** (or **Dev placeholder geofence** + warning if lat/lng/radius missing).
 - [ ] Tap **Check clock-in location (GPS)**; confirm a result appears (allow location if prompted).
 - [ ] **Start camera** → **Capture selfie** (allow camera if prompted).
 - [ ] Tap **Clock In**; confirm success toast and **on shift** / open entry behaviour.
@@ -101,11 +102,11 @@ Use **demo accounts** or a **dedicated dev project** only. Do **not** use real p
 
 ## 8) Recommended next milestone
 
-**Recommend: load real assigned-branch geofence (latitude, longitude, radius) for the teacher GPS checks** before investing heavily in the HQ/supervisor review dashboard.
+**Recommend: align `clockInStaff` / `clockOutStaff` server-side status** with the same **per-branch** `geofence_radius_meters` (and optionally recompute distance server-side) so stored `staff_time_entries.status` matches what staff see in the mobile GPS card.
 
-**Why:** The mobile product promise is **evidence at the assigned branch**. Until the UI and client-side `distanceMeters` / status use the **same** centre and radius the organisation configures for that branch, staff see misleading “distance to branch” copy, and supervisor review would queue exceptions that may not match operational reality. Shipping **branch-scoped geometry** first makes both **staff trust** and **supervisor triage** meaningful; the review dashboard can then consume consistent coordinates and statuses.
+**Why:** Branch geofence is now loaded for **client** checks; supervisors and reports will read **server** `status`. Until both use the same radius/rule, exception queues and staff-facing badges can disagree.
 
-**Alternative:** If the organisation must **audit punches in bulk first** (operations/legal), prioritise **HQ/supervisor Staff Time Clock review dashboard planning** — but plan it **assuming** geofence data will be wired next so filters and maps do not bake in placeholder assumptions.
+**Alternative:** **HQ/supervisor Staff Time Clock review dashboard** (queues, `getStaffTimeSelfieSignedUrl` in UI) if operations needs visibility before a small service change — document the client/server threshold mismatch until aligned.
 
 ---
 

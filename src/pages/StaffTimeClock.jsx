@@ -18,6 +18,7 @@ import {
 } from '@/services/selfieCaptureService';
 import { clockInStaff, clockOutStaff } from '@/services/staffTimeClockService';
 import { isSupabaseConfigured } from '@/services/supabaseClient';
+import { getBranchGeofenceById } from '@/services/supabaseReadService';
 import { toast } from 'sonner';
 import { AlertTriangle, Camera, Clock, Loader2, MapPin, Monitor, Timer } from 'lucide-react';
 
@@ -49,7 +50,15 @@ function resolveBranchIdForSupabaseClockIn(user) {
   return null;
 }
 
-const FAKE_BRANCH_LABEL = DEMO_BRANCH_CENTRE_LABEL;
+/** Supabase `branches` row has usable geofence fields for client-side distance/status. */
+function rowHasCompleteGeofence(row) {
+  if (!row) return false;
+  const lat = Number(row.latitude);
+  const lng = Number(row.longitude);
+  const r = Number(row.geofence_radius_meters);
+  return Number.isFinite(lat) && Number.isFinite(lng) && Number.isFinite(r) && r > 0;
+}
+
 const FAKE_GEOFENCE_RADIUS_M = DEMO_BRANCH_RADIUS_M;
 
 const BRANCH_STAFF_ROWS = [
@@ -431,6 +440,107 @@ function TeacherClockDemo() {
   const [clockOutSubmitting, setClockOutSubmitting] = useState(false);
   const [supabaseOpenEntryId, setSupabaseOpenEntryId] = useState(null);
 
+  const [branchGeofenceRow, setBranchGeofenceRow] = useState(null);
+  const [branchGeofenceLoadState, setBranchGeofenceLoadState] = useState('idle');
+  const [branchGeofenceLoadError, setBranchGeofenceLoadError] = useState(null);
+
+  useEffect(() => {
+    if (isDemoRole || !supabaseClockInActive) {
+      setBranchGeofenceRow(null);
+      setBranchGeofenceLoadState('idle');
+      setBranchGeofenceLoadError(null);
+      return undefined;
+    }
+    if (!resolvedBranchId) {
+      setBranchGeofenceRow(null);
+      setBranchGeofenceLoadState('idle');
+      setBranchGeofenceLoadError(null);
+      return undefined;
+    }
+    let cancelled = false;
+    setBranchGeofenceLoadState('loading');
+    setBranchGeofenceLoadError(null);
+    void getBranchGeofenceById(resolvedBranchId).then(({ data, error }) => {
+      if (cancelled) return;
+      if (error) {
+        setBranchGeofenceRow(null);
+        setBranchGeofenceLoadState('error');
+        setBranchGeofenceLoadError(error);
+        return;
+      }
+      setBranchGeofenceRow(data);
+      setBranchGeofenceLoadState('ready');
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [isDemoRole, supabaseClockInActive, resolvedBranchId]);
+
+  const effectiveGeofence = useMemo(() => {
+    if (isDemoRole) {
+      return {
+        source: 'demo_placeholder',
+        branchLat: DEMO_BRANCH_LAT,
+        branchLng: DEMO_BRANCH_LNG,
+        radiusMeters: DEMO_BRANCH_RADIUS_M,
+        displayName: DEMO_BRANCH_CENTRE_LABEL,
+        supabaseBranchName: null,
+        usesPlaceholderGeometry: true,
+        loadState: 'n/a',
+        fallbackReason: null,
+      };
+    }
+    if (branchGeofenceLoadState === 'loading') {
+      return {
+        source: 'loading',
+        branchLat: DEMO_BRANCH_LAT,
+        branchLng: DEMO_BRANCH_LNG,
+        radiusMeters: DEMO_BRANCH_RADIUS_M,
+        displayName: DEMO_BRANCH_CENTRE_LABEL,
+        supabaseBranchName: null,
+        usesPlaceholderGeometry: true,
+        loadState: 'loading',
+        fallbackReason: null,
+      };
+    }
+    if (rowHasCompleteGeofence(branchGeofenceRow)) {
+      return {
+        source: 'supabase_branch',
+        branchLat: Number(branchGeofenceRow.latitude),
+        branchLng: Number(branchGeofenceRow.longitude),
+        radiusMeters: Math.round(Number(branchGeofenceRow.geofence_radius_meters)),
+        displayName: branchGeofenceRow.name || 'Assigned branch',
+        supabaseBranchName: branchGeofenceRow.name || null,
+        usesPlaceholderGeometry: false,
+        loadState: branchGeofenceLoadState,
+        fallbackReason: null,
+        branchId: branchGeofenceRow.id,
+      };
+    }
+    const reason =
+      branchGeofenceLoadState === 'error'
+        ? branchGeofenceLoadError?.message || 'Could not load branch from Supabase.'
+        : branchGeofenceRow
+          ? 'Branch is missing latitude, longitude, or geofence_radius_meters in the database.'
+          : 'No branch row returned for this id (check RLS or branch assignment).';
+    return {
+      source: 'fallback_placeholder',
+      branchLat: DEMO_BRANCH_LAT,
+      branchLng: DEMO_BRANCH_LNG,
+      radiusMeters: DEMO_BRANCH_RADIUS_M,
+      displayName: DEMO_BRANCH_CENTRE_LABEL,
+      supabaseBranchName: branchGeofenceRow?.name ?? null,
+      usesPlaceholderGeometry: true,
+      loadState: branchGeofenceLoadState,
+      fallbackReason: reason,
+    };
+  }, [
+    isDemoRole,
+    branchGeofenceRow,
+    branchGeofenceLoadState,
+    branchGeofenceLoadError,
+  ]);
+
   const openSupabaseShift = Boolean(
     supabaseClockInActive && supabaseOpenEntryId && clockInAt && !clockOutAt,
   );
@@ -669,6 +779,7 @@ function TeacherClockDemo() {
     if (!liveClockInResult) return false;
     if (!Number.isFinite(Number(liveClockInResult.accuracyMeters))) return false;
     if (!selfieBlob) return false;
+    if (resolvedBranchId && branchGeofenceLoadState === 'loading') return false;
     return true;
   }, [
     clockInSubmitting,
@@ -680,6 +791,7 @@ function TeacherClockDemo() {
     liveClockInResult,
     selfieBlob,
     clockOutSubmitting,
+    branchGeofenceLoadState,
   ]);
 
   const canClockOut = useMemo(() => {
@@ -691,6 +803,7 @@ function TeacherClockDemo() {
     if (!liveClockOutResult) return false;
     if (!Number.isFinite(Number(liveClockOutResult.accuracyMeters))) return false;
     if (!selfieBlob) return false;
+    if (resolvedBranchId && branchGeofenceLoadState === 'loading') return false;
     return true;
   }, [
     clockInAt,
@@ -702,6 +815,8 @@ function TeacherClockDemo() {
     supabaseOpenEntryId,
     liveClockOutResult,
     selfieBlob,
+    resolvedBranchId,
+    branchGeofenceLoadState,
   ]);
 
   const clockOutDisabledTitle =
@@ -710,6 +825,8 @@ function TeacherClockDemo() {
       : undefined;
 
   const liveBusy = liveCheckKind !== null;
+  const geofenceGpsBlocked =
+    !isDemoRole && supabaseClockInActive && Boolean(resolvedBranchId) && branchGeofenceLoadState === 'loading';
 
   const runLiveLocationCheck = async (kind) => {
     setLiveLocationError(null);
@@ -722,9 +839,10 @@ function TeacherClockDemo() {
         return;
       }
 
+      const g = effectiveGeofence;
       const distRes = calculateDistanceMeters({
-        branchLat: DEMO_BRANCH_LAT,
-        branchLng: DEMO_BRANCH_LNG,
+        branchLat: g.branchLat,
+        branchLng: g.branchLng,
         currentLat: pos.data.latitude,
         currentLng: pos.data.longitude,
       });
@@ -737,7 +855,7 @@ function TeacherClockDemo() {
       const ev = evaluateGeofence({
         distanceMeters: distRes.data.distanceMeters,
         accuracyMeters: pos.data.accuracyMeters,
-        radiusMeters: DEMO_BRANCH_RADIUS_M,
+        radiusMeters: g.radiusMeters,
       });
       if (ev.error) {
         setLiveLocationError({ ...ev.error, forCheck: kind });
@@ -858,14 +976,41 @@ function TeacherClockDemo() {
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-3 text-sm">
-          <div className="rounded-lg border bg-muted/30 px-3 py-2">
-            <p className="font-medium text-foreground">Assigned branch</p>
-            <p className="text-muted-foreground">{FAKE_BRANCH_LABEL}</p>
-            <p className="mt-2 text-xs text-muted-foreground">
-              Geofence radius (placeholder): {FAKE_GEOFENCE_RADIUS_M} m. Branch centre for distance math is a{' '}
-              <strong className="text-foreground">labelled UI placeholder</strong> until real branch latitude/longitude/radius load from Supabase.
+          <div className="rounded-lg border bg-muted/30 px-3 py-2 space-y-2">
+            <div className="flex flex-wrap items-start justify-between gap-2">
+              <div>
+                <p className="font-medium text-foreground">Assigned branch</p>
+                <p className="text-muted-foreground">{effectiveGeofence.displayName}</p>
+              </div>
+              <div className="flex flex-wrap gap-2 justify-end">
+                {isDemoRole && <Badge variant="secondary">Demo placeholder geofence</Badge>}
+                {!isDemoRole && supabaseClockInActive && effectiveGeofence.loadState === 'loading' && (
+                  <Badge variant="secondary">Loading branch geofence…</Badge>
+                )}
+                {!isDemoRole && supabaseClockInActive && effectiveGeofence.source === 'supabase_branch' && (
+                  <Badge variant="default">Assigned branch geofence loaded</Badge>
+                )}
+                {!isDemoRole && supabaseClockInActive && effectiveGeofence.usesPlaceholderGeometry && effectiveGeofence.loadState !== 'loading' && (
+                  <Badge variant="outline" className="border-amber-600 text-amber-900 dark:text-amber-100">
+                    Dev placeholder geofence
+                  </Badge>
+                )}
+              </div>
+            </div>
+            <p className="text-xs text-muted-foreground">
+              Geofence radius used for checks: <strong className="text-foreground">{effectiveGeofence.radiusMeters} m</strong>
+              {isDemoRole
+                ? ' — demo coordinates for local mock only.'
+                : effectiveGeofence.source === 'supabase_branch'
+                  ? ' — from your branch row in Supabase.'
+                  : ' — labelled dev fallback until real latitude, longitude, and geofence_radius_meters are available (or load succeeds).'}
             </p>
-            <p className="mt-2 text-xs text-muted-foreground">
+            {supabaseClockInActive && !isDemoRole && effectiveGeofence.usesPlaceholderGeometry && effectiveGeofence.fallbackReason && (
+              <p className="rounded-md border border-amber-500/40 bg-amber-500/10 px-2 py-1.5 text-xs text-amber-950 dark:text-amber-100">
+                {effectiveGeofence.fallbackReason}
+              </p>
+            )}
+            <p className="text-xs text-muted-foreground">
               Active <strong className="text-foreground">GPS/geofence verification</strong> runs only when you tap a check button below — not in the background.
             </p>
           </div>
@@ -873,7 +1018,7 @@ function TeacherClockDemo() {
           <div className="rounded-lg border border-primary/30 bg-primary/5 px-3 py-3 space-y-3">
             <p className="font-medium text-foreground">Browser: clock-in / clock-out location check</p>
             <p className="text-xs text-muted-foreground">
-              Uses your device location once per tap against the placeholder branch centre above (distance math only; persisted when you submit Clock In or Clock Out to Supabase). Camera is optional for demo; required for each signed-in non-demo punch.
+              Uses your device location once per tap against the branch centre above (distance math only; coordinates submitted when you Clock In or Clock Out to Supabase). Camera is optional for demo; required for each signed-in non-demo punch.
             </p>
             {isDemoRole && (
               <p className="text-xs text-muted-foreground">
@@ -886,7 +1031,7 @@ function TeacherClockDemo() {
                 variant="default"
                 size="lg"
                 className="min-h-12 w-full sm:flex-1"
-                disabled={liveBusy}
+                disabled={liveBusy || geofenceGpsBlocked}
                 onClick={() => runLiveLocationCheck('clock_in')}
               >
                 {liveCheckKind === 'clock_in' ? (
@@ -903,7 +1048,7 @@ function TeacherClockDemo() {
                 variant="outline"
                 size="lg"
                 className="min-h-12 w-full sm:flex-1"
-                disabled={liveBusy}
+                disabled={liveBusy || geofenceGpsBlocked}
                 onClick={() => runLiveLocationCheck('clock_out')}
               >
                 {liveCheckKind === 'clock_out' ? (
@@ -935,7 +1080,7 @@ function TeacherClockDemo() {
                   <span className="font-mono text-foreground">{liveClockInResult.longitude.toFixed(5)}</span>
                 </p>
                 <p className="text-muted-foreground">
-                  Distance to placeholder branch:{' '}
+                  Distance to {effectiveGeofence.displayName}:{' '}
                   <span className="font-mono text-foreground">{Math.round(liveClockInResult.distanceMeters)} m</span>
                 </p>
                 <p className="text-muted-foreground">
@@ -961,7 +1106,7 @@ function TeacherClockDemo() {
                   <span className="font-mono text-foreground">{liveClockOutResult.longitude.toFixed(5)}</span>
                 </p>
                 <p className="text-muted-foreground">
-                  Distance to placeholder branch:{' '}
+                  Distance to {effectiveGeofence.displayName}:{' '}
                   <span className="font-mono text-foreground">{Math.round(liveClockOutResult.distanceMeters)} m</span>
                 </p>
                 <p className="text-muted-foreground">

@@ -14,6 +14,7 @@ if (!supabaseUrl || !supabaseAnonKey) {
 const SALES_KIT_FIELDS =
   "id,title,resource_type,description,file_path,external_url,status,is_global,branch_scope,created_at,updated_at";
 const BRANCH_FIELDS = "id,name,created_at,updated_at";
+const BRANCH_GEOFENCE_FIELDS = "id,name,latitude,longitude,geofence_radius_meters";
 const CLASS_FIELDS = "id,name,branch_id,subject,level,schedule_note,created_at,updated_at";
 const STUDENT_FIELDS = "id,full_name,branch_id,class_id,created_at,updated_at";
 
@@ -142,6 +143,25 @@ async function getBranches(client) {
     return { data: Array.isArray(data) ? data : [], error: null };
   } catch (error) {
     return { data: [], error };
+  }
+}
+
+/** Mirrors `getBranchGeofenceById` in supabaseReadService (Staff Time Clock). */
+async function getBranchGeofenceById(client, branchId) {
+  const id = typeof branchId === "string" ? branchId.trim() : "";
+  if (!id || !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id)) {
+    return { data: null, error: { message: "branchId must be a UUID" } };
+  }
+  try {
+    const { data, error } = await client
+      .from("branches")
+      .select(BRANCH_GEOFENCE_FIELDS)
+      .eq("id", id)
+      .maybeSingle();
+    if (error) return { data: null, error };
+    return { data: data ?? null, error: null };
+  } catch (error) {
+    return { data: null, error };
   }
 }
 
@@ -390,6 +410,20 @@ async function runUserCheck(userConfig) {
       classesResult.data.length,
       studentsResult.data.length
     );
+
+    if (userConfig.label === "Teacher" && branchesResult.data[0]?.id) {
+      const geo = await getBranchGeofenceById(client, branchesResult.data[0].id);
+      if (geo.error) {
+        printResult("WARNING", `${userConfig.label}: getBranchGeofenceById failed (${geo.error.message || "unknown"})`);
+      } else if (!geo.data) {
+        printResult("CHECK", `${userConfig.label}: getBranchGeofenceById returned no row for first visible branch`);
+      } else {
+        printResult(
+          "PASS",
+          `${userConfig.label}: branch geofence read ok (id + name + lat/lng/radius fields present on response)`
+        );
+      }
+    }
   }
 
   await runFoundationTableChecks(client, userConfig.label);

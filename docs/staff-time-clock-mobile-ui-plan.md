@@ -7,7 +7,7 @@ Planning and terminology reference for the **staff** clock experience. HQ/superv
 **Implemented (teacher `StaffTimeClock.jsx`):**
 
 - Mobile-first **teacher** flow: large Clock In / Clock Out (**demo:** mock shift, local state only; **signed-in non-demo:** Clock In → `clockInStaff`, Clock Out → `clockOutStaff` with open entry id), current shift status card, branch + punch preview (mock or post–Supabase punch summary), exception / **pending supervisor review** demo messaging, recent clock history.
-- **Browser GPS (real, explicit tap only):** “Check clock-in location (GPS)” and “Check clock-out location (GPS)” call `getCurrentPositionForClockEvent` → `calculateDistanceMeters` → `evaluateGeofence` using **labelled placeholder branch coordinates** in the page until Supabase branch geofence fields are wired. **No** `watchPosition`, **no** background tracking, **no** Supabase writes from these buttons.
+- **Browser GPS (real, explicit tap only):** “Check clock-in location (GPS)” and “Check clock-out location (GPS)” call `getCurrentPositionForClockEvent` → `calculateDistanceMeters` → `evaluateGeofence`. **Signed-in non-demo:** loads **`branches`** geofence for `profiles.branch_id` / dev branch id via **`getBranchGeofenceById`** (`supabaseReadService.js`); uses **latitude, longitude, geofence_radius_meters** when present; otherwise a **labelled dev placeholder** with inline warning. **`demoRole`:** placeholder only. **No** `watchPosition`, **no** background tracking, **no** Supabase writes from these buttons.
 - **Browser selfie (real, explicit tap only):** “Start camera” → live `<video>` preview → “Capture selfie” uses `requestCameraStream` / `captureSelfieBlob` / `stopCameraStream` from `selfieCaptureService.js`. **No** automatic camera open. Parent holds a **Blob** for non-demo **Clock In** or **Clock Out** submit (fresh selfie per punch). Preview via `URL.createObjectURL`; tracks stopped on Stop / Clear / unmount / full demo reset.
 - **Supabase Clock In / Clock Out (non-demo only):** When **not** using `demoRole`, Supabase is configured, profile (or `VITE_STAFF_TIME_CLOCK_DEV_BRANCH_ID`) supplies a **branch UUID**, **Clock In** calls `clockInStaff(...)` after **Check clock-in location (GPS)** + selfie. **Clock Out** calls `clockOutStaff(...)` with the **open entry id** from the successful clock-in, after **Check clock-out location (GPS)** + selfie (service owns uploads + DB).
 - **HQ** and **branch supervisor** views: **reporting placeholder** card; stacked cards on small screens for demo lists.
@@ -16,16 +16,19 @@ Planning and terminology reference for the **staff** clock experience. HQ/superv
 
 - **`src/services/locationVerificationService.js`** — as above; invoked from `StaffTimeClock` only on GPS check button clicks.
 - **`src/services/selfieCaptureService.js`** — invoked from `StaffTimeClock` only on **Start camera** / **Capture selfie** (user gestures); `getUserMedia` never on page load.
+- **`src/services/supabaseReadService.js`** — `getBranchGeofenceById(branchId)` minimal `branches` read (anon + RLS) for Staff Time Clock geofence UI.
 - **Smoke (pure math only):** `npm run test:staff-time-clock:helpers`
 
 **Still future:**
 
 - **`getStaffTimeSelfieSignedUrl`** in review/history UI (teacher recent list remains local/mock copy).
-- **Real branch** latitude/longitude/radius from Supabase for GPS distance math (UI still uses labelled placeholder centre for checks until wired).
 - Supervisor / HQ **review dashboard** with live exception queues, signed-url selfie viewer, and exports.
+- **Align server-side** `clockInStaff` / `clockOutStaff` **distance/status rule** with per-branch **`geofence_radius_meters`** (service still uses a fixed threshold for `status` today; client preview uses branch radius when loaded).
+- **Exception approval** workflow and **adjustment requests** in product UI.
 
 Related checkpoints:
 
+- `docs/staff-time-clock-mobile-flow-checkpoint.md`
 - `docs/staff-time-clock-advanced-plan.md`
 - `docs/staff-time-clock-sql-application-checkpoint.md`
 - `docs/staff-time-clock-smoke-test-checkpoint.md`
