@@ -22,6 +22,10 @@ Application checkpoint:
 
 - `docs/staff-time-clock-sql-application-checkpoint.md`
 
+Mobile UI planning (terminology + layout; no runtime in doc alone):
+
+- `docs/staff-time-clock-mobile-ui-plan.md`
+
 ## 1) Product principle
 
 Staff Time Clock should prove attendance fairly, not just record a button click.
@@ -31,7 +35,7 @@ Clock-in/out evidence model:
 - Authenticated staff identity (`profile_id` from real session JWT).
 - Trusted event timestamp (`clock_in_at` / `clock_out_at`).
 - Branch context (`branch_id`).
-- GPS location snapshot at event time.
+- **Active GPS / geofence verification** at each clock action; **location evidence** (coordinates, distance, accuracy) stored for that event (not continuous background tracking by default).
 - Calculated distance from branch geofence center.
 - Location accuracy metadata (meters).
 - Selfie proof for identity-at-event.
@@ -42,8 +46,8 @@ Clock-in/out evidence model:
 Privacy requirements:
 
 - Staff must be clearly informed that location and selfie are collected only for attendance proof.
-- Default model should avoid continuous live tracking.
-- Use point-in-time location snapshots at clock-in and clock-out.
+- Default model should avoid **continuous background** tracking; verification is **active at clock-in and clock-out** when the staff member submits each punch.
+- Use **foreground location verification** and geofence checks at clock-in and clock-out; store resulting evidence per event.
 - Selfies must be stored in private storage only.
 - Access must be restricted to HQ and relevant branch supervisor scope.
 - Parent/student surfaces must never expose staff location/selfie data.
@@ -59,7 +63,7 @@ Consent and transparency expectations:
 
 Recommended operational model:
 
-- Capture location snapshot at clock-in and clock-out.
+- Run **active GPS / geofence verification** at clock-in and again at clock-out.
 - Require selfie at clock-in; optional at clock-out (policy switchable later).
 - Use branch geofence check against branch latitude/longitude + configured radius.
 - Compute status values such as:
@@ -217,13 +221,13 @@ Security design notes:
 
 ## 11) Immediate next recommendation
 
-Recommended next: **Service wiring into future mobile clock flow (no real live location/camera rollout yet)**.
+Recommended next: **`docs/staff-time-clock-mobile-ui-plan.md` — mobile Staff Time Clock UI mock** (layout, states, copy, fake data path) **before** enabling real browser geolocation or camera.
 
 Why:
 
 - SQL/storage/RLS foundation is applied in dev and service + smoke scaffolding now exists.
-- The next step is controlled runtime integration planning against existing service contracts.
-- Keep rollout safe by continuing fake/dev validation before any real-device capture features.
+- The next bottleneck is **staff-facing UX** aligned with active geofence verification at both punches.
+- A UI mock de-risks flows without device permission variance; real sensors follow in a dedicated phase.
 
 ## 12) Next implementation prompt
 
@@ -242,7 +246,7 @@ Constraints:
 
 Tasks:
 1) Draft SQL migration plan for staff time evidence model:
-   - New table: staff_time_entries with clock in/out timestamp, location snapshot fields, distance/accuracy, selfie path, status, review fields.
+   - New table: staff_time_entries with clock in/out timestamp, **GPS / geofence verification fields** (coordinates, distance, accuracy), selfie path, status, review fields.
    - Branch geofence fields: latitude, longitude, geofence_radius_meters.
    - Optional table: staff_time_adjustment_requests.
 2) Draft RLS policies:
@@ -264,7 +268,7 @@ Validation:
 
 ---
 
-Planning verdict: Staff Time Clock should be built as an evidence-based attendance system (identity + timestamp + geofence snapshot + selfie + review workflow), not a simple button clock.
+Planning verdict: Staff Time Clock should be built as an evidence-based attendance system (identity + timestamp + **active geofence verification at clock-in/out** + selfie + review workflow), not a simple button clock.
 
 ## 13) Draft patch note (manual apply)
 

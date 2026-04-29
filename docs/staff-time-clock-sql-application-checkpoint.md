@@ -24,7 +24,7 @@ Scope note:
 
 - Staff attendance is evidence-based, not button-only.
 - GPS/geofence/selfie proof model is planned.
-- Location model remains snapshot-only by default (not continuous tracking).
+- **Active GPS / geofence verification** at clock-in and clock-out; **location evidence** stored per punch. Default product is **not** continuous background tracking.
 - Staff selfies are private-storage scoped.
 - HQ has all-branch review scope.
 - Branch supervisor has own-branch review scope.

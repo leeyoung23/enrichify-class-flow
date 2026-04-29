@@ -66,8 +66,8 @@ Scope note:
 ## 3) Role-based mobile priorities
 
 - **Parent:** `ParentView`, fee status/proof upload clarity, report readability, attendance/homework summaries, and future Memories flow.
-- **Teacher:** `Dashboard`, class session support routes, attendance marking, homework/feedback flow, `ParentUpdates`, and `MyTasks`.
-- **Branch Supervisor / HQ:** `FeeTracking`, dashboard summary cards, branch reporting surfaces, and future staff time clock reporting.
+- **Teacher:** `Dashboard`, class session support routes, attendance marking, homework/feedback flow, `ParentUpdates`, and `MyTasks`. Future **Staff Time Clock** punch flows are **mobile-first** per `docs/staff-time-clock-mobile-ui-plan.md`.
+- **Branch Supervisor / HQ:** `FeeTracking`, dashboard summary cards, branch reporting surfaces, and future staff time clock **reporting / review** (often desktop-friendly; staff punch remains phone-first).
 
 ## 4) Immediate QA checklist
 

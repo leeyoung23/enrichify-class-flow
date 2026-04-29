@@ -83,7 +83,7 @@ Optional related roadmap note (if present in repo): `docs/staff-time-clock-roadm
 - **Private bucket** — `staff-clock-selfies` is private; access for viewing is via signed URLs (or policy-scoped server paths), not public URLs.
 - **Fake data only** in this checkpoint — synthetic coordinates and tiny in-memory blobs; no production PII or real payment/school payloads in the test narrative.
 - **No real location or camera** — no `navigator.geolocation`, no `<input type="file">` from real devices in this phase.
-- **Snapshot model** — clock-in/out record point-in-time evidence; this design does **not** imply continuous GPS tracking.
+- **Product intent (smoke uses fakes):** production Staff Time Clock uses **active GPS / geofence verification** at clock-in **and** clock-out, with **location evidence stored per event**; smoke tests inject fake coordinates only. This is **not** continuous background tracking by default.
 
 ---
 
@@ -94,13 +94,13 @@ Optional related roadmap note (if present in repo): `docs/staff-time-clock-roadm
 - **Camera / selfie capture UI** — capture, preview, retake, size/type limits.
 - **Supervisor / HQ review dashboard** — queues, filters, signed URL viewing in-app.
 - **Exception / adjustment workflow** — `staff_time_adjustment_requests` and review outcomes.
-- **Privacy / consent wording** — in-product copy and settings aligned to snapshot + selfie retention policy.
+- **Privacy / consent wording** — in-product copy and settings aligned to **GPS + selfie** retention and punch-time verification (see `docs/staff-time-clock-mobile-ui-plan.md`).
 
 ---
 
 ## 8) Recommended next milestone
 
-**Recommend: Staff mobile clock-in UI planning** (and a thin implementation plan doc: screens, states, offline/failure, and which service methods to call — still without turning on real geolocation/camera until a deliberate follow-up).
+**Recommend: Staff mobile clock-in UI planning** — see **`docs/staff-time-clock-mobile-ui-plan.md`** (screens, states, permission copy, layout, service mapping; start with **UI mock / fake path** before real geolocation or camera).
 
 **Why this over a generic “master context handoff” doc:** SQL, RLS, storage, service, and smoke are already aligned; the next bottleneck is **user-facing flow and permission UX**. A handoff doc is useful when pausing the project or onboarding a new owner; it does not unblock the next vertical slice (staff actually clocking in from a phone). Planning the mobile UI next keeps the roadmap sequential: define the contract the UI must satisfy (already largely defined), then wire UI to existing `clockInStaff` / `clockOutStaff` with **staged** enablement of real sensors.
 

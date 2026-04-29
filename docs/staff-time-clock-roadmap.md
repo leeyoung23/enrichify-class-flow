@@ -52,7 +52,7 @@ Role labels should align with `profiles.role` / `app_role`; “staff” may map 
 | `id` | Primary key. |
 | `profile_id` | Who clocked; FK to `profiles.id`. |
 | `branch_id` | Branch scope for RLS and reports. |
-| `role` | Snapshot of `profiles.role` at clock-in (optional but helps audit if roles change). |
+| `role` | Recorded copy of `profiles.role` at clock-in (optional audit field if roles change). |
 | `clock_in_at` | Timestamptz. |
 | `clock_out_at` | Timestamptz; nullable until clock out. |
 | `total_minutes` | Derived duration; nullable until closed. |
@@ -85,7 +85,8 @@ All enforcement at **Postgres RLS**; UI checks are never sufficient.
 
 ## 6) Privacy and safety
 
-- **Avoid unnecessary precise location** unless there is a clear legal/product need; prefer **branch** or coarse **location_label**.
+- **Clock-in/out GPS attendance proof:** product intent is **active verification** at each punch against branch geofence (see `docs/staff-time-clock-mobile-ui-plan.md`), **not** continuous background tracking by default. Store only what policy requires for audit and review.
+- **Avoid unnecessary extra precision** in UI copy and retention (e.g. do not expose raw traces); prefer **branch** context and coarse labels where full coordinates are not needed on screen.
 - **Do not store or expose raw** device fingerprints or exact IPs in client-visible fields; if logged, use **hashes** or aggregated metadata with retention policy.
 - **Correction + approval** for edits to sensitive times; append-only or event log optional later.
 - **RLS** on every table above; **no service role** in the browser; clock writes go through **authenticated user JWT** only.
@@ -194,6 +195,11 @@ All enforcement at **Postgres RLS**; UI checks are never sufficient.
 - Added package command: `npm run test:supabase:staff-time-clock`
 - Test scope remains fake GPS inputs and fake tiny selfie blobs only.
 - No app UI clock-in wiring and no real location/camera runtime integration in this phase.
+
+## 13) Mobile UI plan reference
+
+- Staff punch UX and terminology: **`docs/staff-time-clock-mobile-ui-plan.md`**
+- Next implementation step recommended there: **mobile UI mock** (fake GPS/selfie path) before live browser sensors.
 
 ---
 
