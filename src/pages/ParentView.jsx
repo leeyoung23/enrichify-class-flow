@@ -708,39 +708,53 @@ export default function ParentView() {
                     <CardTitle className="text-base">Fee Status</CardTitle>
                   </CardHeader>
                   <CardContent>
-                    <div className="grid grid-cols-2 gap-3 text-sm">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm">
                       <div><p className="text-xs text-muted-foreground">Current Period</p><p>{feeStatus.fee_period}</p></div>
                       <div><p className="text-xs text-muted-foreground">Status</p><p className="capitalize">{feeStatus.payment_status}</p></div>
                       <div><p className="text-xs text-muted-foreground">Due Date</p><p>{feeStatus.due_date}</p></div>
                       <div><p className="text-xs text-muted-foreground">Receipt Uploaded</p><p>{feeStatus.receipt_uploaded ? 'Yes' : 'No'}</p></div>
                     </div>
-                    <div className="mt-4 space-y-2">
-                      <p className="text-xs text-muted-foreground">Payment proof (submit if requested)</p>
-                      <input
-                        type="file"
-                        accept=".png,.jpg,.jpeg,.pdf,.txt"
-                        onChange={handleReceiptFileSelect}
-                        disabled={receiptUploadLoading}
-                        className="block w-full text-sm"
-                      />
-                      <Button
-                        variant="outline"
-                        className="w-full sm:w-auto"
-                        onClick={handleReceiptUpload}
-                        disabled={receiptUploadLoading}
-                      >
-                        {receiptUploadLoading ? 'Uploading...' : 'Upload Payment Proof'}
-                      </Button>
-                      {feeStatus.receipt_uploaded && (
-                        <Button
-                          variant="ghost"
-                          className="w-full sm:w-auto"
-                          onClick={handleOpenUploadedReceipt}
-                          disabled={receiptLinkLoading}
-                        >
-                          View Uploaded Receipt
-                        </Button>
-                      )}
+                    <div className="mt-4 rounded-lg border border-dashed p-3 sm:p-4 space-y-3">
+                      <div className="space-y-1.5">
+                        <p className="text-sm font-medium">Payment proof</p>
+                        <p className="text-xs text-muted-foreground">Submit only if requested by office.</p>
+                        <p className="text-xs text-muted-foreground">
+                          Your payment is normally checked by the centre. Upload proof only if we ask you to confirm an untracked payment.
+                        </p>
+                        {feeStatus.verification_status === 'submitted' && (
+                          <p className="text-xs font-medium text-blue-700">Status: submitted for staff review</p>
+                        )}
+                      </div>
+
+                      <div className="space-y-2">
+                        <input
+                          type="file"
+                          accept=".png,.jpg,.jpeg,.pdf,.txt"
+                          onChange={handleReceiptFileSelect}
+                          disabled={receiptUploadLoading}
+                          className="block w-full text-sm"
+                        />
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                          <Button
+                            variant="outline"
+                            className="w-full"
+                            onClick={handleReceiptUpload}
+                            disabled={receiptUploadLoading}
+                          >
+                            {receiptUploadLoading ? 'Uploading...' : 'Upload Payment Proof'}
+                          </Button>
+                          {feeStatus.receipt_uploaded && (
+                            <Button
+                              variant="ghost"
+                              className="w-full"
+                              onClick={handleOpenUploadedReceipt}
+                              disabled={receiptLinkLoading}
+                            >
+                              View Uploaded Receipt
+                            </Button>
+                          )}
+                        </div>
+                      </div>
                     </div>
                   </CardContent>
                 </Card>

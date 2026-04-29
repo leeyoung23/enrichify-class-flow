@@ -97,11 +97,18 @@ At each width, verify:
 
 ## 6) Recommended immediate mobile polish order
 
-1. `ParentView` payment proof card mobile polish (clarity + action ordering).
-2. `FeeTracking` staff action button wrap/stack polish.
-3. `AppLayout`/sidebar mobile behavior polish.
-4. `ParentUpdates` mobile review flow density polish.
-5. Replace `window.prompt` rejection input later with inline reason field/modal.
+Status update:
+
+- `ParentView` payment proof mobile polish: implemented.
+- Remaining mobile QA/polish items:
+  - `FeeTracking` staff action button wrap/stack polish
+  - `AppLayout`/sidebar mobile review
+  - `ParentUpdates` mobile review flow density
+
+1. `FeeTracking` staff action button wrap/stack polish.
+2. `AppLayout`/sidebar mobile behavior polish.
+3. `ParentUpdates` mobile review flow density polish.
+4. Replace `window.prompt` rejection input later with inline reason field/modal.
 
 ## 7) What not to do yet
 
@@ -112,35 +119,35 @@ At each width, verify:
 
 ## 8) Recommended next implementation step
 
-Recommendation: **A. ParentView payment proof mobile polish**
+Recommendation: **B. FeeTracking staff action layout polish**
 
-Why this first:
+Why next:
 
-- Parent phone usability is the highest-frequency path and directly impacts payment-proof exception completion.
-- This area combines file input, status reading, and proof actions, making it a high-value mobile clarity target.
-- It is small enough for a focused polish checkpoint without destabilizing staff desktop review workflows.
+- ParentView proof upload clarity is now improved; the next highest mobile-density risk is staff action clusters in `FeeTracking`.
+- Button stacking/wrapping polish there will reduce mis-taps and improve review throughput on smaller screens.
+- This can remain layout-only without changing verification/rejection logic.
 
 ## 9) Next implementation prompt
 
 Copy-paste prompt:
 
 ```text
-Mobile polish only for ParentView payment proof section.
+Mobile polish only for FeeTracking staff action layout.
 
 Constraints:
 - Do not change runtime logic or backend behavior.
 - Do not add services or SQL.
 - Keep demoRole/local fallback behavior unchanged.
-- Keep existing receipt upload/view permissions and guards unchanged.
+- Keep existing staff verification/rejection/view-proof permissions and guards unchanged.
 - Do not modify unrelated pages.
 
 Task:
-Polish only the payment proof area in src/pages/ParentView.jsx for mobile-first usability:
-1) Improve spacing and grouping so status info, file input, and actions are clearer on ~390px width.
-2) Ensure primary/secondary actions stack cleanly with no overflow.
-3) Keep exception-only wording visible and concise.
+Polish only the action area in src/pages/FeeTracking.jsx for mobile-first usability:
+1) Improve spacing and grouping for View Uploaded Proof, Verify Payment, Reject/Request Resubmission, and Mark as Paid actions on ~390px width.
+2) Ensure action buttons stack/wrap cleanly with no overflow.
+3) Keep status and internal note text readable.
 4) Keep desktop behavior intact (>=1280px).
-5) Preserve all existing validation and upload/view logic exactly.
+5) Preserve all existing verification/rejection/view logic exactly.
 
 Validation:
 - Manual check at ~390px, ~768px, ~1280px.
