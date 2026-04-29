@@ -313,6 +313,7 @@ Reminder: **Frontend filtering is not security. RLS must enforce access at datab
   - parent/student cannot manage assignee rows
   - no cross-family assignee visibility
   - assignment-aware submission insert should not regress class-scope uploads
+  - assignee row alignment guard should reject task/class/branch/student mismatch writes
 
 ## Execution Notes
 

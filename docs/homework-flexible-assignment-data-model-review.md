@@ -241,6 +241,7 @@ Why A first:
 - Student-specific and selected-student assignment support is now SQL-drafted through:
   - additive `homework_tasks.assignment_scope`
   - new `homework_task_assignees` table + helper functions + RLS
+  - assignee row alignment enforcement (task + student must match branch/class scope)
 - Existing homework runtime/UI workflow remains unchanged until explicit service/UI migration.
 - Parent assigned-but-not-submitted visibility should later read from `homework_task_assignees`, not only from submission rows.
 

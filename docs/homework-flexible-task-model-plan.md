@@ -159,6 +159,7 @@ Reason:
   - optional `homework_tasks.assignment_scope` (`class`, `selected_students`, `individual`, `curriculum_profile`)
   - new `homework_task_assignees` join table
   - assignment helper functions + assignee RLS policies
+  - alignment guard for task/class/branch/student consistency in assignee rows
 - Runtime services and UI remain unchanged in this step.
 - Parent assigned-but-not-submitted task visibility should later be sourced from assignee rows.
 

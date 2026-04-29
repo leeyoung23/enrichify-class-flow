@@ -138,12 +138,69 @@ comment on function public.can_access_homework_task_assignment(uuid, uuid) is
   'Added in 017: validates assignment visibility for submission insert (class-scope by class match; non-class requires assignee row).';
 
 -- -----------------------------------------------------------------------------
--- 4) Enable RLS on homework_task_assignees
+-- 4) Assignee alignment validation helpers/trigger
+-- Enforces branch/class/student/task consistency on row writes.
+-- -----------------------------------------------------------------------------
+create or replace function public.homework_task_assignee_alignment_is_valid_017(
+  task_uuid uuid,
+  assignee_branch_id uuid,
+  assignee_class_id uuid,
+  assignee_student_id uuid
+)
+returns boolean
+language sql
+stable
+security definer
+set search_path = public
+as $$
+  select coalesce(
+    exists (
+      select 1
+      from public.homework_tasks ht
+      join public.students s on s.id = assignee_student_id
+      where ht.id = task_uuid
+        and ht.branch_id = assignee_branch_id
+        and ht.class_id = assignee_class_id
+        and s.branch_id = assignee_branch_id
+        and s.class_id = assignee_class_id
+    ),
+    false
+  )
+$$;
+
+create or replace function public.enforce_homework_task_assignee_alignment_017()
+returns trigger
+language plpgsql
+as $$
+begin
+  if not public.homework_task_assignee_alignment_is_valid_017(
+    new.homework_task_id,
+    new.branch_id,
+    new.class_id,
+    new.student_id
+  ) then
+    raise exception 'homework_task_assignees alignment invalid for task/class/branch/student';
+  end if;
+
+  return new;
+end;
+$$;
+
+drop trigger if exists trg_enforce_homework_task_assignee_alignment_017 on public.homework_task_assignees;
+create trigger trg_enforce_homework_task_assignee_alignment_017
+before insert or update on public.homework_task_assignees
+for each row execute function public.enforce_homework_task_assignee_alignment_017();
+
+comment on function public.homework_task_assignee_alignment_is_valid_017(uuid, uuid, uuid, uuid) is
+  'Added in 017: validates homework_task_assignees row aligns with homework_tasks + students branch/class relationships.';
+
+-- -----------------------------------------------------------------------------
+-- 5) Enable RLS on homework_task_assignees
 -- -----------------------------------------------------------------------------
 alter table public.homework_task_assignees enable row level security;
 
 -- -----------------------------------------------------------------------------
--- 5) RLS policies for homework_task_assignees
+-- 6) RLS policies for homework_task_assignees
 -- Teacher manage policy is conservative: assigned-class only.
 -- Parent/student are read-only for linked-child/self rows only.
 -- -----------------------------------------------------------------------------
@@ -208,7 +265,7 @@ using (
 );
 
 -- -----------------------------------------------------------------------------
--- 6) Narrow patch: submission insert assignment gate
+-- 7) Narrow patch: submission insert assignment gate
 -- Keep existing model, but require assignment validation helper.
 -- If this is too strict for a given environment, keep 016 policy and revisit.
 -- -----------------------------------------------------------------------------
@@ -240,7 +297,7 @@ with check (
 );
 
 -- -----------------------------------------------------------------------------
--- 7) Indexes for assignee table
+-- 8) Indexes for assignee table
 -- -----------------------------------------------------------------------------
 create index if not exists homework_task_assignees_homework_task_id_idx
   on public.homework_task_assignees(homework_task_id);
@@ -256,7 +313,7 @@ create index if not exists homework_task_assignees_due_date_idx
   on public.homework_task_assignees(due_date);
 
 -- -----------------------------------------------------------------------------
--- 8) updated_at trigger for homework_task_assignees
+-- 9) updated_at trigger for homework_task_assignees
 -- -----------------------------------------------------------------------------
 create or replace function public.set_homework_task_assignees_updated_at_017()
 returns trigger
