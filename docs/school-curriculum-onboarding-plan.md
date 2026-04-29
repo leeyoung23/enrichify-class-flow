@@ -366,3 +366,27 @@ Planning status: ready for Phase 2 SQL/RLS draft.
   - curriculum profile/template creation UI is still future
   - AI context integration is still future
 - Fake/dev data only.
+
+## 16) Student school profile write service + smoke status update
+
+- Student school profile write service is now added:
+  - `src/services/supabaseWriteService.js`
+  - `upsertStudentSchoolProfile(...)`
+- Student school profile write smoke is now added:
+  - `scripts/supabase-school-profile-write-smoke-test.mjs`
+  - `npm run test:supabase:school-profile:write`
+- Write path keeps frontend safety model unchanged:
+  - anon client + JWT only
+  - RLS-enforced scope
+  - no service role usage
+- Smoke checks include:
+  - branch supervisor write + read-back verification
+  - parent/student write blocking
+  - teacher write blocking in MVP policy shape
+  - optional HQ write check
+  - cleanup/revert of fake seeded profile values
+- Scope remains unchanged:
+  - `Students` school profile edit UI is still future
+  - homework upload/review pipeline is still future
+  - AI context integration is still future
+- Fake/dev data only.

@@ -70,6 +70,8 @@ function buildClassCurriculumWritableFields({ learningFocus, termLabel, startDat
 
 const CLASS_CURRICULUM_ASSIGNMENT_FIELDS =
   "id,class_id,curriculum_profile_id,term_label,start_date,end_date,learning_focus,created_at,updated_at";
+const STUDENT_SCHOOL_PROFILE_FIELDS =
+  "id,student_id,school_id,school_name,grade_year,curriculum_profile_id,parent_goals,teacher_notes,created_at,updated_at";
 
 /**
  * Update teacher task assignment status using Supabase anon client + RLS.
@@ -641,6 +643,81 @@ export async function updateClassCurriculumAssignment({
       .select(CLASS_CURRICULUM_ASSIGNMENT_FIELDS)
       .maybeSingle();
 
+    return { data: data ?? null, error: error ?? null };
+  } catch (err) {
+    return { data: null, error: { message: err?.message || String(err) } };
+  }
+}
+
+/**
+ * Upsert one student school profile row using Supabase anon client + RLS.
+ * Conservative behavior: select by student_id, then update existing row or insert a new row.
+ */
+export async function upsertStudentSchoolProfile({
+  studentId,
+  schoolId,
+  schoolName,
+  gradeYear,
+  curriculumProfileId,
+  parentGoals,
+  teacherNotes,
+} = {}) {
+  if (!isSupabaseConfigured() || !supabase) {
+    return { data: null, error: { message: "Supabase is not configured" } };
+  }
+  if (!isUuidLike(studentId)) {
+    return { data: null, error: { message: "studentId must be a UUID" } };
+  }
+  if (schoolId != null && !isUuidLike(schoolId)) {
+    return { data: null, error: { message: "schoolId must be a UUID when provided" } };
+  }
+  if (curriculumProfileId != null && !isUuidLike(curriculumProfileId)) {
+    return { data: null, error: { message: "curriculumProfileId must be a UUID when provided" } };
+  }
+
+  const safeFields = {
+    school_id: schoolId ? String(schoolId).trim() : null,
+    school_name: normalizeNullableText(schoolName, { maxLength: 240 }),
+    grade_year: normalizeNullableText(gradeYear, { maxLength: 64 }),
+    curriculum_profile_id: curriculumProfileId ? String(curriculumProfileId).trim() : null,
+    parent_goals: normalizeNullableText(parentGoals, { maxLength: 1200 }),
+    teacher_notes: normalizeNullableText(teacherNotes, { maxLength: 2000 }),
+    updated_at: new Date().toISOString(),
+  };
+
+  try {
+    const existingRead = await supabase
+      .from("student_school_profiles")
+      .select("id")
+      .eq("student_id", String(studentId).trim())
+      .order("updated_at", { ascending: false })
+      .limit(1);
+
+    if (existingRead.error) {
+      return { data: null, error: existingRead.error };
+    }
+
+    const existingProfileId = Array.isArray(existingRead.data) ? existingRead.data[0]?.id : null;
+
+    if (existingProfileId) {
+      const { data, error } = await supabase
+        .from("student_school_profiles")
+        .update(safeFields)
+        .eq("id", existingProfileId)
+        .select(STUDENT_SCHOOL_PROFILE_FIELDS)
+        .maybeSingle();
+      return { data: data ?? null, error: error ?? null };
+    }
+
+    const insertPayload = {
+      student_id: String(studentId).trim(),
+      ...safeFields,
+    };
+    const { data, error } = await supabase
+      .from("student_school_profiles")
+      .insert(insertPayload)
+      .select(STUDENT_SCHOOL_PROFILE_FIELDS)
+      .maybeSingle();
     return { data: data ?? null, error: error ?? null };
   } catch (err) {
     return { data: null, error: { message: err?.message || String(err) } };

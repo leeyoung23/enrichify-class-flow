@@ -179,9 +179,11 @@ Current status note:
 - School/curriculum class assignment write service is now added in `src/services/supabaseWriteService.js` (service layer only; no UI wiring).
 - School/curriculum class assignment write smoke test is now added at `scripts/supabase-school-curriculum-write-smoke-test.mjs`.
 - `Classes` curriculum assignment/edit UI is now wired for HQ + branch supervisor using existing write services (teacher/parent/student remain without write controls).
+- Student school profile write service is now added in `src/services/supabaseWriteService.js` (service layer only; `Students` edit UI still unwired).
+- Student school profile write smoke test is now added at `scripts/supabase-school-profile-write-smoke-test.mjs`.
 - School/curriculum UI now has read/write coverage on `Classes`; `Students` edit UI and AI integration remain unwired.
 - Application checkpoint is documented at `docs/school-curriculum-sql-application-checkpoint.md`.
-- Recommended next milestone: `Students` school profile edit UI planning/wiring (with strict role boundaries).
+- Recommended next milestone: `Students` school profile edit UI wiring (with strict role boundaries).
 
 ## 12) Next immediate milestone prompt (copy-paste)
 

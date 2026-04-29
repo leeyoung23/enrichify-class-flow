@@ -269,3 +269,26 @@ Validation efficiency:
 ---
 
 Planning status: ready for Phase 2 student school profile write service + smoke validation.
+
+## 14) Phase 2 implementation status update
+
+- Student school profile write method is now added in `src/services/supabaseWriteService.js`:
+  - `upsertStudentSchoolProfile(...)`
+- Conservative upsert behavior implemented:
+  - select existing `student_school_profiles` row by `student_id`
+  - update existing row when found
+  - insert new row when no existing row is found
+- Focused write smoke script added:
+  - `scripts/supabase-school-profile-write-smoke-test.mjs`
+  - package script: `npm run test:supabase:school-profile:write`
+- Smoke path checks:
+  - branch supervisor fake-student write success + read-back verification via `getStudentLearningContext(...)`
+  - parent/student write blocking
+  - teacher write blocking in MVP policy shape
+  - optional HQ write check
+  - cleanup/revert of original fake profile values
+- Scope remains intentionally limited:
+  - `Students` edit UI remains future
+  - homework upload/review remains future
+  - AI context integration remains future
+- Validation and smoke data remain fake/dev-only.

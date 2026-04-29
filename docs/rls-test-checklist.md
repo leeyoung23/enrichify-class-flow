@@ -219,9 +219,14 @@ Reminder: **Frontend filtering is not security. RLS must enforce access at datab
   - `src/services/supabaseWriteService.js`
   - `scripts/supabase-school-curriculum-write-smoke-test.mjs`
   - `npm run test:supabase:school-curriculum:write`
+- Write smoke references (student school profile service only, no UI wiring):
+  - `src/services/supabaseWriteService.js`
+  - `scripts/supabase-school-profile-write-smoke-test.mjs`
+  - `npm run test:supabase:school-profile:write`
 - Current write scope:
   - class curriculum assignment write service is implemented
-  - `Classes` assignment/edit UI remains future
+  - student school profile write service is implemented
+  - `Classes` assignment/edit UI is implemented
   - `Students` school profile edit UI remains future
   - AI context integration remains future
 - Continue fake/dev-only role checks and fake data only.
@@ -238,6 +243,9 @@ Reminder: **Frontend filtering is not security. RLS must enforce access at datab
 - Parent/student cannot write class curriculum assignments.
 - Teacher class curriculum assignment writes are blocked in MVP policy shape.
 - Branch supervisor class curriculum assignment write should succeed in own-branch scope.
+- Parent/student cannot write student school profiles.
+- Teacher student school profile writes are blocked in MVP policy shape.
+- Branch supervisor student school profile write should succeed in own-branch scope.
 
 ## Execution Notes
 
