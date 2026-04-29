@@ -307,8 +307,14 @@ Reminder: **Frontend filtering is not security. RLS must enforce access at datab
   - additive `homework_tasks.assignment_scope`
   - new `homework_task_assignees` with unique (`homework_task_id`, `student_id`)
   - helper functions for assignee/task-assignment access checks
+  - assignee-aware read service methods:
+    - `listHomeworkTaskAssignees(...)`
+    - `listAssignedHomeworkForStudent(...)`
   - RLS for assignee rows: HQ full, branch supervisor own branch, teacher assigned class, parent linked child read-only, student self read-only
   - narrow `homework_submissions` insert gate patch to require assignment validity
+  - smoke test:
+    - `scripts/supabase-homework-assignees-read-smoke-test.mjs`
+    - `npm run test:supabase:homework:assignees:read`
 - Manual review focus:
   - teacher manage policy conservatism for assignment creation/updates
   - parent/student cannot manage assignee rows

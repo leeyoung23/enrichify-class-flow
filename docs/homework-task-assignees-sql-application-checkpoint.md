@@ -81,27 +81,53 @@ Foundation is now available in dev database for:
 - parent/student cannot write assignee rows
 - no cross-family visibility expected
 
-## 8) What remains unwired
+## 8) Service progress checkpoint
 
-- assignee-aware homework read service methods
+Assignee-aware read service is now added (anon client + JWT + RLS only):
+
+- `listHomeworkTaskAssignees({ homeworkTaskId, studentId, classId, status })`
+- `listAssignedHomeworkForStudent({ studentId, classId, status })`
+
+Smoke test added:
+
+- `scripts/supabase-homework-assignees-read-smoke-test.mjs`
+- package script: `npm run test:supabase:homework:assignees:read`
+
+Coverage intent:
+
+- parent linked-child assignee visibility
+- teacher assigned-class assignee visibility
+- branch supervisor own-branch assignee visibility
+- optional HQ broad visibility
+- class-scope compatibility (class task visible without explicit assignee row)
+- selected-student assigned-but-not-submitted visibility
+- blocking for unassigned selected-student visibility
+
+## 9) What remains unwired
+
+- expanded assignee-aware tracker queries (`By Class` / `By Student` aggregates)
 - create/assign homework flow for selected students
 - teacher `By Task` / `By Student` tracker UI wiring
 - parent assigned-but-not-submitted listing sourced from assignee rows
 - manual marked-file upload path wiring
 - AI marking flow using flexible assignment context
 
-## 9) Recommended next milestone
+Note:
 
-Recommendation: **Homework assignee-aware read service + smoke test**.
+- Homework UI remains future in this milestone.
+- Create/assign write services remain future (smoke uses temporary fake/dev fixture rows through existing anon/RLS policy scope only).
+
+## 10) Recommended next milestone
+
+Recommendation: **Homework assignee-aware tracker/query service expansion**.
 
 Why this next:
 
-- SQL/RLS foundation is now applied in dev
-- service-level read proof should be established before UI changes
-- highest-risk path is assigned-but-not-submitted visibility correctness
-- this protects both parent visibility and teacher tracker behavior
+- assignee-aware baseline reads are now service-testable
+- next risk is richer tracker queries for teacher workflow before UI wiring
+- protects parent visibility and teacher tracker correctness
 
-## 10) Next implementation prompt (copy/paste)
+## 11) Next implementation prompt (copy/paste)
 
 ```text
 Continue this same project only.

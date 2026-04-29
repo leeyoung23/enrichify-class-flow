@@ -17,6 +17,19 @@ const CLASS_CURRICULUM_ASSIGNMENT_FIELDS =
   "id,class_id,curriculum_profile_id,term_label,start_date,end_date,learning_focus,created_at,updated_at";
 const LEARNING_GOAL_FIELDS =
   "id,branch_id,student_id,class_id,curriculum_profile_id,goal_title,goal_description,status,priority,created_by_profile_id,created_at,updated_at";
+const HOMEWORK_TASK_ASSIGNEE_FIELDS =
+  "id,homework_task_id,branch_id,class_id,student_id,assigned_by_profile_id,assignment_status,due_date,notes,created_at,updated_at,homework_task:homework_tasks(id,branch_id,class_id,title,instructions,subject,due_date,status,assignment_scope,created_at,updated_at)";
+const HOMEWORK_TASK_FIELDS =
+  "id,branch_id,class_id,created_by_profile_id,title,instructions,subject,due_date,status,assignment_scope,created_at,updated_at";
+
+function isUuidLike(value) {
+  if (typeof value !== "string") return false;
+  return /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(value.trim());
+}
+
+function trimString(value) {
+  return typeof value === "string" ? value.trim() : "";
+}
 
 export async function getApprovedSalesKitResources() {
   if (!isSupabaseConfigured() || !supabase) {
@@ -340,5 +353,129 @@ export async function getClassLearningContext({ classId }) {
     };
   } catch (error) {
     return { data: null, error };
+  }
+}
+
+export async function listHomeworkTaskAssignees({
+  homeworkTaskId,
+  studentId,
+  classId,
+  status,
+} = {}) {
+  if (!isSupabaseConfigured() || !supabase) {
+    return { data: [], error: { message: "Supabase is not configured" } };
+  }
+  if (homeworkTaskId != null && homeworkTaskId !== "" && !isUuidLike(homeworkTaskId)) {
+    return { data: [], error: { message: "homeworkTaskId must be a UUID when provided" } };
+  }
+  if (studentId != null && studentId !== "" && !isUuidLike(studentId)) {
+    return { data: [], error: { message: "studentId must be a UUID when provided" } };
+  }
+  if (classId != null && classId !== "" && !isUuidLike(classId)) {
+    return { data: [], error: { message: "classId must be a UUID when provided" } };
+  }
+
+  try {
+    let query = supabase
+      .from("homework_task_assignees")
+      .select(HOMEWORK_TASK_ASSIGNEE_FIELDS)
+      .order("created_at", { ascending: false });
+
+    if (isUuidLike(homeworkTaskId)) query = query.eq("homework_task_id", trimString(homeworkTaskId));
+    if (isUuidLike(studentId)) query = query.eq("student_id", trimString(studentId));
+    if (isUuidLike(classId)) query = query.eq("class_id", trimString(classId));
+    if (typeof status === "string" && trimString(status)) query = query.eq("assignment_status", trimString(status));
+
+    const { data, error } = await query;
+    return { data: Array.isArray(data) ? data : [], error: error ?? null };
+  } catch (error) {
+    return { data: [], error };
+  }
+}
+
+export async function listAssignedHomeworkForStudent({
+  studentId,
+  classId,
+  status,
+} = {}) {
+  if (!isSupabaseConfigured() || !supabase) {
+    return { data: [], error: { message: "Supabase is not configured" } };
+  }
+  if (!isUuidLike(studentId)) {
+    return { data: [], error: { message: "studentId must be a UUID" } };
+  }
+  if (classId != null && classId !== "" && !isUuidLike(classId)) {
+    return { data: [], error: { message: "classId must be a UUID when provided" } };
+  }
+
+  try {
+    const normalizedStatus = typeof status === "string" ? trimString(status) : "";
+    let resolvedClassId = isUuidLike(classId) ? trimString(classId) : null;
+
+    if (!resolvedClassId) {
+      const studentRead = await supabase
+        .from("students")
+        .select("id,class_id")
+        .eq("id", trimString(studentId))
+        .maybeSingle();
+      if (studentRead.error) return { data: [], error: studentRead.error };
+      resolvedClassId = studentRead.data?.class_id || null;
+    }
+
+    let assigneeQuery = supabase
+      .from("homework_task_assignees")
+      .select(HOMEWORK_TASK_ASSIGNEE_FIELDS)
+      .eq("student_id", trimString(studentId))
+      .order("created_at", { ascending: false });
+    if (resolvedClassId) assigneeQuery = assigneeQuery.eq("class_id", resolvedClassId);
+    if (normalizedStatus) assigneeQuery = assigneeQuery.eq("assignment_status", normalizedStatus);
+
+    const assigneeRead = await assigneeQuery;
+    if (assigneeRead.error) return { data: [], error: assigneeRead.error };
+    const assigneeRows = Array.isArray(assigneeRead.data) ? assigneeRead.data : [];
+
+    const classScopeRows = [];
+    const assigneeTaskIds = new Set(assigneeRows.map((row) => row?.homework_task_id).filter(Boolean));
+    const shouldIncludeClassScope =
+      resolvedClassId && (!normalizedStatus || normalizedStatus === "assigned");
+
+    if (shouldIncludeClassScope) {
+      let classScopeQuery = supabase
+        .from("homework_tasks")
+        .select(HOMEWORK_TASK_FIELDS)
+        .eq("class_id", resolvedClassId)
+        .eq("assignment_scope", "class")
+        .eq("status", "assigned")
+        .order("created_at", { ascending: false });
+      const classScopeRead = await classScopeQuery;
+      if (classScopeRead.error) return { data: [], error: classScopeRead.error };
+      const classScopeTasks = Array.isArray(classScopeRead.data) ? classScopeRead.data : [];
+
+      for (const task of classScopeTasks) {
+        if (!task?.id || assigneeTaskIds.has(task.id)) continue;
+        classScopeRows.push({
+          id: null,
+          homework_task_id: task.id,
+          branch_id: task.branch_id || null,
+          class_id: task.class_id || resolvedClassId,
+          student_id: trimString(studentId),
+          assigned_by_profile_id: task.created_by_profile_id || null,
+          assignment_status: "assigned",
+          due_date: task.due_date || null,
+          notes: null,
+          created_at: task.created_at || null,
+          updated_at: task.updated_at || null,
+          homework_task: task,
+          assignment_source: "class_scope_fallback",
+        });
+      }
+    }
+
+    return {
+      data: [...assigneeRows, ...classScopeRows],
+      error: null,
+    };
+  } catch (error) {
+    return { data: [], error };
   }
 }

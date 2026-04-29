@@ -246,6 +246,11 @@ Why A first:
   - assignee row alignment enforcement (task + student must match branch/class scope)
 - Existing homework runtime/UI workflow remains unchanged until explicit service/UI migration.
 - Parent assigned-but-not-submitted visibility should later read from `homework_task_assignees`, not only from submission rows.
+- Assignee-aware read services now exist for dev validation:
+  - `listHomeworkTaskAssignees(...)`
+  - `listAssignedHomeworkForStudent(...)`
+- Dev smoke command now available:
+  - `npm run test:supabase:homework:assignees:read`
 
 ## 17) Next implementation prompt
 
