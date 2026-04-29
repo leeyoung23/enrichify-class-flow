@@ -5,7 +5,8 @@ Planning for staff **punch in / punch out** and related reporting. **Student att
 **Demo UI (current):** A **placeholder** page exists at **`/staff-time-clock`** (`src/pages/StaffTimeClock.jsx`) for **HQ Admin**, **Branch Supervisor**, and **Teacher** roles only — **local state and fake tables**; **no Supabase writes**, no schema, no clock persistence. **Parents and students** have **no** nav link; the route is not in their allow lists.
 
 **Still future:** authenticated runtime writes, mobile capture flow, and production clock operations.
-SQL/storage/RLS foundation draft now exists at `supabase/sql/010_staff_time_clock_foundation.sql` (**manual review/apply only; not applied yet**).
+SQL/storage/RLS foundation at `supabase/sql/010_staff_time_clock_foundation.sql` has now been manually applied in dev checkpoint context.
+Reference checkpoint: `docs/staff-time-clock-sql-application-checkpoint.md`.
 
 ---
 
@@ -179,6 +180,9 @@ All enforcement at **Postgres RLS**; UI checks are never sufficient.
   - runtime UI/service clock implementation
   - live location/camera integration
   - automatic SQL apply
+- Current application status:
+  - manually applied in dev project
+  - runtime/service/UI still pending by design
 
 ---
 

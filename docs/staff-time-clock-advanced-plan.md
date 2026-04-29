@@ -10,10 +10,14 @@ Scope note:
 Draft status update:
 
 - SQL/storage/RLS draft file created: `supabase/sql/010_staff_time_clock_foundation.sql`.
-- Draft is additive/manual and is **not applied yet**.
+- SQL draft has now been manually applied in a dev Supabase project checkpoint.
 - No UI/runtime clock-in implementation is added yet.
 - No live location/camera access is implemented in this phase.
 - Private selfie bucket design is included as draft policy only.
+
+Application checkpoint:
+
+- `docs/staff-time-clock-sql-application-checkpoint.md`
 
 ## 1) Product principle
 
