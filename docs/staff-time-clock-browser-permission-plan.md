@@ -1,6 +1,6 @@
 # Staff Time Clock — browser permission & client helper plan
 
-Planning only: defines **future** browser-side wrappers for **active GPS/geofence verification** and **selfie capture**, plus permission UX, **without** changing `StaffTimeClock.jsx` or wiring `navigator.geolocation` / `getUserMedia` in this step.
+Defines browser-side wrappers for **active GPS/geofence verification** and **selfie capture**, plus permission UX. **Helper modules are implemented** (`src/services/locationVerificationService.js`, `src/services/selfieCaptureService.js`). **`StaffTimeClock.jsx` is still not wired** to them — APIs run only when future UI calls them from **explicit user action**. No uploads from these helpers.
 
 Related docs:
 
@@ -19,19 +19,19 @@ Plan **safe**, **explicit** browser APIs for:
 - **Permission states** and recovery (denied, timeout, retry, route to pending review).
 - **Predictable `{ data, error }`** shapes aligned with existing Supabase service style.
 
-**Non-goals for this document:** UI edits, real wiring in `StaffTimeClock.jsx`, SQL/storage changes, service role usage, or calling `clockInStaff` / `clockOutStaff` from the page yet.
+**Non-goals (still):** Wiring `StaffTimeClock.jsx`, calling `clockInStaff` / `clockOutStaff` from UI, SQL/storage changes, service role usage. **Pure-function smoke:** `npm run test:staff-time-clock:helpers` (Haversine + `evaluateGeofence` in Node only).
 
 ---
 
 ## 2) Location helper plan
 
-**Future file:** `src/services/locationVerificationService.js`
+**File (implemented):** `src/services/locationVerificationService.js`
 
-**Future methods (proposed):**
+**Methods:**
 
 | Method | Responsibility |
 |--------|----------------|
-| `getCurrentPositionForClockEvent()` | Invoke **only** from a **direct user action** (e.g. button `onClick`). Wraps `navigator.geolocation.getCurrentPosition` (or `watchPosition` with immediate clear—prefer `getCurrentPosition` for a single fix). Returns `{ data, error }` with latitude, longitude, accuracy (meters), timestamp, and optional `coords` metadata. **No** background polling. |
+| `getCurrentPositionForClockEvent(options)` | Async. **`navigator.geolocation.getCurrentPosition` only when this function is called** (typically from a button `onClick`). Returns `{ data, error }` with `latitude`, `longitude`, `accuracyMeters`, `capturedAt` (ISO). **No** `watchPosition`, no background polling. |
 | `calculateDistanceMeters({ branchLat, branchLng, currentLat, currentLng })` | Pure Haversine (or equivalent) distance in meters between branch centre and current fix. Used for UI preview and for passing `distanceMeters` into `clockInStaff` / `clockOutStaff` (server may revalidate later). |
 | `evaluateGeofence({ distanceMeters, accuracyMeters, radiusMeters })` | Returns a structured result: e.g. `{ inside: boolean, statusHint: 'valid' \| 'outside_geofence' \| 'pending_review', reasons: string[] }`. Encodes rules from section 5 (accuracy floor, radius). |
 
@@ -48,9 +48,9 @@ Plan **safe**, **explicit** browser APIs for:
 
 ## 3) Camera helper plan
 
-**Future file:** `src/services/selfieCaptureService.js`
+**File (implemented):** `src/services/selfieCaptureService.js`
 
-**Future methods (proposed):**
+**Methods:**
 
 | Method | Responsibility |
 |--------|----------------|
@@ -148,35 +148,28 @@ Short blocks for first-run or pre-punch modal:
 
 ## 9) Recommended next implementation step
 
-**Recommend: C — Implement both `locationVerificationService.js` and `selfieCaptureService.js` with no `StaffTimeClock` UI wiring.**
-
-**Why C over A or B alone:** Clock-in contract needs **both** position and selfie; building one helper in isolation defers integration risks (blob size, timing, permission order) and duplicates test harness work. **Why not D yet:** Wiring the mock UI to real sensors crosses the “permission + device variance” boundary; shipping **helpers first** allows manual QA on real devices (console or minimal dev-only page) without destabilising the polished mock UI. **After C:** small controlled **D** (optional feature flag) or incremental wiring of Clock In only.
+**Helpers (C) are done.** **Recommend next: controlled UI wiring (former D)** — connect `StaffTimeClock` (or a feature-flagged dev path) so **Clock In / Out** call `getCurrentPositionForClockEvent` and selfie flow **only on tap**, then pass results to `clockInStaff` / `clockOutStaff` when product enables Supabase writes. Start with **Clock In + location only** behind a flag if risk is high, then add camera + service.
 
 ---
 
-## 10) Next implementation prompt (copy-paste — Option C only)
+## 10) Next implementation prompt (copy-paste — UI wiring + services; refine as needed)
 
 ```text
-Implement Staff Time Clock client helpers only (Option C): locationVerificationService + selfieCaptureService. No StaffTimeClock.jsx UI changes yet.
+Wire Staff Time Clock UI to browser helpers + staffTimeClockService (incremental).
 
 Constraints:
-- Add src/services/locationVerificationService.js and src/services/selfieCaptureService.js only (plus minimal exports if your barrel pattern requires).
-- navigator.geolocation and getUserMedia must not be called on module load; only inside functions invoked from future user gestures.
-- Return { data, error } consistently; align error shapes with staffTimeClockService style.
-- Do not import or call clockInStaff, clockOutStaff, or getStaffTimeSelfieSignedUrl from these helpers.
-- Do not change Supabase SQL, storage policies, or staffTimeClockService behaviour in this task unless a tiny shared constant export is unavoidable (prefer duplicate literal with comment).
-- Preserve demoRole and all existing demo/local fallback; do not wire helpers into routes yet.
-
-Tasks:
-1) locationVerificationService: getCurrentPositionForClockEvent (getCurrentPosition + timeout), calculateDistanceMeters (Haversine), evaluateGeofence (radius from args, accuracy gate -> pending_review).
-2) selfieCaptureService: requestCameraStream, captureSelfieBlob from video element, stopCameraStream; handle missing mediaDevices.
-3) Document in-file JSDoc: HTTPS requirement, iOS notes, stop tracks always.
+- Call getCurrentPositionForClockEvent, requestCameraStream, captureSelfieBlob, stopCameraStream only from explicit button handlers (Clock In / Clock Out).
+- Preserve mock/demo path when demoRole or local fallback applies; no breaking demoRole.
+- Use calculateDistanceMeters + evaluateGeofence with branch lat/lng/radius from app data when available.
+- Do not remove insecure-context checks; surface clear errors on HTTP where required.
+- After successful capture, call clockInStaff / clockOutStaff with anon client + JWT only; no service role.
 
 Validation:
 - npm run build && npm run lint && npm run typecheck
-- No npm run test:supabase:* unless Supabase client/schema files change.
+- npm run test:supabase:staff-time-clock when wiring real writes
+- Manual device check on HTTPS (iOS Safari + Android Chrome)
 ```
 
 ---
 
-*Document type: planning only. No runtime or UI changes in this file.*
+*Document type: planning + implementation status. Helper modules exist; UI integration remains optional/future.*

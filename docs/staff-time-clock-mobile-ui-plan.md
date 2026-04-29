@@ -9,10 +9,17 @@ Planning and terminology reference for the **staff** clock experience. HQ/superv
 - **`src/pages/StaffTimeClock.jsx`**: mobile-first **teacher** flow with large Clock In / Clock Out actions, current shift status card, branch + **fake** GPS/geofence verification display (clock-in location check / clock-out location check labels), selfie proof placeholder, exception / **pending supervisor review** demo messaging, and recent clock history (local state only). **HQ** and **branch supervisor** views include a **reporting placeholder** card and use **stacked cards on small screens** instead of relying on wide tables alone.
 - **Explicitly not in this mock:** `navigator.geolocation`, `getUserMedia` / camera, file uploads, and any calls to `clockInStaff`, `clockOutStaff`, or `getStaffTimeSelfieSignedUrl`.
 
+**Browser helpers (no UI wiring yet):**
+
+- **`src/services/locationVerificationService.js`** — `getCurrentPositionForClockEvent`, `calculateDistanceMeters`, `evaluateGeofence`; geolocation runs only when that async function is called (e.g. future button handler).
+- **`src/services/selfieCaptureService.js`** — `requestCameraStream`, `captureSelfieBlob`, `stopCameraStream`; camera opens only when `requestCameraStream` is called from user action.
+- **Smoke (pure math only):** `npm run test:staff-time-clock:helpers`
+
 **Still future:**
 
-- Real browser geolocation and camera capture with permission UX.
-- Wiring to Supabase services (anon + JWT) after product sign-off on punch flow.
+- Calling helpers from **`StaffTimeClock.jsx`** and permission UX flows.
+- Wiring to Supabase **`clockInStaff` / `clockOutStaff`** from the page after product sign-off.
+- Real uploads triggered from UI (helpers do not upload).
 - Supervisor / HQ **review dashboard** with live exception queues, signed-url selfie viewer, and exports.
 
 Related checkpoints:

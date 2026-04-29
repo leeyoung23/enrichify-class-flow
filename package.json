@@ -19,6 +19,7 @@
     "test:supabase:fee-receipt:upload": "node scripts/supabase-fee-receipt-upload-smoke-test.mjs",
     "test:supabase:fee-receipt:verify": "node scripts/supabase-fee-receipt-verification-smoke-test.mjs",
     "test:supabase:staff-time-clock": "node scripts/supabase-staff-time-clock-smoke-test.mjs",
+    "test:staff-time-clock:helpers": "node scripts/staff-time-clock-browser-helper-smoke-test.mjs",
     "test:ai:edge:mock": "node scripts/ai-edge-function-mock-invocation-test.mjs",
     "preview": "vite preview"
   },
