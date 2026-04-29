@@ -258,7 +258,7 @@ Reminder: **Frontend filtering is not security. RLS must enforce access at datab
 - Draft adds private storage bucket and object policies for `homework-submissions`.
 - Draft status:
   - manual/dev-first SQL draft prepared
-  - not applied yet
+  - manually applied in dev
   - no runtime service wiring yet
   - no homework upload/review UI wiring yet
   - AI homework feedback remains future

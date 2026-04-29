@@ -158,15 +158,15 @@ Safeguards:
 
 ## 13) Recommended next milestone
 
-Recommendation: **A. SQL/storage/RLS draft**.
+Recommendation: **B. Homework upload/review service + fake file smoke test**.
 
-Why A first:
+Why B now:
 
-- Privacy and storage boundaries must be locked before UI expansion.
-- Keeps sequence aligned with established safe pattern used for fee receipts, Staff Time Clock, Class Memories, and curriculum foundation work.
-- Reduces rework risk by establishing secure data model first.
+- SQL/RLS/storage foundation is already manually applied in dev.
+- Highest remaining risk is metadata-first upload correctness and private object access behavior.
+- Smoke proof should land before teacher/parent UI wiring.
 
-## 14) Next implementation prompt (A only)
+## 14) Next implementation prompt (B only)
 
 ```text
 Continue this same project only.
@@ -178,7 +178,7 @@ Branch:
 cursor/safe-lint-typecheck-486d
 
 Task:
-Homework upload/review SQL/storage/RLS draft only.
+Homework upload/review service + fake file smoke test only.
 
 Constraints:
 - Do not change app UI in this step.
@@ -193,21 +193,20 @@ Constraints:
 - Use fake/dev data only.
 
 Deliverables:
-1) Draft SQL for lean MVP homework pipeline entities (tasks, submissions, feedback, file metadata).
-2) Private storage bucket draft policy for homework submission objects.
-3) RLS policy draft for HQ / branch supervisor / teacher / parent / student scope boundaries.
-4) Checklist of role-based read/write tests for the new homework pipeline.
-5) Documentation checkpoint summarising the draft and non-goals.
+1) Service methods for metadata-first homework submission flow (no UI wiring).
+2) Fake file smoke test proving private bucket upload/read path with scoped access.
+3) Documentation checkpoint of smoke evidence, boundaries, and non-goals.
+4) No real AI/provider integration; keep AI homework feedback future.
 
 Validation efficiency:
 - Before tests: git diff --name-only
 - If SQL/docs-only, run only targeted SQL/RLS verification notes and avoid unrelated app build/lint/typecheck.
 ```
 
-## Implementation status checkpoint (Phase 2 draft prepared)
+## Implementation status checkpoint (Phase 2 applied)
 
-- SQL/storage/RLS draft now exists at `supabase/sql/014_homework_upload_review_foundation.sql`.
-- The draft is manual/dev-first and not auto-applied.
+- SQL/storage/RLS foundation exists at `supabase/sql/014_homework_upload_review_foundation.sql`.
+- The SQL was manually applied in Supabase dev.
 - The draft is additive only (no table drops, no destructive deletes, no global RLS disable).
 - Runtime service wiring is still not implemented for this new homework foundation.
 - Homework upload/review UI flow is still not implemented for this new homework foundation.

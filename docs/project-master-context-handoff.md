@@ -184,9 +184,9 @@ Current status note:
 - `Students` school profile edit UI is now wired for HQ + branch supervisor using existing student profile upsert service (teacher/parent/student remain without edit controls).
 - School/curriculum UI now has read/write coverage on `Classes` + `Students`; AI integration remains unwired.
 - Parent comment AI mock path now includes curriculum-aware context assembly in `src/services/aiDraftService.js` (provider-free, draft-only, teacher approval still required).
-- Homework upload/review foundation SQL/storage/RLS draft now exists at `supabase/sql/014_homework_upload_review_foundation.sql` (manual/dev-first; not applied yet; runtime/UI wiring still pending). Draft now includes path-convention validation helper and staff-only submission updates.
-- Application checkpoint is documented at `docs/school-curriculum-sql-application-checkpoint.md`.
-- Recommended next milestone: homework upload/review planning after school/curriculum staff edit loops.
+- Homework upload/review foundation SQL/storage/RLS exists at `supabase/sql/014_homework_upload_review_foundation.sql` and is now manually applied in Supabase dev (runtime/UI wiring still pending). Draft includes path-convention validation helper and staff-only submission updates.
+- Application checkpoint is documented at `docs/homework-sql-application-checkpoint.md`.
+- Recommended next milestone: homework upload/review service + fake file smoke test before UI wiring.
 
 ## 12) Next immediate milestone prompt (copy-paste)
 
