@@ -265,6 +265,12 @@ Reminder: **Frontend filtering is not security. RLS must enforce access at datab
 - Parent/student feedback visibility rule in draft:
   - only `released_to_parent` feedback is readable to parent/student
   - draft/internal feedback must stay staff-only
+- Submission update rule in draft:
+  - parent/student can insert own/linked submissions in scope
+  - submission updates are staff-only (prevents parent/student edits to review fields)
+- Path convention rule in draft:
+  - helper validation enforces `{branch_id}/{class_id}/{student_id}/{homework_task_id}/{submission_id}-{safe_filename}`
+  - storage/object access requires metadata + path match
 - Continue fake/dev-only role checks and fake file blobs only.
 
 #### Homework upload/review role checks (after manual apply in dev only)

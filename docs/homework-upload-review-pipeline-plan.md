@@ -213,3 +213,5 @@ Validation efficiency:
 - Homework upload/review UI flow is still not implemented for this new homework foundation.
 - AI homework feedback remains future and approval-gated.
 - Future smoke validation should use fake files/dev data only.
+- RLS hardening note: parent/student create submissions/files in scope, but submission review-field updates are staff-only in the current SQL draft.
+- Storage hardening note: path convention checks are now enforced against submission metadata in policy helper logic.

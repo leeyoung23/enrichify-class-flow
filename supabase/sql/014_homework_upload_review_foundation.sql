@@ -154,6 +154,29 @@ as $$
   )
 $$;
 
+create or replace function public.homework_path_matches_submission(path text, submission_uuid uuid)
+returns boolean
+language sql
+stable
+security definer
+set search_path = public
+as $$
+  select coalesce(
+    exists (
+      select 1
+      from public.homework_submissions hs
+      where hs.id = submission_uuid
+        and array_length(string_to_array(path, '/'), 1) = 5
+        and split_part(path, '/', 1) = hs.branch_id::text
+        and split_part(path, '/', 2) = hs.class_id::text
+        and split_part(path, '/', 3) = hs.student_id::text
+        and split_part(path, '/', 4) = hs.homework_task_id::text
+        and split_part(split_part(path, '/', 5), '-', 1) = hs.id::text
+    ),
+    false
+  )
+$$;
+
 create or replace function public.can_access_homework_path(path text)
 returns boolean
 language sql
@@ -168,6 +191,7 @@ as $$
       join public.homework_submissions hs on hs.id = hf.homework_submission_id
       where hf.storage_bucket = 'homework-submissions'
         and hf.storage_path = path
+        and public.homework_path_matches_submission(hf.storage_path, hf.homework_submission_id)
         and (
           public.is_hq_admin()
           or public.is_branch_supervisor_for_branch(hs.branch_id)
@@ -312,11 +336,6 @@ using (
     public.current_user_role() = 'teacher'
     and public.is_teacher_for_class(class_id)
   )
-  or (
-    public.current_user_role() in ('parent', 'student')
-    and (public.is_guardian_for_student(student_id) or public.is_student_self(student_id))
-    and status in ('submitted', 'returned_for_revision')
-  )
 )
 with check (
   public.is_hq_admin()
@@ -324,11 +343,6 @@ with check (
   or (
     public.current_user_role() = 'teacher'
     and public.is_teacher_for_class(class_id)
-  )
-  or (
-    public.current_user_role() in ('parent', 'student')
-    and (public.is_guardian_for_student(student_id) or public.is_student_self(student_id))
-    and status in ('submitted', 'returned_for_revision')
   )
 );
 
@@ -374,6 +388,7 @@ with check (
     select 1
     from public.homework_submissions hs
     where hs.id = homework_files.homework_submission_id
+      and public.homework_path_matches_submission(homework_files.storage_path, homework_files.homework_submission_id)
       and (
         public.is_hq_admin()
         or public.is_branch_supervisor_for_branch(hs.branch_id)
@@ -416,6 +431,7 @@ with check (
     select 1
     from public.homework_submissions hs
     where hs.id = homework_files.homework_submission_id
+      and public.homework_path_matches_submission(homework_files.storage_path, homework_files.homework_submission_id)
       and (
         public.is_hq_admin()
         or public.is_branch_supervisor_for_branch(hs.branch_id)
@@ -432,6 +448,7 @@ using (
     select 1
     from public.homework_submissions hs
     where hs.id = homework_files.homework_submission_id
+      and public.homework_path_matches_submission(homework_files.storage_path, homework_files.homework_submission_id)
       and (
         public.is_hq_admin()
         or public.is_branch_supervisor_for_branch(hs.branch_id)
@@ -565,6 +582,7 @@ with check (
     join public.homework_submissions hs on hs.id = hf.homework_submission_id
     where hf.storage_bucket = 'homework-submissions'
       and hf.storage_path = storage.objects.name
+      and public.homework_path_matches_submission(hf.storage_path, hf.homework_submission_id)
       and (
         public.is_hq_admin()
         or public.is_branch_supervisor_for_branch(hs.branch_id)
@@ -599,6 +617,7 @@ using (
     join public.homework_submissions hs on hs.id = hf.homework_submission_id
     where hf.storage_bucket = 'homework-submissions'
       and hf.storage_path = storage.objects.name
+      and public.homework_path_matches_submission(hf.storage_path, hf.homework_submission_id)
       and (
         public.is_hq_admin()
         or public.is_branch_supervisor_for_branch(hs.branch_id)
@@ -613,6 +632,7 @@ with check (
     join public.homework_submissions hs on hs.id = hf.homework_submission_id
     where hf.storage_bucket = 'homework-submissions'
       and hf.storage_path = storage.objects.name
+      and public.homework_path_matches_submission(hf.storage_path, hf.homework_submission_id)
       and (
         public.is_hq_admin()
         or public.is_branch_supervisor_for_branch(hs.branch_id)
@@ -632,6 +652,7 @@ using (
     join public.homework_submissions hs on hs.id = hf.homework_submission_id
     where hf.storage_bucket = 'homework-submissions'
       and hf.storage_path = storage.objects.name
+      and public.homework_path_matches_submission(hf.storage_path, hf.homework_submission_id)
       and (
         public.is_hq_admin()
         or public.is_branch_supervisor_for_branch(hs.branch_id)
