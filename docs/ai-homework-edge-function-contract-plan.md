@@ -313,3 +313,46 @@ Validation efficiency:
 - Run build/lint/typecheck only if runtime files changed.
 - Do not run unrelated suites.
 ```
+
+## 18) Implementation checkpoint (Edge Function stub complete)
+
+- Added Supabase Edge Function stub at `supabase/functions/generate-homework-feedback-draft/index.ts`.
+- Added local handler module at `supabase/functions/generate-homework-feedback-draft/handler.js` for deterministic contract validation.
+- Added local contract test script at `scripts/ai-homework-edge-function-stub-test.mjs`.
+- Added package command: `npm run test:ai:homework-edge:stub`.
+
+Stub behavior now:
+
+- POST-only endpoint.
+- Requires Authorization Bearer token presence (header check only in this phase).
+- Validates required request fields:
+  - `homeworkSubmissionId`
+  - `homeworkTaskId`
+  - `studentId`
+  - `classId`
+- Accepts optional:
+  - `teacherObservation`
+  - `mode`
+  - `tone`
+  - `length`
+- Returns `data/error` response shape with draft-only mock output.
+- Returns:
+  - `405` for invalid method
+  - `401` for missing auth
+  - `400` for invalid request
+  - `500` for unexpected error
+
+Safety status:
+
+- No real provider/API call.
+- No provider key usage.
+- No service role usage in frontend.
+- No auto-save and no auto-release behavior.
+- Safety notes and model metadata explicitly mark draft-only, teacher approval required.
+
+Still future (not implemented in this phase):
+
+- JWT verification against Supabase auth/session internals.
+- Role/scope authorization checks (teacher assigned class / supervisor own branch / HQ).
+- Submission/task/student/class relationship checks.
+- Real provider adapter behind Supabase secrets.

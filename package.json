@@ -31,6 +31,7 @@
     "test:ai:edge:mock": "node scripts/ai-edge-function-mock-invocation-test.mjs",
     "test:ai:parent-comment:curriculum-mock": "node scripts/ai-parent-comment-curriculum-context-mock-test.mjs",
     "test:ai:homework-feedback:mock": "node scripts/ai-homework-feedback-mock-test.mjs",
+    "test:ai:homework-edge:stub": "node scripts/ai-homework-edge-function-stub-test.mjs",
     "preview": "vite preview"
   },
   "dependencies": {
