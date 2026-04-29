@@ -209,37 +209,46 @@ export default function FeeTracking() {
         <div className="space-y-3">
           {feeRecords.map((record) => (
             <Card key={record.id} className="p-5">
+              {((record.verification_status === 'submitted'
+                || record.verification_status === 'under_review'
+                || record.payment_status === 'pending verification')) && (
+                <div className="mb-3 text-xs font-medium text-blue-700">
+                  Submitted for staff review
+                </div>
+              )}
               <div className="flex flex-col xl:flex-row xl:items-start gap-4">
                 <div className="flex-1 min-w-0 space-y-3">
                   <div className="flex flex-wrap items-center gap-2">
-                    <h3 className="font-semibold">{record.student_name}</h3>
-                    <Badge variant="outline" className={STATUS_STYLES[record.payment_status] || ''}>{record.payment_status}</Badge>
+                    <h3 className="font-semibold break-words">{record.student_name}</h3>
+                    <Badge variant="outline" className={`${STATUS_STYLES[record.payment_status] || ''} whitespace-nowrap`}>{record.payment_status}</Badge>
                   </div>
 
                   <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-3 text-sm">
-                    <div><p className="text-xs text-muted-foreground">Parent / Guardian</p><p>{record.parent_guardian_name}</p></div>
-                    <div><p className="text-xs text-muted-foreground">Branch</p><p>{record.branch_name}</p></div>
-                    <div><p className="text-xs text-muted-foreground">Class</p><p>{record.class_name}</p></div>
-                    <div><p className="text-xs text-muted-foreground">Fee Period</p><p>{record.fee_period}</p></div>
-                    <div><p className="text-xs text-muted-foreground">Fee Amount</p><p>${record.fee_amount}</p></div>
-                    <div><p className="text-xs text-muted-foreground">Due Date</p><p>{record.due_date}</p></div>
-                    <div><p className="text-xs text-muted-foreground">Payment Method</p><p>{record.payment_method}</p></div>
-                    <div><p className="text-xs text-muted-foreground">Receipt Uploaded</p><p>{record.receipt_uploaded ? 'Yes' : 'No'}</p></div>
-                    <div><p className="text-xs text-muted-foreground">Receipt / Reference</p><p>{record.receipt_reference_note || '—'}</p></div>
-                    <div><p className="text-xs text-muted-foreground">Verified By</p><p>{record.verified_by || '—'}</p></div>
-                    <div><p className="text-xs text-muted-foreground">Verified Date</p><p>{record.verified_date || '—'}</p></div>
-                    <div><p className="text-xs text-muted-foreground">Internal Note</p><p>{record.internal_note || '—'}</p></div>
+                    <div><p className="text-xs text-muted-foreground">Parent / Guardian</p><p className="break-words">{record.parent_guardian_name}</p></div>
+                    <div><p className="text-xs text-muted-foreground">Branch</p><p className="break-words">{record.branch_name}</p></div>
+                    <div><p className="text-xs text-muted-foreground">Class</p><p className="break-words">{record.class_name}</p></div>
+                    <div><p className="text-xs text-muted-foreground">Fee Period</p><p className="break-words">{record.fee_period}</p></div>
+                    <div><p className="text-xs text-muted-foreground">Fee Amount</p><p className="break-words">${record.fee_amount}</p></div>
+                    <div><p className="text-xs text-muted-foreground">Due Date</p><p className="break-words">{record.due_date}</p></div>
+                    <div><p className="text-xs text-muted-foreground">Payment Method</p><p className="break-words">{record.payment_method}</p></div>
+                    <div><p className="text-xs text-muted-foreground">Receipt Uploaded</p><p className="break-words">{record.receipt_uploaded ? 'Yes' : 'No'}</p></div>
+                    <div><p className="text-xs text-muted-foreground">Receipt / Reference</p><p className="break-words">{record.receipt_reference_note || '—'}</p></div>
+                    <div><p className="text-xs text-muted-foreground">Verified By</p><p className="break-words">{record.verified_by || '—'}</p></div>
+                    <div><p className="text-xs text-muted-foreground">Verified Date</p><p className="break-words">{record.verified_date || '—'}</p></div>
+                    <div><p className="text-xs text-muted-foreground">Internal Note</p><p className="break-words">{record.internal_note || '—'}</p></div>
                   </div>
                 </div>
 
-                <div className="xl:w-auto space-y-2">
+                <div className="w-full xl:w-auto">
+                <div className="rounded-lg border border-dashed p-3 space-y-2">
+                <p className="text-xs font-medium text-muted-foreground">Staff actions</p>
                 {record.receipt_uploaded && (
-                  <div>
+                  <div className="w-full">
                     <Button
                       variant="outline"
                       onClick={() => handleViewUploadedProof(record)}
                       disabled={Boolean(proofLoadingByRecord[record.fee_record_id || record.id])}
-                      className="w-full xl:w-auto"
+                      className="w-full xl:min-w-[210px]"
                     >
                       {proofLoadingByRecord[record.fee_record_id || record.id] ? 'Opening Proof...' : 'View Uploaded Proof'}
                     </Button>
@@ -248,12 +257,12 @@ export default function FeeTracking() {
                 {(record.verification_status === 'submitted'
                   || record.verification_status === 'under_review'
                   || record.payment_status === 'pending verification') && (
-                  <div>
+                  <div className="w-full">
                     <Button
                       variant="default"
                       onClick={() => handleVerifyPayment(record)}
                       disabled={verifyMutation.isPending}
-                      className="w-full xl:w-auto"
+                      className="w-full xl:min-w-[210px]"
                     >
                       {verifyMutation.isPending && verifyLoadingRecordId === (record.fee_record_id || record.id) ? 'Verifying...' : 'Verify Payment'}
                     </Button>
@@ -264,12 +273,12 @@ export default function FeeTracking() {
                     || record.verification_status === 'under_review'
                     || record.payment_status === 'pending verification')
                 ) && (
-                  <div>
+                  <div className="w-full">
                     <Button
                       variant="outline"
                       onClick={() => handleRejectPayment(record)}
                       disabled={rejectMutation.isPending}
-                      className="w-full xl:w-auto"
+                      className="w-full xl:min-w-[210px]"
                     >
                       {rejectMutation.isPending && rejectLoadingRecordId === (record.fee_record_id || record.id)
                         ? 'Rejecting...'
@@ -278,12 +287,13 @@ export default function FeeTracking() {
                   </div>
                 )}
                 {canMarkPaid && record.payment_status !== 'paid' && (
-                  <div>
-                    <Button onClick={() => markPaidMutation.mutate(record.id)} disabled={markPaidMutation.isPending} className="w-full xl:w-auto">
+                  <div className="w-full">
+                    <Button onClick={() => markPaidMutation.mutate(record.id)} disabled={markPaidMutation.isPending} className="w-full xl:min-w-[210px]">
                       Mark as Paid
                     </Button>
                   </div>
                 )}
+                </div>
                 </div>
               </div>
             </Card>

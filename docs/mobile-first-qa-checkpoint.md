@@ -100,15 +100,14 @@ At each width, verify:
 Status update:
 
 - `ParentView` payment proof mobile polish: implemented.
+- `FeeTracking` staff action button wrap/stack polish: implemented.
 - Remaining mobile QA/polish items:
-  - `FeeTracking` staff action button wrap/stack polish
   - `AppLayout`/sidebar mobile review
   - `ParentUpdates` mobile review flow density
 
-1. `FeeTracking` staff action button wrap/stack polish.
-2. `AppLayout`/sidebar mobile behavior polish.
-3. `ParentUpdates` mobile review flow density polish.
-4. Replace `window.prompt` rejection input later with inline reason field/modal.
+1. `AppLayout`/sidebar mobile behavior polish.
+2. `ParentUpdates` mobile review flow density polish.
+3. Replace `window.prompt` rejection input later with inline reason field/modal.
 
 ## 7) What not to do yet
 
@@ -119,35 +118,35 @@ Status update:
 
 ## 8) Recommended next implementation step
 
-Recommendation: **B. FeeTracking staff action layout polish**
+Recommendation: **C. AppLayout/sidebar mobile audit**
 
 Why next:
 
-- ParentView proof upload clarity is now improved; the next highest mobile-density risk is staff action clusters in `FeeTracking`.
-- Button stacking/wrapping polish there will reduce mis-taps and improve review throughput on smaller screens.
-- This can remain layout-only without changing verification/rejection logic.
+- ParentView and FeeTracking mobile action clarity are now improved, so layout-level navigation behavior is the highest remaining cross-page risk.
+- Sidebar/collapsed behavior can affect every route at mobile/tablet widths.
+- A focused audit can stay low-risk and avoid runtime/business-logic changes.
 
 ## 9) Next implementation prompt
 
 Copy-paste prompt:
 
 ```text
-Mobile polish only for FeeTracking staff action layout.
+Mobile audit/polish only for AppLayout/sidebar behavior.
 
 Constraints:
 - Do not change runtime logic or backend behavior.
 - Do not add services or SQL.
 - Keep demoRole/local fallback behavior unchanged.
-- Keep existing staff verification/rejection/view-proof permissions and guards unchanged.
+- Keep existing route access controls and role behavior unchanged.
 - Do not modify unrelated pages.
 
 Task:
-Polish only the action area in src/pages/FeeTracking.jsx for mobile-first usability:
-1) Improve spacing and grouping for View Uploaded Proof, Verify Payment, Reject/Request Resubmission, and Mark as Paid actions on ~390px width.
-2) Ensure action buttons stack/wrap cleanly with no overflow.
-3) Keep status and internal note text readable.
-4) Keep desktop behavior intact (>=1280px).
-5) Preserve all existing verification/rejection/view logic exactly.
+Polish only layout/navigation behavior in src/components/layout/AppLayout.jsx (and Sidebar styles if strictly required):
+1) Validate and improve mobile/tablet behavior around sidebar visibility, collapsed state, and content width at ~390px and ~768px.
+2) Ensure main content remains readable without forced squeeze or hidden overflow.
+3) Keep desktop behavior intact (>=1280px).
+4) Preserve existing routing and permission checks exactly.
+5) Avoid redesign; apply minimal layout fixes only.
 
 Validation:
 - Manual check at ~390px, ~768px, ~1280px.
