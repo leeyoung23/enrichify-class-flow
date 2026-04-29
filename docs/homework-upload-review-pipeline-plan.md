@@ -203,3 +203,13 @@ Validation efficiency:
 - Before tests: git diff --name-only
 - If SQL/docs-only, run only targeted SQL/RLS verification notes and avoid unrelated app build/lint/typecheck.
 ```
+
+## Implementation status checkpoint (Phase 2 draft prepared)
+
+- SQL/storage/RLS draft now exists at `supabase/sql/014_homework_upload_review_foundation.sql`.
+- The draft is manual/dev-first and not auto-applied.
+- The draft is additive only (no table drops, no destructive deletes, no global RLS disable).
+- Runtime service wiring is still not implemented for this new homework foundation.
+- Homework upload/review UI flow is still not implemented for this new homework foundation.
+- AI homework feedback remains future and approval-gated.
+- Future smoke validation should use fake files/dev data only.

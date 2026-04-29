@@ -247,6 +247,38 @@ Reminder: **Frontend filtering is not security. RLS must enforce access at datab
 - Teacher student school profile writes are blocked in MVP policy shape.
 - Branch supervisor student school profile write should succeed in own-branch scope.
 
+### Homework upload/review foundation draft patch note
+
+- Draft patch reference: `supabase/sql/014_homework_upload_review_foundation.sql` (manual review/apply only).
+- Draft adds lean MVP tables:
+  - `homework_tasks`
+  - `homework_submissions`
+  - `homework_files`
+  - `homework_feedback`
+- Draft adds private storage bucket and object policies for `homework-submissions`.
+- Draft status:
+  - manual/dev-first SQL draft prepared
+  - not applied yet
+  - no runtime service wiring yet
+  - no homework upload/review UI wiring yet
+  - AI homework feedback remains future
+- Parent/student feedback visibility rule in draft:
+  - only `released_to_parent` feedback is readable to parent/student
+  - draft/internal feedback must stay staff-only
+- Continue fake/dev-only role checks and fake file blobs only.
+
+#### Homework upload/review role checks (after manual apply in dev only)
+
+- HQ can read/manage all homework tasks, submissions, files, and feedback.
+- Branch supervisor can read/manage own-branch homework records and objects only.
+- Teacher can read assigned-class homework records only; no out-of-class visibility.
+- Teacher feedback is draft-first and release-gated by status.
+- Parent can read linked-child homework tasks/submissions/files only.
+- Parent can create linked-child submissions/files only for assigned/open tasks.
+- Parent cannot read draft/internal feedback; only released feedback.
+- Student (if enabled) can read/create own submissions/files only; no peer visibility.
+- No cross-family visibility and no cross-student visibility are allowed.
+
 ## Execution Notes
 
 - Run tests with fake users for each role.
