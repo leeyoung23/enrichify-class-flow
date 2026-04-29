@@ -765,6 +765,29 @@ export async function listHomeworkSubmissions({ homeworkTaskId, studentId, class
   }
 }
 
+export async function listHomeworkFiles({ homeworkSubmissionId } = {}) {
+  if (!isSupabaseConfigured() || !supabase) {
+    return { data: [], error: { message: "Supabase is not configured" } };
+  }
+  if (homeworkSubmissionId != null && homeworkSubmissionId !== "" && !isUuidLike(homeworkSubmissionId)) {
+    return { data: [], error: { message: "homeworkSubmissionId must be a UUID when provided" } };
+  }
+
+  try {
+    let query = supabase
+      .from("homework_files")
+      .select("id,homework_submission_id,storage_bucket,storage_path,file_name,content_type,file_size_bytes,uploaded_by_profile_id,created_at")
+      .order("created_at", { ascending: false });
+
+    if (isUuidLike(homeworkSubmissionId)) query = query.eq("homework_submission_id", trimString(homeworkSubmissionId));
+
+    const { data, error } = await query;
+    return { data: Array.isArray(data) ? data : [], error: error ?? null };
+  } catch (err) {
+    return { data: [], error: { message: err?.message || String(err) } };
+  }
+}
+
 export async function listHomeworkFeedback({ homeworkSubmissionId, parentVisibleOnly = false } = {}) {
   if (!isSupabaseConfigured() || !supabase) {
     return { data: [], error: { message: "Supabase is not configured" } };

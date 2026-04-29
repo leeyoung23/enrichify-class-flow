@@ -191,9 +191,21 @@ Why A first:
   - release-to-parent visibility behavior
   - parent draft-hidden / released-visible behavior
   - parent response excludes `internal_note` in `parentVisibleOnly` service path
-- Teacher homework review UI remains future.
+- Teacher homework review UI is now implemented at a minimal staff workflow level on `src/pages/Homework.jsx` (queue + detail + draft actions).
 - Parent homework status/feedback UI remains future.
 - AI homework feedback remains future and draft-only.
+
+## 15) Phase 3 checkpoint (implemented)
+
+- `Homework` page now includes a minimal staff-only Supabase-backed review flow:
+  - submission queue + status badges
+  - submission detail + file open via signed URL
+  - feedback draft fields (`feedback_text`, `next_step`, `internal_note`)
+  - actions: save draft, mark reviewed, return for revision
+  - release-to-parent action shown for branch supervisor/HQ only in this phase
+- Parent/student roles are blocked from teacher review UI behavior.
+- demoRole remains local placeholder-only (no Supabase reads/writes on homework review).
+- Internal note remains clearly marked staff-only and is not parent-facing.
 
 ## 13) Next implementation prompt (A only)
 

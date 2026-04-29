@@ -191,6 +191,8 @@ Current status note:
 - Parent direct submission insert investigation found policy recursion for first parent submission; patch draft exists at `supabase/sql/016_fix_homework_parent_submission_insert.sql` (manual apply only, not applied yet).
 - Homework feedback write service + smoke test are now started (`src/services/supabaseWriteService.js`, `scripts/supabase-homework-feedback-smoke-test.mjs`) for draft/create-update, review transition, release-to-parent, and parent draft-hidden checks.
 - Parent-visible feedback read path now omits `internal_note` from service response when `parentVisibleOnly` is requested.
+- Teacher homework review UI is now minimally wired on `src/pages/Homework.jsx` for staff-only queue/detail/draft workflow using existing homework read/write services.
+- Parent homework upload/status UI remains future and is intentionally not included in this milestone.
 - Homework teacher/parent UI and AI homework feedback remain future milestones.
 
 ## 12) Next immediate milestone prompt (copy-paste)

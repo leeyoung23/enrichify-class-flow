@@ -1,166 +1,456 @@
-import React, { useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { useOutletContext } from 'react-router-dom';
-import { BookOpen, CheckCircle2, XCircle, AlertCircle } from 'lucide-react';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { AlertCircle, BookOpen, CheckCircle2, ExternalLink, RefreshCw, Send } from 'lucide-react';
 import { Card } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
 import PageHeader from '@/components/shared/PageHeader';
 import EmptyState from '@/components/shared/EmptyState';
+import { toast } from 'sonner';
+import { getSelectedDemoRole } from '@/services/authService';
+import { ROLES, getRole } from '@/services/permissionService';
+import { isSupabaseConfigured } from '@/services/supabaseClient';
+import { useSupabaseAuthState } from '@/hooks/useSupabaseAuthState';
+import {
+  getHomeworkFileSignedUrl,
+  listHomeworkFeedback,
+  listHomeworkFiles,
+  listHomeworkSubmissions,
+  listHomeworkTasks,
+} from '@/services/supabaseUploadService';
+import {
+  createOrUpdateHomeworkFeedback,
+  markHomeworkSubmissionReviewed,
+  releaseHomeworkFeedbackToParent,
+  returnHomeworkForRevision,
+} from '@/services/supabaseWriteService';
 
-const SAMPLE_CLASSES = [
-  { id: 'c1', name: 'Demo English A', branch: 'North Learning Hub' },
-  { id: 'c2', name: 'Demo Maths B', branch: 'North Learning Hub' },
-  { id: 'c3', name: 'Demo Science C', branch: 'South Study Studio' },
+const SUBMISSION_STATUS_OPTIONS = [
+  { value: 'all', label: 'All statuses' },
+  { value: 'submitted', label: 'Submitted' },
+  { value: 'under_review', label: 'Under review' },
+  { value: 'reviewed', label: 'Reviewed' },
+  { value: 'returned_for_revision', label: 'Returned for revision' },
+  { value: 'approved_for_parent', label: 'Approved for parent' },
 ];
 
-const SAMPLE_HOMEWORK = {
-  c1: [
-    { id: 's1', name: 'Demo Student A1', status: 'submitted', notes: '' },
-    { id: 's2', name: 'Demo Student A2', status: 'incomplete', notes: 'Missing final section' },
-    { id: 's3', name: 'Demo Student A3', status: 'not_submitted', notes: '' },
-    { id: 's4', name: 'Demo Student A4', status: 'follow_up', notes: 'Needs reminder' },
-    { id: 's5', name: 'Demo Student A5', status: 'submitted', notes: '' },
-  ],
-  c2: [
-    { id: 's6', name: 'Demo Student B1', status: 'submitted', notes: '' },
-    { id: 's7', name: 'Demo Student B2', status: 'submitted', notes: '' },
-    { id: 's8', name: 'Demo Student B3', status: 'not_submitted', notes: '' },
-    { id: 's9', name: 'Demo Student B4', status: 'follow_up', notes: 'Needs follow-up' },
-  ],
-  c3: [
-    { id: 's10', name: 'Demo Student C1', status: 'submitted', notes: '' },
-    { id: 's11', name: 'Demo Student C2', status: 'incomplete', notes: 'Partially done' },
-    { id: 's12', name: 'Demo Student C3', status: 'submitted', notes: '' },
-  ],
-};
-
-const STATUS_CONFIG = {
-  submitted: { label: 'Submitted', color: 'bg-green-100 text-green-700 border-green-200', icon: CheckCircle2, iconColor: 'text-green-600' },
-  incomplete: { label: 'Incomplete', color: 'bg-amber-100 text-amber-700 border-amber-200', icon: AlertCircle, iconColor: 'text-amber-600' },
-  not_submitted: { label: 'Not Submitted', color: 'bg-red-100 text-red-700 border-red-200', icon: XCircle, iconColor: 'text-red-600' },
-  follow_up: { label: 'Follow-up Needed', color: 'bg-purple-100 text-purple-700 border-purple-200', icon: AlertCircle, iconColor: 'text-purple-600' },
+const SUBMISSION_STATUS_BADGE = {
+  submitted: 'bg-blue-100 text-blue-700 border-blue-200',
+  under_review: 'bg-amber-100 text-amber-700 border-amber-200',
+  reviewed: 'bg-green-100 text-green-700 border-green-200',
+  returned_for_revision: 'bg-orange-100 text-orange-700 border-orange-200',
+  approved_for_parent: 'bg-purple-100 text-purple-700 border-purple-200',
 };
 
 export default function Homework() {
   const { user } = useOutletContext();
-  const demoRole = user?.role || 'teacher';
-  const visibleClasses = demoRole === 'teacher'
-    ? SAMPLE_CLASSES.filter((item) => item.branch === 'North Learning Hub' && ['c1', 'c2'].includes(item.id))
-    : demoRole === 'branch_supervisor'
-      ? SAMPLE_CLASSES.filter((item) => item.branch === 'North Learning Hub')
-      : SAMPLE_CLASSES;
-  const [selectedClassId, setSelectedClassId] = useState('');
-  const [selectedDate, setSelectedDate] = useState('2026-04-25');
-  const [records, setRecords] = useState(SAMPLE_HOMEWORK);
+  const { appUser: supabaseAppUser } = useSupabaseAuthState();
+  const queryClient = useQueryClient();
+  const role = getRole(user);
+  const isDemoMode = Boolean(getSelectedDemoRole());
+  const isStaffRole = role === ROLES.TEACHER || role === ROLES.BRANCH_SUPERVISOR || role === ROLES.HQ_ADMIN;
+  const canUseSupabaseHomework = isStaffRole && !isDemoMode && isSupabaseConfigured() && Boolean(supabaseAppUser?.id);
+  const canReleaseFeedback = role === ROLES.BRANCH_SUPERVISOR || role === ROLES.HQ_ADMIN;
 
-  const students = records[selectedClassId] || [];
-  const selectedClass = visibleClasses.find(c => c.id === selectedClassId);
+  const [selectedTaskId, setSelectedTaskId] = useState('');
+  const [selectedSubmissionId, setSelectedSubmissionId] = useState('');
+  const [submissionStatusFilter, setSubmissionStatusFilter] = useState('all');
+  const [feedbackText, setFeedbackText] = useState('');
+  const [nextStep, setNextStep] = useState('');
+  const [internalNote, setInternalNote] = useState('');
+  const [feedbackBoundSubmissionId, setFeedbackBoundSubmissionId] = useState('');
 
-  const summary = Object.entries(STATUS_CONFIG).map(([key, cfg]) => ({
-    key,
-    label: cfg.label,
-    count: students.filter(s => s.status === key).length,
-    color: cfg.color,
-  }));
+  const { data: tasks = [], isLoading: tasksLoading } = useQuery({
+    queryKey: ['homework-review-tasks', role, supabaseAppUser?.id],
+    enabled: canUseSupabaseHomework,
+    queryFn: async () => {
+      const result = await listHomeworkTasks({});
+      if (result.error) throw new Error(result.error.message || 'Unable to load homework tasks');
+      return result.data || [];
+    },
+  });
 
-  const handleStatusChange = (studentId, newStatus) => {
-    setRecords(prev => ({
-      ...prev,
-      [selectedClassId]: prev[selectedClassId].map(s =>
-        s.id === studentId ? { ...s, status: newStatus } : s
-      ),
-    }));
+  const { data: submissions = [], isLoading: submissionsLoading } = useQuery({
+    queryKey: ['homework-review-submissions', selectedTaskId, submissionStatusFilter, role, supabaseAppUser?.id],
+    enabled: canUseSupabaseHomework,
+    queryFn: async () => {
+      const result = await listHomeworkSubmissions({
+        homeworkTaskId: selectedTaskId || undefined,
+        status: submissionStatusFilter === 'all' ? undefined : submissionStatusFilter,
+      });
+      if (result.error) throw new Error(result.error.message || 'Unable to load homework submissions');
+      return result.data || [];
+    },
+  });
+
+  const { data: feedbackRows = [], isLoading: feedbackLoading } = useQuery({
+    queryKey: ['homework-review-feedback', selectedSubmissionId, role, supabaseAppUser?.id],
+    enabled: canUseSupabaseHomework && Boolean(selectedSubmissionId),
+    queryFn: async () => {
+      const result = await listHomeworkFeedback({ homeworkSubmissionId: selectedSubmissionId });
+      if (result.error) throw new Error(result.error.message || 'Unable to load homework feedback');
+      return result.data || [];
+    },
+  });
+
+  const { data: submissionFiles = [], isLoading: filesLoading } = useQuery({
+    queryKey: ['homework-review-files', selectedSubmissionId, role, supabaseAppUser?.id],
+    enabled: canUseSupabaseHomework && Boolean(selectedSubmissionId),
+    queryFn: async () => {
+      const result = await listHomeworkFiles({ homeworkSubmissionId: selectedSubmissionId });
+      if (result.error) throw new Error(result.error.message || 'Unable to load homework files');
+      return result.data || [];
+    },
+  });
+
+  const selectedSubmission = useMemo(
+    () => submissions.find((item) => item.id === selectedSubmissionId) || null,
+    [submissions, selectedSubmissionId]
+  );
+  const selectedFeedback = feedbackRows[0] || null;
+
+  useEffect(() => {
+    if (!selectedTaskId && tasks.length > 0) {
+      setSelectedTaskId(tasks[0].id);
+    }
+  }, [tasks, selectedTaskId]);
+
+  useEffect(() => {
+    if (submissions.length === 0) {
+      setSelectedSubmissionId('');
+      return;
+    }
+    if (!selectedSubmissionId || !submissions.some((item) => item.id === selectedSubmissionId)) {
+      setSelectedSubmissionId(submissions[0].id);
+    }
+  }, [submissions, selectedSubmissionId]);
+
+  useEffect(() => {
+    if (!selectedSubmissionId || feedbackBoundSubmissionId === selectedSubmissionId) return;
+    const seedFeedback = feedbackRows[0] || null;
+    setFeedbackText(seedFeedback?.feedback_text || '');
+    setNextStep(seedFeedback?.next_step || '');
+    setInternalNote(seedFeedback?.internal_note || '');
+    setFeedbackBoundSubmissionId(selectedSubmissionId);
+  }, [selectedSubmissionId, feedbackRows, feedbackBoundSubmissionId]);
+
+  const refreshReviewData = () => {
+    void queryClient.invalidateQueries({ queryKey: ['homework-review-submissions'] });
+    void queryClient.invalidateQueries({ queryKey: ['homework-review-feedback'] });
+  };
+
+  const saveDraftMutation = useMutation({
+    mutationFn: async () => {
+      if (!selectedSubmissionId) throw new Error('Select a submission first.');
+      const result = await createOrUpdateHomeworkFeedback({
+        homeworkSubmissionId: selectedSubmissionId,
+        feedbackText,
+        nextStep,
+        internalNote,
+      });
+      if (result.error) throw new Error(result.error.message || 'Unable to save draft feedback');
+      return result.data;
+    },
+    onSuccess: () => {
+      toast.success('Draft feedback saved.');
+      refreshReviewData();
+    },
+    onError: (error) => {
+      toast.error(error?.message || 'Unable to save draft feedback');
+    },
+  });
+
+  const markReviewedMutation = useMutation({
+    mutationFn: async () => {
+      if (!selectedSubmissionId) throw new Error('Select a submission first.');
+      const result = await markHomeworkSubmissionReviewed({ homeworkSubmissionId: selectedSubmissionId });
+      if (result.error) throw new Error(result.error.message || 'Unable to mark submission reviewed');
+      return result.data;
+    },
+    onSuccess: () => {
+      toast.success('Submission marked reviewed.');
+      refreshReviewData();
+    },
+    onError: (error) => {
+      toast.error(error?.message || 'Unable to mark submission reviewed');
+    },
+  });
+
+  const returnRevisionMutation = useMutation({
+    mutationFn: async () => {
+      if (!selectedSubmissionId) throw new Error('Select a submission first.');
+      const result = await returnHomeworkForRevision({
+        homeworkSubmissionId: selectedSubmissionId,
+        feedbackText,
+        nextStep,
+        internalNote,
+      });
+      if (result.error) throw new Error(result.error.message || 'Unable to return submission for revision');
+      return result.data;
+    },
+    onSuccess: () => {
+      toast.success('Submission returned for revision.');
+      refreshReviewData();
+    },
+    onError: (error) => {
+      toast.error(error?.message || 'Unable to return submission for revision');
+    },
+  });
+
+  const releaseMutation = useMutation({
+    mutationFn: async () => {
+      if (!selectedFeedback?.id) throw new Error('No feedback row is available to release.');
+      const result = await releaseHomeworkFeedbackToParent({ homeworkFeedbackId: selectedFeedback.id });
+      if (result.error) throw new Error(result.error.message || 'Unable to release feedback to parent');
+      return result.data;
+    },
+    onSuccess: () => {
+      toast.success('Feedback released to parent.');
+      refreshReviewData();
+    },
+    onError: (error) => {
+      toast.error(error?.message || 'Unable to release feedback to parent');
+    },
+  });
+
+  const openFile = async (homeworkFileId) => {
+    const result = await getHomeworkFileSignedUrl({ homeworkFileId, expiresIn: 120 });
+    if (result.error || !result.data?.signed_url) {
+      toast.error(result.error?.message || 'Unable to open submitted file');
+      return;
+    }
+    window.open(result.data.signed_url, '_blank', 'noopener,noreferrer');
   };
 
   return (
     <div>
       <PageHeader
-        title={demoRole === 'teacher' ? 'My Homework' : 'Homework Tracker'}
-        description={demoRole === 'teacher' ? 'See and manage homework for your assigned classes only using demo data only.' : 'Track homework submission status for each class.'}
+        title={role === ROLES.TEACHER ? 'My Homework Review' : 'Homework Review'}
+        description="Teacher/staff homework review workflow. Parent-facing homework UI remains a separate future milestone."
       />
 
-      <Card className="p-5 mb-6">
-        <div className="flex flex-col sm:flex-row gap-4">
-          <div className="flex-1">
-            <Select value={selectedClassId} onValueChange={setSelectedClassId}>
-              <SelectTrigger><SelectValue placeholder="Select a class" /></SelectTrigger>
-              <SelectContent>
-                {visibleClasses.map(c => (
-                  <SelectItem key={c.id} value={c.id}>{c.name} — {c.branch}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-          <div>
-            <Input type="date" value={selectedDate} onChange={e => setSelectedDate(e.target.value)} />
-          </div>
-        </div>
-      </Card>
-
-      {visibleClasses.length === 0 ? (
+      {!isStaffRole ? (
         <EmptyState
           icon={BookOpen}
-          title="No homework classes available"
-          description="No classes are available for this role in demo mode."
+          title="Homework review is staff-only"
+          description="Teacher/staff homework review UI is not available for this role."
         />
-      ) : !selectedClassId ? (
-        <EmptyState
-          icon={BookOpen}
-          title="Select a class"
-          description="Choose a class and date above to view homework status."
-        />
+      ) : isDemoMode ? (
+        <Card className="p-5 border-dashed">
+          <p className="font-medium mb-2">Demo-only homework review placeholder</p>
+          <p className="text-sm text-muted-foreground">
+            Demo role keeps this page local-only. No Supabase task/submission/file/feedback reads or writes are executed in demo mode.
+          </p>
+        </Card>
+      ) : !canUseSupabaseHomework ? (
+        <Card className="p-5 border-dashed">
+          <p className="text-sm text-muted-foreground">
+            Supabase authenticated staff session is required to use homework review.
+          </p>
+        </Card>
       ) : (
-        <>
-          {/* Summary Bar */}
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-6">
-            {summary.map(s => (
-              <Card key={s.key} className="p-4 text-center">
-                <p className="text-2xl font-bold">{s.count}</p>
-                <p className="text-xs text-muted-foreground mt-1">{s.label}</p>
-              </Card>
-            ))}
+        <div className="grid grid-cols-1 xl:grid-cols-5 gap-4">
+          <div className="xl:col-span-2 space-y-4">
+            <Card className="p-4">
+              <div className="space-y-3">
+                <Select value={selectedTaskId} onValueChange={setSelectedTaskId} disabled={tasksLoading}>
+                  <SelectTrigger>
+                    <SelectValue placeholder={tasksLoading ? 'Loading tasks...' : 'Filter by task'} />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {tasks.map((task) => (
+                      <SelectItem key={task.id} value={task.id}>
+                        {task.title || 'Untitled task'}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <Select value={submissionStatusFilter} onValueChange={setSubmissionStatusFilter}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Filter submissions" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {SUBMISSION_STATUS_OPTIONS.map((option) => (
+                      <SelectItem key={option.value} value={option.value}>
+                        {option.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            </Card>
+
+            <Card className="p-4">
+              <div className="flex items-center justify-between mb-3">
+                <p className="font-medium">Submission queue</p>
+                <Badge variant="outline">{submissions.length}</Badge>
+              </div>
+              {submissionsLoading ? (
+                <p className="text-sm text-muted-foreground">Loading submissions...</p>
+              ) : submissions.length === 0 ? (
+                <p className="text-sm text-muted-foreground">No submissions available for this filter.</p>
+              ) : (
+                <div className="space-y-2 max-h-[480px] overflow-y-auto pr-1">
+                  {submissions.map((submission) => {
+                    const selected = submission.id === selectedSubmissionId;
+                    const statusClass = SUBMISSION_STATUS_BADGE[submission.status] || 'bg-muted text-muted-foreground border-border';
+                    return (
+                      <button
+                        key={submission.id}
+                        type="button"
+                        onClick={() => setSelectedSubmissionId(submission.id)}
+                        className={`w-full text-left rounded-lg border p-3 ${selected ? 'border-primary bg-primary/5' : 'border-border'}`}
+                      >
+                        <div className="flex items-center justify-between gap-2 mb-1">
+                          <p className="text-sm font-medium truncate">{submission.student_id}</p>
+                          <Badge variant="outline" className={statusClass}>
+                            {submission.status}
+                          </Badge>
+                        </div>
+                        <p className="text-xs text-muted-foreground truncate">Submission: {submission.id}</p>
+                        <p className="text-xs text-muted-foreground truncate">Task: {submission.homework_task_id}</p>
+                      </button>
+                    );
+                  })}
+                </div>
+              )}
+            </Card>
           </div>
 
-          {/* Student List */}
-          <div className="space-y-3">
-            {students.map(student => {
-              const cfg = STATUS_CONFIG[student.status];
-              const Icon = cfg.icon;
-              return (
-                <Card key={student.id} className="p-4">
-                  <div className="flex flex-col sm:flex-row sm:items-center gap-3">
-                    <div className="flex items-center gap-3 flex-1 min-w-0">
-                      <div className="h-9 w-9 rounded-full bg-accent flex items-center justify-center text-accent-foreground font-semibold text-sm flex-shrink-0">
-                        {student.name[0]}
+          <div className="xl:col-span-3 space-y-4">
+            {!selectedSubmission ? (
+              <Card className="p-5">
+                <p className="text-sm text-muted-foreground">Select a submission to review details and feedback actions.</p>
+              </Card>
+            ) : (
+              <>
+                <Card className="p-5">
+                  <div className="flex flex-wrap items-center justify-between gap-2 mb-3">
+                    <p className="font-medium">Submission detail</p>
+                    <Badge variant="outline" className={SUBMISSION_STATUS_BADGE[selectedSubmission.status] || ''}>
+                      {selectedSubmission.status}
+                    </Badge>
+                  </div>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm">
+                    <p><span className="text-muted-foreground">Submission ID:</span> {selectedSubmission.id}</p>
+                    <p><span className="text-muted-foreground">Task ID:</span> {selectedSubmission.homework_task_id}</p>
+                    <p><span className="text-muted-foreground">Student ID:</span> {selectedSubmission.student_id}</p>
+                    <p><span className="text-muted-foreground">Submitted:</span> {selectedSubmission.submitted_at ? new Date(selectedSubmission.submitted_at).toLocaleString('en-AU') : '—'}</p>
+                  </div>
+                  <div className="mt-4 space-y-2">
+                    <p className="text-sm font-medium">Uploaded files</p>
+                    {filesLoading ? (
+                      <p className="text-sm text-muted-foreground">Loading files...</p>
+                    ) : submissionFiles.length === 0 ? (
+                      <p className="text-sm text-muted-foreground">No files found for this submission.</p>
+                    ) : (
+                      <div className="space-y-2">
+                        {submissionFiles.map((fileRow) => (
+                          <div key={fileRow.id} className="rounded-lg border p-3 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+                            <div>
+                              <p className="text-sm font-medium">{fileRow.file_name || 'Unnamed file'}</p>
+                              <p className="text-xs text-muted-foreground">{fileRow.content_type || 'unknown type'}</p>
+                            </div>
+                            <Button size="sm" variant="outline" className="min-h-10" onClick={() => openFile(fileRow.id)}>
+                              <ExternalLink className="h-4 w-4 mr-1" />
+                              View uploaded file
+                            </Button>
+                          </div>
+                        ))}
                       </div>
-                      <div className="min-w-0">
-                        <p className="font-medium truncate">{student.name}</p>
-                        {student.notes && (
-                          <p className="text-xs text-muted-foreground mt-0.5">{student.notes}</p>
-                        )}
-                      </div>
-                    </div>
-
-                    <div className="flex items-center gap-2">
-                      <Icon className={`h-4 w-4 ${cfg.iconColor} flex-shrink-0`} />
-                      <Select value={student.status} onValueChange={v => handleStatusChange(student.id, v)}>
-                        <SelectTrigger className="w-[180px] h-8 text-xs">
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="submitted">Submitted</SelectItem>
-                          <SelectItem value="incomplete">Incomplete</SelectItem>
-                          <SelectItem value="not_submitted">Not Submitted</SelectItem>
-                          <SelectItem value="follow_up">Follow-up Needed</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
+                    )}
                   </div>
                 </Card>
-              );
-            })}
+
+                <Card className="p-5 space-y-3">
+                  <div className="flex items-center justify-between gap-2">
+                    <p className="font-medium">Feedback draft</p>
+                    <Badge variant="outline">
+                      {feedbackLoading ? 'Loading...' : (selectedFeedback?.status || 'no feedback yet')}
+                    </Badge>
+                  </div>
+                  <div>
+                    <p className="text-xs text-muted-foreground mb-1">Feedback text</p>
+                    <Textarea
+                      value={feedbackText}
+                      onChange={(event) => setFeedbackText(event.target.value)}
+                      className="min-h-[110px]"
+                      placeholder="Write teacher feedback draft..."
+                    />
+                  </div>
+                  <div>
+                    <p className="text-xs text-muted-foreground mb-1">Next step</p>
+                    <Textarea
+                      value={nextStep}
+                      onChange={(event) => setNextStep(event.target.value)}
+                      className="min-h-[90px]"
+                      placeholder="Actionable next step for revision/progress..."
+                    />
+                  </div>
+                  <div>
+                    <p className="text-xs text-amber-700 mb-1">Internal note (staff only, never parent-visible)</p>
+                    <Textarea
+                      value={internalNote}
+                      onChange={(event) => setInternalNote(event.target.value)}
+                      className="min-h-[90px]"
+                      placeholder="Internal coaching/review notes only."
+                    />
+                  </div>
+                  <div className="flex flex-wrap gap-2">
+                    <Button
+                      type="button"
+                      className="min-h-10"
+                      onClick={() => saveDraftMutation.mutate()}
+                      disabled={saveDraftMutation.isPending}
+                    >
+                      <RefreshCw className="h-4 w-4 mr-1" />
+                      Save draft feedback
+                    </Button>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      className="min-h-10"
+                      onClick={() => markReviewedMutation.mutate()}
+                      disabled={markReviewedMutation.isPending}
+                    >
+                      <CheckCircle2 className="h-4 w-4 mr-1" />
+                      Mark reviewed
+                    </Button>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      className="min-h-10"
+                      onClick={() => returnRevisionMutation.mutate()}
+                      disabled={returnRevisionMutation.isPending}
+                    >
+                      <AlertCircle className="h-4 w-4 mr-1" />
+                      Return for revision
+                    </Button>
+                    {canReleaseFeedback ? (
+                      <Button
+                        type="button"
+                        variant="outline"
+                        className="min-h-10"
+                        onClick={() => releaseMutation.mutate()}
+                        disabled={releaseMutation.isPending || !selectedFeedback?.id}
+                      >
+                        <Send className="h-4 w-4 mr-1" />
+                        Release to parent
+                      </Button>
+                    ) : (
+                      <p className="text-xs text-muted-foreground self-center">
+                        Release remains supervisor/HQ action in this phase.
+                      </p>
+                    )}
+                  </div>
+                </Card>
+              </>
+            )}
           </div>
-        </>
+        </div>
       )}
     </div>
   );

@@ -10,7 +10,7 @@ This checkpoint records the service-layer milestone for homework feedback/review
   - draft/unreleased feedback hidden
   - released feedback visible
 - Parent-visible feedback service path omits internal staff notes.
-- No teacher homework review UI was added in this milestone.
+- Teacher homework review UI is now implemented in a later milestone on `src/pages/Homework.jsx`.
 - No parent homework status/feedback UI was added in this milestone.
 - AI homework feedback remains future.
 
@@ -74,7 +74,6 @@ This checkpoint records the service-layer milestone for homework feedback/review
 
 ## 8) What remains
 
-- Teacher Homework review UI
 - Parent homework upload/status UI
 - parent-facing feedback display UI
 - AI homework feedback draft

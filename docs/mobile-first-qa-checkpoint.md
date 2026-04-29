@@ -65,6 +65,14 @@ Scope note:
 - Students page now includes read-only school/learning context preview; verify school/grade/profile/goals plus parent-goals/teacher-notes readability and wrapping on ~390px.
 - Students page now includes school profile edit controls for HQ/branch supervisor; verify stacked inputs/textareas/select and Save/Cancel touch targets on ~390px.
 
+### `Homework`
+
+- Teacher/staff homework review UI is now wired with submission queue + review detail cards.
+- Verify queue and detail stack cleanly on ~390px (no dense table dependency).
+- Verify feedback textareas (feedback/next step/internal note) remain readable and editable on phone widths.
+- Verify action buttons (`Save draft`, `Mark reviewed`, `Return for revision`, conditional `Release to parent`) wrap without clipping.
+- Verify file-view action card remains tap-friendly and understandable on small screens.
+
 ### Sidebar / `AppLayout`
 
 - Layout currently reserves fixed left margin (`ml-[260px]` / `ml-[72px]`) with sidebar always present for role pages.
@@ -118,6 +126,7 @@ Status update:
 - `StaffTimeClock` mobile mock UI: implemented (see `docs/staff-time-clock-mobile-ui-plan.md` §0).
 - `ParentUpdates` minimal Teacher Add Memory upload card: implemented; include in mobile QA pass.
 - `ParentUpdates` minimal HQ/Branch Supervisor Class Memories review card: implemented; include in mobile QA pass.
+- `Homework` staff review cards are implemented; include in mobile QA pass.
 - Remaining mobile QA/polish items:
   - `ParentUpdates` mobile review flow density
 
