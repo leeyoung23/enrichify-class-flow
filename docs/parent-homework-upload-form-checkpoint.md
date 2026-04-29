@@ -75,19 +75,24 @@ Validation efficiency rule applied for this docs-only change: run only `git diff
 
 ## 9) What Remains
 
-- Parent-facing full feedback display.
 - Parent upload history/view UX (if needed after feedback display rollout).
 - AI homework feedback.
 - Production retention/deletion policy.
 - Notification/email workflow (later phase).
 
+Status update:
+
+- Parent-facing released homework feedback display is now implemented in `ParentView`.
+- `internal_note` remains protected from parent-visible service/UI path.
+- AI homework feedback remains future.
+- Notification/email remains future.
+
 ## 10) Recommended Next Milestone
 
-**Recommended: A. Parent-facing homework feedback display planning**
+**Recommended: Returned-for-revision parent copy polish**
 
-Why A now:
+Why next:
 
-- Parent can now submit homework through the current upload form flow.
-- Teacher review and feedback release flow already exists.
-- The next clear output layer is parent-facing display of released feedback.
-- AI feedback should stay later, after the full human review-and-release workflow is visible end-to-end.
+- Parent upload and released feedback display are now wired.
+- The next low-risk UX improvement is clearer parent guidance in returned-for-revision paths.
+- AI feedback should stay later, after the full human review-and-release workflow is fully polished.

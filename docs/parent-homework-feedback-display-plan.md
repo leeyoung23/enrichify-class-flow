@@ -183,3 +183,19 @@ Validation efficiency:
 - If only docs changed, do not run build/lint/typecheck.
 - If runtime files changed, run build/lint/typecheck only.
 ```
+
+## 15) Implementation checkpoint (completed)
+
+- Parent released homework feedback display is now wired in the `ParentView` Homework task cards.
+- Released feedback uses only parent-safe fields:
+  - `feedback_text`
+  - `next_step`
+  - `released_to_parent_at` (displayed as released date)
+- Parent feedback read path remains `listHomeworkFeedback({ homeworkSubmissionId, parentVisibleOnly: true })`.
+- `internal_note` remains protected and is not shown in parent UI.
+- Draft/approved-but-not-released feedback remains hidden from parent display path.
+- Parent cards include gentle waiting copy when feedback is not yet released.
+- Returned-for-revision parent copy is kept supportive and actionable.
+- demoRole remains local/demo-only with placeholder feedback and no Supabase calls.
+- AI homework feedback remains a future milestone.
+- Notification/email remains a future milestone.

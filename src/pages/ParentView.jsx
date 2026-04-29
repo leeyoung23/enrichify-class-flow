@@ -58,6 +58,13 @@ const ALLOWED_HOMEWORK_UPLOAD_TYPES = new Set([
 ]);
 const MAX_HOMEWORK_UPLOAD_BYTES = 5 * 1024 * 1024;
 
+function formatReleasedDateLabel(value) {
+  if (!value) return '';
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return '';
+  return date.toLocaleDateString('en-AU');
+}
+
 function ParentHomeworkStatusSection({
   isDemoMode,
   loading,
@@ -100,6 +107,21 @@ function ParentHomeworkStatusSection({
             </div>
             <p className="text-xs text-muted-foreground">Due date: 12 May 2026</p>
           </div>
+          <div className="rounded-lg border p-3 space-y-2">
+            <div className="flex items-start justify-between gap-3">
+              <p className="text-sm font-medium">Spelling practice worksheet</p>
+              <Badge variant="outline" className={PARENT_HOMEWORK_STATUS_META.approved_for_parent.className}>
+                Feedback released
+              </Badge>
+            </div>
+            <p className="text-xs text-muted-foreground">Due date: 10 May 2026</p>
+            <div className="rounded-md bg-muted/40 border px-2.5 py-2 space-y-1.5">
+              <p className="text-[11px] uppercase tracking-wide text-muted-foreground">Teacher feedback</p>
+              <p className="text-xs text-foreground">Great effort. Letter sounds are improving and handwriting is clearer.</p>
+              <p className="text-xs text-muted-foreground"><span className="font-medium text-foreground">Next step:</span> Practice 5 challenge words and read them aloud once daily.</p>
+              <p className="text-[11px] text-muted-foreground">Released: 11 May 2026</p>
+            </div>
+          </div>
         </CardContent>
       </Card>
     );
@@ -141,9 +163,15 @@ function ParentHomeworkStatusSection({
         {tasks.map((task) => {
           const statusMeta = PARENT_HOMEWORK_STATUS_META[task.parentStatus] || PARENT_HOMEWORK_STATUS_META.not_submitted;
           const feedbackRow = task.latestSubmissionId ? feedbackBySubmissionId[task.latestSubmissionId] : null;
+          const hasReleasedFeedback = Boolean(
+            feedbackRow?.feedback_text || feedbackRow?.next_step || feedbackRow?.released_to_parent_at
+          );
+          const releasedDateLabel = formatReleasedDateLabel(feedbackRow?.released_to_parent_at);
           const uploadDraft = uploadDraftByTaskId[task.id] || { note: '', file: null };
           const isUploadAllowed = task.parentStatus === 'not_submitted' || task.parentStatus === 'returned_for_revision';
           const isSubmitting = Boolean(submitLoadingByTaskId[task.id]);
+          const showWaitingCopy = !hasReleasedFeedback && ['submitted', 'under_review', 'reviewed'].includes(task.parentStatus);
+          const showRevisionWaitingCopy = !hasReleasedFeedback && task.parentStatus === 'returned_for_revision';
           return (
             <div key={task.id} className="rounded-lg border p-3 space-y-2">
               <div className="flex items-start justify-between gap-3">
@@ -153,11 +181,31 @@ function ParentHomeworkStatusSection({
                 </Badge>
               </div>
               <p className="text-xs text-muted-foreground">Due date: {task.dueDateLabel}</p>
-              {feedbackRow ? (
-                <div className="rounded-md bg-muted/40 border px-2.5 py-2">
-                  <p className="text-[11px] uppercase tracking-wide text-muted-foreground mb-1">Released feedback</p>
-                  <p className="text-xs text-foreground">{feedbackRow.feedback_text || feedbackRow.next_step || 'Feedback released by teacher.'}</p>
-                </div>
+              {hasReleasedFeedback ? (
+                <details className="rounded-md bg-muted/40 border px-2.5 py-2">
+                  <summary className="cursor-pointer list-none text-sm font-medium text-foreground">
+                    Teacher feedback
+                  </summary>
+                  <div className="mt-2 space-y-1.5">
+                    <p className="text-xs text-foreground">
+                      {feedbackRow.feedback_text || 'Teacher feedback has been released for this homework.'}
+                    </p>
+                    {feedbackRow.next_step ? (
+                      <p className="text-xs text-muted-foreground">
+                        <span className="font-medium text-foreground">Next step:</span> {feedbackRow.next_step}
+                      </p>
+                    ) : null}
+                    {releasedDateLabel ? (
+                      <p className="text-[11px] text-muted-foreground">Released: {releasedDateLabel}</p>
+                    ) : null}
+                  </div>
+                </details>
+              ) : null}
+              {showWaitingCopy ? (
+                <p className="text-xs text-muted-foreground">Teacher feedback will appear here after review.</p>
+              ) : null}
+              {showRevisionWaitingCopy ? (
+                <p className="text-xs text-muted-foreground">Please revise and resubmit. Teacher feedback will appear here after release.</p>
               ) : null}
               {isUploadAllowed ? (
                 <div className="rounded-md border border-dashed p-3 space-y-2">
@@ -186,9 +234,9 @@ function ParentHomeworkStatusSection({
                     {isSubmitting ? 'Submitting...' : 'Submit homework'}
                   </Button>
                 </div>
-              ) : (
+              ) : task.parentStatus !== 'approved_for_parent' ? (
                 <p className="text-xs text-muted-foreground">Your child&apos;s work has been submitted for teacher review.</p>
-              )}
+              ) : null}
             </div>
           );
         })}

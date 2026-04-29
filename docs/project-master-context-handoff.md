@@ -194,8 +194,10 @@ Current status note:
 - Teacher homework review UI is now minimally wired on `src/pages/Homework.jsx` for staff-only queue/detail/draft workflow using existing homework read/write services.
 - Parent read-only homework status/list UI is now wired on `src/pages/ParentView.jsx` for linked-child visibility using anon client + RLS reads only.
 - Parent homework upload form is now minimally wired on `src/pages/ParentView.jsx` for assigned/open tasks using existing submission/upload services.
-- Parent feedback display remains limited to parent-safe released snippets only.
-- Homework teacher/parent UI and AI homework feedback remain future milestones.
+- Parent released homework feedback display is now wired on `src/pages/ParentView.jsx` using `listHomeworkFeedback({ parentVisibleOnly: true })` with parent-safe fields only (`feedback_text`, `next_step`, release date).
+- `internal_note` remains protected from parent-visible service/UI path.
+- AI homework feedback remains a future milestone after full human workflow hardening.
+- Notification/email workflow remains a future milestone.
 
 ## 12) Next immediate milestone prompt (copy-paste)
 
