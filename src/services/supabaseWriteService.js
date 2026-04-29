@@ -25,6 +25,52 @@ function isUuidLike(value) {
   return /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(value.trim());
 }
 
+function normalizeNullableText(value, { maxLength = 1000 } = {}) {
+  if (value == null) return null;
+  if (typeof value !== "string") return null;
+  const trimmed = value.trim();
+  if (!trimmed) return null;
+  return trimmed.slice(0, maxLength);
+}
+
+function normalizeNullableDate(value) {
+  if (value == null) return null;
+  if (typeof value !== "string") return null;
+  const trimmed = value.trim();
+  if (!trimmed) return null;
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(trimmed)) return null;
+  const parsed = new Date(`${trimmed}T00:00:00.000Z`);
+  if (Number.isNaN(parsed.getTime())) return null;
+  return parsed.toISOString().slice(0, 10);
+}
+
+function buildClassCurriculumWritableFields({ learningFocus, termLabel, startDate, endDate } = {}) {
+  const normalizedStartDate = normalizeNullableDate(startDate);
+  const normalizedEndDate = normalizeNullableDate(endDate);
+  if (startDate != null && normalizedStartDate == null) {
+    return { payload: null, error: { message: "startDate must be YYYY-MM-DD or null" } };
+  }
+  if (endDate != null && normalizedEndDate == null) {
+    return { payload: null, error: { message: "endDate must be YYYY-MM-DD or null" } };
+  }
+  if (normalizedStartDate && normalizedEndDate && normalizedStartDate > normalizedEndDate) {
+    return { payload: null, error: { message: "startDate must be before or equal to endDate" } };
+  }
+  return {
+    payload: {
+      learning_focus: normalizeNullableText(learningFocus, { maxLength: 1200 }),
+      term_label: normalizeNullableText(termLabel, { maxLength: 120 }),
+      start_date: normalizedStartDate,
+      end_date: normalizedEndDate,
+      updated_at: new Date().toISOString(),
+    },
+    error: null,
+  };
+}
+
+const CLASS_CURRICULUM_ASSIGNMENT_FIELDS =
+  "id,class_id,curriculum_profile_id,term_label,start_date,end_date,learning_focus,created_at,updated_at";
+
 /**
  * Update teacher task assignment status using Supabase anon client + RLS.
  * Only safe fields are writable here.
@@ -475,6 +521,124 @@ export async function hideClassMemory({ memoryId, reason } = {}) {
       .update(payload)
       .eq("id", String(memoryId).trim())
       .select("id,branch_id,class_id,student_id,visibility_status,visible_to_parents,approved_by_profile_id,approved_at,rejected_reason,hidden_at,updated_at")
+      .maybeSingle();
+
+    return { data: data ?? null, error: error ?? null };
+  } catch (err) {
+    return { data: null, error: { message: err?.message || String(err) } };
+  }
+}
+
+/**
+ * Assign curriculum profile + focus metadata to a class using Supabase anon client + RLS.
+ * Conservative behavior: if any assignment already exists for class_id, update the latest row.
+ */
+export async function assignCurriculumToClass({
+  classId,
+  curriculumProfileId,
+  learningFocus,
+  termLabel,
+  startDate,
+  endDate,
+} = {}) {
+  if (!isSupabaseConfigured() || !supabase) {
+    return { data: null, error: { message: "Supabase is not configured" } };
+  }
+  if (!isUuidLike(classId)) {
+    return { data: null, error: { message: "classId must be a UUID" } };
+  }
+  if (!isUuidLike(curriculumProfileId)) {
+    return { data: null, error: { message: "curriculumProfileId must be a UUID" } };
+  }
+
+  const { payload: safeFields, error: payloadError } = buildClassCurriculumWritableFields({
+    learningFocus,
+    termLabel,
+    startDate,
+    endDate,
+  });
+  if (payloadError) {
+    return { data: null, error: payloadError };
+  }
+
+  try {
+    const existingRead = await supabase
+      .from("class_curriculum_assignments")
+      .select("id")
+      .eq("class_id", String(classId).trim())
+      .order("updated_at", { ascending: false })
+      .limit(1);
+
+    if (existingRead.error) {
+      return { data: null, error: existingRead.error };
+    }
+
+    const existingAssignmentId = Array.isArray(existingRead.data) ? existingRead.data[0]?.id : null;
+
+    if (existingAssignmentId) {
+      const updatePayload = {
+        curriculum_profile_id: String(curriculumProfileId).trim(),
+        ...safeFields,
+      };
+      const { data, error } = await supabase
+        .from("class_curriculum_assignments")
+        .update(updatePayload)
+        .eq("id", existingAssignmentId)
+        .select(CLASS_CURRICULUM_ASSIGNMENT_FIELDS)
+        .maybeSingle();
+      return { data: data ?? null, error: error ?? null };
+    }
+
+    const insertPayload = {
+      class_id: String(classId).trim(),
+      curriculum_profile_id: String(curriculumProfileId).trim(),
+      ...safeFields,
+    };
+    const { data, error } = await supabase
+      .from("class_curriculum_assignments")
+      .insert(insertPayload)
+      .select(CLASS_CURRICULUM_ASSIGNMENT_FIELDS)
+      .maybeSingle();
+    return { data: data ?? null, error: error ?? null };
+  } catch (err) {
+    return { data: null, error: { message: err?.message || String(err) } };
+  }
+}
+
+/**
+ * Update a class curriculum assignment using Supabase anon client + RLS.
+ * Only safe context fields are writable here; class/curriculum foreign keys are unchanged.
+ */
+export async function updateClassCurriculumAssignment({
+  assignmentId,
+  learningFocus,
+  termLabel,
+  startDate,
+  endDate,
+} = {}) {
+  if (!isSupabaseConfigured() || !supabase) {
+    return { data: null, error: { message: "Supabase is not configured" } };
+  }
+  if (!isUuidLike(assignmentId)) {
+    return { data: null, error: { message: "assignmentId must be a UUID" } };
+  }
+
+  const { payload, error: payloadError } = buildClassCurriculumWritableFields({
+    learningFocus,
+    termLabel,
+    startDate,
+    endDate,
+  });
+  if (payloadError) {
+    return { data: null, error: payloadError };
+  }
+
+  try {
+    const { data, error } = await supabase
+      .from("class_curriculum_assignments")
+      .update(payload)
+      .eq("id", String(assignmentId).trim())
+      .select(CLASS_CURRICULUM_ASSIGNMENT_FIELDS)
       .maybeSingle();
 
     return { data: data ?? null, error: error ?? null };

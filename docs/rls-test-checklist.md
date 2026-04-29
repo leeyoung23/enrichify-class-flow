@@ -215,6 +215,16 @@ Reminder: **Frontend filtering is not security. RLS must enforce access at datab
   - `src/services/supabaseReadService.js`
   - `scripts/supabase-school-curriculum-read-smoke-test.mjs`
   - `npm run test:supabase:school-curriculum:read`
+- Write smoke references (class assignment only, no UI wiring):
+  - `src/services/supabaseWriteService.js`
+  - `scripts/supabase-school-curriculum-write-smoke-test.mjs`
+  - `npm run test:supabase:school-curriculum:write`
+- Current write scope:
+  - class curriculum assignment write service is implemented
+  - `Classes` assignment/edit UI remains future
+  - `Students` school profile edit UI remains future
+  - AI context integration remains future
+- Continue fake/dev-only role checks and fake data only.
 
 #### School/Curriculum role checks (after manual apply in dev only)
 
@@ -225,6 +235,9 @@ Reminder: **Frontend filtering is not security. RLS must enforce access at datab
 - Student can read own linked profile/goal context only (if product surfaces it).
 - Parent/student cannot insert/update/delete schools or curriculum template rows.
 - Teacher cannot modify school/curriculum template rows in this MVP draft.
+- Parent/student cannot write class curriculum assignments.
+- Teacher class curriculum assignment writes are blocked in MVP policy shape.
+- Branch supervisor class curriculum assignment write should succeed in own-branch scope.
 
 ## Execution Notes
 

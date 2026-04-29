@@ -176,6 +176,8 @@ Current status note:
 - Classes page read-only curriculum context preview is now started (RLS-scoped read only; no assignment/edit writes).
 - Students page read-only school/learning context preview is now started (RLS-scoped read only; no profile write/edit controls).
 - ParentView parent-friendly learning focus summary is now started (read-only bridge from curriculum context to parent-facing language).
+- School/curriculum class assignment write service is now added in `src/services/supabaseWriteService.js` (service layer only; no UI wiring).
+- School/curriculum class assignment write smoke test is now added at `scripts/supabase-school-curriculum-write-smoke-test.mjs`.
 - School/curriculum UI is now in early read-only preview stage on `Classes` + `Students` + `ParentView`; assignment/edit UI is still unwired and AI integration is still unwired.
 - Application checkpoint is documented at `docs/school-curriculum-sql-application-checkpoint.md`.
 - Recommended next milestone: curriculum assignment/edit UI planning (write phase with strict role boundaries).

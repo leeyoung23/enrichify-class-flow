@@ -341,3 +341,27 @@ Planning status: ready for Phase 2 SQL/RLS draft.
 - Assignment/edit/create curriculum UI remains future.
 - AI context integration remains future.
 - Next milestone: curriculum assignment/edit UI planning and phased write controls.
+
+## 15) Class assignment write service + smoke status update
+
+- Class curriculum assignment write methods are now added in `src/services/supabaseWriteService.js`:
+  - `assignCurriculumToClass(...)`
+  - `updateClassCurriculumAssignment(...)`
+- Write path keeps frontend safety model unchanged:
+  - Supabase anon client + current JWT only
+  - RLS-enforced permissions
+  - no service role usage in frontend
+- Focused write smoke test added:
+  - `scripts/supabase-school-curriculum-write-smoke-test.mjs`
+  - `npm run test:supabase:school-curriculum:write`
+- Smoke checks include:
+  - branch supervisor write success + read-back verification
+  - parent/student write blocking
+  - teacher write blocking in current MVP policy shape
+  - optional HQ write verification
+  - cleanup/revert to original fake assignment values
+- Scope remains unchanged:
+  - `Classes` assignment/edit UI is still future
+  - `Students` school profile edit UI is still future
+  - AI context integration is still future
+- Fake/dev data only.

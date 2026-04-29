@@ -269,3 +269,22 @@ Validation efficiency:
 ---
 
 Planning status: ready for Phase 2 class-assignment write service and smoke validation.
+
+## 14) Phase 2 implementation status update
+
+- Class curriculum assignment write service methods are now added in `src/services/supabaseWriteService.js`:
+  - `assignCurriculumToClass(...)`
+  - `updateClassCurriculumAssignment(...)`
+- Conservative assignment behavior implemented:
+  - read existing `class_curriculum_assignments` by `class_id`
+  - update latest visible existing assignment when found
+  - insert new assignment only when no assignment exists for that class
+- Focused write smoke script added:
+  - `scripts/supabase-school-curriculum-write-smoke-test.mjs`
+  - package script: `npm run test:supabase:school-curriculum:write`
+- Smoke path checks branch-supervisor write success, read-back verification, parent/student write blocking, teacher write blocking (MVP read-only), optional HQ check, and cleanup/revert of fake class assignment values.
+- Scope remains intentionally limited:
+  - no `Classes` assignment/edit UI wiring yet
+  - no `Students` school profile edit UI yet
+  - no AI context integration changes yet
+- Validation and smoke data remain fake/dev-only; no real school/student/curriculum data is used.

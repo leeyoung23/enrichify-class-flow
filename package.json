@@ -21,6 +21,7 @@
     "test:supabase:class-memories:upload": "node scripts/supabase-class-memories-upload-smoke-test.mjs",
     "test:supabase:class-memories:approval": "node scripts/supabase-class-memories-approval-smoke-test.mjs",
     "test:supabase:school-curriculum:read": "node scripts/supabase-school-curriculum-read-smoke-test.mjs",
+    "test:supabase:school-curriculum:write": "node scripts/supabase-school-curriculum-write-smoke-test.mjs",
     "test:supabase:staff-time-clock": "node scripts/supabase-staff-time-clock-smoke-test.mjs",
     "test:supabase:staff-time-clock:review": "node scripts/supabase-staff-time-clock-review-smoke-test.mjs",
     "test:staff-time-clock:helpers": "node scripts/staff-time-clock-browser-helper-smoke-test.mjs",
