@@ -101,7 +101,7 @@ Use a consistent secure pattern:
 - Persist metadata in future `class_media` table with approval fields.
 - Branch/HQ moderation before parent visibility.
 - Parent view exposes approved memories only via signed URL delivery.
-- SQL draft now exists at `supabase/sql/011_class_memories_foundation.sql` (manual/dev-first, not auto-applied here).
+- SQL draft exists at `supabase/sql/011_class_memories_foundation.sql` and is manually applied in dev (see `docs/class-memories-sql-application-checkpoint.md`).
 - Draft uses `class_memories` metadata table + private `class-memories` bucket policies.
 - Runtime upload service/UI for Memories remains not wired in this phase.
 

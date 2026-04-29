@@ -155,13 +155,14 @@ Reminder: **Frontend filtering is not security. RLS must enforce access at datab
 
 - Draft patch reference: `supabase/sql/011_class_memories_foundation.sql` (manual review/apply only).
 - Adds draft `class_memories` table + private `class-memories` bucket policy set.
+- Manual dev-project application checkpoint recorded at `docs/class-memories-sql-application-checkpoint.md`.
 - Intended lifecycle in draft: `draft -> submitted -> approved + visible_to_parents=true`; plus `rejected` and `hidden`.
 - Upload order in draft is metadata-first:
   1. create `class_memories` draft row with intended `storage_path`
   2. upload object to private bucket
   3. update submit/review status
 - No runtime Memories upload service/UI is wired yet.
-- Continue using fake users and fake media blobs only.
+- Continue using fake users and fake media blobs only (no real photos/videos).
 
 #### Class Memories role checks (after manual apply in dev only)
 

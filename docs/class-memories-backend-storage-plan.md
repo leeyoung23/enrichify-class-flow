@@ -288,7 +288,7 @@ Validation efficiency:
 
 - SQL draft added: `supabase/sql/011_class_memories_foundation.sql`.
 - Draft includes `class_memories` table, private `class-memories` bucket insert, RLS policies, and storage policies.
-- Draft is manual/dev-first only and has **not** been auto-applied by this documentation step.
+- SQL was manually applied in the Supabase dev project (see `docs/class-memories-sql-application-checkpoint.md`).
 - No app UI changes and no runtime upload service/UI were added in this checkpoint.
 - Manual security review is required before any apply step.
 
