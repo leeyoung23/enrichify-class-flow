@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { useOutletContext } from 'react-router-dom';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { AlertCircle, BookOpen, CheckCircle2, ExternalLink, RefreshCw, Send, Sparkles } from 'lucide-react';
+import { AlertCircle, BookOpen, CheckCircle2, ExternalLink, RefreshCw, Send, Sparkles, Users } from 'lucide-react';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -47,13 +47,49 @@ const SUBMISSION_STATUS_BADGE = {
   approved_for_parent: 'bg-purple-100 text-purple-700 border-purple-200',
 };
 
+const TRACKER_STATUS_BADGE = {
+  Submitted: 'bg-blue-100 text-blue-700 border-blue-200',
+  'Not Submitted': 'bg-slate-100 text-slate-700 border-slate-200',
+  'Under Review': 'bg-amber-100 text-amber-700 border-amber-200',
+  Returned: 'bg-orange-100 text-orange-700 border-orange-200',
+  'Feedback Released': 'bg-purple-100 text-purple-700 border-purple-200',
+  'Follow-up Needed': 'bg-rose-100 text-rose-700 border-rose-200',
+};
+
 const DEMO_HOMEWORK_TASKS = [
   {
     id: 'demo-homework-task-1',
     title: 'Reading reflection worksheet',
     subject: 'Literacy',
     due_date: '2026-05-12',
+    assignment_scope: 'class',
   },
+  {
+    id: 'demo-homework-task-2',
+    title: 'Math challenge set B',
+    subject: 'Numeracy',
+    due_date: '2026-05-13',
+    assignment_scope: 'selected_students',
+  },
+  {
+    id: 'demo-homework-task-3',
+    title: 'Science summary paragraph',
+    subject: 'Science',
+    due_date: '2026-05-14',
+    assignment_scope: 'individual',
+  },
+];
+
+const DEMO_HOMEWORK_STUDENTS = [
+  { id: 'demo-student-01', name: 'Student Demo A', school: 'School A', stream: 'Year 5 Literacy Boost' },
+  { id: 'demo-student-02', name: 'Student Demo B', school: 'School B', stream: 'Year 5 Mixed Support' },
+  { id: 'demo-student-03', name: 'Student Demo C', school: 'School C', stream: 'Year 5 Extension' },
+];
+
+const DEMO_TASK_ASSIGNEES = [
+  { homework_task_id: 'demo-homework-task-2', student_id: 'demo-student-01' },
+  { homework_task_id: 'demo-homework-task-2', student_id: 'demo-student-03' },
+  { homework_task_id: 'demo-homework-task-3', student_id: 'demo-student-02' },
 ];
 
 const DEMO_HOMEWORK_SUBMISSIONS = [
@@ -66,9 +102,50 @@ const DEMO_HOMEWORK_SUBMISSIONS = [
     submission_note: 'Demo parent note: completed with support at home.',
     status: 'submitted',
   },
+  {
+    id: 'demo-homework-submission-2',
+    homework_task_id: 'demo-homework-task-2',
+    class_id: 'demo-class-1',
+    student_id: 'demo-student-01',
+    submitted_at: '2026-05-11T12:15:00.000Z',
+    submission_note: 'Demo parent note: challenge set attempted independently.',
+    status: 'under_review',
+  },
+  {
+    id: 'demo-homework-submission-3',
+    homework_task_id: 'demo-homework-task-2',
+    class_id: 'demo-class-1',
+    student_id: 'demo-student-03',
+    submitted_at: '2026-05-11T15:20:00.000Z',
+    submission_note: 'Demo parent note: extension work submitted.',
+    status: 'approved_for_parent',
+  },
+  {
+    id: 'demo-homework-submission-4',
+    homework_task_id: 'demo-homework-task-3',
+    class_id: 'demo-class-1',
+    student_id: 'demo-student-02',
+    submitted_at: '2026-05-12T08:05:00.000Z',
+    submission_note: 'Demo parent note: needs revision for detail depth.',
+    status: 'returned_for_revision',
+  },
 ];
 
 const DEMO_HOMEWORK_FILES = [
+  {
+    id: 'demo-homework-file-2',
+    homework_submission_id: 'demo-homework-submission-2',
+    file_name: 'math-challenge-demo-a.pdf',
+    content_type: 'application/pdf',
+    file_size_bytes: 322000,
+  },
+  {
+    id: 'demo-homework-file-3',
+    homework_submission_id: 'demo-homework-submission-4',
+    file_name: 'science-summary-demo-b.jpg',
+    content_type: 'image/jpeg',
+    file_size_bytes: 198000,
+  },
   {
     id: 'demo-homework-file-1',
     homework_submission_id: 'demo-homework-submission-1',
@@ -79,6 +156,30 @@ const DEMO_HOMEWORK_FILES = [
 ];
 
 const DEMO_HOMEWORK_FEEDBACK = [
+  {
+    id: 'demo-homework-feedback-2',
+    homework_submission_id: 'demo-homework-submission-2',
+    status: 'draft',
+    feedback_text: '',
+    next_step: '',
+    internal_note: '',
+  },
+  {
+    id: 'demo-homework-feedback-3',
+    homework_submission_id: 'demo-homework-submission-3',
+    status: 'released_to_parent',
+    feedback_text: 'Great effort on challenge strategies. Keep showing reasoning clearly.',
+    next_step: 'Try one additional extension question with step-by-step explanation.',
+    internal_note: '',
+  },
+  {
+    id: 'demo-homework-feedback-4',
+    homework_submission_id: 'demo-homework-submission-4',
+    status: 'draft',
+    feedback_text: 'Good attempt. Expand scientific vocabulary and add one supporting example.',
+    next_step: 'Revise and resubmit with 2-3 evidence points.',
+    internal_note: 'Follow-up needed for writing confidence.',
+  },
   {
     id: 'demo-homework-feedback-1',
     homework_submission_id: 'demo-homework-submission-1',
@@ -106,6 +207,8 @@ export default function Homework() {
 
   const [selectedTaskId, setSelectedTaskId] = useState('');
   const [selectedSubmissionId, setSelectedSubmissionId] = useState('');
+  const [activeViewMode, setActiveViewMode] = useState('by_task');
+  const [selectedStudentId, setSelectedStudentId] = useState('demo-student-01');
   const [submissionStatusFilter, setSubmissionStatusFilter] = useState('all');
   const [feedbackText, setFeedbackText] = useState('');
   const [nextStep, setNextStep] = useState('');
@@ -177,6 +280,105 @@ export default function Homework() {
     [taskRows, selectedSubmission?.homework_task_id]
   );
   const selectedFeedback = feedbackDataRows[0] || null;
+  const selectedTaskByFilter = useMemo(
+    () => taskRows.find((item) => item.id === selectedTaskId) || null,
+    [taskRows, selectedTaskId]
+  );
+
+  const demoAssignmentsByTask = useMemo(() => {
+    const map = new Map();
+    for (const row of DEMO_TASK_ASSIGNEES) {
+      if (!map.has(row.homework_task_id)) map.set(row.homework_task_id, new Set());
+      map.get(row.homework_task_id).add(row.student_id);
+    }
+    return map;
+  }, []);
+
+  const demoTaskTrackerRows = useMemo(() => {
+    if (!isDemoMode) return [];
+    return taskRows.map((task) => {
+      const scopedStudentIds = task.assignment_scope === 'class'
+        ? DEMO_HOMEWORK_STUDENTS.map((student) => student.id)
+        : Array.from(demoAssignmentsByTask.get(task.id) || []);
+      const taskSubmissions = demoSubmissions.filter((submission) => submission.homework_task_id === task.id);
+      const counts = {
+        assigned: scopedStudentIds.length,
+        submitted: 0,
+        notSubmitted: 0,
+        underReview: 0,
+        feedbackReleased: 0,
+      };
+      for (const studentId of scopedStudentIds) {
+        const submission = taskSubmissions.find((row) => row.student_id === studentId);
+        if (!submission) {
+          counts.notSubmitted += 1;
+          continue;
+        }
+        if (submission.status === 'submitted') counts.submitted += 1;
+        else if (submission.status === 'under_review' || submission.status === 'reviewed') counts.underReview += 1;
+        else if (submission.status === 'approved_for_parent') counts.feedbackReleased += 1;
+        else if (submission.status === 'returned_for_revision') counts.notSubmitted += 1;
+      }
+      const previewRows = scopedStudentIds.map((studentId) => ({
+        student: DEMO_HOMEWORK_STUDENTS.find((item) => item.id === studentId) || { id: studentId, name: studentId },
+        submission: taskSubmissions.find((row) => row.student_id === studentId) || null,
+      }));
+      return {
+        task,
+        counts,
+        previewRows,
+      };
+    });
+  }, [isDemoMode, taskRows, demoAssignmentsByTask, demoSubmissions]);
+
+  const demoStudentTrackerRows = useMemo(() => {
+    if (!isDemoMode) return [];
+    return DEMO_HOMEWORK_STUDENTS.map((student) => {
+      const assignedTasks = DEMO_HOMEWORK_TASKS.filter((task) => (
+        task.assignment_scope === 'class'
+        || (demoAssignmentsByTask.get(task.id)?.has(student.id))
+      ));
+      const items = assignedTasks.map((task) => {
+        const submission = demoSubmissions.find((row) => row.homework_task_id === task.id && row.student_id === student.id) || null;
+        let status = 'Not Submitted';
+        if (submission?.status === 'submitted') status = 'Submitted';
+        else if (submission?.status === 'under_review' || submission?.status === 'reviewed') status = 'Under Review';
+        else if (submission?.status === 'returned_for_revision') status = 'Returned';
+        else if (submission?.status === 'approved_for_parent') status = 'Feedback Released';
+
+        const hasReleasedFeedback = Boolean(
+          submission
+          && demoFeedbackRows.some(
+            (feedback) => feedback.homework_submission_id === submission.id && feedback.status === 'released_to_parent'
+          )
+        );
+        const followUpNeeded = status === 'Returned' || (
+          status === 'Not Submitted' && new Date(task.due_date).getTime() < Date.now()
+        );
+        if (followUpNeeded && status !== 'Returned') status = 'Follow-up Needed';
+
+        return { task, submission, status, hasReleasedFeedback };
+      });
+      const counts = {
+        submitted: items.filter((item) => item.status === 'Submitted').length,
+        notSubmitted: items.filter((item) => item.status === 'Not Submitted').length,
+        underReview: items.filter((item) => item.status === 'Under Review').length,
+        returned: items.filter((item) => item.status === 'Returned').length,
+        feedbackReleased: items.filter((item) => item.status === 'Feedback Released').length,
+        followUpNeeded: items.filter((item) => item.status === 'Follow-up Needed').length,
+      };
+      return { student, items, counts };
+    });
+  }, [isDemoMode, demoAssignmentsByTask, demoSubmissions, demoFeedbackRows]);
+
+  const selectedDemoTaskTracker = useMemo(
+    () => demoTaskTrackerRows.find((row) => row.task.id === selectedTaskId) || demoTaskTrackerRows[0] || null,
+    [demoTaskTrackerRows, selectedTaskId]
+  );
+  const selectedDemoStudentTracker = useMemo(
+    () => demoStudentTrackerRows.find((row) => row.student.id === selectedStudentId) || demoStudentTrackerRows[0] || null,
+    [demoStudentTrackerRows, selectedStudentId]
+  );
 
   useEffect(() => {
     if (!selectedTaskId && taskRows.length > 0) {
@@ -387,72 +589,204 @@ export default function Homework() {
           </p>
         </Card>
       ) : (
-        <div className="grid grid-cols-1 xl:grid-cols-5 gap-4">
-          <div className="xl:col-span-2 space-y-4">
-            <Card className="p-4">
-              <div className="space-y-3">
-                <Select value={selectedTaskId} onValueChange={setSelectedTaskId} disabled={tasksBusy}>
-                  <SelectTrigger>
-                    <SelectValue placeholder={tasksBusy ? 'Loading tasks...' : 'Filter by task'} />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {taskRows.map((task) => (
-                      <SelectItem key={task.id} value={task.id}>
-                        {task.title || 'Untitled task'}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                <Select value={submissionStatusFilter} onValueChange={setSubmissionStatusFilter}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Filter submissions" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {SUBMISSION_STATUS_OPTIONS.map((option) => (
-                      <SelectItem key={option.value} value={option.value}>
-                        {option.label}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-            </Card>
+        <div className="space-y-4">
+          <Card className="p-2 sm:p-3">
+            <div className="flex flex-wrap gap-2">
+              <Button
+                type="button"
+                variant={activeViewMode === 'by_task' ? 'default' : 'outline'}
+                className="min-h-10"
+                onClick={() => setActiveViewMode('by_task')}
+              >
+                <BookOpen className="h-4 w-4 mr-1" />
+                By Task
+              </Button>
+              <Button
+                type="button"
+                variant={activeViewMode === 'by_student' ? 'default' : 'outline'}
+                className="min-h-10"
+                onClick={() => setActiveViewMode('by_student')}
+              >
+                <Users className="h-4 w-4 mr-1" />
+                By Student
+              </Button>
+            </div>
+          </Card>
 
-            <Card className="p-4">
-              <div className="flex items-center justify-between mb-3">
-                <p className="font-medium">Submission queue</p>
-                <Badge variant="outline">{submissionRows.length}</Badge>
-              </div>
-              {submissionsBusy ? (
-                <p className="text-sm text-muted-foreground">Loading submissions...</p>
-              ) : submissionRows.length === 0 ? (
-                <p className="text-sm text-muted-foreground">No submissions available for this filter.</p>
-              ) : (
-                <div className="space-y-2 max-h-[480px] overflow-y-auto pr-1">
-                  {submissionRows.map((submission) => {
-                    const selected = submission.id === selectedSubmissionId;
-                    const statusClass = SUBMISSION_STATUS_BADGE[submission.status] || 'bg-muted text-muted-foreground border-border';
-                    return (
-                      <button
-                        key={submission.id}
-                        type="button"
-                        onClick={() => setSelectedSubmissionId(submission.id)}
-                        className={`w-full text-left rounded-lg border p-3 ${selected ? 'border-primary bg-primary/5' : 'border-border'}`}
-                      >
-                        <div className="flex items-center justify-between gap-2 mb-1">
-                          <p className="text-sm font-medium truncate">{submission.student_id}</p>
-                          <Badge variant="outline" className={statusClass}>
-                            {submission.status}
-                          </Badge>
-                        </div>
-                        <p className="text-xs text-muted-foreground truncate">Submission: {submission.id}</p>
-                        <p className="text-xs text-muted-foreground truncate">Task: {submission.homework_task_id}</p>
-                      </button>
-                    );
-                  })}
-                </div>
-              )}
-            </Card>
+          <div className="grid grid-cols-1 xl:grid-cols-5 gap-4">
+          <div className="xl:col-span-2 space-y-4">
+            {activeViewMode === 'by_task' ? (
+              <>
+                <Card className="p-4">
+                  <div className="space-y-3">
+                    <Select value={selectedTaskId} onValueChange={setSelectedTaskId} disabled={tasksBusy}>
+                      <SelectTrigger>
+                        <SelectValue placeholder={tasksBusy ? 'Loading tasks...' : 'Filter by task'} />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {taskRows.map((task) => (
+                          <SelectItem key={task.id} value={task.id}>
+                            {task.title || 'Untitled task'}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <Select value={submissionStatusFilter} onValueChange={setSubmissionStatusFilter}>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Filter submissions" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {SUBMISSION_STATUS_OPTIONS.map((option) => (
+                          <SelectItem key={option.value} value={option.value}>
+                            {option.label}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </Card>
+
+                {isDemoMode ? (
+                  <Card className="p-4">
+                    <div className="flex items-center justify-between mb-3">
+                      <p className="font-medium">By Task tracker (demo)</p>
+                      <Badge variant="outline">{demoTaskTrackerRows.length}</Badge>
+                    </div>
+                    <div className="space-y-2 max-h-[360px] overflow-y-auto pr-1">
+                      {demoTaskTrackerRows.map((row) => {
+                        const selected = row.task.id === selectedTaskId;
+                        const scopeLabel = row.task.assignment_scope === 'selected_students'
+                          ? 'selected students'
+                          : row.task.assignment_scope;
+                        return (
+                          <button
+                            key={row.task.id}
+                            type="button"
+                            onClick={() => setSelectedTaskId(row.task.id)}
+                            className={`w-full text-left rounded-lg border p-3 ${selected ? 'border-primary bg-primary/5' : 'border-border'}`}
+                          >
+                            <div className="flex items-center justify-between gap-2 mb-1">
+                              <p className="text-sm font-medium truncate">{row.task.title}</p>
+                              <Badge variant="outline">{scopeLabel}</Badge>
+                            </div>
+                            <p className="text-xs text-muted-foreground mb-2">Due {row.task.due_date || '—'}</p>
+                            <div className="grid grid-cols-2 gap-1 text-xs text-muted-foreground">
+                              <span>Assigned: {row.counts.assigned}</span>
+                              <span>Submitted: {row.counts.submitted}</span>
+                              <span>Not submitted: {row.counts.notSubmitted}</span>
+                              <span>Under review: {row.counts.underReview}</span>
+                              <span>Feedback released: {row.counts.feedbackReleased}</span>
+                            </div>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </Card>
+                ) : null}
+
+                <Card className="p-4">
+                  <div className="flex items-center justify-between mb-3">
+                    <p className="font-medium">Submission queue</p>
+                    <Badge variant="outline">{submissionRows.length}</Badge>
+                  </div>
+                  {submissionsBusy ? (
+                    <p className="text-sm text-muted-foreground">Loading submissions...</p>
+                  ) : submissionRows.length === 0 ? (
+                    <p className="text-sm text-muted-foreground">No submissions available for this filter.</p>
+                  ) : (
+                    <div className="space-y-2 max-h-[480px] overflow-y-auto pr-1">
+                      {submissionRows.map((submission) => {
+                        const selected = submission.id === selectedSubmissionId;
+                        const statusClass = SUBMISSION_STATUS_BADGE[submission.status] || 'bg-muted text-muted-foreground border-border';
+                        return (
+                          <button
+                            key={submission.id}
+                            type="button"
+                            onClick={() => setSelectedSubmissionId(submission.id)}
+                            className={`w-full text-left rounded-lg border p-3 ${selected ? 'border-primary bg-primary/5' : 'border-border'}`}
+                          >
+                            <div className="flex items-center justify-between gap-2 mb-1">
+                              <p className="text-sm font-medium truncate">{submission.student_id}</p>
+                              <Badge variant="outline" className={statusClass}>
+                                {submission.status}
+                              </Badge>
+                            </div>
+                            <p className="text-xs text-muted-foreground truncate">Submission: {submission.id}</p>
+                            <p className="text-xs text-muted-foreground truncate">Task: {submission.homework_task_id}</p>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  )}
+                </Card>
+              </>
+            ) : (
+              <>
+                <Card className="p-4">
+                  <div className="space-y-3">
+                    <Select value={selectedStudentId} onValueChange={setSelectedStudentId}>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select student" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {(isDemoMode ? DEMO_HOMEWORK_STUDENTS : []).map((student) => (
+                          <SelectItem key={student.id} value={student.id}>
+                            {student.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    {!isDemoMode ? (
+                      <p className="text-xs text-muted-foreground">
+                        By Student shell is planned. Real tracker data wiring remains future.
+                      </p>
+                    ) : null}
+                  </div>
+                </Card>
+
+                {isDemoMode ? (
+                  <Card className="p-4">
+                    <div className="flex items-center justify-between mb-3">
+                      <p className="font-medium">By Student tracker (demo)</p>
+                      <Badge variant="outline">{DEMO_HOMEWORK_STUDENTS.length}</Badge>
+                    </div>
+                    <div className="space-y-2 max-h-[420px] overflow-y-auto pr-1">
+                      {demoStudentTrackerRows.map((row) => {
+                        const selected = row.student.id === selectedStudentId;
+                        return (
+                          <button
+                            key={row.student.id}
+                            type="button"
+                            onClick={() => setSelectedStudentId(row.student.id)}
+                            className={`w-full text-left rounded-lg border p-3 ${selected ? 'border-primary bg-primary/5' : 'border-border'}`}
+                          >
+                            <div className="flex items-center justify-between gap-2">
+                              <p className="text-sm font-medium truncate">{row.student.name}</p>
+                              <Badge variant="outline">{row.items.length} tasks</Badge>
+                            </div>
+                            <p className="text-xs text-muted-foreground">{row.student.school} · {row.student.stream}</p>
+                            <div className="grid grid-cols-2 gap-1 mt-2 text-xs text-muted-foreground">
+                              <span>Submitted: {row.counts.submitted}</span>
+                              <span>Not submitted: {row.counts.notSubmitted}</span>
+                              <span>Under review: {row.counts.underReview}</span>
+                              <span>Returned: {row.counts.returned}</span>
+                              <span>Released: {row.counts.feedbackReleased}</span>
+                              <span>Follow-up: {row.counts.followUpNeeded}</span>
+                            </div>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </Card>
+                ) : (
+                  <Card className="p-4 border-dashed">
+                    <p className="text-sm text-muted-foreground">
+                      By Student tracking shell is now prepared in demo mode. Real authenticated tracker reads will be wired in a later phase.
+                    </p>
+                  </Card>
+                )}
+              </>
+            )}
           </div>
 
           <div className="xl:col-span-3 space-y-4">
@@ -464,11 +798,56 @@ export default function Homework() {
               <>
                 <Card className="p-5">
                   <div className="flex flex-wrap items-center justify-between gap-2 mb-3">
-                    <p className="font-medium">Submission detail</p>
+                    <p className="font-medium">
+                      {activeViewMode === 'by_student' ? 'Student detail + review' : 'Submission detail'}
+                    </p>
                     <Badge variant="outline" className={SUBMISSION_STATUS_BADGE[selectedSubmission.status] || ''}>
                       {selectedSubmission.status}
                     </Badge>
                   </div>
+                  {isDemoMode && activeViewMode === 'by_task' && selectedDemoTaskTracker ? (
+                    <div className="mb-4 rounded-lg border border-dashed p-3 bg-muted/20">
+                      <p className="text-sm font-medium mb-2">By Task demo detail</p>
+                      <p className="text-xs text-muted-foreground mb-2">
+                        {selectedTaskByFilter?.title || selectedDemoTaskTracker.task.title} · Scope {selectedDemoTaskTracker.task.assignment_scope}
+                      </p>
+                      <div className="grid grid-cols-2 sm:grid-cols-5 gap-2 text-xs">
+                        <Badge variant="outline">Assigned {selectedDemoTaskTracker.counts.assigned}</Badge>
+                        <Badge variant="outline">Submitted {selectedDemoTaskTracker.counts.submitted}</Badge>
+                        <Badge variant="outline">Not submitted {selectedDemoTaskTracker.counts.notSubmitted}</Badge>
+                        <Badge variant="outline">Under review {selectedDemoTaskTracker.counts.underReview}</Badge>
+                        <Badge variant="outline">Released {selectedDemoTaskTracker.counts.feedbackReleased}</Badge>
+                      </div>
+                    </div>
+                  ) : null}
+                  {isDemoMode && activeViewMode === 'by_student' && selectedDemoStudentTracker ? (
+                    <div className="mb-4 rounded-lg border border-dashed p-3 bg-muted/20">
+                      <p className="text-sm font-medium mb-2">By Student demo detail</p>
+                      <p className="text-xs text-muted-foreground mb-2">
+                        {selectedDemoStudentTracker.student.name} · {selectedDemoStudentTracker.student.school}
+                      </p>
+                      <div className="space-y-2">
+                        {selectedDemoStudentTracker.items.map((item) => (
+                          <button
+                            key={`${selectedDemoStudentTracker.student.id}-${item.task.id}`}
+                            type="button"
+                            onClick={() => item.submission && setSelectedSubmissionId(item.submission.id)}
+                            className="w-full text-left rounded-lg border p-2"
+                          >
+                            <div className="flex items-center justify-between gap-2">
+                              <p className="text-xs font-medium">{item.task.title}</p>
+                              <Badge variant="outline" className={TRACKER_STATUS_BADGE[item.status] || ''}>
+                                {item.status}
+                              </Badge>
+                            </div>
+                            <p className="text-[11px] text-muted-foreground">
+                              {item.submission ? `Submission ${item.submission.id}` : 'Assigned but not yet submitted'}
+                            </p>
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  ) : null}
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm">
                     <p><span className="text-muted-foreground">Submission ID:</span> {selectedSubmission.id}</p>
                     <p><span className="text-muted-foreground">Task ID:</span> {selectedSubmission.homework_task_id}</p>
@@ -639,6 +1018,7 @@ export default function Homework() {
               </>
             )}
           </div>
+        </div>
         </div>
       )}
     </div>

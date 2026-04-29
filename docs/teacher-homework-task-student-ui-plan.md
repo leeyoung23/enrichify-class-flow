@@ -241,3 +241,17 @@ Validation:
 - run build/lint/typecheck if runtime files changed
 - do not run unrelated full suites
 ```
+
+## Implementation checkpoint (A shell)
+
+Status update:
+
+- Teacher Homework UI shell now includes explicit `By Task` / `By Student` segmented structure in `src/pages/Homework.jsx`.
+- Demo parity is now expanded with local fake data for:
+  - task cards/scope/counts and selected task detail
+  - student cards/per-student items/status badges and quick tracker feel
+- Existing review detail/actions remain preserved in the same page flow.
+- Mock `Draft feedback with AI` remains local/provider-free and teacher-editable.
+- Real tracker read wiring is intentionally deferred to a future phase.
+- Selected-student assignment write services remain future.
+- Manual marked-file upload remains future.
