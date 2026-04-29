@@ -77,21 +77,47 @@ This step is service-proof focused only. No app UI changes, no runtime page beha
 ## 9) What remains future
 
 - write-side assignment services (selected students / individual assignment creation flows)
-- tracker-focused methods:
-  - `listHomeworkTrackerByClass`
-  - `listHomeworkTrackerByStudent`
 - Teacher Homework `By Task` / `By Student` UI wiring
 - parent assigned-but-not-submitted UI consumption from assignee-aware reads
 - manual marked-file upload path
 - AI marking integration with flexible assignment context
+- Announcements/Internal Communications integration remains future for homework tracker notifications
 
-## 10) Recommended next milestone
+## 10) Tracker read progress
 
-Recommendation: **A. Tracker-focused read methods (`listHomeworkTrackerByClass` / `listHomeworkTrackerByStudent`)**.
+Tracker-focused read methods are now added in `src/services/supabaseReadService.js`:
 
-Why A first:
+- `listHomeworkTrackerByClass({ classId, status })`
+- `listHomeworkTrackerByStudent({ studentId, status })`
 
-- assignee-aware baseline reads now exist and are smoke-testable
-- tracker methods can normalize both legacy submission-centric rows and new flexible assignee model
-- stabilizing tracker data shape before UI wiring reduces regressions and rework
-- parent/teacher view wiring should follow once tracker outputs are stable and validated
+Stable return shapes now exist for future Homework UI wiring:
+
+- By Task shape:
+  - `{ task, assignees, submissions, counts }`
+- By Student shape:
+  - `{ studentId, assignedItems, counts }`
+
+Safety/behavior notes:
+
+- anon client + current JWT only
+- no service role usage
+- no writes/mutations in tracker reads
+- class-scope compatibility is preserved without requiring per-student assignee rows
+- selected/individual scope still depends on explicit assignee rows
+- parent/student tracker reads remain RLS-governed
+- `internal_note` is not exposed in tracker payload
+
+Tracker smoke test added:
+
+- `scripts/supabase-homework-tracker-read-smoke-test.mjs`
+- package script: `npm run test:supabase:homework:tracker:read`
+
+## 11) Recommended next milestone
+
+Recommendation: **B. Write-side selected-student assignment services**.
+
+Why B next:
+
+- tracker read shapes now exist and are smoke-testable
+- selected/individual assignment creation remains missing for end-to-end flexible homework operations
+- write-side assignment APIs are required before safe UI wiring for assignment creation

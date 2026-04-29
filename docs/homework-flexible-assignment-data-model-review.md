@@ -249,8 +249,12 @@ Why A first:
 - Assignee-aware read services now exist for dev validation:
   - `listHomeworkTaskAssignees(...)`
   - `listAssignedHomeworkForStudent(...)`
+- Tracker-focused read services now exist for future Homework UI wiring:
+  - `listHomeworkTrackerByClass(...)`
+  - `listHomeworkTrackerByStudent(...)`
 - Dev smoke command now available:
   - `npm run test:supabase:homework:assignees:read`
+  - `npm run test:supabase:homework:tracker:read`
 
 ## 17) Next implementation prompt
 

@@ -21,6 +21,10 @@ const HOMEWORK_TASK_ASSIGNEE_FIELDS =
   "id,homework_task_id,branch_id,class_id,student_id,assigned_by_profile_id,assignment_status,due_date,notes,created_at,updated_at,homework_task:homework_tasks(id,branch_id,class_id,title,instructions,subject,due_date,status,assignment_scope,created_at,updated_at)";
 const HOMEWORK_TASK_FIELDS =
   "id,branch_id,class_id,created_by_profile_id,title,instructions,subject,due_date,status,assignment_scope,created_at,updated_at";
+const HOMEWORK_SUBMISSION_FIELDS =
+  "id,homework_task_id,branch_id,class_id,student_id,submitted_by_profile_id,submission_note,status,submitted_at,reviewed_at,reviewed_by_profile_id,created_at,updated_at";
+const HOMEWORK_FEEDBACK_RELEASE_FIELDS =
+  "id,homework_submission_id,status,released_to_parent_at,created_at,updated_at";
 
 function isUuidLike(value) {
   if (typeof value !== "string") return false;
@@ -29,6 +33,45 @@ function isUuidLike(value) {
 
 function trimString(value) {
   return typeof value === "string" ? value.trim() : "";
+}
+
+function mapSubmissionStatusToTrackerStatus(submissionStatus = "") {
+  const normalized = trimString(submissionStatus);
+  if (normalized === "submitted") return "submitted";
+  if (normalized === "under_review") return "underReview";
+  if (normalized === "returned_for_revision") return "returned";
+  if (normalized === "reviewed") return "reviewed";
+  if (normalized === "approved_for_parent") return "feedbackReleased";
+  return "";
+}
+
+function mapAssignmentStatusToTrackerStatus(assignmentStatus = "") {
+  const normalized = trimString(assignmentStatus);
+  if (normalized === "submitted") return "submitted";
+  if (normalized === "under_review") return "underReview";
+  if (normalized === "returned_for_revision") return "returned";
+  if (normalized === "reviewed") return "reviewed";
+  if (normalized === "feedback_released") return "feedbackReleased";
+  if (normalized === "assigned") return "assigned";
+  return "";
+}
+
+function createTrackerCounts() {
+  return {
+    assigned: 0,
+    submitted: 0,
+    underReview: 0,
+    returned: 0,
+    reviewed: 0,
+    feedbackReleased: 0,
+    notSubmitted: 0,
+  };
+}
+
+function incrementTrackerCount(counts, key) {
+  if (Object.prototype.hasOwnProperty.call(counts, key)) {
+    counts[key] += 1;
+  }
 }
 
 export async function getApprovedSalesKitResources() {
@@ -477,5 +520,277 @@ export async function listAssignedHomeworkForStudent({
     };
   } catch (error) {
     return { data: [], error };
+  }
+}
+
+export async function listHomeworkTrackerByClass({ classId, status } = {}) {
+  if (!isSupabaseConfigured() || !supabase) {
+    return { data: [], error: { message: "Supabase is not configured" } };
+  }
+  if (!isUuidLike(classId)) {
+    return { data: [], error: { message: "classId must be a UUID" } };
+  }
+
+  try {
+    const normalizedStatus = typeof status === "string" ? trimString(status) : "";
+    const [taskRead, assigneeRead, submissionRead, classStudentRead] = await Promise.all([
+      supabase
+        .from("homework_tasks")
+        .select(HOMEWORK_TASK_FIELDS)
+        .eq("class_id", trimString(classId))
+        .order("created_at", { ascending: false }),
+      supabase
+        .from("homework_task_assignees")
+        .select(HOMEWORK_TASK_ASSIGNEE_FIELDS)
+        .eq("class_id", trimString(classId))
+        .order("created_at", { ascending: false }),
+      supabase
+        .from("homework_submissions")
+        .select(HOMEWORK_SUBMISSION_FIELDS)
+        .eq("class_id", trimString(classId))
+        .order("created_at", { ascending: false }),
+      supabase
+        .from("students")
+        .select("id,class_id")
+        .eq("class_id", trimString(classId)),
+    ]);
+
+    if (taskRead.error) return { data: [], error: taskRead.error };
+    if (assigneeRead.error) return { data: [], error: assigneeRead.error };
+    if (submissionRead.error) return { data: [], error: submissionRead.error };
+    if (classStudentRead.error) return { data: [], error: classStudentRead.error };
+
+    const tasks = Array.isArray(taskRead.data) ? taskRead.data : [];
+    const assignees = Array.isArray(assigneeRead.data) ? assigneeRead.data : [];
+    const submissions = Array.isArray(submissionRead.data) ? submissionRead.data : [];
+    const classStudentIds = new Set(
+      (Array.isArray(classStudentRead.data) ? classStudentRead.data : [])
+        .map((row) => row?.id)
+        .filter(Boolean)
+    );
+
+    const taskById = new Map();
+    for (const task of tasks) {
+      if (task?.id) taskById.set(task.id, task);
+    }
+    for (const row of assignees) {
+      const task = row?.homework_task;
+      if (task?.id && !taskById.has(task.id)) taskById.set(task.id, task);
+    }
+
+    const assigneesByTaskId = new Map();
+    for (const row of assignees) {
+      if (!row?.homework_task_id) continue;
+      if (!assigneesByTaskId.has(row.homework_task_id)) assigneesByTaskId.set(row.homework_task_id, []);
+      assigneesByTaskId.get(row.homework_task_id).push(row);
+    }
+
+    const submissionsByTaskId = new Map();
+    for (const row of submissions) {
+      if (!row?.homework_task_id) continue;
+      if (!submissionsByTaskId.has(row.homework_task_id)) submissionsByTaskId.set(row.homework_task_id, []);
+      submissionsByTaskId.get(row.homework_task_id).push(row);
+    }
+
+    const trackerRows = [];
+    for (const [taskId, task] of taskById.entries()) {
+      const taskAssignees = assigneesByTaskId.get(taskId) || [];
+      const taskSubmissions = submissionsByTaskId.get(taskId) || [];
+      const studentState = new Map();
+
+      // Explicit assignee rows are source-of-truth for selected/individual tasks.
+      for (const assignee of taskAssignees) {
+        if (!assignee?.student_id) continue;
+        studentState.set(assignee.student_id, {
+          studentId: assignee.student_id,
+          assignee,
+          submission: null,
+        });
+      }
+
+      // Class-scope fallback: include class students even without explicit assignee rows.
+      if ((task?.assignment_scope || "class") === "class") {
+        for (const studentId of classStudentIds) {
+          if (!studentState.has(studentId)) {
+            studentState.set(studentId, {
+              studentId,
+              assignee: {
+                id: null,
+                homework_task_id: taskId,
+                branch_id: task?.branch_id || null,
+                class_id: task?.class_id || trimString(classId),
+                student_id: studentId,
+                assigned_by_profile_id: task?.created_by_profile_id || null,
+                assignment_status: "assigned",
+                due_date: task?.due_date || null,
+                notes: null,
+                created_at: task?.created_at || null,
+                updated_at: task?.updated_at || null,
+                assignment_source: "class_scope_fallback",
+              },
+              submission: null,
+            });
+          }
+        }
+      }
+
+      for (const submission of taskSubmissions) {
+        if (!submission?.student_id) continue;
+        const current = studentState.get(submission.student_id) || {
+          studentId: submission.student_id,
+          assignee: null,
+          submission: null,
+        };
+        current.submission = submission;
+        studentState.set(submission.student_id, current);
+      }
+
+      const counts = createTrackerCounts();
+      const statusFilterEnabled = !!normalizedStatus;
+      const normalizedEntries = [];
+
+      for (const row of studentState.values()) {
+        const derivedStatus =
+          mapSubmissionStatusToTrackerStatus(row?.submission?.status) ||
+          mapAssignmentStatusToTrackerStatus(row?.assignee?.assignment_status) ||
+          "assigned";
+        if (statusFilterEnabled && normalizedStatus !== derivedStatus) continue;
+        if (derivedStatus === "assigned") incrementTrackerCount(counts, "assigned");
+        if (derivedStatus === "submitted") incrementTrackerCount(counts, "submitted");
+        if (derivedStatus === "underReview") incrementTrackerCount(counts, "underReview");
+        if (derivedStatus === "returned") incrementTrackerCount(counts, "returned");
+        if (derivedStatus === "reviewed") incrementTrackerCount(counts, "reviewed");
+        if (derivedStatus === "feedbackReleased") incrementTrackerCount(counts, "feedbackReleased");
+        normalizedEntries.push({
+          studentId: row.studentId,
+          assignee: row.assignee,
+          submission: row.submission,
+          status: derivedStatus,
+        });
+      }
+
+      counts.notSubmitted = Math.max(0, normalizedEntries.length - (
+        counts.submitted + counts.underReview + counts.returned + counts.reviewed + counts.feedbackReleased
+      ));
+
+      trackerRows.push({
+        task,
+        assignees: normalizedEntries.map((item) => item.assignee).filter(Boolean),
+        submissions: normalizedEntries.map((item) => item.submission).filter(Boolean),
+        counts,
+      });
+    }
+
+    return { data: trackerRows, error: null };
+  } catch (error) {
+    return { data: [], error };
+  }
+}
+
+export async function listHomeworkTrackerByStudent({ studentId, status } = {}) {
+  if (!isSupabaseConfigured() || !supabase) {
+    return { data: null, error: { message: "Supabase is not configured" } };
+  }
+  if (!isUuidLike(studentId)) {
+    return { data: null, error: { message: "studentId must be a UUID" } };
+  }
+
+  try {
+    const normalizedStatus = typeof status === "string" ? trimString(status) : "";
+    const assignedRead = await listAssignedHomeworkForStudent({ studentId: trimString(studentId) });
+    if (assignedRead.error) return { data: null, error: assignedRead.error };
+    const assignedRows = Array.isArray(assignedRead.data) ? assignedRead.data : [];
+    const taskIds = [...new Set(assignedRows.map((row) => row?.homework_task_id).filter(Boolean))];
+
+    let submissions = [];
+    if (taskIds.length > 0) {
+      const submissionRead = await supabase
+        .from("homework_submissions")
+        .select(HOMEWORK_SUBMISSION_FIELDS)
+        .eq("student_id", trimString(studentId))
+        .in("homework_task_id", taskIds)
+        .order("created_at", { ascending: false });
+      if (submissionRead.error) return { data: null, error: submissionRead.error };
+      submissions = Array.isArray(submissionRead.data) ? submissionRead.data : [];
+    }
+
+    const submissionByTaskId = new Map();
+    for (const submission of submissions) {
+      if (!submission?.homework_task_id) continue;
+      const current = submissionByTaskId.get(submission.homework_task_id);
+      if (!current) {
+        submissionByTaskId.set(submission.homework_task_id, submission);
+        continue;
+      }
+      const currentCreated = new Date(current.created_at || 0).getTime();
+      const nextCreated = new Date(submission.created_at || 0).getTime();
+      if (nextCreated > currentCreated) submissionByTaskId.set(submission.homework_task_id, submission);
+    }
+
+    const submissionIds = [...new Set([...submissionByTaskId.values()].map((row) => row?.id).filter(Boolean))];
+    let feedbackRows = [];
+    if (submissionIds.length > 0) {
+      const feedbackRead = await supabase
+        .from("homework_feedback")
+        .select(HOMEWORK_FEEDBACK_RELEASE_FIELDS)
+        .in("homework_submission_id", submissionIds)
+        .eq("status", "released_to_parent")
+        .order("created_at", { ascending: false });
+      if (feedbackRead.error) return { data: null, error: feedbackRead.error };
+      feedbackRows = Array.isArray(feedbackRead.data) ? feedbackRead.data : [];
+    }
+
+    const releasedFeedbackSubmissionIds = new Set(
+      feedbackRows.map((row) => row?.homework_submission_id).filter(Boolean)
+    );
+
+    const counts = createTrackerCounts();
+    const assignedItems = [];
+
+    for (const row of assignedRows) {
+      const taskId = row?.homework_task_id;
+      if (!taskId) continue;
+      const submission = submissionByTaskId.get(taskId) || null;
+      const hasReleasedFeedback = !!(submission?.id && releasedFeedbackSubmissionIds.has(submission.id));
+      let derivedStatus =
+        mapSubmissionStatusToTrackerStatus(submission?.status) ||
+        mapAssignmentStatusToTrackerStatus(row?.assignment_status) ||
+        "assigned";
+      if (hasReleasedFeedback) derivedStatus = "feedbackReleased";
+      if (normalizedStatus && normalizedStatus !== derivedStatus) continue;
+
+      if (derivedStatus === "assigned") incrementTrackerCount(counts, "assigned");
+      if (derivedStatus === "submitted") incrementTrackerCount(counts, "submitted");
+      if (derivedStatus === "underReview") incrementTrackerCount(counts, "underReview");
+      if (derivedStatus === "returned") incrementTrackerCount(counts, "returned");
+      if (derivedStatus === "reviewed") incrementTrackerCount(counts, "reviewed");
+      if (derivedStatus === "feedbackReleased") incrementTrackerCount(counts, "feedbackReleased");
+
+      assignedItems.push({
+        task: row?.homework_task || null,
+        assignee: row,
+        submission,
+        status: derivedStatus,
+        hasReleasedFeedback,
+      });
+    }
+
+    counts.notSubmitted = Math.max(
+      0,
+      assignedItems.length - (
+        counts.submitted + counts.underReview + counts.returned + counts.reviewed + counts.feedbackReleased
+      )
+    );
+
+    return {
+      data: {
+        studentId: trimString(studentId),
+        assignedItems,
+        counts,
+      },
+      error: null,
+    };
+  } catch (error) {
+    return { data: null, error };
   }
 }

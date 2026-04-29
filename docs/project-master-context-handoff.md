@@ -198,6 +198,10 @@ Current status note:
   - `listHomeworkTaskAssignees(...)`
   - `listAssignedHomeworkForStudent(...)`
 - Assignee-read smoke test is now added at `scripts/supabase-homework-assignees-read-smoke-test.mjs` with package command `npm run test:supabase:homework:assignees:read`.
+- Homework tracker-focused read service methods are now added in `src/services/supabaseReadService.js`:
+  - `listHomeworkTrackerByClass(...)`
+  - `listHomeworkTrackerByStudent(...)`
+- Tracker-read smoke test is now added at `scripts/supabase-homework-tracker-read-smoke-test.mjs` with package command `npm run test:supabase:homework:tracker:read`.
 - Existing homework runtime/UI workflow remains unchanged until later service/UI migration; parent assigned-but-not-submitted visibility should later move to assignee-row based reads.
 - Homework feedback write service + smoke test are now started (`src/services/supabaseWriteService.js`, `scripts/supabase-homework-feedback-smoke-test.mjs`) for draft/create-update, review transition, release-to-parent, and parent draft-hidden checks.
 - Parent-visible feedback read path now omits `internal_note` from service response when `parentVisibleOnly` is requested.
