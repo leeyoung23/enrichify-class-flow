@@ -1,12 +1,12 @@
 # Staff Time Clock — browser permission & client helper plan
 
-Defines browser-side wrappers for **active GPS/geofence verification** and **selfie capture**, plus permission UX. **Helper modules are implemented** (`src/services/locationVerificationService.js`, `src/services/selfieCaptureService.js`). **`StaffTimeClock.jsx` (teacher)** uses location helpers only on **explicit GPS check** taps, camera helpers only on **Start camera / Capture selfie** (and stop/clear/reset). For **signed-in non-demo** staff, **Clock In** calls **`clockInStaff`** with the latest clock-in GPS check + selfie **Blob** (service performs storage upload + DB insert). **Clock Out** (`clockOutStaff`) is **not** wired from the UI yet. No `watchPosition`, no background tracking.
+Defines browser-side wrappers for **active GPS/geofence verification** and **selfie capture**, plus permission UX. **Helper modules are implemented** (`src/services/locationVerificationService.js`, `src/services/selfieCaptureService.js`). **`StaffTimeClock.jsx` (teacher)** uses location helpers only on **explicit GPS check** taps, camera helpers only on **Start camera / Capture selfie** (and stop/clear/reset). For **signed-in non-demo** staff, **Clock In** calls **`clockInStaff`** with the latest **clock-in** GPS check + selfie **Blob**; **Clock Out** calls **`clockOutStaff`** with the open entry id, latest **clock-out** GPS check + selfie **Blob** (service performs storage uploads + DB). No `watchPosition`, no background tracking.
 
 Related docs:
 
 - `docs/staff-time-clock-mobile-ui-plan.md` — mobile UI + location check wiring status.
 - `docs/staff-time-clock-advanced-plan.md` — product model (active checks at clock-in/out; no continuous background tracking by default).
-- `src/services/staffTimeClockService.js` — future consumer of coordinates + blobs (`clockInStaff`, `clockOutStaff`, `getStaffTimeSelfieSignedUrl`).
+- `src/services/staffTimeClockService.js` — `clockInStaff` / `clockOutStaff` / `getStaffTimeSelfieSignedUrl` (teacher UI uses the two clock functions; signed URL remains for future review UI).
 
 ---
 
@@ -19,7 +19,7 @@ Plan **safe**, **explicit** browser APIs for:
 - **Permission states** and recovery (denied, timeout, retry, route to pending review).
 - **Predictable `{ data, error }`** shapes aligned with existing Supabase service style.
 
-**Non-goals (still):** `clockOutStaff` from `StaffTimeClock`; direct Storage uploads **outside** `clockInStaff`; SQL/storage policy changes; service role in browser. **`clockInStaff`** is invoked from **Clock In** only for **non-demo** Supabase sessions (service owns upload). **Pure-function smoke:** `npm run test:staff-time-clock:helpers` (Haversine + `evaluateGeofence` in Node only).
+**Non-goals (still):** direct Storage uploads **outside** `clockInStaff` / `clockOutStaff`; SQL/storage policy changes; service role in browser. **`clockInStaff`** / **`clockOutStaff`** are invoked from **Clock In** / **Clock Out** only for **non-demo** Supabase sessions (services own uploads). **Pure-function smoke:** `npm run test:staff-time-clock:helpers` (Haversine + `evaluateGeofence` in Node only).
 
 ---
 
