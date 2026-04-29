@@ -2,7 +2,7 @@ import React, { useMemo, useState, useEffect } from 'react';
 import { getCurrentUser, getSelectedDemoRole } from '@/services/authService';
 import { getStudentById, getClassById, listAttendanceRecords, listParentUpdatesByStudent, getStudentFeeStatus, listHomeworkAttachmentsByStudent, uploadHomeworkAttachment } from '@/services/dataService';
 import { canAccessStudentRecord, ROLES } from '@/services/permissionService';
-import { uploadFeeReceipt, getFeeReceiptSignedUrl } from '@/services/supabaseUploadService';
+import { uploadFeeReceipt, getFeeReceiptSignedUrl, listClassMemories, getClassMemorySignedUrl } from '@/services/supabaseUploadService';
 import { useSupabaseAuthState } from '@/hooks/useSupabaseAuthState';
 import { isSupabaseConfigured } from '@/services/supabaseClient';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -360,6 +360,11 @@ const DEMO_CLASS_MEMORIES_HISTORY = [
   },
 ];
 
+function isUuidLike(value) {
+  return typeof value === 'string'
+    && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(value.trim());
+}
+
 /**
  * Parent-facing Class Memories demo only (no class_media / storage; fake captions and placeholders).
  * Internal schema may use class_media — not wired here.
@@ -441,6 +446,124 @@ function ClassMemoriesDemoSection({ className }) {
   );
 }
 
+function ParentClassMemoriesSection({ className, latestMemory, historyMemories, signedUrlByMemoryId, loading, error }) {
+  const displayClass = className || 'Class Memories';
+
+  if (loading) {
+    return (
+      <Card className="mb-6">
+        <CardContent className="pt-6 flex items-center gap-2 text-sm text-muted-foreground">
+          <Loader2 className="h-4 w-4 animate-spin" />
+          Loading Class Memories...
+        </CardContent>
+      </Card>
+    );
+  }
+
+  if (error) {
+    return (
+      <Card className="mb-6 border-dashed">
+        <CardContent className="pt-6 text-sm text-muted-foreground">
+          {error}
+        </CardContent>
+      </Card>
+    );
+  }
+
+  return (
+    <div className="space-y-4 mb-6">
+      <div className="flex items-start gap-2">
+        <Sparkles className="h-5 w-5 text-amber-500 shrink-0 mt-0.5" aria-hidden />
+        <div>
+          <h2 className="text-lg font-semibold tracking-tight">Latest Memory</h2>
+          <p className="text-sm text-muted-foreground mt-1">A warm class moment from your child&apos;s learning journey.</p>
+        </div>
+      </div>
+
+      {!latestMemory ? (
+        <Card className="border-dashed">
+          <CardContent className="pt-6">
+            <p className="text-sm text-muted-foreground">No approved Memories yet.</p>
+          </CardContent>
+        </Card>
+      ) : (
+        <Card className="overflow-hidden border-amber-100/80 bg-gradient-to-b from-amber-50/40 to-card">
+          <CardContent className="p-0">
+            {signedUrlByMemoryId[latestMemory.id] ? (
+              <img
+                src={signedUrlByMemoryId[latestMemory.id]}
+                alt={latestMemory.title || 'Latest class memory'}
+                className="h-44 w-full object-cover"
+              />
+            ) : (
+              <div className="h-44 w-full bg-gradient-to-br from-amber-100 via-rose-50 to-violet-100 flex items-center justify-center text-muted-foreground/70 text-xs px-4 text-center">
+                Memory preview unavailable
+              </div>
+            )}
+            <div className="p-4 space-y-2">
+              <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
+                <Badge variant="outline">{displayClass}</Badge>
+                <span>{latestMemory.created_at ? new Date(latestMemory.created_at).toLocaleDateString('en-AU') : 'Recent'}</span>
+              </div>
+              <p className="text-sm font-medium leading-snug">{latestMemory.title?.trim() || 'Latest Class Memory'}</p>
+              <p className="text-sm text-muted-foreground">{latestMemory.caption?.trim() || 'A recent learning moment from class.'}</p>
+              {historyMemories.length > 0 && (
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  className="mt-1"
+                  onClick={() => document.getElementById('class-memories-history')?.scrollIntoView({ behavior: 'smooth' })}
+                >
+                  View Class Memories History
+                </Button>
+              )}
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      <Card id="class-memories-history">
+        <CardHeader className="pb-3">
+          <CardTitle className="text-base">Class Memories History</CardTitle>
+          <p className="text-sm text-muted-foreground font-normal">Approved Memories from your child&apos;s class.</p>
+        </CardHeader>
+        <CardContent>
+          {historyMemories.length === 0 ? (
+            <p className="text-sm text-muted-foreground">No earlier approved Memories yet.</p>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {historyMemories.map((item) => (
+                <div key={item.id} className="rounded-lg border border-border/80 overflow-hidden bg-card">
+                  {signedUrlByMemoryId[item.id] ? (
+                    <img
+                      src={signedUrlByMemoryId[item.id]}
+                      alt={item.title || 'Class memory'}
+                      className="h-32 w-full object-cover"
+                    />
+                  ) : (
+                    <div className="h-32 w-full bg-gradient-to-r from-sky-50 via-indigo-50 to-fuchsia-50 flex items-center justify-center text-[11px] text-muted-foreground/80 px-3 text-center">
+                      Memory preview unavailable
+                    </div>
+                  )}
+                  <div className="p-3 space-y-1.5">
+                    <div className="flex flex-wrap gap-2 text-xs text-muted-foreground">
+                      <span>{item.created_at ? new Date(item.created_at).toLocaleDateString('en-AU') : 'Recent'}</span>
+                      <Badge variant="secondary" className="text-xs font-normal">{displayClass}</Badge>
+                    </div>
+                    <p className="text-sm font-medium leading-relaxed">{item.title?.trim() || 'Class Memory'}</p>
+                    <p className="text-sm text-muted-foreground leading-relaxed">{item.caption?.trim() || 'No caption provided.'}</p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </CardContent>
+      </Card>
+    </div>
+  );
+}
+
 export default function ParentView() {
   const { user: supabaseUser } = useSupabaseAuthState();
   const urlParams = new URLSearchParams(window.location.search);
@@ -464,6 +587,10 @@ export default function ParentView() {
   const [receiptUploadLoading, setReceiptUploadLoading] = useState(false);
   const [receiptLinkLoading, setReceiptLinkLoading] = useState(false);
   const [homeworkAttachments, setHomeworkAttachments] = useState([]);
+  const [realClassMemories, setRealClassMemories] = useState([]);
+  const [classMemorySignedUrls, setClassMemorySignedUrls] = useState({});
+  const [classMemoriesLoading, setClassMemoriesLoading] = useState(false);
+  const [classMemoriesError, setClassMemoriesError] = useState('');
 
   const latestApprovedUpdate = useMemo(() => updates[0], [updates]);
 
@@ -502,6 +629,72 @@ export default function ParentView() {
       }
     })();
   }, [studentId]);
+
+  useEffect(() => {
+    let cancelled = false;
+    const loadRealParentMemories = async () => {
+      if (isDemoMode || !hasSupabaseSession || !isSupabaseConfigured() || !student?.id) {
+        setRealClassMemories([]);
+        setClassMemorySignedUrls({});
+        setClassMemoriesError('');
+        setClassMemoriesLoading(false);
+        return;
+      }
+      const safeClassId = cls?.id;
+      if (!isUuidLike(student.id) || !isUuidLike(safeClassId)) {
+        setRealClassMemories([]);
+        setClassMemorySignedUrls({});
+        setClassMemoriesError('Class Memories are not available for this parent context yet.');
+        setClassMemoriesLoading(false);
+        return;
+      }
+
+      setClassMemoriesLoading(true);
+      setClassMemoriesError('');
+      try {
+        const listResult = await listClassMemories({
+          classId: safeClassId,
+          studentId: student.id,
+          parentVisibleOnly: true,
+        });
+        if (listResult.error) {
+          throw new Error(listResult.error.message || 'Unable to load approved Memories.');
+        }
+
+        const rows = Array.isArray(listResult.data) ? listResult.data : [];
+        const orderedRows = [...rows].sort((a, b) => new Date(b.created_at || 0) - new Date(a.created_at || 0));
+        if (cancelled) return;
+        setRealClassMemories(orderedRows);
+
+        const previewRows = orderedRows.slice(0, 10);
+        const signedEntries = await Promise.all(previewRows.map(async (row) => {
+          const result = await getClassMemorySignedUrl({ memoryId: row.id, expiresIn: 300 });
+          if (result.error || !result.data?.signed_url) {
+            return [row.id, null];
+          }
+          return [row.id, result.data.signed_url];
+        }));
+        if (!cancelled) {
+          setClassMemorySignedUrls(Object.fromEntries(signedEntries.filter((entry) => entry[1])));
+        }
+      } catch (error) {
+        if (!cancelled) {
+          setRealClassMemories([]);
+          setClassMemorySignedUrls({});
+          setClassMemoriesError(error?.message || 'Unable to load Class Memories.');
+        }
+      } finally {
+        if (!cancelled) {
+          setClassMemoriesLoading(false);
+        }
+      }
+    };
+
+    void loadRealParentMemories();
+    return () => {
+      cancelled = true;
+    };
+  }, [isDemoMode, hasSupabaseSession, student?.id, cls?.id]);
 
   const refreshFeeStatus = async () => {
     if (!viewer || !student?.id) return;
@@ -648,7 +841,20 @@ export default function ParentView() {
           </div>
         </div>
 
-        {!isDemoStudentPreview && <ClassMemoriesDemoSection className={cls?.name} />}
+        {!isDemoStudentPreview && (
+          isDemoMode
+            ? <ClassMemoriesDemoSection className={cls?.name} />
+            : (
+              <ParentClassMemoriesSection
+                className={cls?.name}
+                latestMemory={realClassMemories[0] || null}
+                historyMemories={realClassMemories.slice(1)}
+                signedUrlByMemoryId={classMemorySignedUrls}
+                loading={classMemoriesLoading}
+                error={classMemoriesError}
+              />
+            )
+        )}
 
         {!isDemoStudentPreview && (
           <Card className="mb-6">

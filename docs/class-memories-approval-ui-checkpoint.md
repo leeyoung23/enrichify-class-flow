@@ -65,8 +65,8 @@ Current flow:
 
 ## 5) What remains
 
-- Parent Latest Memory real wiring.
-- Memories History/archive real wiring.
+- Parent Latest Memory polish (real wiring is now implemented in `ParentView`).
+- Memories History/archive polish (real wiring is now implemented in `ParentView`).
 - Gallery/grid polish for Memories History UI.
 - Hide/archive UI wiring (service path exists; UI remains future).
 - Thumbnail/video support.
@@ -87,4 +87,9 @@ Why this is next:
 
 ---
 
-Checkpoint status: approval/release review UI is wired for HQ/branch supervisor, safety controls remain in place, and parent-facing Memories display phases remain future work.
+Update:
+
+- Parent-facing Latest Memory + Memories History now use approved+visible Supabase Memory rows for authenticated non-demo parent flow in `ParentView`.
+- Parent demoRole continues to use local/demo memory placeholders only.
+
+Checkpoint status: approval/release review gate is wired and parent display now follows approved+visible access; additional polish phases remain future work.

@@ -22,6 +22,7 @@ Scope note:
 - Long, dense card sequence can create scrolling fatigue and action discoverability issues.
 - Fee status + proof upload area uses native file input and multiple stacked actions; risk of unclear action hierarchy on small screens.
 - “Learning Portal & Uploads” button block may become crowded with long labels.
+- Latest Memory + Class Memories History now include real approved-memory display for non-demo parent flow; verify hero-card readability and history gallery card wrapping on ~390px and ~768px.
 
 ### `ParentUpdates`
 
@@ -106,6 +107,7 @@ At each width, verify:
 Status update:
 
 - `ParentView` payment proof mobile polish: implemented.
+- `ParentView` Latest Memory + Memories History real parent wiring: implemented (gallery/card-grid direction retained).
 - `FeeTracking` staff action button wrap/stack polish: implemented.
 - `AppLayout`/sidebar responsive behavior review: implemented with minimal fix to avoid content squeeze on small screens while preserving desktop sidebar behavior.
 - `StaffTimeClock` mobile mock UI: implemented (see `docs/staff-time-clock-mobile-ui-plan.md` §0).

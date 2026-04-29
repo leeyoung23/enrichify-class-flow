@@ -298,7 +298,9 @@ Validation efficiency:
   - `npm run test:supabase:class-memories:upload`
 - Teacher Add Memory UI: implemented as a minimal teacher-only Add Memory card in `ParentUpdates` using `uploadClassMemory(...)` with submit-for-review flow.
 - No approval/release UI yet.
-- No parent Latest Memory / Memories History UI wiring yet.
+- Parent Latest Memory + Memories History real wiring: implemented in `ParentView` for authenticated non-demo parent path using approved+visible Memories only.
+- Parent Memories History layout direction: gallery/card-grid style (mobile-first stack, multi-column where space allows), not a long one-by-one feed.
+- Thumbnail/video polish pipeline: still future.
 - Fake data only; no real photos/videos/files.
 - Manual security review is required before any apply step.
 
