@@ -210,7 +210,7 @@ Planned validation guardrails:
 - **Phase 1:** planning doc (this file).
 - **Phase 2:** SQL/storage/RLS draft.
 - **Phase 3:** service upload method + fake image smoke test.
-- **Phase 4:** teacher upload UI mock/local.
+- **Phase 4:** teacher upload UI mock/local. (implemented in `ParentUpdates` as a minimal Add Memory card with image-only submit-for-review wiring)
 - **Phase 5:** real teacher upload path.
 - **Phase 6:** approval/release UI.
 - **Phase 7:** parent Latest Memory + History.
@@ -296,7 +296,7 @@ Validation efficiency:
   - `getClassMemoryById(...)`
   - `scripts/supabase-class-memories-upload-smoke-test.mjs`
   - `npm run test:supabase:class-memories:upload`
-- No teacher Add Memory UI yet.
+- Teacher Add Memory UI: implemented as a minimal teacher-only Add Memory card in `ParentUpdates` using `uploadClassMemory(...)` with submit-for-review flow.
 - No approval/release UI yet.
 - No parent Latest Memory / Memories History UI wiring yet.
 - Fake data only; no real photos/videos/files.

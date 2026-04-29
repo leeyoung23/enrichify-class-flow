@@ -5,6 +5,7 @@ import { listClasses, listStudentsByClass, listParentUpdates, createParentUpdate
 import { getSelectedDemoRole } from '@/services/authService';
 import { ROLES, isTeacherRole } from '@/services/permissionService';
 import { isSupabaseConfigured } from '@/services/supabaseClient';
+import { uploadClassMemory } from '@/services/supabaseUploadService';
 import { updateParentCommentDraft, releaseParentComment, updateWeeklyProgressReportDraft, releaseWeeklyProgressReport } from '@/services/supabaseWriteService';
 import { generateParentCommentDraft } from '@/services/aiDraftService';
 import { useSupabaseAuthState } from '@/hooks/useSupabaseAuthState';
@@ -12,6 +13,7 @@ import { Sparkles, Save, Loader2, CheckCircle2, Share2, MessageSquarePlus, Eye, 
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Textarea } from '@/components/ui/textarea';
+import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
 import PageHeader from '@/components/shared/PageHeader';
@@ -34,6 +36,9 @@ const STATUS_LABELS = {
   approved: 'Approved report',
   shared: 'Shared report',
 };
+
+const MEMORY_ALLOWED_TYPES = ['image/jpeg', 'image/png', 'image/webp'];
+const MEMORY_MAX_SIZE_BYTES = 5 * 1024 * 1024;
 
 function getStatusBadgeVariant(status) {
   if (status === 'shared') return 'default';
@@ -86,6 +91,9 @@ export default function ParentUpdates() {
     status: 'Draft',
   });
   const [weeklyDraftGenerated, setWeeklyDraftGenerated] = useState(false);
+  const [memoryTitle, setMemoryTitle] = useState('');
+  const [memoryCaption, setMemoryCaption] = useState('');
+  const [memoryFile, setMemoryFile] = useState(null);
   const queryClient = useQueryClient();
   const isTeacher = isTeacherRole(user);
   const isDemoMode = Boolean(getSelectedDemoRole());
@@ -123,6 +131,12 @@ export default function ParentUpdates() {
 
   const selectedStudent = students.find((s) => s.id === selectedStudentId);
   const selectedClass = classes.find((c) => c.id === selectedClassId);
+  const canUseSupabaseMemoryUpload = !isDemoMode && Boolean(supabaseAppUser?.id) && isSupabaseConfigured();
+
+  const isUuidLike = (value) => (
+    typeof value === 'string'
+    && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(value.trim())
+  );
 
   const sourceSnapshot = useMemo(() => {
     if (!selectedStudentId) {
@@ -502,6 +516,76 @@ export default function ParentUpdates() {
     setWeeklyReport((prev) => ({ ...prev, status: 'Draft', teacherComment: '' }));
   };
 
+  const resetMemoryForm = () => {
+    setMemoryTitle('');
+    setMemoryCaption('');
+    setMemoryFile(null);
+  };
+
+  const memoryUploadMutation = useMutation({
+    mutationFn: async () => {
+      if (!selectedClassId) {
+        throw new Error('Select a class before submitting a Memory.');
+      }
+      if (!memoryFile) {
+        throw new Error('Select an image file before submitting a Memory.');
+      }
+      if (!MEMORY_ALLOWED_TYPES.includes(memoryFile.type)) {
+        throw new Error('Only JPEG, PNG, or WEBP images are allowed.');
+      }
+      if (memoryFile.size > MEMORY_MAX_SIZE_BYTES) {
+        throw new Error('Image size must be 5MB or less.');
+      }
+
+      if (isDemoMode) {
+        return { mode: 'demo' };
+      }
+
+      if (!canUseSupabaseMemoryUpload) {
+        throw new Error('Sign in with Supabase teacher auth before submitting a Memory.');
+      }
+
+      const safeBranchId = selectedClass?.branch_id || user?.branch_id || null;
+      if (!isUuidLike(safeBranchId)) {
+        throw new Error('Branch ID is unavailable for this class context. Cannot upload safely yet.');
+      }
+      if (!isUuidLike(selectedClassId)) {
+        throw new Error('Class ID is unavailable for upload. Select a valid class from Supabase data.');
+      }
+      if (selectedStudentId && !isUuidLike(selectedStudentId)) {
+        throw new Error('Selected student ID is not valid for upload.');
+      }
+
+      const result = await uploadClassMemory({
+        branchId: safeBranchId,
+        classId: selectedClassId,
+        studentId: selectedStudentId || null,
+        title: memoryTitle,
+        caption: memoryCaption,
+        file: memoryFile,
+        fileName: memoryFile.name,
+        contentType: memoryFile.type,
+        submitForReview: true,
+      });
+
+      if (result.error) {
+        throw new Error(result.error.message || 'Unable to submit Memory for review.');
+      }
+      return { mode: 'supabase', data: result.data };
+    },
+    onSuccess: (result) => {
+      if (result.mode === 'demo') {
+        toast.success('Demo mode: Memory submission simulated locally only. No upload was made.');
+      } else {
+        toast.success('Memory submitted for review.');
+      }
+      resetMemoryForm();
+    },
+    onError: (error) => {
+      toast.error(error?.message || 'Unable to submit Memory for review.');
+    },
+  });
+
   return (
     <div>
       <PageHeader
@@ -522,6 +606,64 @@ export default function ParentUpdates() {
               <Card className="p-6">
                 <h3 className="font-semibold mb-2">Parent Updates</h3>
                 <p className="text-sm text-muted-foreground mb-4">Create teacher-approved quick comments after class, or prepare fixed weekly progress reports for parent review.</p>
+
+                <Card className="p-4 border-dashed mb-4">
+                  <h4 className="font-medium mb-1">Add Memory</h4>
+                  <p className="text-xs text-muted-foreground mb-4">Submit a class Memory for review. Parents will only see approved Memories.</p>
+                  <div className="space-y-3">
+                    <Input
+                      value={memoryTitle}
+                      onChange={(e) => setMemoryTitle(e.target.value)}
+                      placeholder="Memory title (optional)"
+                    />
+                    <Textarea
+                      value={memoryCaption}
+                      onChange={(e) => setMemoryCaption(e.target.value)}
+                      placeholder="Caption"
+                      className="min-h-[110px]"
+                    />
+                    <Input
+                      type="file"
+                      accept={MEMORY_ALLOWED_TYPES.join(',')}
+                      onChange={(e) => {
+                        const file = e.target.files?.[0] || null;
+                        if (!file) {
+                          setMemoryFile(null);
+                          return;
+                        }
+                        if (!MEMORY_ALLOWED_TYPES.includes(file.type)) {
+                          toast.error('Only JPEG, PNG, or WEBP images are allowed.');
+                          e.target.value = '';
+                          setMemoryFile(null);
+                          return;
+                        }
+                        if (file.size > MEMORY_MAX_SIZE_BYTES) {
+                          toast.error('Image size must be 5MB or less.');
+                          e.target.value = '';
+                          setMemoryFile(null);
+                          return;
+                        }
+                        setMemoryFile(file);
+                      }}
+                    />
+                    <p className="text-xs text-muted-foreground">Accepted: JPEG, PNG, WEBP up to 5MB.</p>
+                    {!isDemoMode && !canUseSupabaseMemoryUpload && (
+                      <p className="text-xs text-amber-700">Supabase teacher sign-in is required for real Memory upload.</p>
+                    )}
+                    {isDemoMode && (
+                      <p className="text-xs text-muted-foreground">Demo mode only: this does not upload to Supabase.</p>
+                    )}
+                    <Button
+                      type="button"
+                      className="w-full sm:w-auto min-h-11"
+                      disabled={!selectedClassId || !memoryCaption.trim() || !memoryFile || memoryUploadMutation.isPending}
+                      onClick={() => memoryUploadMutation.mutate()}
+                    >
+                      {memoryUploadMutation.isPending ? 'Submitting...' : 'Submit Memory for review'}
+                    </Button>
+                    <p className="text-xs text-muted-foreground">Parents will only see approved Memories.</p>
+                  </div>
+                </Card>
 
                 <div className="inline-flex rounded-lg border border-border p-1 mb-4">
                   <Button

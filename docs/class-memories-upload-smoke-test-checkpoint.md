@@ -67,7 +67,7 @@ The smoke test verifies:
 
 Still not implemented:
 
-- Teacher Add Memory UI.
+- Teacher Add Memory UI (minimal teacher card in `ParentUpdates`) now wired to `uploadClassMemory(...)` for submit-for-review.
 - Approval/release UI.
 - Parent Latest Memory UI wiring.
 - Parent Memories History/archive UI wiring.
@@ -88,5 +88,5 @@ Why:
 
 ---
 
-Checkpoint status: Class Memories upload service layer and fake image smoke test are validated; UI phases remain next.
+Checkpoint status: Class Memories upload service layer and fake image smoke test are validated; teacher Add Memory UI is now wired and continues to rely on this service-level smoke test as proof for upload path integrity.
 
