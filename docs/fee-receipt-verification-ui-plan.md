@@ -2,6 +2,12 @@
 
 Planning only. No app UI, runtime verification logic, or schema changes in this phase. Use fake test data and dev projects only for future implementation and smoke tests.
 
+Business workflow clarification:
+
+- Receipt upload is an **exception path** for unresolved payment confirmation.
+- Normal payment confirmation is an internal supervisor/HQ process.
+- Invoice/e-invoice automation after payment confirmation is a separate future stream.
+
 ## 1) Current Fee Tracking behavior
 
 As of the Fee Tracking receipt upload checkpoint:
@@ -15,13 +21,19 @@ References: `src/pages/FeeTracking.jsx`, `src/services/dataService.js` (`listFee
 
 ## 2) Target verification behavior
 
-### HQ admin
+### HQ admin (staff-side Fee Tracking requirements)
 
 - See **all branches** fee rows that are in a **staff-reviewable** state (e.g. `verification_status = submitted` / `under_review`, product decision).
 - Open receipt via **signed URL** only (reuse `getFeeReceiptSignedUrl` or a thin wrapper with role checks in UI).
 - **Mark verified:** set verification fields and optionally align `fee_records.status` / payment narrative (separate product decision; do not auto-verify payment without explicit rules).
 - **Reject** with **internal note** (staff-visible; decide separately whether parents see a redacted “rejection reason”).
 - See **audit fields:** `verified_by_profile_id`, `verified_at`, `uploaded_by_profile_id`, `uploaded_at`, `verification_status`, `internal_note`.
+- Staff Fee Tracking must include:
+  - **View Uploaded Receipt** (signed URL)
+  - **Verify Payment**
+  - **Reject / Request Resubmission**
+  - **Internal note**
+  - **Status tracking**
 
 ### Branch supervisor
 
@@ -31,7 +43,7 @@ References: `src/pages/FeeTracking.jsx`, `src/services/dataService.js` (`listFee
 
 ### Parent
 
-- **Upload** receipt (already implemented for non-demo Supabase).
+- **Upload payment proof if requested** (already implemented for non-demo Supabase).
 - **See status:** submitted → verified / rejected (and any intermediate state you define).
 - **Cannot** verify or reject; no writes to staff-only columns from parent (DB trigger already restricts parent updates to receipt metadata; see `009`).
 

@@ -1,6 +1,11 @@
 # Fee receipt upload smoke test checkpoint
 
-This checkpoint captures the fee receipt upload milestone with service + smoke-test validation and parent Fee Tracking upload UI wiring.
+This checkpoint captures the fee receipt upload milestone with service + smoke-test validation.
+
+Workflow clarification:
+
+- Receipt upload is an **exception flow** for unresolved payment tracking when office/HQ requests payment proof.
+- It is **not** the normal/default payment process.
 
 ## 1) What was implemented
 
@@ -9,7 +14,7 @@ This checkpoint captures the fee receipt upload milestone with service + smoke-t
   - `getFeeReceiptSignedUrl({ feeRecordId, expiresIn })`
 - Added a dedicated smoke script for fee receipt upload lifecycle using fake tiny blob data only.
 - Added npm script to run the smoke test.
-- Wired parent Fee Tracking receipt upload action to `uploadFeeReceipt(...)` for authenticated non-demo Supabase users.
+- Wired parent portal payment-proof upload action to `uploadFeeReceipt(...)` for authenticated non-demo Supabase users.
 - Updated planning/checkpoint docs to reflect service+smoke-test readiness and remaining UI work.
 
 ## 2) Files changed
@@ -23,7 +28,7 @@ This checkpoint captures the fee receipt upload milestone with service + smoke-t
 
 ## 3) Upload flow proven (smoke test)
 
-- Parent uploads a **fake tiny blob** (`text/plain`) successfully.
+- Parent uploads a **fake tiny blob** (`text/plain`) successfully in exception-style proof flow.
 - Object is stored in private `fee-receipts` bucket.
 - `fee_records` metadata updates correctly (`receipt_file_path`, `receipt_storage_bucket`, `uploaded_by_profile_id`, `uploaded_at`, `verification_status=submitted`).
 - Signed URL retrieval works for authorized access.
@@ -48,13 +53,15 @@ This checkpoint captures the fee receipt upload milestone with service + smoke-t
 
 ## 6) Manual preview/future checklist
 
-- Future parent Fee Tracking upload UI action.
+- Parent upload entrypoint in `/parent-view` exists; continue treating it as “submit proof if requested”.
 - Future branch supervisor verification/rejection UI action.
 - Future HQ fee receipt overview/monitoring UI.
 
 ## 7) What remains
 
 - Verification/rejection UI workflow and status actions.
+- Office/HQ payment-proof request automation (email/in-app prompt) is future.
+- Invoice/e-invoice automation after payment confirmation is future.
 - Production-grade file validation.
 - File size/type limits and stricter sanitization controls.
 - Signed URL display/download handling in UI.
@@ -62,10 +69,10 @@ This checkpoint captures the fee receipt upload milestone with service + smoke-t
 
 ## 8) Recommended next milestone
 
-Recommended next milestone: **Fee Tracking parent upload UI wiring**.
+Recommended next milestone: **Supervisor/HQ verification and review UI wiring**.
 
 Why this next:
 
 - Service and policy behavior are now validated by smoke tests.
-- Parent upload is the first user-facing action that unlocks the rest of the review lifecycle.
-- Supervisor/HQ verification UI should follow once parent upload interaction is stable in-app.
+- Parent proof upload is now available for exception handling.
+- Supervisor/HQ verification UI should follow to close the exception workflow.

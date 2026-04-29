@@ -2,6 +2,12 @@
 
 This review evaluates whether current schema, RLS drafts, and storage policy drafts are ready for the first fee-receipt upload vertical, without implementing runtime upload code.
 
+Business clarification:
+
+- Fee receipt upload is intended as an **exception-based proof path**.
+- Normal payment confirmation remains an internal supervisor/HQ workflow.
+- Invoice/e-invoice sending after confirmed payment is a separate future automation track.
+
 ## 1) Current `fee_records` receipt metadata coverage
 
 `supabase/sql/001_mvp_schema.sql` currently includes all requested receipt metadata fields on `fee_records`:
@@ -54,7 +60,7 @@ Readiness against requested upload expectations:
 
 ### Policy and workflow gaps
 
-- Parent cannot currently update `fee_records` metadata fields (`receipt_file_path`, `uploaded_at`, etc.).
+- Parent cannot currently update `fee_records` metadata fields (`receipt_file_path`, `uploaded_at`, etc.) in exception-proof flow.
 - Current storage `insert` policy for `fee-receipts` requires a matching `fee_records.receipt_file_path = storage.objects.name` row; without parent update rights this creates a practical upload flow blocker.
 - No explicit storage `update/delete` policy for receipt replacement/cleanup lifecycle.
 
@@ -66,7 +72,7 @@ Readiness against requested upload expectations:
 
 ### Design choice risk
 
-- Parent writing directly to `fee_records` is simple, but may mix financial record lifecycle and receipt event history in one row.
+- Parent writing directly to `fee_records` is simple for exception-proof handling, but may mix financial record lifecycle and receipt event history in one row.
 - If audit/history depth is required later, a separate `payment_receipts` table may still be needed.
 
 ## 5) Recommended first implementation approach

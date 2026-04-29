@@ -11,14 +11,14 @@ This document plans the first safe Supabase Storage/upload foundation without im
 
 ## 2) Candidate upload verticals
 
-### Fee receipt upload
+### Fee receipt upload (exception-based proof flow)
 
-- **Uploader:** parent (or office staff in controlled exceptions).
+- **Uploader:** parent when payment proof is requested by office/HQ (or office staff in controlled exceptions).
 - **Reviewer/approver:** branch supervisor verifies branch records; HQ can audit all.
 - **Parent/student visibility:** parent sees own child/payment state; student generally not uploader.
 - **Likely bucket:** `fee-receipts` (private).
 - **Metadata table needs:** `fee_records` already has receipt bucket/path, uploader, upload time, verifier, verification state.
-- **Risks:** receipt privacy, wrong-branch access, forged status updates, exposing private files via public URLs.
+- **Risks:** receipt privacy, wrong-branch access, forged status updates, exposing private files via public URLs, and accidentally treating proof upload as default payment flow.
 
 ### Homework upload
 
@@ -49,12 +49,12 @@ This document plans the first safe Supabase Storage/upload foundation without im
 
 ## 3) Recommended first upload vertical
 
-Recommended first vertical: **Fee receipt upload**.
+Recommended first vertical: **Fee receipt upload (exception proof path)**.
 
 Why first:
 
 - Schema support is already close (`fee_records` includes receipt path/bucket and verification fields).
-- Clear reviewer chain (parent upload -> branch supervisor verify -> HQ audit).
+- Clear reviewer chain for unresolved cases (parent proof upload -> branch supervisor verify -> HQ audit).
 - Lower complexity than homework (which intersects class/student/task/AI pipelines).
 - Lower privacy/moderation complexity than memories media rollout.
 - Strong business value with constrained workflow and simpler smoke-test surface.
@@ -73,7 +73,7 @@ Use a consistent secure pattern:
 
 ## 5) Fee receipt upload plan (recommended)
 
-- Parent uploads receipt screenshot/photo (fake test files only in early validation).
+- Parent uploads payment proof screenshot/photo only when requested for unresolved payment matching (fake test files only in early validation).
 - File stored in private `fee-receipts` bucket.
 - Metadata linked to `fee_records` row:
   - `receipt_storage_bucket`
@@ -85,6 +85,7 @@ Use a consistent secure pattern:
 - HQ can review all branches.
 - Teacher role blocked from verification/write path.
 - Parent sees only own linked child/payment status and own receipt reference flow.
+- Normal “payment confirmed -> invoice/e-invoice sent” flow remains separate and is future automation work.
 
 ## 6) Homework upload plan (next candidate)
 

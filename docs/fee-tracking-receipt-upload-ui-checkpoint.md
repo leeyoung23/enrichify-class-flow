@@ -1,11 +1,17 @@
 # Fee Tracking receipt upload UI checkpoint
 
-This checkpoint documents the **parent receipt upload UI** wired to Supabase for authenticated **non-demo** parent users via the parent portal. It does not cover supervisor or HQ verification UI.
+This checkpoint documents the **exception-only parent payment proof upload UI** wired to Supabase for authenticated **non-demo** parent users via the parent portal. It does not cover supervisor or HQ verification UI.
+
+Business workflow clarification:
+
+- Normal payment flow is internal: parent pays, supervisor/HQ confirms internally, and invoice/e-invoice automation is a separate future stream.
+- Parent receipt upload is **not** the default payment path.
+- Parent uploads payment proof only when office/HQ requests proof for unresolved or unmatched payment tracking.
 
 ## 1) What was implemented
 
 - **Read path:** `listFeeRecords` in `dataService.js` loads real `fee_records` from Supabase when demo role is off and Supabase is configured, mapping rows to the existing Fee Tracking card shape and exposing `fee_records.id` as the record `id` (with `data_source: 'supabase_fee_records'`).
-- **Parent portal page (`/parent-view`):** Parents can upload payment receipt files from the Fee Status card using **Upload Payment Receipt** (calls `uploadFeeReceipt`), with loading and toast feedback.
+- **Parent portal page (`/parent-view`):** Parents can submit payment proof from the Fee Status card when requested by office/HQ (calls `uploadFeeReceipt`), with loading and toast feedback.
 - **Optional view:** **View Uploaded Receipt** opens a **signed URL** from `getFeeReceiptSignedUrl` for rows that already have receipt metadata.
 - **Guards:** Client-side MIME allowlist (PNG, JPEG, PDF; plain text allowed for testing) and **5MB** max size before upload.
 - **No auto-verification:** Upload updates receipt metadata and verification state per service/RLS behavior; no UI action marks payment verified.
@@ -31,12 +37,13 @@ This document: `docs/fee-tracking-receipt-upload-ui-checkpoint.md`.
 
 ## 3) Parent upload lifecycle
 
-1. Parent opens `/parent-view` and selects a file in the Fee Status card (non-demo, Supabase session, real fee row id).
-2. **File type/size guard** runs in the browser; invalid choices are rejected with a message (no upload).
-3. **`uploadFeeReceipt`** uploads the file object to the private **`fee-receipts`** bucket (path convention enforced server-side via storage policies).
-4. **`fee_records`** row is updated with receipt metadata (e.g. path, bucket, uploader, timestamps, submitted verification state) per existing service and RLS/trigger rules.
-5. **Signed URL:** If a receipt path exists, parent can use **View Uploaded Receipt** to open a time-limited signed URL only (bucket stays private).
-6. **No auto-verification:** Payment is not auto-marked paid; supervisor/HQ flows remain separate and unwired in UI.
+1. Office/HQ requests payment proof for an unresolved payment case.
+2. Parent opens `/parent-view` and selects a file in the Fee Status card (non-demo, Supabase session, real fee row id).
+3. **File type/size guard** runs in the browser; invalid choices are rejected with a message (no upload).
+4. **`uploadFeeReceipt`** uploads the file object to the private **`fee-receipts`** bucket (path convention enforced server-side via storage policies).
+5. **`fee_records`** row is updated with receipt metadata (e.g. path, bucket, uploader, timestamps, submitted verification state) per existing service and RLS/trigger rules.
+6. **Signed URL:** If a receipt path exists, parent can use **View Uploaded Receipt** to open a time-limited signed URL only (bucket stays private).
+7. **No auto-verification:** Payment is not auto-marked paid; supervisor/HQ flows remain separate and unwired in UI.
 
 ## 4) How demoRole avoids uploads
 
@@ -66,6 +73,8 @@ Use **fake or non-sensitive test files only** (e.g. tiny PNG/JPEG/PDF or test pl
 
 - **Supervisor** verification / rejection UI and actions.
 - **HQ** verification / audit overview UI.
+- **Office-request flow automation** (request payment proof by email/in-app) is future.
+- **Invoice/e-invoice automation** after confirmed payment is future.
 - **Production** file validation polish (stricter MIME sniffing, UX copy, server-aligned limits).
 - **Storage cleanup / admin** tooling for orphaned objects or operational fixes.
 

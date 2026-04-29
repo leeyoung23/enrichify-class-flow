@@ -562,7 +562,7 @@ export default function ParentView() {
       }
       setSelectedReceiptFile(null);
       await refreshFeeStatus();
-      toast.success('Receipt uploaded successfully. Status submitted for staff review.');
+      toast.success('Payment proof submitted. Status submitted for staff review.');
     } catch (error) {
       toast.error(error?.message || 'Unable to upload receipt');
     } finally {
@@ -715,7 +715,7 @@ export default function ParentView() {
                       <div><p className="text-xs text-muted-foreground">Receipt Uploaded</p><p>{feeStatus.receipt_uploaded ? 'Yes' : 'No'}</p></div>
                     </div>
                     <div className="mt-4 space-y-2">
-                      <p className="text-xs text-muted-foreground">Payment Receipts</p>
+                      <p className="text-xs text-muted-foreground">Payment proof (submit if requested)</p>
                       <input
                         type="file"
                         accept=".png,.jpg,.jpeg,.pdf,.txt"
@@ -729,7 +729,7 @@ export default function ParentView() {
                         onClick={handleReceiptUpload}
                         disabled={receiptUploadLoading}
                       >
-                        {receiptUploadLoading ? 'Uploading...' : 'Upload Payment Receipt'}
+                        {receiptUploadLoading ? 'Uploading...' : 'Upload Payment Proof'}
                       </Button>
                       {feeStatus.receipt_uploaded && (
                         <Button
