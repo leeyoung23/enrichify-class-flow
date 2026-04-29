@@ -201,11 +201,16 @@ Reminder: **Frontend filtering is not security. RLS must enforce access at datab
   - parent/student no template/manage writes
 - Draft status:
   - manually applied in dev
-  - no UI/runtime service wiring yet
+  - read service + read smoke test now added
+  - no UI wiring yet
   - no AI integration yet
   - continue fake-data-only role checks before any UI/runtime wiring
 - Manual application checkpoint:
   - `docs/school-curriculum-sql-application-checkpoint.md`
+- Read smoke references:
+  - `src/services/supabaseReadService.js`
+  - `scripts/supabase-school-curriculum-read-smoke-test.mjs`
+  - `npm run test:supabase:school-curriculum:read`
 
 #### School/Curriculum role checks (after manual apply in dev only)
 

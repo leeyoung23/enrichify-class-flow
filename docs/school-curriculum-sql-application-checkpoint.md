@@ -63,13 +63,17 @@ Security constraints to preserve:
 
 Still not implemented:
 
-- school/curriculum read service,
-- school/curriculum smoke test script,
 - `Classes` curriculum assignment UI,
 - `Students` school profile UI,
 - `ParentView` learning focus summary,
 - AI context integration for school/curriculum domain,
 - production curriculum data import/onboarding pipeline.
+
+Now implemented in this phase:
+
+- school/curriculum read service methods in `src/services/supabaseReadService.js`,
+- school/curriculum read smoke test script `scripts/supabase-school-curriculum-read-smoke-test.mjs`,
+- npm script `test:supabase:school-curriculum:read`.
 
 ---
 
@@ -77,13 +81,13 @@ Still not implemented:
 
 Recommended next milestone:
 
-- **School/curriculum read service + smoke test**
+- **Classes/Students/ParentView curriculum UI wiring (after read smoke stability)**
 
 Why this next:
 
-- SQL/RLS foundation is now applied in dev.
-- Highest immediate risk is proving role-scoped read correctness before any UI wiring.
-- UI should follow only after read behavior is validated for HQ/supervisor/teacher/parent/student boundaries.
+- SQL/RLS foundation is applied in dev and read service + smoke test are now present.
+- Next value step is safely exposing role-scoped read context into staff/parent UI surfaces.
+- AI context integration should still wait until UI/read behavior is stable and reviewed.
 
 ---
 

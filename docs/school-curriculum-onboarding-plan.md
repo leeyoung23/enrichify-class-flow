@@ -310,7 +310,17 @@ Planning status: ready for Phase 2 SQL/RLS draft.
 - Status update: manually applied in Supabase dev.
 - Current runtime state remains unchanged:
   - no app UI wiring yet
-  - no runtime service wiring yet
+  - no runtime write service wiring yet
   - no AI integration wiring yet
 - Continue using fake/dev-safe data only for any future validation of this draft.
 - Application checkpoint doc: `docs/school-curriculum-sql-application-checkpoint.md`.
+
+## 13) Read service + smoke status update
+
+- School/curriculum read service methods added in `src/services/supabaseReadService.js`.
+- School/curriculum read smoke test added at `scripts/supabase-school-curriculum-read-smoke-test.mjs`.
+- Package script added: `npm run test:supabase:school-curriculum:read`.
+- Scope remains read-only validation before any UI wiring.
+- UI work remains future.
+- AI integration remains future.
+- Continue fake/dev-safe data only for role-scope verification.
