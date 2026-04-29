@@ -289,6 +289,16 @@ Validation efficiency:
 - SQL draft added: `supabase/sql/011_class_memories_foundation.sql`.
 - Draft includes `class_memories` table, private `class-memories` bucket insert, RLS policies, and storage policies.
 - SQL was manually applied in the Supabase dev project (see `docs/class-memories-sql-application-checkpoint.md`).
-- No app UI changes and no runtime upload service/UI were added in this checkpoint.
+- Upload service + fake image smoke test now added:
+  - `uploadClassMemory(...)`
+  - `getClassMemorySignedUrl(...)`
+  - `listClassMemories(...)`
+  - `getClassMemoryById(...)`
+  - `scripts/supabase-class-memories-upload-smoke-test.mjs`
+  - `npm run test:supabase:class-memories:upload`
+- No teacher Add Memory UI yet.
+- No approval/release UI yet.
+- No parent Latest Memory / Memories History UI wiring yet.
+- Fake data only; no real photos/videos/files.
 - Manual security review is required before any apply step.
 

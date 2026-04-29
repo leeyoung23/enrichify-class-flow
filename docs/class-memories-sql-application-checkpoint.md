@@ -60,8 +60,6 @@ Verified in dev project after manual apply:
 
 Still not implemented:
 
-- Class Memories upload service.
-- Fake image upload smoke test.
 - Teacher `+ Add Memory` UI flow.
 - Approval/release UI flow.
 - Parent Latest Memory real card wiring.
@@ -72,13 +70,13 @@ Still not implemented:
 
 ## 5) Recommended next milestone
 
-Recommend: **Class Memories upload service + fake image smoke test**.
+Recommend: **Teacher-facing Add Memory UI mock/local flow** (after service proof).
 
 Why this is next:
 
 - SQL/RLS/storage foundation is now applied in dev.
-- The immediate risk is proving metadata-first upload flow and private signed URL access behavior.
-- Service-level verification should be stable before wiring teacher/parent UI surfaces.
+- Upload service + fake image smoke test now cover metadata-first upload and private signed URL behavior.
+- Next product value is giving teachers a safe UI entrypoint (still without parent release UI yet).
 
 ---
 
@@ -93,7 +91,7 @@ Docs now align with this checkpoint:
 Alignment notes:
 
 - `011` is applied in dev manually.
-- Upload service remains future.
+- Upload service + fake image smoke test are available (`npm run test:supabase:class-memories:upload`).
 - Fake data only for validation.
 - No real photos/videos/files should be used at this stage.
 

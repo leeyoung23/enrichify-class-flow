@@ -161,7 +161,11 @@ Reminder: **Frontend filtering is not security. RLS must enforce access at datab
   1. create `class_memories` draft row with intended `storage_path`
   2. upload object to private bucket
   3. update submit/review status
-- No runtime Memories upload service/UI is wired yet.
+- Service + smoke references:
+  - `src/services/supabaseUploadService.js` (`uploadClassMemory`, `getClassMemorySignedUrl`, `listClassMemories`, `getClassMemoryById`)
+  - `scripts/supabase-class-memories-upload-smoke-test.mjs`
+  - `npm run test:supabase:class-memories:upload`
+- Teacher/parent Memories UI surfaces are still not wired.
 - Continue using fake users and fake media blobs only (no real photos/videos).
 
 #### Class Memories role checks (after manual apply in dev only)
