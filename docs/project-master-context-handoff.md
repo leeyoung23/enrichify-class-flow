@@ -200,8 +200,8 @@ Current status note:
 - Homework AI mock test is now added at `scripts/ai-homework-feedback-mock-test.mjs` and package command `npm run test:ai:homework-feedback:mock`.
 - `Homework` teacher review panel now includes mock-only `Draft feedback with AI` action that fills editable draft fields only (no auto-save/release, no real provider/API call).
 - Supabase Edge Function homework AI stub is now added at `supabase/functions/generate-homework-feedback-draft/index.ts` with local handler `supabase/functions/generate-homework-feedback-draft/handler.js` and local contract test `scripts/ai-homework-edge-function-stub-test.mjs`.
-- Homework Edge Function stub currently validates method/auth header presence/request shape and returns deterministic draft-only `data/error` mock output (no provider call, no provider key usage, no release automation).
-- Frontend `Homework` page remains on local mock draft button path in this phase; provider wiring and full role/scope enforcement remain future work.
+- Homework Edge Function stub now includes auth/scope helper flow with Supabase JWT user verification path, role gating (teacher/branch supervisor/HQ only), and submission/task/student/class relationship checks while preserving deterministic draft-only mock output.
+- Frontend `Homework` page remains on local mock draft button path in this phase; provider wiring and broader deployed-environment auth regression hardening remain future work.
 - AI homework feedback remains a future milestone after full human workflow hardening.
 - Notification/email workflow remains a future milestone.
 

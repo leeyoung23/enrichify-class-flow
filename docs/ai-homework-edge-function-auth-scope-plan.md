@@ -237,3 +237,21 @@ Validation efficiency:
 - If runtime files changed, run build/lint/typecheck + targeted AI stub tests only.
 - Do not run unrelated suites.
 ```
+
+## 14) Implementation checkpoint (auth/scope helper added)
+
+- Edge Function handler now supports injected auth/scope resolver flow and fail-closed behavior.
+- `index.ts` now wires a Supabase JWT + RLS-safe resolver path for:
+  - token/user verification,
+  - role gating,
+  - submission/task/student/class relationship checks,
+  - branch/class alignment checks.
+- Role enforcement now blocks parent/student and non-staff roles for AI homework draft generation.
+- Function output remains deterministic mock-only draft response; no provider call is introduced.
+
+Current implementation boundaries:
+
+- Still no real provider integration.
+- Still no provider key usage.
+- Frontend `Homework` page remains on local mock path in this phase.
+- Teacher approval gate remains mandatory before any save/release workflow actions.

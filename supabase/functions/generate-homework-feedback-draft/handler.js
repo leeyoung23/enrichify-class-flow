@@ -4,6 +4,13 @@ function sanitizeText(value, fallback = "") {
   return next || fallback;
 }
 
+function normalizeRole(role) {
+  const safe = sanitizeText(role).toLowerCase().replace(/\s+/g, "_");
+  if (safe === "admin" || safe === "hq" || safe === "hqadmin") return "hq_admin";
+  if (safe === "branchsupervisor") return "branch_supervisor";
+  return safe;
+}
+
 function jsonResponse(body, status = 200) {
   return new Response(JSON.stringify(body), {
     status,
@@ -14,10 +21,46 @@ function jsonResponse(body, status = 200) {
   });
 }
 
+function errorBody(code, message) {
+  return {
+    data: null,
+    error: { code, message },
+  };
+}
+
 function getBearerToken(req) {
   const authHeader = req.headers.get("Authorization") || req.headers.get("authorization") || "";
   const match = authHeader.match(/^Bearer\s+(.+)$/i);
   return match?.[1]?.trim() || "";
+}
+
+function buildRequestPayload(body = {}) {
+  return {
+    homeworkSubmissionId: sanitizeText(body?.homeworkSubmissionId),
+    homeworkTaskId: sanitizeText(body?.homeworkTaskId),
+    studentId: sanitizeText(body?.studentId),
+    classId: sanitizeText(body?.classId),
+    teacherObservation: sanitizeText(body?.teacherObservation),
+    mode: sanitizeText(body?.mode, "stub"),
+    tone: sanitizeText(body?.tone, "supportive"),
+    length: sanitizeText(body?.length, "short"),
+  };
+}
+
+function validateRequestPayload(payload) {
+  if (!payload.homeworkSubmissionId || !payload.homeworkTaskId || !payload.studentId || !payload.classId) {
+    return "homeworkSubmissionId, homeworkTaskId, studentId, and classId are required.";
+  }
+  return "";
+}
+
+function defaultAuthScopeResolver() {
+  return {
+    ok: false,
+    status: 401,
+    code: "invalid_auth",
+    message: "JWT verification is required but no auth resolver is configured.",
+  };
 }
 
 function buildMockHomeworkDraft({
@@ -70,81 +113,65 @@ function buildMockHomeworkDraft({
 }
 
 export async function handleGenerateHomeworkFeedbackDraftRequest(req) {
+  return handleGenerateHomeworkFeedbackDraftRequestWithResolver(req, {});
+}
+
+export async function handleGenerateHomeworkFeedbackDraftRequestWithResolver(
+  req,
+  { resolveAuthScope = defaultAuthScopeResolver } = {},
+) {
   try {
     if (req.method !== "POST") {
-      return jsonResponse(
-        {
-          data: null,
-          error: {
-            code: "method_not_allowed",
-            message: "Method not allowed. Use POST.",
-          },
-        },
-        405,
-      );
+      return jsonResponse(errorBody("method_not_allowed", "Method not allowed. Use POST."), 405);
     }
 
     const bearerToken = getBearerToken(req);
     if (!bearerToken) {
-      return jsonResponse(
-        {
-          data: null,
-          error: {
-            code: "missing_auth",
-            message: "Authorization Bearer token is required.",
-          },
-        },
-        401,
-      );
+      return jsonResponse(errorBody("missing_auth", "Authorization Bearer token is required."), 401);
     }
 
     let body;
     try {
       body = await req.json();
     } catch {
-      return jsonResponse(
-        {
-          data: null,
-          error: {
-            code: "invalid_json",
-            message: "Invalid JSON body.",
-          },
-        },
-        400,
-      );
+      return jsonResponse(errorBody("invalid_json", "Invalid JSON body."), 400);
     }
 
-    const homeworkSubmissionId = sanitizeText(body?.homeworkSubmissionId);
-    const homeworkTaskId = sanitizeText(body?.homeworkTaskId);
-    const studentId = sanitizeText(body?.studentId);
-    const classId = sanitizeText(body?.classId);
-    const teacherObservation = sanitizeText(body?.teacherObservation);
-    const mode = sanitizeText(body?.mode, "stub");
-    const tone = sanitizeText(body?.tone, "supportive");
-    const length = sanitizeText(body?.length, "short");
+    const payload = buildRequestPayload(body);
+    const requiredValidationMessage = validateRequestPayload(payload);
+    if (requiredValidationMessage) {
+      return jsonResponse(errorBody("invalid_request", requiredValidationMessage), 400);
+    }
 
-    if (!homeworkSubmissionId || !homeworkTaskId || !studentId || !classId) {
+    const authScope = await resolveAuthScope({
+      bearerToken,
+      payload,
+      normalizeRole,
+    });
+    if (!authScope?.ok) {
+      const status = Number(authScope?.status) || 403;
+      const code = sanitizeText(authScope?.code, "scope_denied");
+      const message = sanitizeText(authScope?.message, "Role/scope denied for this request.");
+      return jsonResponse(errorBody(code, message), status);
+    }
+
+    const resolvedRole = normalizeRole(authScope?.requesterRole);
+    if (resolvedRole === "parent" || resolvedRole === "student") {
       return jsonResponse(
-        {
-          data: null,
-          error: {
-            code: "invalid_request",
-            message: "homeworkSubmissionId, homeworkTaskId, studentId, and classId are required.",
-          },
-        },
-        400,
+        errorBody("scope_denied", "Only authorised staff can generate homework AI drafts."),
+        403,
       );
     }
 
     const draft = buildMockHomeworkDraft({
-      homeworkSubmissionId,
-      homeworkTaskId,
-      studentId,
-      classId,
-      teacherObservation,
-      mode,
-      tone,
-      length,
+      homeworkSubmissionId: payload.homeworkSubmissionId,
+      homeworkTaskId: payload.homeworkTaskId,
+      studentId: payload.studentId,
+      classId: payload.classId,
+      teacherObservation: payload.teacherObservation,
+      mode: payload.mode,
+      tone: payload.tone,
+      length: payload.length,
     });
 
     return jsonResponse({
@@ -152,15 +179,6 @@ export async function handleGenerateHomeworkFeedbackDraftRequest(req) {
       error: null,
     });
   } catch {
-    return jsonResponse(
-      {
-        data: null,
-        error: {
-          code: "internal_error",
-          message: "Unexpected error while generating mock homework feedback draft.",
-        },
-      },
-      500,
-    );
+    return jsonResponse(errorBody("internal_error", "Unexpected error while generating mock homework feedback draft."), 500);
   }
 }

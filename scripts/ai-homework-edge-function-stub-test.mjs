@@ -1,4 +1,4 @@
-import { handleGenerateHomeworkFeedbackDraftRequest } from "../supabase/functions/generate-homework-feedback-draft/handler.js";
+import { handleGenerateHomeworkFeedbackDraftRequestWithResolver } from "../supabase/functions/generate-homework-feedback-draft/handler.js";
 
 function printResult(kind, message) {
   console.log(`[${kind}] ${message}`);
@@ -41,7 +41,12 @@ async function testSuccessShape() {
       length: "short",
     },
   });
-  const res = await handleGenerateHomeworkFeedbackDraftRequest(req);
+  const res = await handleGenerateHomeworkFeedbackDraftRequestWithResolver(req, {
+    resolveAuthScope: async () => ({
+      ok: true,
+      requesterRole: "teacher",
+    }),
+  });
   const body = await parseJson(res);
 
   assert(res.status === 200, "Expected 200 for valid POST request");
@@ -82,7 +87,9 @@ async function testMissingAuth() {
       classId: "fake-class-001",
     },
   });
-  const res = await handleGenerateHomeworkFeedbackDraftRequest(req);
+  const res = await handleGenerateHomeworkFeedbackDraftRequestWithResolver(req, {
+    resolveAuthScope: async () => ({ ok: true, requesterRole: "teacher" }),
+  });
   const body = await parseJson(res);
   assert(res.status === 401, "Expected 401 when Authorization header is missing");
   assert(body?.error?.code === "missing_auth", "Expected missing_auth error code");
@@ -94,7 +101,7 @@ async function testBadMethod() {
     method: "GET",
     body: undefined,
   });
-  const res = await handleGenerateHomeworkFeedbackDraftRequest(req);
+  const res = await handleGenerateHomeworkFeedbackDraftRequestWithResolver(req);
   const body = await parseJson(res);
   assert(res.status === 405, "Expected 405 for non-POST method");
   assert(body?.error?.code === "method_not_allowed", "Expected method_not_allowed error code");
@@ -108,11 +115,59 @@ async function testMissingRequiredFields() {
       classId: "fake-class-001",
     },
   });
-  const res = await handleGenerateHomeworkFeedbackDraftRequest(req);
+  const res = await handleGenerateHomeworkFeedbackDraftRequestWithResolver(req, {
+    resolveAuthScope: async () => ({ ok: true, requesterRole: "teacher" }),
+  });
   const body = await parseJson(res);
   assert(res.status === 400, "Expected 400 for invalid request");
   assert(body?.error?.code === "invalid_request", "Expected invalid_request error code");
   printResult("PASS", "Missing required fields returns 400");
+}
+
+async function testBlockedParentRole() {
+  const req = makeRequest({
+    body: {
+      homeworkSubmissionId: "fake-submission-001",
+      homeworkTaskId: "fake-task-001",
+      studentId: "fake-student-001",
+      classId: "fake-class-001",
+    },
+  });
+  const res = await handleGenerateHomeworkFeedbackDraftRequestWithResolver(req, {
+    resolveAuthScope: async () => ({
+      ok: false,
+      status: 403,
+      code: "scope_denied",
+      message: "Parent and student roles cannot generate homework AI drafts.",
+    }),
+  });
+  const body = await parseJson(res);
+  assert(res.status === 403, "Expected 403 for blocked parent/student role");
+  assert(body?.error?.code === "scope_denied", "Expected scope_denied for blocked role");
+  printResult("PASS", "Parent/student role blocked with 403");
+}
+
+async function testRelationshipMismatchBlocked() {
+  const req = makeRequest({
+    body: {
+      homeworkSubmissionId: "fake-submission-001",
+      homeworkTaskId: "fake-task-999",
+      studentId: "fake-student-001",
+      classId: "fake-class-001",
+    },
+  });
+  const res = await handleGenerateHomeworkFeedbackDraftRequestWithResolver(req, {
+    resolveAuthScope: async () => ({
+      ok: false,
+      status: 400,
+      code: "relationship_mismatch",
+      message: "homeworkTaskId does not match submission relationship.",
+    }),
+  });
+  const body = await parseJson(res);
+  assert(res.status === 400, "Expected 400 or 403 when relationship mismatch is detected");
+  assert(body?.error?.code === "relationship_mismatch", "Expected relationship_mismatch error code");
+  printResult("PASS", "Relationship mismatch blocked");
 }
 
 function testNoProviderEnvRequired() {
@@ -131,6 +186,8 @@ async function run() {
   await testMissingAuth();
   await testBadMethod();
   await testMissingRequiredFields();
+  await testBlockedParentRole();
+  await testRelationshipMismatchBlocked();
   testNoProviderEnvRequired();
   printResult("PASS", "AI homework Edge Function stub checks complete");
 }

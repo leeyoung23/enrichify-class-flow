@@ -73,13 +73,30 @@ Validated in the implementation milestone:
 
 ## 7) What remains future
 
-- Real JWT verification against Supabase auth claims
-- Role/scope enforcement
-- Submission/task/student/class relationship checks
 - Real provider adapter behind Supabase Edge Function secrets
 - Frontend wiring from local mock path to Edge Function stub
 - Audit/logging design
 - OCR/rubric expansion
+
+## 7.1) Auth/scope hardening update
+
+Auth/scope helper logic is now added while keeping mock output:
+
+- Handler uses resolver-based auth/scope gate with fail-closed default behavior.
+- Edge Function runtime path now verifies Supabase user/token before generation.
+- Role behavior now enforces staff-only generation:
+  - teacher assigned class scope,
+  - branch supervisor own branch scope,
+  - HQ broader scope.
+- Parent/student are denied.
+- Relationship checks now enforce submission/task/student/class and branch/class alignment.
+- Response remains stable `{ data, error }` with deterministic draft-only output.
+
+Still future after this hardening:
+
+- Real provider adapter behind Supabase Edge Function secrets
+- Frontend wiring from local mock path to Edge Function stub
+- Additional auth/scope regression coverage against deployed dev function environment.
 
 ## 8) Recommended next milestone
 
