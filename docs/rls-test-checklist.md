@@ -151,6 +151,30 @@ Reminder: **Frontend filtering is not security. RLS must enforce access at datab
 - Staff can submit own adjustment request only for own entry.
 - Parent/student must have zero access to staff time entries and staff-clock-selfies.
 
+### Class Memories draft patch note
+
+- Draft patch reference: `supabase/sql/011_class_memories_foundation.sql` (manual review/apply only).
+- Adds draft `class_memories` table + private `class-memories` bucket policy set.
+- Intended lifecycle in draft: `draft -> submitted -> approved + visible_to_parents=true`; plus `rejected` and `hidden`.
+- Upload order in draft is metadata-first:
+  1. create `class_memories` draft row with intended `storage_path`
+  2. upload object to private bucket
+  3. update submit/review status
+- No runtime Memories upload service/UI is wired yet.
+- Continue using fake users and fake media blobs only.
+
+#### Class Memories role checks (after manual apply in dev only)
+
+- HQ can read/manage all class memories and storage objects.
+- Branch supervisor can read/manage own-branch memories and objects only.
+- Teacher can create/read/update own assigned-class memories in allowed draft states only.
+- Teacher cannot access unrelated branch/class memory rows.
+- Parent can read approved + visible memories only for linked child/class scope.
+- Student (optional) can read approved + visible own-linked scope only.
+- Parent/student cannot insert/update/delete memory rows.
+- Parent/student cannot upload/update/delete storage objects in `class-memories`.
+- No public object access is allowed for `class-memories`.
+
 ## Execution Notes
 
 - Run tests with fake users for each role.
