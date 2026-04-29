@@ -386,7 +386,7 @@ Planning status: ready for Phase 2 SQL/RLS draft.
   - optional HQ write check
   - cleanup/revert of fake seeded profile values
 - Scope remains unchanged:
-  - `Students` school profile edit UI is still future
+  - `Students` school profile edit UI is now wired for HQ + branch supervisor
   - homework upload/review pipeline is still future
   - AI context integration is still future
 - Fake/dev data only.

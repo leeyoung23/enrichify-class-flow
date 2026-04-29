@@ -292,3 +292,27 @@ Planning status: ready for Phase 2 student school profile write service + smoke 
   - homework upload/review remains future
   - AI context integration remains future
 - Validation and smoke data remain fake/dev-only.
+
+## 15) Phase 3 implementation status update (`Students` school profile edit UI)
+
+- `Students` school profile edit controls are now wired inside student-card `School / Learning Context` sections for:
+  - HQ admin
+  - branch supervisor
+- Teacher/parent/student users remain without student school profile edit controls.
+- Controls now include:
+  - school name
+  - grade/year
+  - curriculum profile select
+  - parent goals
+  - teacher notes (internal wording)
+  - Save / Cancel actions
+- Write behavior:
+  - uses `upsertStudentSchoolProfile(...)` with `schoolId: null` in this UI slice
+  - success toast + student learning context refresh
+  - safe error toast on failure
+- Demo/local behavior remains safe:
+  - demo/local mode does not call Supabase write methods
+  - local/demo message is shown instead of remote write
+- Scope remains intentionally limited:
+  - homework upload/review remains future
+  - AI curriculum-context integration remains future

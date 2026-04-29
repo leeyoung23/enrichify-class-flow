@@ -63,6 +63,7 @@ Scope note:
 - Classes page now includes read-only curriculum context preview cards; verify profile/learning-focus/goals text wrapping and scanability on ~390px.
 - Classes page now includes compact curriculum assign/edit controls for HQ/branch supervisor; verify stacked form controls, date inputs, and Save/Cancel touch targets on ~390px.
 - Students page now includes read-only school/learning context preview; verify school/grade/profile/goals plus parent-goals/teacher-notes readability and wrapping on ~390px.
+- Students page now includes school profile edit controls for HQ/branch supervisor; verify stacked inputs/textareas/select and Save/Cancel touch targets on ~390px.
 
 ### Sidebar / `AppLayout`
 

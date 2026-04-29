@@ -3,6 +3,7 @@ import { useNavigate, useOutletContext } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { listStudents, listClasses, createStudent, invokeParentReport, getStudentFeeStatus, listHomeworkAttachments, getReadDataSource } from '@/services/dataService';
 import { getStudentLearningContext, listCurriculumProfiles } from '@/services/supabaseReadService';
+import { upsertStudentSchoolProfile } from '@/services/supabaseWriteService';
 import { canManageStudents, isTeacherRole } from '@/services/permissionService';
 import { GraduationCap, Plus, Phone, Mail, Send, ExternalLink } from 'lucide-react';
 import { toast } from 'sonner';
@@ -21,6 +22,12 @@ import StudentHomeworkUploadHistory from '@/components/students/StudentHomeworkU
 const initialForm = { name: '', class_id: '', branch_id: '', parent_name: '', parent_phone: '', parent_email: '' };
 const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const isUuid = (value) => typeof value === 'string' && UUID_REGEX.test(value.trim());
+const NONE_PROFILE_VALUE = "__none__";
+const trimToNull = (value) => {
+  if (typeof value !== 'string') return null;
+  const trimmed = value.trim();
+  return trimmed || null;
+};
 
 async function sendReport(student) {
   if (!student.parent_email) {
@@ -41,6 +48,9 @@ export default function Students() {
   const navigate = useNavigate();
   const [dialogOpen, setDialogOpen] = useState(false);
   const [form, setForm] = useState(initialForm);
+  const [editingSchoolProfileStudentId, setEditingSchoolProfileStudentId] = useState(null);
+  const [schoolProfileFormByStudentId, setSchoolProfileFormByStudentId] = useState({});
+  const [savingSchoolProfileStudentId, setSavingSchoolProfileStudentId] = useState(null);
   const queryClient = useQueryClient();
   const isTeacher = isTeacherRole(user);
 
@@ -128,6 +138,97 @@ export default function Students() {
       return Object.fromEntries(entries);
     },
   });
+
+  const startEditSchoolProfile = (studentId, schoolProfile) => {
+    if (!studentId) return;
+    setEditingSchoolProfileStudentId(studentId);
+    setSchoolProfileFormByStudentId((prev) => ({
+      ...prev,
+      [studentId]: {
+        schoolName: schoolProfile?.school_name || '',
+        gradeYear: schoolProfile?.grade_year || '',
+        curriculumProfileId: schoolProfile?.curriculum_profile_id || NONE_PROFILE_VALUE,
+        parentGoals: schoolProfile?.parent_goals || '',
+        teacherNotes: schoolProfile?.teacher_notes || '',
+      },
+    }));
+  };
+
+  const cancelEditSchoolProfile = (studentId) => {
+    setEditingSchoolProfileStudentId((prev) => (prev === studentId ? null : prev));
+    setSchoolProfileFormByStudentId((prev) => {
+      const next = { ...prev };
+      delete next[studentId];
+      return next;
+    });
+  };
+
+  const updateSchoolProfileForm = (studentId, patch) => {
+    setSchoolProfileFormByStudentId((prev) => ({
+      ...prev,
+      [studentId]: {
+        ...(prev[studentId] || {
+          schoolName: '',
+          gradeYear: '',
+          curriculumProfileId: NONE_PROFILE_VALUE,
+          parentGoals: '',
+          teacherNotes: '',
+        }),
+        ...patch,
+      },
+    }));
+  };
+
+  const handleSaveSchoolProfile = async ({ studentId }) => {
+    const formState = schoolProfileFormByStudentId[studentId] || {};
+    const schoolName = trimToNull(formState.schoolName);
+    const gradeYear = trimToNull(formState.gradeYear);
+    const parentGoals = trimToNull(formState.parentGoals);
+    const teacherNotes = trimToNull(formState.teacherNotes);
+    const selectedProfileId = formState.curriculumProfileId;
+    const curriculumProfileId =
+      selectedProfileId && selectedProfileId !== NONE_PROFILE_VALUE ? selectedProfileId : null;
+
+    if (!isUuid(studentId)) {
+      toast.message('Student id is invalid. Please refresh and try again.');
+      return;
+    }
+    if (curriculumProfileId && !isUuid(curriculumProfileId)) {
+      toast.message('Curriculum profile selection is invalid.');
+      return;
+    }
+
+    if (isDemoRole || !isSupabaseStudentSource) {
+      toast.message('Demo/local mode keeps school profile changes local and does not write to Supabase.');
+      cancelEditSchoolProfile(studentId);
+      return;
+    }
+
+    setSavingSchoolProfileStudentId(studentId);
+    try {
+      const result = await upsertStudentSchoolProfile({
+        studentId,
+        schoolId: null,
+        schoolName,
+        gradeYear,
+        curriculumProfileId,
+        parentGoals,
+        teacherNotes,
+      });
+
+      if (result?.error) {
+        toast.error(result.error.message || 'Unable to save school profile.');
+        return;
+      }
+      toast.success('Student school profile saved.');
+      cancelEditSchoolProfile(studentId);
+      await queryClient.invalidateQueries({ queryKey: ['student-learning-context'] });
+    } catch (error) {
+      toast.error(error?.message || 'Unable to save school profile.');
+    } finally {
+      setSavingSchoolProfileStudentId(null);
+    }
+  };
 
   return (
     <div>
@@ -249,31 +350,48 @@ export default function Students() {
                   const activeStudentGoals = Array.isArray(context?.learning_goals)
                     ? context.learning_goals.filter((goal) => goal?.status === 'active' && goal?.student_id === student.id)
                     : [];
-
-                  if (!schoolProfile) {
-                    return <p className="text-sm text-muted-foreground">No school profile added yet.</p>;
-                  }
+                  const canEditSchoolProfile = canManageStudents(user);
+                  const isEditingSchoolProfile = editingSchoolProfileStudentId === student.id;
+                  const schoolProfileForm = schoolProfileFormByStudentId[student.id] || {
+                    schoolName: schoolProfile?.school_name || '',
+                    gradeYear: schoolProfile?.grade_year || '',
+                    curriculumProfileId: schoolProfile?.curriculum_profile_id || NONE_PROFILE_VALUE,
+                    parentGoals: schoolProfile?.parent_goals || '',
+                    teacherNotes: schoolProfile?.teacher_notes || '',
+                  };
+                  const curriculumProfileOptions = curriculumProfiles
+                    .filter((profile) => isUuid(profile?.id))
+                    .map((profile) => ({
+                      id: profile.id,
+                      label: `${profile.name || 'Unnamed profile'}${profile.subject ? ` • ${profile.subject}` : ''}${profile.skill_focus ? ` • ${profile.skill_focus}` : ''}`,
+                    }));
 
                   return (
                     <div className="space-y-1.5 text-sm">
-                      <p>
-                        <span className="text-muted-foreground">School:</span> {schoolProfile.school_name || '—'}
-                      </p>
-                      <p>
-                        <span className="text-muted-foreground">Grade/Year:</span> {schoolProfile.grade_year || '—'}
-                      </p>
-                      <p>
-                        <span className="text-muted-foreground">Curriculum profile:</span> {curriculumProfile?.name || '—'}
-                      </p>
-                      <p>
-                        <span className="text-muted-foreground">Subject:</span> {curriculumProfile?.subject || '—'}
-                      </p>
-                      <p>
-                        <span className="text-muted-foreground">Level/Year/Grade:</span> {curriculumProfile?.level_year_grade || '—'}
-                      </p>
-                      <p>
-                        <span className="text-muted-foreground">Skill focus:</span> {curriculumProfile?.skill_focus || '—'}
-                      </p>
+                      {!schoolProfile ? (
+                        <p className="text-sm text-muted-foreground">No school profile added yet.</p>
+                      ) : (
+                        <>
+                          <p>
+                            <span className="text-muted-foreground">School:</span> {schoolProfile.school_name || '—'}
+                          </p>
+                          <p>
+                            <span className="text-muted-foreground">Grade/Year:</span> {schoolProfile.grade_year || '—'}
+                          </p>
+                          <p>
+                            <span className="text-muted-foreground">Curriculum profile:</span> {curriculumProfile?.name || '—'}
+                          </p>
+                          <p>
+                            <span className="text-muted-foreground">Subject:</span> {curriculumProfile?.subject || '—'}
+                          </p>
+                          <p>
+                            <span className="text-muted-foreground">Level/Year/Grade:</span> {curriculumProfile?.level_year_grade || '—'}
+                          </p>
+                          <p>
+                            <span className="text-muted-foreground">Skill focus:</span> {curriculumProfile?.skill_focus || '—'}
+                          </p>
+                        </>
+                      )}
                       {schoolProfile.parent_goals ? (
                         <p>
                           <span className="text-muted-foreground">Parent goals:</span> {schoolProfile.parent_goals}
@@ -292,6 +410,95 @@ export default function Students() {
                               <li key={goal.id}>{goal.goal_title || 'Untitled goal'}</li>
                             ))}
                           </ul>
+                        </div>
+                      ) : null}
+                      {canEditSchoolProfile ? (
+                        <div className="pt-2 border-t mt-2 space-y-2">
+                          {!isEditingSchoolProfile ? (
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              className="w-full sm:w-auto"
+                              onClick={() => startEditSchoolProfile(student.id, schoolProfile)}
+                            >
+                              Edit School Profile
+                            </Button>
+                          ) : (
+                            <div className="space-y-3">
+                              <div className="space-y-1">
+                                <Label className="text-xs">School Name</Label>
+                                <Input
+                                  value={schoolProfileForm.schoolName}
+                                  onChange={(event) => updateSchoolProfileForm(student.id, { schoolName: event.target.value })}
+                                  placeholder="e.g. Demo Primary School"
+                                />
+                              </div>
+                              <div className="space-y-1">
+                                <Label className="text-xs">Grade / Year</Label>
+                                <Input
+                                  value={schoolProfileForm.gradeYear}
+                                  onChange={(event) => updateSchoolProfileForm(student.id, { gradeYear: event.target.value })}
+                                  placeholder="e.g. Year 4"
+                                />
+                              </div>
+                              <div className="space-y-1">
+                                <Label className="text-xs">Curriculum Profile</Label>
+                                <Select
+                                  value={schoolProfileForm.curriculumProfileId}
+                                  onValueChange={(value) => updateSchoolProfileForm(student.id, { curriculumProfileId: value })}
+                                >
+                                  <SelectTrigger>
+                                    <SelectValue placeholder="Select curriculum profile" />
+                                  </SelectTrigger>
+                                  <SelectContent>
+                                    <SelectItem value={NONE_PROFILE_VALUE}>No curriculum profile</SelectItem>
+                                    {curriculumProfileOptions.map((option) => (
+                                      <SelectItem key={option.id} value={option.id}>
+                                        {option.label}
+                                      </SelectItem>
+                                    ))}
+                                  </SelectContent>
+                                </Select>
+                              </div>
+                              <div className="space-y-1">
+                                <Label className="text-xs">Parent Goals (supportive)</Label>
+                                <textarea
+                                  value={schoolProfileForm.parentGoals}
+                                  onChange={(event) => updateSchoolProfileForm(student.id, { parentGoals: event.target.value })}
+                                  placeholder="Add supportive home learning goals"
+                                  className="w-full min-h-[80px] rounded-md border bg-background px-3 py-2 text-sm"
+                                />
+                              </div>
+                              <div className="space-y-1">
+                                <Label className="text-xs">Teacher Notes (internal)</Label>
+                                <textarea
+                                  value={schoolProfileForm.teacherNotes}
+                                  onChange={(event) => updateSchoolProfileForm(student.id, { teacherNotes: event.target.value })}
+                                  placeholder="Internal notes for staff context only"
+                                  className="w-full min-h-[80px] rounded-md border bg-background px-3 py-2 text-sm"
+                                />
+                              </div>
+                              <div className="flex flex-col sm:flex-row gap-2">
+                                <Button
+                                  size="sm"
+                                  className="w-full sm:w-auto"
+                                  disabled={savingSchoolProfileStudentId === student.id}
+                                  onClick={() => handleSaveSchoolProfile({ studentId: student.id })}
+                                >
+                                  {savingSchoolProfileStudentId === student.id ? 'Saving...' : 'Save'}
+                                </Button>
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  className="w-full sm:w-auto"
+                                  disabled={savingSchoolProfileStudentId === student.id}
+                                  onClick={() => cancelEditSchoolProfile(student.id)}
+                                >
+                                  Cancel
+                                </Button>
+                              </div>
+                            </div>
+                          )}
                         </div>
                       ) : null}
                     </div>
