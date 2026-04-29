@@ -73,11 +73,11 @@ Scope note:
 - Teacher/staff homework review UI is now wired with submission queue + review detail cards.
 - Teacher Homework UI shell now includes `By Task` / `By Student` segmented tabs with demo parity cards.
 - Authenticated non-demo `By Task` now reads real class tracker rows with compact counts cards and selected-task detail.
-- Authenticated non-demo `By Student` remains shell/placeholder for now (real wiring future).
+- Authenticated non-demo `By Student` now reads real student tracker items with status badges and safe no-submission handling.
 - Verify queue and detail stack cleanly on ~390px (no dense table dependency).
 - Verify segmented tab controls remain touch-friendly and clear at ~390px.
 - Verify By Task cards (demo + real class tracker) wrap cleanly at ~390px.
-- Verify By Student demo cards + status badges remain readable and tappable at ~390px.
+- Verify By Student cards (demo + real student tracker) and status badges remain readable and tappable at ~390px.
 - Verify feedback textareas (feedback/next step/internal note) remain readable and editable on phone widths.
 - Verify action buttons (`Save draft`, `Mark reviewed`, `Return for revision`, conditional `Release to parent`) wrap without clipping.
 - Verify mock-only `Draft feedback with AI` action remains clear, tap-friendly, and does not crowd existing teacher actions on ~390px.
@@ -143,6 +143,7 @@ Status update:
 - `Homework` mock-only AI draft button is implemented; include in mobile QA pass.
 - `Homework` `By Task` / `By Student` UI shell with demo parity is now implemented; include in mobile QA pass.
 - `Homework` authenticated `By Task` tracker wiring is now added; include in mobile QA pass.
+- `Homework` authenticated `By Student` tracker wiring is now added; include in mobile QA pass.
 - Remaining mobile QA/polish items:
   - `ParentUpdates` mobile review flow density
 

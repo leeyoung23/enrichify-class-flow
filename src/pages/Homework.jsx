@@ -14,7 +14,12 @@ import { getSelectedDemoRole } from '@/services/authService';
 import { ROLES, getRole } from '@/services/permissionService';
 import { isSupabaseConfigured } from '@/services/supabaseClient';
 import { useSupabaseAuthState } from '@/hooks/useSupabaseAuthState';
-import { getClassLearningContext, getStudentLearningContext, listHomeworkTrackerByClass } from '@/services/supabaseReadService';
+import {
+  getClassLearningContext,
+  getStudentLearningContext,
+  listHomeworkTrackerByClass,
+  listHomeworkTrackerByStudent,
+} from '@/services/supabaseReadService';
 import { buildHomeworkFeedbackDraftContext, generateMockHomeworkFeedbackDraft } from '@/services/aiDraftService';
 import {
   getHomeworkFileSignedUrl,
@@ -209,6 +214,7 @@ export default function Homework() {
   const [selectedSubmissionId, setSelectedSubmissionId] = useState('');
   const [activeViewMode, setActiveViewMode] = useState('by_task');
   const [selectedStudentId, setSelectedStudentId] = useState('demo-student-01');
+  const [selectedStudentTaskId, setSelectedStudentTaskId] = useState('');
   const [selectedClassId, setSelectedClassId] = useState('');
   const [submissionStatusFilter, setSubmissionStatusFilter] = useState('all');
   const [feedbackText, setFeedbackText] = useState('');
@@ -290,12 +296,48 @@ export default function Homework() {
     },
   });
 
+  const nonDemoStudentIdOptions = useMemo(() => {
+    if (isDemoMode) return [];
+    const ids = new Set();
+    const selectedSubmissionRow = submissions.find((row) => row?.id === selectedSubmissionId);
+    if (isUuidLike(selectedSubmissionRow?.student_id)) ids.add(selectedSubmissionRow.student_id);
+    for (const row of submissions) {
+      if (isUuidLike(row?.student_id)) ids.add(row.student_id);
+    }
+    for (const trackerRow of trackerByClassRows) {
+      for (const assigneeRow of trackerRow?.assignees || []) {
+        if (isUuidLike(assigneeRow?.student_id)) ids.add(assigneeRow.student_id);
+      }
+      for (const submissionRow of trackerRow?.submissions || []) {
+        if (isUuidLike(submissionRow?.student_id)) ids.add(submissionRow.student_id);
+      }
+    }
+    return Array.from(ids);
+  }, [isDemoMode, selectedSubmissionId, submissions, trackerByClassRows]);
+
+  const resolvedStudentId = useMemo(() => {
+    if (isDemoMode) return selectedStudentId;
+    if (isUuidLike(selectedStudentId)) return selectedStudentId;
+    return nonDemoStudentIdOptions[0] || '';
+  }, [isDemoMode, selectedStudentId, nonDemoStudentIdOptions]);
+
+  const { data: trackerByStudentData = null, isLoading: trackerByStudentLoading } = useQuery({
+    queryKey: ['homework-tracker-by-student', resolvedStudentId, role, supabaseAppUser?.id],
+    enabled: canUseSupabaseHomework && !isDemoMode && activeViewMode === 'by_student' && isUuidLike(resolvedStudentId),
+    queryFn: async () => {
+      const result = await listHomeworkTrackerByStudent({ studentId: resolvedStudentId });
+      if (result.error) throw new Error(result.error.message || 'Unable to load homework tracker by student');
+      return result.data || null;
+    },
+  });
+
   const taskRows = isDemoMode ? DEMO_HOMEWORK_TASKS : tasks;
   const submissionRows = isDemoMode ? demoSubmissions : submissions;
   const feedbackDataRows = isDemoMode ? demoFeedbackRows : feedbackRows;
   const submissionFileRows = isDemoMode ? DEMO_HOMEWORK_FILES : submissionFiles;
   const tasksBusy = isDemoMode ? false : tasksLoading;
   const trackerBusy = isDemoMode ? false : trackerByClassLoading;
+  const trackerByStudentBusy = isDemoMode ? false : trackerByStudentLoading;
   const submissionsBusy = isDemoMode ? false : submissionsLoading;
   const feedbackBusy = isDemoMode ? false : feedbackLoading;
   const filesBusy = isDemoMode ? false : filesLoading;
@@ -412,6 +454,26 @@ export default function Homework() {
     () => demoStudentTrackerRows.find((row) => row.student.id === selectedStudentId) || demoStudentTrackerRows[0] || null,
     [demoStudentTrackerRows, selectedStudentId]
   );
+  const selectedRealStudentItems = useMemo(
+    () => (Array.isArray(trackerByStudentData?.assignedItems) ? trackerByStudentData.assignedItems : []),
+    [trackerByStudentData]
+  );
+  const selectedRealStudentItem = useMemo(
+    () => selectedRealStudentItems.find((item) => item?.task?.id === selectedStudentTaskId) || selectedRealStudentItems[0] || null,
+    [selectedRealStudentItems, selectedStudentTaskId]
+  );
+
+  const getStudentTrackerStatusLabel = (item) => {
+    const rawStatus = item?.status || 'assigned';
+    const dueDate = item?.task?.due_date;
+    const isOverdue = dueDate ? new Date(dueDate).getTime() < Date.now() : false;
+    if (rawStatus === 'feedbackReleased') return 'Feedback Released';
+    if (rawStatus === 'underReview') return 'Under Review';
+    if (rawStatus === 'returned') return 'Returned';
+    if (rawStatus === 'submitted' || rawStatus === 'reviewed') return 'Submitted';
+    if (rawStatus === 'assigned') return isOverdue ? 'Follow-up Needed' : 'Not Submitted';
+    return 'Not Submitted';
+  };
 
   useEffect(() => {
     if (!selectedTaskId && taskRows.length > 0) {
@@ -427,6 +489,13 @@ export default function Homework() {
   }, [isDemoMode, selectedClassId, classOptions]);
 
   useEffect(() => {
+    if (isDemoMode) return;
+    if (!isUuidLike(selectedStudentId) && nonDemoStudentIdOptions.length > 0) {
+      setSelectedStudentId(nonDemoStudentIdOptions[0]);
+    }
+  }, [isDemoMode, selectedStudentId, nonDemoStudentIdOptions]);
+
+  useEffect(() => {
     if (isDemoMode || activeViewMode !== 'by_task') return;
     if (trackerByClassRows.length === 0) return;
     const hasSelectedTask = trackerByClassRows.some((row) => row?.task?.id === selectedTaskId);
@@ -434,6 +503,18 @@ export default function Homework() {
       setSelectedTaskId(trackerByClassRows[0]?.task?.id || '');
     }
   }, [isDemoMode, activeViewMode, trackerByClassRows, selectedTaskId]);
+
+  useEffect(() => {
+    if (isDemoMode || activeViewMode !== 'by_student') return;
+    if (selectedRealStudentItems.length === 0) {
+      setSelectedStudentTaskId('');
+      return;
+    }
+    const hasSelectedItem = selectedRealStudentItems.some((item) => item?.task?.id === selectedStudentTaskId);
+    if (!hasSelectedItem) {
+      setSelectedStudentTaskId(selectedRealStudentItems[0]?.task?.id || '');
+    }
+  }, [isDemoMode, activeViewMode, selectedRealStudentItems, selectedStudentTaskId]);
 
   useEffect(() => {
     if (submissionRows.length === 0) {
@@ -457,6 +538,7 @@ export default function Homework() {
   const refreshReviewData = () => {
     if (isDemoMode) return;
     void queryClient.invalidateQueries({ queryKey: ['homework-tracker-by-class'] });
+    void queryClient.invalidateQueries({ queryKey: ['homework-tracker-by-student'] });
     void queryClient.invalidateQueries({ queryKey: ['homework-review-submissions'] });
     void queryClient.invalidateQueries({ queryKey: ['homework-review-feedback'] });
   };
@@ -842,16 +924,22 @@ export default function Homework() {
                         <SelectValue placeholder="Select student" />
                       </SelectTrigger>
                       <SelectContent>
-                        {(isDemoMode ? DEMO_HOMEWORK_STUDENTS : []).map((student) => (
-                          <SelectItem key={student.id} value={student.id}>
-                            {student.name}
-                          </SelectItem>
-                        ))}
+                        {isDemoMode
+                          ? DEMO_HOMEWORK_STUDENTS.map((student) => (
+                            <SelectItem key={student.id} value={student.id}>
+                              {student.name}
+                            </SelectItem>
+                          ))
+                          : nonDemoStudentIdOptions.map((studentId) => (
+                            <SelectItem key={studentId} value={studentId}>
+                              {studentId}
+                            </SelectItem>
+                          ))}
                       </SelectContent>
                     </Select>
                     {!isDemoMode ? (
                       <p className="text-xs text-muted-foreground">
-                        By Student shell is planned. Real tracker data wiring remains future.
+                        By Student tracker uses selected student UUID from visible homework data in this phase.
                       </p>
                     ) : null}
                   </div>
@@ -891,11 +979,64 @@ export default function Homework() {
                       })}
                     </div>
                   </Card>
-                ) : (
+                ) : !isUuidLike(resolvedStudentId) ? (
                   <Card className="p-4 border-dashed">
                     <p className="text-sm text-muted-foreground">
-                      By Student tracking shell is now prepared in demo mode. Real authenticated tracker reads will be wired in a later phase.
+                      No valid student UUID is available from current visible homework data yet.
                     </p>
+                  </Card>
+                ) : trackerByStudentBusy ? (
+                  <Card className="p-4">
+                    <p className="text-sm text-muted-foreground">Loading student tracker...</p>
+                  </Card>
+                ) : selectedRealStudentItems.length === 0 ? (
+                  <Card className="p-4 border-dashed">
+                    <p className="text-sm text-muted-foreground">
+                      No assigned homework items are visible for this student in current scope.
+                    </p>
+                  </Card>
+                ) : (
+                  <Card className="p-4">
+                    <div className="flex items-center justify-between mb-3">
+                      <p className="font-medium">By Student tracker</p>
+                      <Badge variant="outline">{selectedRealStudentItems.length}</Badge>
+                    </div>
+                    <div className="space-y-2 max-h-[420px] overflow-y-auto pr-1">
+                      {selectedRealStudentItems.map((item) => {
+                        const task = item?.task || {};
+                        const label = getStudentTrackerStatusLabel(item);
+                        const selected = task.id === selectedStudentTaskId;
+                        return (
+                          <button
+                            key={`${resolvedStudentId}-${task.id || 'task'}`}
+                            type="button"
+                            onClick={() => {
+                              setSelectedStudentTaskId(task.id || '');
+                              setSelectedTaskId(task.id || '');
+                              if (item?.submission?.id) {
+                                setSelectedSubmissionId(item.submission.id);
+                              } else {
+                                setSelectedSubmissionId('');
+                              }
+                            }}
+                            className={`w-full text-left rounded-lg border p-3 ${selected ? 'border-primary bg-primary/5' : 'border-border'}`}
+                          >
+                            <div className="flex items-center justify-between gap-2">
+                              <p className="text-sm font-medium truncate">{task.title || 'Untitled task'}</p>
+                              <Badge variant="outline" className={TRACKER_STATUS_BADGE[label] || ''}>
+                                {label}
+                              </Badge>
+                            </div>
+                            <p className="text-xs text-muted-foreground">
+                              Due {task.due_date || '—'} · Scope {task.assignment_scope || 'class'}
+                            </p>
+                            <p className="text-xs text-muted-foreground">
+                              {item?.submission?.id ? `Submission ${item.submission.id}` : 'No submission yet'}
+                            </p>
+                          </button>
+                        );
+                      })}
+                    </div>
                   </Card>
                 )}
               </>
@@ -905,7 +1046,11 @@ export default function Homework() {
           <div className="xl:col-span-3 space-y-4">
             {!selectedSubmission ? (
               <Card className="p-5">
-                <p className="text-sm text-muted-foreground">Select a submission to review details and feedback actions.</p>
+                <p className="text-sm text-muted-foreground">
+                  {activeViewMode === 'by_student' && !isDemoMode && selectedRealStudentItem && !selectedRealStudentItem?.submission?.id
+                    ? 'No submission yet for this assigned task. Select an item with a submission or wait for upload.'
+                    : 'Select a submission to review details and feedback actions.'}
+                </p>
               </Card>
             ) : (
               <>
@@ -977,6 +1122,27 @@ export default function Homework() {
                             </p>
                           </button>
                         ))}
+                      </div>
+                    </div>
+                  ) : null}
+                  {!isDemoMode && activeViewMode === 'by_student' && selectedRealStudentItem ? (
+                    <div className="mb-4 rounded-lg border border-dashed p-3 bg-muted/20">
+                      <p className="text-sm font-medium mb-2">By Student detail</p>
+                      <p className="text-xs text-muted-foreground mb-2">
+                        Student {resolvedStudentId} · {selectedRealStudentItem?.task?.title || 'Untitled task'}
+                      </p>
+                      <div className="flex flex-wrap gap-2">
+                        <Badge variant="outline" className={TRACKER_STATUS_BADGE[getStudentTrackerStatusLabel(selectedRealStudentItem)] || ''}>
+                          {getStudentTrackerStatusLabel(selectedRealStudentItem)}
+                        </Badge>
+                        {selectedRealStudentItem?.hasReleasedFeedback ? (
+                          <Badge variant="outline" className={TRACKER_STATUS_BADGE['Feedback Released']}>
+                            Feedback Released
+                          </Badge>
+                        ) : null}
+                        <Badge variant="outline">
+                          {selectedRealStudentItem?.submission?.id ? `Submission ${selectedRealStudentItem.submission.id}` : 'No submission yet'}
+                        </Badge>
                       </div>
                     </div>
                   ) : null}

@@ -10,7 +10,7 @@ This checkpoint originally captured the UI-shell milestone only, and now include
 - existing review detail/actions are preserved
 - real authenticated flow remains on the existing safe path
 - real `By Task` tracker wiring is now added for authenticated non-demo staff mode using `listHomeworkTrackerByClass(...)`
-- real `By Student` tracker wiring remains future
+- real `By Student` tracker wiring is now added for authenticated non-demo staff mode using `listHomeworkTrackerByStudent(...)`
 - no SQL/RLS/service changes in this milestone
 
 ## 2) Files changed in implementation milestone
@@ -87,7 +87,7 @@ Preserved or safely adapted in `Homework`:
 - real authenticated mode is kept on existing safe workflow
 - real `By Task` tracker wiring now uses `listHomeworkTrackerByClass(...)` with UUID-safe class gating
 - if no valid class UUID is available, Homework shows a safe empty state and does not call tracker read
-- real `By Student` tracker wiring remains future in this phase
+- real `By Student` tracker wiring now uses visible UUID-safe student sources and no-submission-safe states
 - no SQL/RLS/service changes
 - no `ParentView` changes
 - fee proof, Memories, Staff Time Clock, curriculum flows, and AI Edge Function remain unchanged
@@ -102,7 +102,6 @@ Preserved or safely adapted in `Homework`:
 
 ## 9) What remains
 
-- real authenticated wiring to `listHomeworkTrackerByStudent(...)`
 - selected-student assignment write services
 - manual marked-file upload flow
 - AI provider integration

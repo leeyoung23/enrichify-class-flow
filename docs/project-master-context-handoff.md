@@ -205,8 +205,10 @@ Current status note:
 - Teacher Homework UI shell now includes `By Task` / `By Student` segmented structure with demo parity in `src/pages/Homework.jsx`.
 - Demo mode now shows local fake task/student tracker cards and quick status badges while preserving no-Supabase/no-provider behavior.
 - Authenticated non-demo Homework now wires real `By Task` tracker read using `listHomeworkTrackerByClass(...)` with UUID-safe class handling.
-- Authenticated `By Student` real tracker wiring remains future in this phase.
+- Authenticated non-demo Homework now wires real `By Student` tracker read using `listHomeworkTrackerByStudent(...)` with UUID-safe student selection from visible homework data.
+- `By Task` tracker behavior remains preserved while adding `By Student`.
 - Selected-student assignment write services remain future.
+- Manual marked-file upload remains future.
 - Existing homework runtime/UI workflow remains unchanged until later service/UI migration; parent assigned-but-not-submitted visibility should later move to assignee-row based reads.
 - Homework feedback write service + smoke test are now started (`src/services/supabaseWriteService.js`, `scripts/supabase-homework-feedback-smoke-test.mjs`) for draft/create-update, review transition, release-to-parent, and parent draft-hidden checks.
 - Parent-visible feedback read path now omits `internal_note` from service response when `parentVisibleOnly` is requested.

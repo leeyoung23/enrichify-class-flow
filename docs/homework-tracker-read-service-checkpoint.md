@@ -3,7 +3,10 @@
 ## 1) What was implemented
 
 Homework tracker-focused read support is now implemented at service + smoke-test level.  
-Status update: authenticated Teacher Homework `By Task` UI now consumes class tracker reads, while `By Student` real wiring remains future.
+Status update: authenticated Teacher Homework UI now consumes both tracker reads:
+
+- `By Task` -> `listHomeworkTrackerByClass(...)`
+- `By Student` -> `listHomeworkTrackerByStudent(...)`
 
 - added tracker read methods in `src/services/supabaseReadService.js`
 - added dedicated tracker-read smoke test in `scripts/supabase-homework-tracker-read-smoke-test.mjs`
@@ -15,7 +18,9 @@ Current status after later UI step:
 
 - `By Task` tracker read is now wired in `src/pages/Homework.jsx` for authenticated non-demo staff flow
 - wiring uses `listHomeworkTrackerByClass(...)` with UUID-safe class selection/empty-state behavior
-- `By Student` real tracker read (`listHomeworkTrackerByStudent(...)`) remains unwired in UI
+- `By Student` tracker read is now wired in `src/pages/Homework.jsx` for authenticated non-demo staff flow
+- student selection is UUID-safe and derived from currently visible homework/submission/tracker data
+- assigned-but-not-submitted items now show safe no-submission UI state
 - no SQL/RLS changes were introduced for this wiring step
 
 ## 2) Files changed in implementation milestone
@@ -103,7 +108,6 @@ Each assigned item:
 ## 9) What remains future
 
 - write-side assignment services for selected/individual homework
-- Teacher Homework `By Student` real tracker wiring
 - parent assigned-but-not-submitted UI consumption
 - manual marked-file upload path
 - AI marking integration with flexible assignment context

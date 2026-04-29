@@ -4,12 +4,13 @@
 
 Real authenticated non-demo staff `By Task` tracker wiring is now implemented in `Homework`.
 
-This checkpoint captures the tracker-wiring milestone:
+This checkpoint captures the tracker-wiring milestone and subsequent extension:
 
 - authenticated non-demo `By Task` now reads class tracker rows from `listHomeworkTrackerByClass({ classId })`
+- authenticated non-demo `By Student` now reads student tracker rows from `listHomeworkTrackerByStudent({ studentId })`
 - tracker cards render task-centric tracker shape with stable counts
 - selected task detail is visible without removing existing review panel/actions
-- `By Student` real tracker wiring is intentionally deferred
+- student-centric assigned-item cards now support safe no-submission states
 - `demoRole` remains local-only and provider-free
 
 ## 2) Files changed in implementation milestone
@@ -86,7 +87,6 @@ Safe CHECK skip note:
 
 ## 8) What remains
 
-- real authenticated `By Student` wiring using `listHomeworkTrackerByStudent(...)`
 - selected-student assignment write services
 - manual marked-file upload flow
 - AI provider integration
