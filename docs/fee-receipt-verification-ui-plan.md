@@ -1,6 +1,6 @@
 # Fee receipt supervisor / HQ verification UI plan
 
-UI planning with Phase 2 backend verification status update. No app UI wiring changes in this phase. Use fake test data and dev projects only for implementation and smoke tests.
+UI planning with Phase 2 backend verification status update and Phase 3 verify/view wiring. Use fake test data and dev projects only for implementation and smoke tests.
 
 Business workflow clarification:
 
@@ -13,9 +13,14 @@ Business workflow clarification:
 As of the Fee Tracking receipt upload checkpoint:
 
 - **Parent (authenticated, non-demo):** Can use `/parent-view` Fee Status card to select a file (type/size guard), call `uploadFeeReceipt`, refresh status after success, and use **View Uploaded Receipt** via `getFeeReceiptSignedUrl` (private `fee-receipts` bucket, signed URL only).
-- **HQ admin / branch supervisor:** Can access the same Fee Tracking page and see fee rows from `listFeeRecords` (Supabase path when not in demo mode maps `fee_records` including receipt and verification-related columns). **Mark as Paid** remains **demo-only** (`markFeeRecordPaid` mutates in-memory demo data only).
+- **HQ admin / branch supervisor:** Can access the same Fee Tracking page and see fee rows from `listFeeRecords` (Supabase path when not in demo mode maps `fee_records` including receipt and verification-related columns).
+- **View proof + verify:** In authenticated non-demo staff mode, Fee Tracking now supports:
+  - **View Uploaded Proof** (signed URL via `getFeeReceiptSignedUrl`)
+  - **Verify Payment** (calls `verifyFeeReceipt`)
+  - loading + toast feedback + fee records refetch after success
+- **Demo mode behavior preserved:** demo role does not call Supabase signed URL or verification writes; demo Mark as Paid remains local/demo behavior.
 - **Teacher:** Fee Tracking access is not granted in the current page (`canAccess` is HQ, branch supervisor only). No receipt verification UI exists.
-- **Verification / rejection:** There is **no** real Supabase-backed **Verify** or **Reject** action in the UI. Receipt lifecycle after upload is driven by metadata/RLS from upload only; staff actions are **not wired**.
+- **Verification / rejection:** **Verify** is now wired for staff (non-demo Supabase rows). **Reject** is intentionally not wired yet.
 
 References: `src/pages/FeeTracking.jsx`, `src/services/dataService.js` (`listFeeRecords`, `markFeeRecordPaid`), `docs/fee-tracking-receipt-upload-ui-checkpoint.md`.
 
@@ -165,7 +170,7 @@ Add npm script e.g. `test:supabase:fee-receipt:verify` when Phase 2 lands.
 |-------|-------------|
 | **Phase 1** | This planning doc (`docs/fee-receipt-verification-ui-plan.md`). |
 | **Phase 2** | `verifyFeeReceipt` / `rejectFeeReceipt` in `supabaseWriteService.js` + `scripts/supabase-fee-receipt-verification-smoke-test.mjs` + npm script; align parent SELECT if needed for rejected visibility. **Status: implemented.** |
-| **Phase 3** | Wire **Verify** for HQ + branch supervisor on Fee Tracking (non-demo, Supabase rows only). |
+| **Phase 3** | Wire **Verify** for HQ + branch supervisor on Fee Tracking (non-demo, Supabase rows only). **Status: implemented.** |
 | **Phase 4** | Wire **Reject** with required internal note + confirmations. |
 | **Phase 5** | Parent status polish (badges, copy, optional parent-visible rejection summary), `verified_by` display names, production validation. |
 
@@ -180,10 +185,25 @@ Implemented in this phase:
 
 Scope boundaries preserved:
 
-- No Fee Tracking Verify/Reject UI wiring yet.
 - Parent receipt upload remains from `ParentView` using existing `uploadFeeReceipt(...)`.
 - No service role usage in frontend/runtime service paths.
 - Demo/local fallback and `demoRole` behavior unchanged.
+
+## 12) Phase 3 implementation checkpoint (View Proof + Verify UI)
+
+Implemented in this phase:
+
+- Staff-side `FeeTracking` now shows **View Uploaded Proof** for receipt-uploaded rows.
+- Button uses `getFeeReceiptSignedUrl({ feeRecordId })` and opens signed URL.
+- Staff-side `FeeTracking` now shows **Verify Payment** for reviewable states (`submitted`, `under_review`, or pending verification status).
+- Button calls `verifyFeeReceipt({ feeRecordId, internalNote })` with loading state, toast feedback, and records refetch on success.
+- Non-demo + authenticated Supabase session + `supabase_fee_records` source are required before signed URL/verify calls.
+
+Still intentionally not wired:
+
+- **Reject / Request Resubmission** UI.
+- Invoice/e-invoice automation.
+- Parent upload remains in `ParentView` (not staff Fee Tracking).
 
 ## 10) Next implementation prompt (Phase 2: service + smoke test only)
 
