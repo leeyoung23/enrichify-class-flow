@@ -356,3 +356,18 @@ Still future (not implemented in this phase):
 - Role/scope authorization checks (teacher assigned class / supervisor own branch / HQ).
 - Submission/task/student/class relationship checks.
 - Real provider adapter behind Supabase secrets.
+
+## 19) Implementation checkpoint (frontend wrapper added)
+
+- Frontend wrapper is now added in `src/services/aiDraftService.js`:
+  - `generateHomeworkFeedbackDraftViaEdgeFunction(...)`
+- Wrapper behavior:
+  - validates required IDs before invoke,
+  - invokes `generate-homework-feedback-draft` via Supabase `functions.invoke`,
+  - returns stable `{ data, error }`,
+  - validates expected draft response shape.
+- Safety posture remains unchanged:
+  - local mock is still default path,
+  - no provider integration,
+  - no provider key usage,
+  - no auto-save and no auto-release behavior introduced.

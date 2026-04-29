@@ -28,6 +28,17 @@ function normalizeLength(length) {
   return "short";
 }
 
+function isEdgeHomeworkDraftFlagEnabled() {
+  const value = sanitizeText(import.meta.env?.VITE_ENABLE_AI_HOMEWORK_EDGE_DRAFT, "").toLowerCase();
+  return value === "1" || value === "true" || value === "yes";
+}
+
+export const useEdgeFunctionAiHomeworkDraft = isEdgeHomeworkDraftFlagEnabled();
+
+export function isHomeworkEdgeFunctionDraftEnabled() {
+  return useEdgeFunctionAiHomeworkDraft;
+}
+
 function stripUuidLike(text) {
   if (typeof text !== "string") return "";
   return text.replace(/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/gi, "[internal-id]").trim();
@@ -177,6 +188,165 @@ export function generateMockHomeworkFeedbackDraft(context = {}) {
       externalCall: false,
     },
   };
+}
+
+function validateHomeworkEdgeDraftRequest({
+  homeworkSubmissionId,
+  homeworkTaskId,
+  studentId,
+  classId,
+} = {}) {
+  const required = {
+    homeworkSubmissionId: sanitizeText(homeworkSubmissionId),
+    homeworkTaskId: sanitizeText(homeworkTaskId),
+    studentId: sanitizeText(studentId),
+    classId: sanitizeText(classId),
+  };
+  const missing = Object.entries(required)
+    .filter(([, value]) => !value)
+    .map(([key]) => key);
+  if (missing.length > 0) {
+    return {
+      ok: false,
+      error: {
+        code: "invalid_request",
+        message: `Missing required field(s): ${missing.join(", ")}`,
+      },
+    };
+  }
+  return { ok: true, required };
+}
+
+function isHomeworkDraftDataShapeValid(data) {
+  if (!data || typeof data !== "object") return false;
+  const requiredKeys = [
+    "markingSummary",
+    "feedbackText",
+    "nextStep",
+    "learningGaps",
+    "teacherNotes",
+    "safetyNotes",
+    "modelInfo",
+  ];
+  return requiredKeys.every((key) => key in data);
+}
+
+export async function generateHomeworkFeedbackDraftViaEdgeFunction(
+  {
+    homeworkSubmissionId,
+    homeworkTaskId,
+    studentId,
+    classId,
+    teacherObservation,
+    mode,
+    tone,
+    length,
+  } = {},
+  overrides = {},
+) {
+  const validation = validateHomeworkEdgeDraftRequest({
+    homeworkSubmissionId,
+    homeworkTaskId,
+    studentId,
+    classId,
+  });
+  if (!validation.ok) {
+    return { data: null, error: validation.error };
+  }
+
+  const invokeFn = overrides.invokeFn || null;
+
+  const demoRoleActive = Boolean(getSelectedDemoRoleSafe());
+  if (demoRoleActive) {
+    return {
+      data: null,
+      error: {
+        code: "demo_mode_local_only",
+        message: "demoRole mode keeps AI homework draft generation local-only.",
+      },
+    };
+  }
+
+  if (!invokeFn && (!isSupabaseConfigured() || !supabase)) {
+    return {
+      data: null,
+      error: {
+        code: "supabase_not_configured",
+        message: "Supabase session/config is required for Edge Function homework draft path.",
+      },
+    };
+  }
+
+  const runInvoke = invokeFn || (async ({ name, body }) => supabase.functions.invoke(name, { body }));
+  try {
+    const payload = {
+      homeworkSubmissionId: validation.required.homeworkSubmissionId,
+      homeworkTaskId: validation.required.homeworkTaskId,
+      studentId: validation.required.studentId,
+      classId: validation.required.classId,
+      teacherObservation: sanitizeText(teacherObservation),
+      mode: sanitizeText(mode, "teacher_homework_edge_stub"),
+      tone: sanitizeText(tone, "supportive"),
+      length: normalizeLength(length),
+    };
+    const result = await runInvoke({
+      name: "generate-homework-feedback-draft",
+      body: payload,
+    });
+
+    if (result?.error) {
+      return {
+        data: null,
+        error: {
+          code: sanitizeText(result.error.code, "edge_function_error"),
+          message: sanitizeText(result.error.message, "Unable to generate AI homework draft."),
+        },
+      };
+    }
+
+    if (!result?.data || typeof result.data !== "object") {
+      return {
+        data: null,
+        error: {
+          code: "invalid_edge_response",
+          message: "Edge Function returned an invalid response body.",
+        },
+      };
+    }
+
+    if (result.data.error) {
+      return {
+        data: null,
+        error: {
+          code: sanitizeText(result.data.error.code, "edge_function_error"),
+          message: sanitizeText(result.data.error.message, "Edge Function rejected the request."),
+        },
+      };
+    }
+
+    if (!isHomeworkDraftDataShapeValid(result.data.data)) {
+      return {
+        data: null,
+        error: {
+          code: "invalid_edge_response_shape",
+          message: "Edge Function response data shape is invalid.",
+        },
+      };
+    }
+
+    return {
+      data: result.data.data,
+      error: null,
+    };
+  } catch (err) {
+    return {
+      data: null,
+      error: {
+        code: "edge_function_invoke_failed",
+        message: sanitizeText(err?.message, "Unable to invoke Edge Function for AI homework draft."),
+      },
+    };
+  }
 }
 
 function buildMockDraftFromContext({ context, source, fallbackUsed = false }) {

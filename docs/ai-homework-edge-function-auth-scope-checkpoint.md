@@ -83,3 +83,14 @@ Caution for A:
 - Wrapper can validate browser -> Edge Function request path safely.
 - Real provider remains disabled.
 - Teacher approval gate remains intact.
+
+## 10) Frontend wrapper update
+
+- Frontend service wrapper is now added in `src/services/aiDraftService.js`:
+  - `generateHomeworkFeedbackDraftViaEdgeFunction(...)`
+- Wrapper validates required IDs before invoking Edge Function.
+- Wrapper uses frontend Supabase anon client/session path only (`functions.invoke`), no service role.
+- Wrapper returns stable `{ data, error }` shape and validates expected response payload fields.
+- Local mock remains default:
+  - `isHomeworkEdgeFunctionDraftEnabled()` currently resolves false unless explicitly enabled via non-secret Vite flag.
+- No UI default-path replacement in this milestone; teacher Homework AI button remains local/mock path.
