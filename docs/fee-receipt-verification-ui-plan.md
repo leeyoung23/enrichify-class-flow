@@ -1,6 +1,6 @@
 # Fee receipt supervisor / HQ verification UI plan
 
-Planning only. No app UI, runtime verification logic, or schema changes in this phase. Use fake test data and dev projects only for future implementation and smoke tests.
+UI planning with Phase 2 backend verification status update. No app UI wiring changes in this phase. Use fake test data and dev projects only for implementation and smoke tests.
 
 Business workflow clarification:
 
@@ -164,10 +164,26 @@ Add npm script e.g. `test:supabase:fee-receipt:verify` when Phase 2 lands.
 | Phase | Deliverable |
 |-------|-------------|
 | **Phase 1** | This planning doc (`docs/fee-receipt-verification-ui-plan.md`). |
-| **Phase 2** | `verifyFeeReceipt` / `rejectFeeReceipt` in `supabaseWriteService.js` + `scripts/supabase-fee-receipt-verification-smoke-test.mjs` + npm script; align parent SELECT if needed for rejected visibility. |
+| **Phase 2** | `verifyFeeReceipt` / `rejectFeeReceipt` in `supabaseWriteService.js` + `scripts/supabase-fee-receipt-verification-smoke-test.mjs` + npm script; align parent SELECT if needed for rejected visibility. **Status: implemented.** |
 | **Phase 3** | Wire **Verify** for HQ + branch supervisor on Fee Tracking (non-demo, Supabase rows only). |
 | **Phase 4** | Wire **Reject** with required internal note + confirmations. |
 | **Phase 5** | Parent status polish (badges, copy, optional parent-visible rejection summary), `verified_by` display names, production validation. |
+
+## 11) Phase 2 implementation checkpoint (service + smoke test)
+
+Implemented in this phase:
+
+- Added `verifyFeeReceipt({ feeRecordId, internalNote })` in `src/services/supabaseWriteService.js`.
+- Added `rejectFeeReceipt({ feeRecordId, internalNote })` in `src/services/supabaseWriteService.js`.
+- Added smoke test script `scripts/supabase-fee-receipt-verification-smoke-test.mjs`.
+- Added npm command `test:supabase:fee-receipt:verify`.
+
+Scope boundaries preserved:
+
+- No Fee Tracking Verify/Reject UI wiring yet.
+- Parent receipt upload remains from `ParentView` using existing `uploadFeeReceipt(...)`.
+- No service role usage in frontend/runtime service paths.
+- Demo/local fallback and `demoRole` behavior unchanged.
 
 ## 10) Next implementation prompt (Phase 2: service + smoke test only)
 

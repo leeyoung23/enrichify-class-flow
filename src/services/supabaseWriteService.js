@@ -253,3 +253,103 @@ export async function releaseWeeklyProgressReport({ reportId, reportText } = {})
   }
 }
 
+/**
+ * Resolve authenticated profile id from current anon client session.
+ */
+async function getAuthenticatedProfileId() {
+  const { data, error } = await supabase.auth.getUser();
+  if (error || !data?.user?.id) {
+    return { profileId: null, error: { message: error?.message || "Authenticated user is required" } };
+  }
+  return { profileId: data.user.id, error: null };
+}
+
+/**
+ * Verify fee receipt metadata using Supabase anon client + RLS.
+ * Only safe verification fields are writable here.
+ */
+export async function verifyFeeReceipt({ feeRecordId, internalNote } = {}) {
+  if (!isSupabaseConfigured() || !supabase) {
+    return { data: null, error: { message: "Supabase is not configured" } };
+  }
+
+  if (!feeRecordId || typeof feeRecordId !== "string") {
+    return { data: null, error: { message: "feeRecordId is required" } };
+  }
+
+  try {
+    const { profileId, error: authError } = await getAuthenticatedProfileId();
+    if (authError || !profileId) {
+      return { data: null, error: authError || { message: "Authenticated user is required" } };
+    }
+
+    const nowIso = new Date().toISOString();
+    const payload = {
+      verification_status: "verified",
+      verified_by_profile_id: profileId,
+      verified_at: nowIso,
+      updated_at: nowIso,
+    };
+
+    if (typeof internalNote === "string" && internalNote.trim()) {
+      payload.internal_note = internalNote.trim();
+    }
+
+    const { data, error } = await supabase
+      .from("fee_records")
+      .update(payload)
+      .eq("id", feeRecordId)
+      .select("id,verification_status,verified_by_profile_id,verified_at,internal_note,updated_at")
+      .maybeSingle();
+
+    return { data: data ?? null, error: error ?? null };
+  } catch (err) {
+    return { data: null, error: { message: err?.message || String(err) } };
+  }
+}
+
+/**
+ * Reject fee receipt metadata using Supabase anon client + RLS.
+ * Only safe verification fields are writable here.
+ */
+export async function rejectFeeReceipt({ feeRecordId, internalNote } = {}) {
+  if (!isSupabaseConfigured() || !supabase) {
+    return { data: null, error: { message: "Supabase is not configured" } };
+  }
+
+  if (!feeRecordId || typeof feeRecordId !== "string") {
+    return { data: null, error: { message: "feeRecordId is required" } };
+  }
+
+  if (typeof internalNote !== "string" || !internalNote.trim()) {
+    return { data: null, error: { message: "internalNote is required for rejection" } };
+  }
+
+  try {
+    const { profileId, error: authError } = await getAuthenticatedProfileId();
+    if (authError || !profileId) {
+      return { data: null, error: authError || { message: "Authenticated user is required" } };
+    }
+
+    const nowIso = new Date().toISOString();
+    const payload = {
+      verification_status: "rejected",
+      verified_by_profile_id: profileId,
+      verified_at: nowIso,
+      internal_note: internalNote.trim(),
+      updated_at: nowIso,
+    };
+
+    const { data, error } = await supabase
+      .from("fee_records")
+      .update(payload)
+      .eq("id", feeRecordId)
+      .select("id,verification_status,verified_by_profile_id,verified_at,internal_note,updated_at")
+      .maybeSingle();
+
+    return { data: data ?? null, error: error ?? null };
+  } catch (err) {
+    return { data: null, error: { message: err?.message || String(err) } };
+  }
+}
+
