@@ -151,7 +151,18 @@ Reason:
 - Student task visibility currently depends on existing submissions, which is not sufficient for robust "assigned-but-not-submitted" student/small-group flows.
 - A controlled data-model review first is safer than UI prototyping over ambiguous assignment semantics.
 
-## 14) Next implementation prompt
+## 14) SQL draft progress checkpoint
+
+- Manual/dev-first additive SQL draft is now prepared at `supabase/sql/017_homework_task_assignees_foundation.sql`.
+- The draft is not auto-applied and should be reviewed/manual-run in dev only.
+- Scope drafted in SQL:
+  - optional `homework_tasks.assignment_scope` (`class`, `selected_students`, `individual`, `curriculum_profile`)
+  - new `homework_task_assignees` join table
+  - assignment helper functions + assignee RLS policies
+- Runtime services and UI remain unchanged in this step.
+- Parent assigned-but-not-submitted task visibility should later be sourced from assignee rows.
+
+## 15) Next implementation prompt
 
 ```text
 Continue this same project only.

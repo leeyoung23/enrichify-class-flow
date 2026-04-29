@@ -295,6 +295,25 @@ Reminder: **Frontend filtering is not security. RLS must enforce access at datab
 - Student (if enabled) can read/create own submissions/files only; no peer visibility.
 - No cross-family visibility and no cross-student visibility are allowed.
 
+### Homework flexible assignment draft patch note
+
+- Draft patch reference: `supabase/sql/017_homework_task_assignees_foundation.sql` (manual review/apply only).
+- Draft status:
+  - SQL drafted only; not auto-applied in this step
+  - fake/dev data validation only
+  - runtime service/UI behavior remains unchanged until later migration
+- Draft scope:
+  - additive `homework_tasks.assignment_scope`
+  - new `homework_task_assignees` with unique (`homework_task_id`, `student_id`)
+  - helper functions for assignee/task-assignment access checks
+  - RLS for assignee rows: HQ full, branch supervisor own branch, teacher assigned class, parent linked child read-only, student self read-only
+  - narrow `homework_submissions` insert gate patch to require assignment validity
+- Manual review focus:
+  - teacher manage policy conservatism for assignment creation/updates
+  - parent/student cannot manage assignee rows
+  - no cross-family assignee visibility
+  - assignment-aware submission insert should not regress class-scope uploads
+
 ## Execution Notes
 
 - Run tests with fake users for each role.

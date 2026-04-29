@@ -233,7 +233,18 @@ Why A first:
 - services and UI should be built on explicit assignment semantics, not submission-side inference
 - additive SQL/RLS draft can be prepared safely without runtime/UI breakage
 
-## 16) Next implementation prompt
+## 16) SQL draft checkpoint (manual/dev-first)
+
+- Draft file now exists: `supabase/sql/017_homework_task_assignees_foundation.sql`.
+- `017` is **manual/dev-first draft only** and is **not auto-applied**.
+- Validation intent is fake/dev data only before any runtime wiring.
+- Student-specific and selected-student assignment support is now SQL-drafted through:
+  - additive `homework_tasks.assignment_scope`
+  - new `homework_task_assignees` table + helper functions + RLS
+- Existing homework runtime/UI workflow remains unchanged until explicit service/UI migration.
+- Parent assigned-but-not-submitted visibility should later read from `homework_task_assignees`, not only from submission rows.
+
+## 17) Next implementation prompt
 
 ```text
 Continue this same project only.
