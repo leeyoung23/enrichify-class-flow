@@ -165,6 +165,12 @@ Why school/curriculum before real AI:
 
 AI needs structured learning context to be truly differentiated, accurate, and school-aligned. Without school/curriculum context, generated output is more generic and less operationally valuable.
 
+Current status note:
+
+- School/curriculum SQL/RLS draft now exists at `supabase/sql/012_school_curriculum_foundation.sql`.
+- It is additive/manual draft only and is not applied yet.
+- There is still no school/curriculum UI wiring, no runtime service wiring, and no AI integration wiring for this domain yet.
+
 ## 12) Next immediate milestone prompt (copy-paste)
 
 ```text

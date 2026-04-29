@@ -184,6 +184,37 @@ Reminder: **Frontend filtering is not security. RLS must enforce access at datab
 - Parent/student cannot upload/update/delete storage objects in `class-memories`.
 - No public object access is allowed for `class-memories`.
 
+### School/Curriculum onboarding draft patch note
+
+- Draft patch reference: `supabase/sql/012_school_curriculum_foundation.sql` (manual review/apply only).
+- Draft scope (lean MVP):
+  - normalizes/extends `schools`
+  - normalizes/extends `student_school_profiles`
+  - adds `curriculum_profiles`
+  - adds `class_curriculum_assignments`
+  - adds `learning_goals`
+- Draft enables RLS on onboarding tables with role intent:
+  - HQ full read/manage
+  - branch supervisor own-branch manage (with student/class branch inference where needed)
+  - teacher read-only class/student scoped curriculum context
+  - parent/student read-only linked child/self context
+  - parent/student no template/manage writes
+- Draft status:
+  - not applied yet
+  - no UI/runtime service wiring yet
+  - no AI integration yet
+  - manual review required before any dev execution
+
+#### School/Curriculum role checks (after manual apply in dev only)
+
+- HQ can read/manage all onboarding tables across branches.
+- Branch supervisor can read/manage own-branch school/curriculum rows and inferred own-branch student/class rows.
+- Teacher can read assigned class/student curriculum context only.
+- Parent can read linked-child school profile/goal context only.
+- Student can read own linked profile/goal context only (if product surfaces it).
+- Parent/student cannot insert/update/delete schools or curriculum template rows.
+- Teacher cannot modify school/curriculum template rows in this MVP draft.
+
 ## Execution Notes
 
 - Run tests with fake users for each role.

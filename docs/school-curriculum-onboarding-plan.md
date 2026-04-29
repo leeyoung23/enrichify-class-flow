@@ -302,3 +302,14 @@ Validation efficiency rule:
 ---
 
 Planning status: ready for Phase 2 SQL/RLS draft.
+
+## 12) SQL draft status update
+
+- Draft file created: `supabase/sql/012_school_curriculum_foundation.sql`.
+- Scope: additive/manual draft for school/curriculum onboarding schema + RLS foundation.
+- Status: not applied yet (manual review and manual dev execution required).
+- Current runtime state remains unchanged:
+  - no app UI wiring yet
+  - no runtime service wiring yet
+  - no AI integration wiring yet
+- Continue using fake/dev-safe data only for any future validation of this draft.
