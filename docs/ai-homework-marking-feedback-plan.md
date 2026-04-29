@@ -276,3 +276,18 @@ Validation efficiency:
 - If runtime files changed, run targeted build/lint/typecheck only.
 - Do not run unrelated suites.
 ```
+
+## 17) Implementation checkpoint (mock context builder complete)
+
+- Mock homework AI context builder is now added in `src/services/aiDraftService.js`.
+- New helper methods:
+  - `buildHomeworkFeedbackDraftContext(...)`
+  - `generateMockHomeworkFeedbackDraft(context)`
+- Context builder uses safe homework/curriculum fields and uploaded file metadata only (name/type/size).
+- Mock output remains draft-only and includes explicit safety note (no auto-release).
+- No real provider integration was added.
+- No real AI/API call is made.
+- Teacher approval gate remains mandatory before release path actions.
+- Focused test added:
+  - `scripts/ai-homework-feedback-mock-test.mjs`
+  - run via `npm run test:ai:homework-feedback:mock`
