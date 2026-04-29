@@ -68,7 +68,7 @@ The smoke test verifies:
 Still not implemented:
 
 - Teacher Add Memory UI (minimal teacher card in `ParentUpdates`) now wired to `uploadClassMemory(...)` for submit-for-review.
-- Approval/release UI.
+- Approval/release UI (write methods + approval smoke test now exist; review UI not wired).
 - Parent Latest Memory UI wiring.
 - Parent Memories History/archive UI wiring.
 - Thumbnail/video polish pipeline.
@@ -76,17 +76,18 @@ Still not implemented:
 
 ---
 
-## 6) Recommended next milestone
+## 6) Next milestone (updated)
 
-Recommend: **Teacher Add Memory UI**.
+Recommend: **Class Memories approval/release UI wiring**.
 
 Why:
 
 - SQL/RLS/storage foundation is already applied in dev.
-- Service-level upload + signed URL + visibility guardrails are now validated.
-- The highest product value next is a teacher-facing entrypoint to create draft/submitted Memories in normal class workflow before parent-facing rendering work.
+- Teacher submit-for-review flow is implemented.
+- Approval write methods and approval smoke test are now available.
+- Highest product value next is staff review UI (approve/reject/hide actions) before parent Latest/History rendering.
 
 ---
 
-Checkpoint status: Class Memories upload service layer and fake image smoke test are validated; teacher Add Memory UI is now wired and continues to rely on this service-level smoke test as proof for upload path integrity.
+Checkpoint status: Upload service layer and fake image upload smoke path are validated; approval write-path and approval smoke now also exist, while approval/release UI and parent memories UI remain future.
 

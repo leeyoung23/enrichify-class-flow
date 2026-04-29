@@ -20,6 +20,11 @@ const COMMUNICATION_STATUS_VALUES = new Set([
   "shared",
 ]);
 
+function isUuidLike(value) {
+  if (typeof value !== "string") return false;
+  return /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(value.trim());
+}
+
 /**
  * Update teacher task assignment status using Supabase anon client + RLS.
  * Only safe fields are writable here.
@@ -345,6 +350,131 @@ export async function rejectFeeReceipt({ feeRecordId, internalNote } = {}) {
       .update(payload)
       .eq("id", feeRecordId)
       .select("id,verification_status,verified_by_profile_id,verified_at,internal_note,updated_at")
+      .maybeSingle();
+
+    return { data: data ?? null, error: error ?? null };
+  } catch (err) {
+    return { data: null, error: { message: err?.message || String(err) } };
+  }
+}
+
+/**
+ * Approve and release a class memory for parent visibility using Supabase anon client + RLS.
+ * Only safe class memory lifecycle fields are writable here.
+ */
+export async function approveClassMemory({ memoryId } = {}) {
+  if (!isSupabaseConfigured() || !supabase) {
+    return { data: null, error: { message: "Supabase is not configured" } };
+  }
+  if (!isUuidLike(memoryId)) {
+    return { data: null, error: { message: "memoryId must be a UUID" } };
+  }
+
+  try {
+    const { profileId, error: authError } = await getAuthenticatedProfileId();
+    if (authError || !profileId) {
+      return { data: null, error: authError || { message: "Authenticated user is required" } };
+    }
+
+    const nowIso = new Date().toISOString();
+    const payload = {
+      visibility_status: "approved",
+      visible_to_parents: true,
+      approved_by_profile_id: profileId,
+      approved_at: nowIso,
+      updated_at: nowIso,
+    };
+
+    const { data, error } = await supabase
+      .from("class_memories")
+      .update(payload)
+      .eq("id", String(memoryId).trim())
+      .select("id,branch_id,class_id,student_id,visibility_status,visible_to_parents,approved_by_profile_id,approved_at,rejected_reason,hidden_at,updated_at")
+      .maybeSingle();
+
+    return { data: data ?? null, error: error ?? null };
+  } catch (err) {
+    return { data: null, error: { message: err?.message || String(err) } };
+  }
+}
+
+/**
+ * Reject a class memory using Supabase anon client + RLS.
+ * Only safe class memory lifecycle fields are writable here.
+ */
+export async function rejectClassMemory({ memoryId, reason } = {}) {
+  if (!isSupabaseConfigured() || !supabase) {
+    return { data: null, error: { message: "Supabase is not configured" } };
+  }
+  if (!isUuidLike(memoryId)) {
+    return { data: null, error: { message: "memoryId must be a UUID" } };
+  }
+  if (typeof reason !== "string" || !reason.trim()) {
+    return { data: null, error: { message: "reason is required" } };
+  }
+
+  try {
+    const { profileId, error: authError } = await getAuthenticatedProfileId();
+    if (authError || !profileId) {
+      return { data: null, error: authError || { message: "Authenticated user is required" } };
+    }
+
+    const nowIso = new Date().toISOString();
+    const payload = {
+      visibility_status: "rejected",
+      visible_to_parents: false,
+      rejected_reason: reason.trim(),
+      updated_at: nowIso,
+    };
+
+    const { data, error } = await supabase
+      .from("class_memories")
+      .update(payload)
+      .eq("id", String(memoryId).trim())
+      .select("id,branch_id,class_id,student_id,visibility_status,visible_to_parents,approved_by_profile_id,approved_at,rejected_reason,hidden_at,updated_at")
+      .maybeSingle();
+
+    return { data: data ?? null, error: error ?? null };
+  } catch (err) {
+    return { data: null, error: { message: err?.message || String(err) } };
+  }
+}
+
+/**
+ * Hide a class memory from parent visibility using Supabase anon client + RLS.
+ * Object and metadata row are retained for audit/history purposes.
+ */
+export async function hideClassMemory({ memoryId, reason } = {}) {
+  if (!isSupabaseConfigured() || !supabase) {
+    return { data: null, error: { message: "Supabase is not configured" } };
+  }
+  if (!isUuidLike(memoryId)) {
+    return { data: null, error: { message: "memoryId must be a UUID" } };
+  }
+  if (typeof reason !== "string" || !reason.trim()) {
+    return { data: null, error: { message: "reason is required" } };
+  }
+
+  try {
+    const { profileId, error: authError } = await getAuthenticatedProfileId();
+    if (authError || !profileId) {
+      return { data: null, error: authError || { message: "Authenticated user is required" } };
+    }
+
+    const nowIso = new Date().toISOString();
+    const payload = {
+      visibility_status: "hidden",
+      visible_to_parents: false,
+      rejected_reason: reason.trim(),
+      hidden_at: nowIso,
+      updated_at: nowIso,
+    };
+
+    const { data, error } = await supabase
+      .from("class_memories")
+      .update(payload)
+      .eq("id", String(memoryId).trim())
+      .select("id,branch_id,class_id,student_id,visibility_status,visible_to_parents,approved_by_profile_id,approved_at,rejected_reason,hidden_at,updated_at")
       .maybeSingle();
 
     return { data: data ?? null, error: error ?? null };

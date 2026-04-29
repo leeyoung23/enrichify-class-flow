@@ -1,6 +1,6 @@
 # Class Memories approval/release UI plan
 
-Planning-only document for Class Memories approval/release workflow before implementation.
+Planning + implementation checkpoint document for Class Memories approval/release workflow.
 
 Scope guardrails for this step:
 
@@ -285,4 +285,22 @@ Report:
 
 ---
 
-Checkpoint status: upload-to-review is implemented; approval/release behavior is planned and ready for Phase 2 write-path implementation plus smoke validation.
+## 11) Phase 2 checkpoint status
+
+Implemented in Phase 2:
+
+- `approveClassMemory({ memoryId })` added in `src/services/supabaseWriteService.js`.
+- `rejectClassMemory({ memoryId, reason })` added in `src/services/supabaseWriteService.js`.
+- `hideClassMemory({ memoryId, reason })` added in `src/services/supabaseWriteService.js`.
+- Approval smoke script added:
+  - `scripts/supabase-class-memories-approval-smoke-test.mjs`
+- NPM script added:
+  - `npm run test:supabase:class-memories:approval`
+
+Still not implemented:
+
+- Approval/release UI wiring.
+- Parent Latest Memory real UI wiring.
+- Parent Memories History real UI wiring.
+
+Checkpoint status: approval/release write path + smoke validation now exist; UI phases remain future work.

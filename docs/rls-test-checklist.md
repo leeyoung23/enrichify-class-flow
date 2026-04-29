@@ -165,6 +165,10 @@ Reminder: **Frontend filtering is not security. RLS must enforce access at datab
   - `src/services/supabaseUploadService.js` (`uploadClassMemory`, `getClassMemorySignedUrl`, `listClassMemories`, `getClassMemoryById`)
   - `scripts/supabase-class-memories-upload-smoke-test.mjs`
   - `npm run test:supabase:class-memories:upload`
+- Approval write + smoke references:
+  - `src/services/supabaseWriteService.js` (`approveClassMemory`, `rejectClassMemory`, `hideClassMemory`)
+  - `scripts/supabase-class-memories-approval-smoke-test.mjs`
+  - `npm run test:supabase:class-memories:approval`
 - Teacher/parent Memories UI surfaces are still not wired.
 - Continue using fake users and fake media blobs only (no real photos/videos).
 
