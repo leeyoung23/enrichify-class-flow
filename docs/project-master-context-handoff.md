@@ -175,9 +175,10 @@ Current status note:
 - Fake seed application checkpoint is documented at `docs/school-curriculum-fake-seed-application-checkpoint.md`.
 - Classes page read-only curriculum context preview is now started (RLS-scoped read only; no assignment/edit writes).
 - Students page read-only school/learning context preview is now started (RLS-scoped read only; no profile write/edit controls).
-- School/curriculum UI is now in early read-only preview stage on `Classes` + `Students`; assignment/edit UI is still unwired and AI integration is still unwired.
+- ParentView parent-friendly learning focus summary is now started (read-only bridge from curriculum context to parent-facing language).
+- School/curriculum UI is now in early read-only preview stage on `Classes` + `Students` + `ParentView`; assignment/edit UI is still unwired and AI integration is still unwired.
 - Application checkpoint is documented at `docs/school-curriculum-sql-application-checkpoint.md`.
-- Recommended next milestone: `ParentView` learning focus summary.
+- Recommended next milestone: curriculum assignment/edit UI planning (write phase with strict role boundaries).
 
 ## 12) Next immediate milestone prompt (copy-paste)
 

@@ -2,6 +2,7 @@ import React, { useMemo, useState, useEffect } from 'react';
 import { getCurrentUser, getSelectedDemoRole } from '@/services/authService';
 import { getStudentById, getClassById, listAttendanceRecords, listParentUpdatesByStudent, getStudentFeeStatus, listHomeworkAttachmentsByStudent, uploadHomeworkAttachment } from '@/services/dataService';
 import { canAccessStudentRecord, ROLES } from '@/services/permissionService';
+import { getStudentLearningContext, getClassLearningContext, listCurriculumProfiles } from '@/services/supabaseReadService';
 import { uploadFeeReceipt, getFeeReceiptSignedUrl, listClassMemories, getClassMemorySignedUrl } from '@/services/supabaseUploadService';
 import { useSupabaseAuthState } from '@/hooks/useSupabaseAuthState';
 import { isSupabaseConfigured } from '@/services/supabaseClient';
@@ -125,6 +126,82 @@ function ChildProfileSummary({ student, cls }) {
           <span className="text-muted-foreground">Schedule</span>
           <span className="font-medium">{cls?.schedule || 'Mon 4pm'}</span>
         </div>
+      </CardContent>
+    </Card>
+  );
+}
+
+function LearningFocusSummary({ isDemoMode, learningFocus, loading }) {
+  if (loading) {
+    return (
+      <Card>
+        <CardHeader className="pb-3">
+          <CardTitle className="text-base">Learning Focus</CardTitle>
+        </CardHeader>
+        <CardContent className="text-sm text-muted-foreground">Loading learning focus...</CardContent>
+      </Card>
+    );
+  }
+
+  if (isDemoMode) {
+    return (
+      <Card>
+        <CardHeader className="pb-3">
+          <CardTitle className="text-base">Learning Focus</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-2 text-sm">
+          <p className="text-muted-foreground">Demo-only learning focus summary.</p>
+          <p><span className="text-muted-foreground">School and year:</span> Demo Learning School, Year 4</p>
+          <p><span className="text-muted-foreground">This term&apos;s focus:</span> Build reading confidence with short daily practice.</p>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  if (!learningFocus?.hasData) {
+    return (
+      <Card>
+        <CardHeader className="pb-3">
+          <CardTitle className="text-base">Learning Focus</CardTitle>
+        </CardHeader>
+        <CardContent className="text-sm text-muted-foreground">
+          Learning focus will appear here once your child&apos;s class profile is set.
+        </CardContent>
+      </Card>
+    );
+  }
+
+  return (
+    <Card>
+      <CardHeader className="pb-3">
+        <CardTitle className="text-base">Learning Focus</CardTitle>
+      </CardHeader>
+      <CardContent className="space-y-2 text-sm">
+        {learningFocus.schoolAndYear ? (
+          <p><span className="text-muted-foreground">School and year:</span> {learningFocus.schoolAndYear}</p>
+        ) : null}
+        {learningFocus.profileName ? (
+          <p><span className="text-muted-foreground">Profile:</span> {learningFocus.profileName}</p>
+        ) : null}
+        {learningFocus.subject ? (
+          <p><span className="text-muted-foreground">Subject:</span> {learningFocus.subject}</p>
+        ) : null}
+        {learningFocus.skillFocus ? (
+          <p><span className="text-muted-foreground">Skill focus:</span> {learningFocus.skillFocus}</p>
+        ) : null}
+        {learningFocus.classLearningFocus ? (
+          <p><span className="text-muted-foreground">This term&apos;s focus:</span> {learningFocus.classLearningFocus}</p>
+        ) : null}
+        {learningFocus.studentGoals?.length > 0 ? (
+          <div className="pt-1">
+            <p className="text-xs text-muted-foreground">Current goals</p>
+            <ul className="list-disc pl-5 space-y-0.5">
+              {learningFocus.studentGoals.map((goal) => (
+                <li key={goal}>{goal}</li>
+              ))}
+            </ul>
+          </div>
+        ) : null}
       </CardContent>
     </Card>
   );
@@ -591,6 +668,8 @@ export default function ParentView() {
   const [classMemorySignedUrls, setClassMemorySignedUrls] = useState({});
   const [classMemoriesLoading, setClassMemoriesLoading] = useState(false);
   const [classMemoriesError, setClassMemoriesError] = useState('');
+  const [learningFocus, setLearningFocus] = useState({ hasData: false });
+  const [learningFocusLoading, setLearningFocusLoading] = useState(false);
 
   const latestApprovedUpdate = useMemo(() => updates[0], [updates]);
 
@@ -691,6 +770,88 @@ export default function ParentView() {
     };
 
     void loadRealParentMemories();
+    return () => {
+      cancelled = true;
+    };
+  }, [isDemoMode, hasSupabaseSession, student?.id, cls?.id]);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    const loadLearningFocus = async () => {
+      if (isDemoMode) {
+        setLearningFocus({ hasData: false });
+        setLearningFocusLoading(false);
+        return;
+      }
+      if (!hasSupabaseSession || !isSupabaseConfigured() || !student?.id || !isUuidLike(student.id)) {
+        setLearningFocus({ hasData: false });
+        setLearningFocusLoading(false);
+        return;
+      }
+
+      setLearningFocusLoading(true);
+      try {
+        const [studentContextResult, classContextResult, profileResult] = await Promise.all([
+          getStudentLearningContext({ studentId: student.id }),
+          cls?.id && isUuidLike(cls.id) ? getClassLearningContext({ classId: cls.id }) : Promise.resolve({ data: null, error: null }),
+          listCurriculumProfiles({}),
+        ]);
+
+        if (cancelled) return;
+        if (studentContextResult?.error || classContextResult?.error || profileResult?.error) {
+          setLearningFocus({ hasData: false });
+          return;
+        }
+
+        const studentProfile = studentContextResult?.data?.student_school_profile || null;
+        const profileRows = Array.isArray(profileResult?.data) ? profileResult.data : [];
+        const profileMap = new Map(profileRows.map((row) => [row.id, row]));
+        const curriculumProfile = studentProfile?.curriculum_profile_id
+          ? profileMap.get(studentProfile.curriculum_profile_id)
+          : null;
+        const classAssignment = Array.isArray(classContextResult?.data?.class_curriculum_assignments)
+          ? classContextResult.data.class_curriculum_assignments[0]
+          : null;
+        const activeStudentGoals = Array.isArray(studentContextResult?.data?.learning_goals)
+          ? studentContextResult.data.learning_goals
+            .filter((goal) => goal?.status === 'active' && goal?.student_id === student.id)
+            .map((goal) => goal?.goal_title)
+            .filter(Boolean)
+          : [];
+
+        const schoolAndYear = [studentProfile?.school_name, studentProfile?.grade_year].filter(Boolean).join(', ');
+
+        const nextValue = {
+          hasData: Boolean(
+            schoolAndYear
+              || curriculumProfile?.name
+              || curriculumProfile?.subject
+              || curriculumProfile?.skill_focus
+              || classAssignment?.learning_focus
+              || activeStudentGoals.length > 0
+          ),
+          schoolAndYear,
+          profileName: curriculumProfile?.name || '',
+          subject: curriculumProfile?.subject || '',
+          skillFocus: curriculumProfile?.skill_focus || '',
+          classLearningFocus: classAssignment?.learning_focus || '',
+          studentGoals: activeStudentGoals,
+        };
+
+        setLearningFocus(nextValue);
+      } catch {
+        if (!cancelled) {
+          setLearningFocus({ hasData: false });
+        }
+      } finally {
+        if (!cancelled) {
+          setLearningFocusLoading(false);
+        }
+      }
+    };
+
+    void loadLearningFocus();
     return () => {
       cancelled = true;
     };
@@ -906,6 +1067,11 @@ export default function ParentView() {
           ) : (
             <>
               <ChildProfileSummary student={student} cls={cls} />
+              <LearningFocusSummary
+                isDemoMode={isDemoMode}
+                learningFocus={learningFocus}
+                loading={learningFocusLoading}
+              />
               <LatestParentComment updates={updates} />
               <LatestWeeklyProgressReport updates={updates} />
               {feeStatus && (

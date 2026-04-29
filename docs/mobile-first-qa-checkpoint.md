@@ -23,6 +23,7 @@ Scope note:
 - Fee status + proof upload area uses native file input and multiple stacked actions; risk of unclear action hierarchy on small screens.
 - “Learning Portal & Uploads” button block may become crowded with long labels.
 - Latest Memory + Class Memories History now include real approved-memory display for non-demo parent flow; verify hero-card readability and history gallery card wrapping on ~390px and ~768px.
+- ParentView Learning Focus card is now present; verify concise parent-friendly copy, stacked field readability, and empty-state clarity on ~390px.
 
 ### `ParentUpdates`
 

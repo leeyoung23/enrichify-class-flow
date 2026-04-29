@@ -337,7 +337,7 @@ Planning status: ready for Phase 2 SQL/RLS draft.
 - Fake seed application checkpoint: `docs/school-curriculum-fake-seed-application-checkpoint.md`.
 - Classes page read-only curriculum context preview is now implemented.
 - Students page read-only school/learning context preview is now implemented.
+- ParentView parent-friendly learning focus summary is now implemented.
 - Assignment/edit/create curriculum UI remains future.
-- ParentView learning focus summary remains future.
 - AI context integration remains future.
-- Next milestone: `ParentView` learning focus summary.
+- Next milestone: curriculum assignment/edit UI planning and phased write controls.
