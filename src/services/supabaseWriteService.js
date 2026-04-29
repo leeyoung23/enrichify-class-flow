@@ -19,6 +19,16 @@ const COMMUNICATION_STATUS_VALUES = new Set([
   "released",
   "shared",
 ]);
+const HOMEWORK_SUBMISSION_STATUS_VALUES = new Set([
+  "submitted",
+  "under_review",
+  "reviewed",
+  "returned_for_revision",
+  "approved_for_parent",
+  "archived",
+]);
+const HOMEWORK_FEEDBACK_EDITABLE_STATUSES = new Set(["draft", "approved"]);
+const HOMEWORK_FEEDBACK_STATUS_VALUES = new Set(["draft", "approved", "released_to_parent", "archived"]);
 
 function isUuidLike(value) {
   if (typeof value !== "string") return false;
@@ -31,6 +41,10 @@ function normalizeNullableText(value, { maxLength = 1000 } = {}) {
   const trimmed = value.trim();
   if (!trimmed) return null;
   return trimmed.slice(0, maxLength);
+}
+
+function trimString(value) {
+  return typeof value === "string" ? value.trim() : "";
 }
 
 function normalizeNullableDate(value) {
@@ -300,6 +314,236 @@ export async function releaseWeeklyProgressReport({ reportId, reportText } = {})
       .select("id,branch_id,class_id,student_id,teacher_id,week_start_date,report_text,status,updated_at")
       .maybeSingle();
 
+    return { data: data ?? null, error: error ?? null };
+  } catch (err) {
+    return { data: null, error: { message: err?.message || String(err) } };
+  }
+}
+
+/**
+ * Create/update homework feedback using Supabase anon client + JWT/RLS only.
+ * Creates draft when none exists; updates latest non-released feedback row when available.
+ */
+export async function createOrUpdateHomeworkFeedback({
+  homeworkSubmissionId,
+  feedbackText,
+  nextStep,
+  internalNote,
+} = {}) {
+  if (!isSupabaseConfigured() || !supabase) {
+    return { data: null, error: { message: "Supabase is not configured" } };
+  }
+  if (!isUuidLike(homeworkSubmissionId)) {
+    return { data: null, error: { message: "homeworkSubmissionId must be a UUID" } };
+  }
+
+  const safeFeedbackText = normalizeNullableText(feedbackText, { maxLength: 4000 });
+  const safeNextStep = normalizeNullableText(nextStep, { maxLength: 2000 });
+  const safeInternalNote = normalizeNullableText(internalNote, { maxLength: 2000 });
+  if (!safeFeedbackText && !safeNextStep && !safeInternalNote) {
+    return { data: null, error: { message: "At least one feedback field is required" } };
+  }
+
+  try {
+    const { profileId, error: authError } = await getAuthenticatedProfileId();
+    if (authError || !profileId) {
+      return { data: null, error: authError || { message: "Authenticated user is required" } };
+    }
+
+    const submissionId = trimString(homeworkSubmissionId);
+    const latestFeedbackRead = await supabase
+      .from("homework_feedback")
+      .select("id,status")
+      .eq("homework_submission_id", submissionId)
+      .in("status", ["draft", "approved"])
+      .order("updated_at", { ascending: false })
+      .limit(1);
+
+    if (latestFeedbackRead.error) {
+      return { data: null, error: latestFeedbackRead.error };
+    }
+
+    const latestRow = Array.isArray(latestFeedbackRead.data) ? latestFeedbackRead.data[0] : null;
+    const nowIso = new Date().toISOString();
+    const basePayload = {
+      feedback_text: safeFeedbackText,
+      next_step: safeNextStep,
+      internal_note: safeInternalNote,
+      updated_at: nowIso,
+    };
+
+    if (!latestRow?.id) {
+      const insertPayload = {
+        homework_submission_id: submissionId,
+        teacher_profile_id: profileId,
+        status: "draft",
+        released_to_parent_at: null,
+        created_at: nowIso,
+        ...basePayload,
+      };
+      const { data, error } = await supabase
+        .from("homework_feedback")
+        .insert(insertPayload)
+        .select("id,homework_submission_id,teacher_profile_id,feedback_text,next_step,status,released_to_parent_at,created_at,updated_at")
+        .maybeSingle();
+      return { data: data ?? null, error: error ?? null };
+    }
+
+    const nextStatus = HOMEWORK_FEEDBACK_EDITABLE_STATUSES.has(latestRow.status) ? latestRow.status : "draft";
+    const updatePayload = {
+      ...basePayload,
+      status: nextStatus,
+    };
+    const { data, error } = await supabase
+      .from("homework_feedback")
+      .update(updatePayload)
+      .eq("id", latestRow.id)
+      .select("id,homework_submission_id,teacher_profile_id,feedback_text,next_step,status,released_to_parent_at,created_at,updated_at")
+      .maybeSingle();
+    return { data: data ?? null, error: error ?? null };
+  } catch (err) {
+    return { data: null, error: { message: err?.message || String(err) } };
+  }
+}
+
+/**
+ * Mark a homework submission as reviewed via staff-scoped RLS update policy.
+ */
+export async function markHomeworkSubmissionReviewed({ homeworkSubmissionId } = {}) {
+  if (!isSupabaseConfigured() || !supabase) {
+    return { data: null, error: { message: "Supabase is not configured" } };
+  }
+  if (!isUuidLike(homeworkSubmissionId)) {
+    return { data: null, error: { message: "homeworkSubmissionId must be a UUID" } };
+  }
+  if (!HOMEWORK_SUBMISSION_STATUS_VALUES.has("reviewed")) {
+    return { data: null, error: { message: "Invalid reviewed status value" } };
+  }
+
+  try {
+    const { profileId, error: authError } = await getAuthenticatedProfileId();
+    if (authError || !profileId) {
+      return { data: null, error: authError || { message: "Authenticated user is required" } };
+    }
+
+    const nowIso = new Date().toISOString();
+    const { data, error } = await supabase
+      .from("homework_submissions")
+      .update({
+        status: "reviewed",
+        reviewed_at: nowIso,
+        reviewed_by_profile_id: profileId,
+        updated_at: nowIso,
+      })
+      .eq("id", trimString(homeworkSubmissionId))
+      .select("id,homework_task_id,branch_id,class_id,student_id,status,reviewed_at,reviewed_by_profile_id,updated_at")
+      .maybeSingle();
+    return { data: data ?? null, error: error ?? null };
+  } catch (err) {
+    return { data: null, error: { message: err?.message || String(err) } };
+  }
+}
+
+/**
+ * Return a submission for revision and keep feedback in non-released state.
+ */
+export async function returnHomeworkForRevision({
+  homeworkSubmissionId,
+  feedbackText,
+  nextStep,
+  internalNote,
+} = {}) {
+  if (!isSupabaseConfigured() || !supabase) {
+    return { data: null, error: { message: "Supabase is not configured" } };
+  }
+  if (!isUuidLike(homeworkSubmissionId)) {
+    return { data: null, error: { message: "homeworkSubmissionId must be a UUID" } };
+  }
+
+  try {
+    const feedbackResult = await createOrUpdateHomeworkFeedback({
+      homeworkSubmissionId,
+      feedbackText,
+      nextStep,
+      internalNote,
+    });
+    if (feedbackResult.error || !feedbackResult.data?.id) {
+      return { data: null, error: feedbackResult.error || { message: "Unable to save feedback draft for revision" } };
+    }
+
+    const nowIso = new Date().toISOString();
+    const feedbackDraftResult = await supabase
+      .from("homework_feedback")
+      .update({
+        status: "draft",
+        released_to_parent_at: null,
+        updated_at: nowIso,
+      })
+      .eq("id", feedbackResult.data.id)
+      .select("id,homework_submission_id,teacher_profile_id,feedback_text,next_step,status,released_to_parent_at,created_at,updated_at")
+      .maybeSingle();
+    if (feedbackDraftResult.error || !feedbackDraftResult.data) {
+      return { data: null, error: feedbackDraftResult.error || { message: "Unable to keep feedback in draft state" } };
+    }
+
+    const { profileId, error: authError } = await getAuthenticatedProfileId();
+    if (authError || !profileId) {
+      return { data: null, error: authError || { message: "Authenticated user is required" } };
+    }
+
+    const submissionUpdate = await supabase
+      .from("homework_submissions")
+      .update({
+        status: "returned_for_revision",
+        reviewed_at: nowIso,
+        reviewed_by_profile_id: profileId,
+        updated_at: nowIso,
+      })
+      .eq("id", trimString(homeworkSubmissionId))
+      .select("id,homework_task_id,branch_id,class_id,student_id,status,reviewed_at,reviewed_by_profile_id,updated_at")
+      .maybeSingle();
+    if (submissionUpdate.error || !submissionUpdate.data) {
+      return { data: null, error: submissionUpdate.error || { message: "Unable to mark submission returned_for_revision" } };
+    }
+
+    return {
+      data: {
+        feedback: feedbackDraftResult.data,
+        submission: submissionUpdate.data,
+      },
+      error: null,
+    };
+  } catch (err) {
+    return { data: null, error: { message: err?.message || String(err) } };
+  }
+}
+
+/**
+ * Release homework feedback to parent visibility.
+ */
+export async function releaseHomeworkFeedbackToParent({ homeworkFeedbackId } = {}) {
+  if (!isSupabaseConfigured() || !supabase) {
+    return { data: null, error: { message: "Supabase is not configured" } };
+  }
+  if (!isUuidLike(homeworkFeedbackId)) {
+    return { data: null, error: { message: "homeworkFeedbackId must be a UUID" } };
+  }
+  if (!HOMEWORK_FEEDBACK_STATUS_VALUES.has("released_to_parent")) {
+    return { data: null, error: { message: "Invalid release status value" } };
+  }
+
+  try {
+    const nowIso = new Date().toISOString();
+    const { data, error } = await supabase
+      .from("homework_feedback")
+      .update({
+        status: "released_to_parent",
+        released_to_parent_at: nowIso,
+        updated_at: nowIso,
+      })
+      .eq("id", trimString(homeworkFeedbackId))
+      .select("id,homework_submission_id,teacher_profile_id,feedback_text,next_step,status,released_to_parent_at,created_at,updated_at")
+      .maybeSingle();
     return { data: data ?? null, error: error ?? null };
   } catch (err) {
     return { data: null, error: { message: err?.message || String(err) } };

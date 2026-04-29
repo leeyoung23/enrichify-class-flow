@@ -157,7 +157,7 @@ AI guardrail:
 ## 11) Recommended implementation sequence
 
 1. Phase 1: this plan
-2. Phase 2: homework feedback write service + smoke test
+2. Phase 2: homework feedback write service + smoke test (implemented)
 3. Phase 3: teacher read-only submission queue UI
 4. Phase 4: teacher feedback draft UI
 5. Phase 5: release-to-parent flow
@@ -174,6 +174,26 @@ Why A first:
 - Service-level proof should land before UI wiring.
 - This preserves loop integrity: input -> process -> output.
 - It reduces UI rework by confirming lifecycle/status transitions first.
+
+## 14) Phase 2 checkpoint (implemented)
+
+- Homework feedback write methods are now added in `src/services/supabaseWriteService.js`:
+  - `createOrUpdateHomeworkFeedback(...)`
+  - `markHomeworkSubmissionReviewed(...)`
+  - `returnHomeworkForRevision(...)`
+  - `releaseHomeworkFeedbackToParent(...)`
+- Homework feedback lifecycle smoke test is now added:
+  - `scripts/supabase-homework-feedback-smoke-test.mjs`
+  - `npm run test:supabase:homework:feedback`
+- Smoke verifies:
+  - draft feedback create/update
+  - staff review transition path (`reviewed` or `returned_for_revision` fallback)
+  - release-to-parent visibility behavior
+  - parent draft-hidden / released-visible behavior
+  - parent response excludes `internal_note` in `parentVisibleOnly` service path
+- Teacher homework review UI remains future.
+- Parent homework status/feedback UI remains future.
+- AI homework feedback remains future and draft-only.
 
 ## 13) Next implementation prompt (A only)
 

@@ -60,7 +60,19 @@ This checkpoint records that the homework upload pipeline now passes cleanly in 
 - feedback release flow
 - AI homework feedback draft
 
-## 8) Recommended next milestone
+## 8) Feedback write service checkpoint
+
+- Homework feedback write service methods are now added in `src/services/supabaseWriteService.js`.
+- Homework feedback smoke test is now added at `scripts/supabase-homework-feedback-smoke-test.mjs`.
+- Package command is now available: `npm run test:supabase:homework:feedback`.
+- Service/smoke flow validates draft create/update, review-state transition, release-to-parent, and parent visibility gates.
+- Parent draft/unreleased feedback remains hidden by policy.
+- Parent-visible feedback retrieval path excludes `internal_note` in service response for `parentVisibleOnly`.
+- No teacher homework review UI is added in this milestone.
+- No parent homework status/feedback UI is added in this milestone.
+- AI homework feedback remains future.
+
+## 9) Recommended next milestone
 
 Recommendation: **A. Teacher Homework review UI planning**.
 

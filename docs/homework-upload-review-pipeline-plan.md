@@ -222,3 +222,12 @@ Validation efficiency:
 - Future smoke validation should use fake files/dev data only.
 - RLS hardening note: parent/student create submissions/files in scope, but submission review-field updates are staff-only in the current SQL draft.
 - Storage hardening note: path convention checks are now enforced against submission metadata in policy helper logic.
+- Feedback write service methods are now added in `src/services/supabaseWriteService.js`:
+  - `createOrUpdateHomeworkFeedback(...)`
+  - `markHomeworkSubmissionReviewed(...)`
+  - `returnHomeworkForRevision(...)`
+  - `releaseHomeworkFeedbackToParent(...)`
+- Feedback smoke validation script is now added at `scripts/supabase-homework-feedback-smoke-test.mjs`.
+- Package command is now available: `npm run test:supabase:homework:feedback`.
+- Feedback lifecycle smoke covers draft create/update, review transition, release, parent draft-hidden check, and parent released-visible check.
+- Service layer now omits `internal_note` in parent-visible feedback read path (`listHomeworkFeedback({ parentVisibleOnly: true })`).

@@ -189,6 +189,8 @@ Current status note:
 - Homework runtime service + fake file smoke test are now started (`src/services/supabaseUploadService.js`, `scripts/supabase-homework-upload-smoke-test.mjs`) with metadata-first upload and private signed URL checks using fake files only.
 - `015` has been manually applied in dev to fix UUID path-prefix matching for metadata-first homework file insert.
 - Parent direct submission insert investigation found policy recursion for first parent submission; patch draft exists at `supabase/sql/016_fix_homework_parent_submission_insert.sql` (manual apply only, not applied yet).
+- Homework feedback write service + smoke test are now started (`src/services/supabaseWriteService.js`, `scripts/supabase-homework-feedback-smoke-test.mjs`) for draft/create-update, review transition, release-to-parent, and parent draft-hidden checks.
+- Parent-visible feedback read path now omits `internal_note` from service response when `parentVisibleOnly` is requested.
 - Homework teacher/parent UI and AI homework feedback remain future milestones.
 
 ## 12) Next immediate milestone prompt (copy-paste)

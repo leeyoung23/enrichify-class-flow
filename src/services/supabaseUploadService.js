@@ -774,9 +774,12 @@ export async function listHomeworkFeedback({ homeworkSubmissionId, parentVisible
   }
 
   try {
+    const selectFields = parentVisibleOnly
+      ? "id,homework_submission_id,teacher_profile_id,feedback_text,next_step,status,released_to_parent_at,created_at,updated_at"
+      : "id,homework_submission_id,teacher_profile_id,feedback_text,next_step,internal_note,status,released_to_parent_at,created_at,updated_at";
     let query = supabase
       .from("homework_feedback")
-      .select("id,homework_submission_id,teacher_profile_id,feedback_text,next_step,internal_note,status,released_to_parent_at,created_at,updated_at")
+      .select(selectFields)
       .order("created_at", { ascending: false });
 
     if (isUuidLike(homeworkSubmissionId)) query = query.eq("homework_submission_id", trimString(homeworkSubmissionId));
