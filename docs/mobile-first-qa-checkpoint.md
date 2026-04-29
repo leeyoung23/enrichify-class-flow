@@ -4,9 +4,8 @@ This checkpoint defines a practical mobile-first QA pass before starting another
 
 Scope note:
 
-- Planning/documentation only.
-- No app UI changes in this step.
-- No runtime logic, service, or SQL changes in this step.
+- Planning/documentation checkpoint; lists mobile-sensitive areas and QA order.
+- **`StaffTimeClock`** mock UI is implemented (local demo only); include it in manual QA passes below.
 
 ## 1) Mobile-first principle
 
@@ -63,6 +62,11 @@ Scope note:
 - Layout currently reserves fixed left margin (`ml-[260px]` / `ml-[72px]`) with sidebar always present for role pages.
 - Mobile nav behavior and collapsed-state ergonomics require explicit QA to avoid content squeeze.
 
+### `StaffTimeClock`
+
+- **Teacher:** mobile-first mock — large Clock In / Clock Out, shift status, fake GPS/geofence verification copy, selfie placeholder, exception / pending supervisor review demo, recent history (no live GPS, camera, or Supabase).
+- **Branch supervisor / HQ:** summary cards, reporting placeholder, demo lists; tables hidden on small breakpoints in favour of stacked cards — verify tap targets and readability at ~390px.
+
 ## 3) Role-based mobile priorities
 
 - **Parent:** `ParentView`, fee status/proof upload clarity, report readability, attendance/homework summaries, and future Memories flow.
@@ -102,6 +106,7 @@ Status update:
 - `ParentView` payment proof mobile polish: implemented.
 - `FeeTracking` staff action button wrap/stack polish: implemented.
 - `AppLayout`/sidebar responsive behavior review: implemented with minimal fix to avoid content squeeze on small screens while preserving desktop sidebar behavior.
+- `StaffTimeClock` mobile mock UI: implemented (see `docs/staff-time-clock-mobile-ui-plan.md` §0).
 - Remaining mobile QA/polish items:
   - `ParentUpdates` mobile review flow density
 

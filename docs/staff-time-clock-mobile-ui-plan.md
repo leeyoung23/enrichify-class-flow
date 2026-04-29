@@ -1,6 +1,19 @@
 # Staff Time Clock — mobile UI plan
 
-Planning and terminology reference for the **staff** clock experience. **No runtime UI** is implied by this document alone. HQ/supervisor review surfaces are called out separately (desktop-friendly).
+Planning and terminology reference for the **staff** clock experience. HQ/supervisor review surfaces are called out separately (desktop-friendly).
+
+## 0) Implementation status
+
+**Implemented (Option A — mock only):**
+
+- **`src/pages/StaffTimeClock.jsx`**: mobile-first **teacher** flow with large Clock In / Clock Out actions, current shift status card, branch + **fake** GPS/geofence verification display (clock-in location check / clock-out location check labels), selfie proof placeholder, exception / **pending supervisor review** demo messaging, and recent clock history (local state only). **HQ** and **branch supervisor** views include a **reporting placeholder** card and use **stacked cards on small screens** instead of relying on wide tables alone.
+- **Explicitly not in this mock:** `navigator.geolocation`, `getUserMedia` / camera, file uploads, and any calls to `clockInStaff`, `clockOutStaff`, or `getStaffTimeSelfieSignedUrl`.
+
+**Still future:**
+
+- Real browser geolocation and camera capture with permission UX.
+- Wiring to Supabase services (anon + JWT) after product sign-off on punch flow.
+- Supervisor / HQ **review dashboard** with live exception queues, signed-url selfie viewer, and exports.
 
 Related checkpoints:
 
@@ -160,4 +173,4 @@ Validation:
 
 ---
 
-*Document type: planning only. Does not change runtime behaviour.*
+*Document type: planning + implementation status for the mock UI phase. Mock page does not persist punches to Supabase.*
