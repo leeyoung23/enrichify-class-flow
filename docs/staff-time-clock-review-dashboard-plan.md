@@ -1,6 +1,6 @@
 # Staff Time Clock — HQ/Supervisor Review Dashboard plan
 
-Planning document for the **review dashboard only** (no runtime implementation in this step).
+Planning + checkpoint document for the **review dashboard**.
 
 Scope guardrails:
 
@@ -25,7 +25,9 @@ Related context:
 - Punch evidence rows are written to `staff_time_entries` with status and distance/accuracy fields.
 - Selfie paths are stored in private bucket `staff-clock-selfies`; signed URL helper exists (`getStaffTimeSelfieSignedUrl`).
 - Real branch geofence can load from `branches.latitude/longitude/geofence_radius_meters` for non-demo staff.
-- HQ / Branch Supervisor dashboard is still placeholder-only (no live review UI yet).
+- HQ / Branch Supervisor read-only review dashboard UI is now wired to existing read methods.
+- Review approve/reject actions are intentionally not wired yet.
+- Export/monthly reporting is intentionally not wired yet.
 
 ---
 
@@ -157,9 +159,9 @@ Action design notes:
 
 1. **Phase 1 (this doc):** review dashboard plan.
 2. **Phase 2 (implemented):** read service + smoke test for `staff_time_entries` visibility and selfie signed URL access.
-3. **Phase 3:** HQ/supervisor read-only dashboard (summary + filters + entry list/detail). **UI still future.**
-4. **Phase 4:** exception review actions (approve/reject/missed clock-out).
-5. **Phase 5:** exports/monthly reporting.
+3. **Phase 3 (implemented):** HQ/supervisor read-only dashboard (summary + filters + entry list/detail + signed selfie view).
+4. **Phase 4 (future):** exception review actions (approve/reject/missed clock-out).
+5. **Phase 5 (future):** exports/monthly reporting.
 6. **Phase 6:** adjustment request workflow.
 
 Phase 2 artifacts:

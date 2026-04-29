@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useOutletContext } from 'react-router-dom';
 import PageHeader from '@/components/shared/PageHeader';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -6,21 +6,25 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { ROLES } from '@/services/permissionService';
 import { getSelectedDemoRole } from '@/services/authService';
+import { useSupabaseAuthState } from '@/hooks/useSupabaseAuthState';
 import {
   getCurrentPositionForClockEvent,
   calculateDistanceMeters,
   evaluateGeofence,
 } from '@/services/locationVerificationService';
 import {
-  requestCameraStream,
-  captureSelfieBlob,
-  stopCameraStream,
-} from '@/services/selfieCaptureService';
-import { clockInStaff, clockOutStaff } from '@/services/staffTimeClockService';
+  getStaffTimeEntryById,
+  getStaffTimeSelfieSignedUrl,
+  getStaffTimeSummary,
+  listStaffTimeEntries,
+  clockInStaff,
+  clockOutStaff,
+} from '@/services/staffTimeClockService';
+import { requestCameraStream, captureSelfieBlob, stopCameraStream } from '@/services/selfieCaptureService';
 import { isSupabaseConfigured } from '@/services/supabaseClient';
 import { getBranchGeofenceById } from '@/services/supabaseReadService';
 import { toast } from 'sonner';
-import { AlertTriangle, Camera, Clock, Loader2, MapPin, Monitor, Timer } from 'lucide-react';
+import { AlertTriangle, Camera, Clock, ExternalLink, Loader2, MapPin, Monitor, RefreshCcw, Timer } from 'lucide-react';
 
 const DEMO_NOTE =
   'Demo role: mock shift only on this device. Signed-in (non-demo) with Supabase: GPS + selfie + Clock In / Clock Out write to staff_time_entries via clockInStaff / clockOutStaff.';
@@ -1264,7 +1268,262 @@ function ReportingPlaceholderCard({ title, body }) {
   );
 }
 
-function BranchSupervisorOverview() {
+function getReviewStatusVariant(status) {
+  if (status === 'valid' || status === 'approved_exception') return 'default';
+  if (status === 'outside_geofence' || status === 'rejected_exception') return 'destructive';
+  if (status === 'pending_review' || status === 'missed_clock_out') return 'secondary';
+  return 'outline';
+}
+
+function reviewStatusLabel(status) {
+  if (!status) return 'unknown';
+  return String(status).replaceAll('_', ' ');
+}
+
+function StaffTimeReviewDashboard({ isHq }) {
+  const isDemoRole = Boolean(getSelectedDemoRole());
+  const { session } = useSupabaseAuthState();
+  const [entries, setEntries] = useState([]);
+  const [summary, setSummary] = useState(null);
+  const [loading, setLoading] = useState(false);
+  const [loadError, setLoadError] = useState(null);
+  const [statusFilter, setStatusFilter] = useState('');
+  const [dateFilter, setDateFilter] = useState('');
+  const [detailCache, setDetailCache] = useState({});
+  const [openingSelfieKey, setOpeningSelfieKey] = useState('');
+
+  const canReadFromSupabase = !isDemoRole && isSupabaseConfigured() && Boolean(session?.user?.id);
+
+  const loadReviewData = useCallback(async () => {
+    if (!canReadFromSupabase) return;
+    setLoading(true);
+    setLoadError(null);
+    const dateRange = dateFilter ? { startDate: dateFilter, endDate: dateFilter } : undefined;
+    const [entriesResult, summaryResult] = await Promise.all([
+      listStaffTimeEntries({
+        status: statusFilter || undefined,
+        date: dateFilter || undefined,
+        page: 1,
+        pageSize: 30,
+      }),
+      getStaffTimeSummary({ dateRange }),
+    ]);
+    if (entriesResult.error) {
+      setEntries([]);
+      setSummary(null);
+      setLoadError(entriesResult.error);
+      setLoading(false);
+      return;
+    }
+    setEntries(entriesResult.data || []);
+    setSummary(summaryResult.error ? null : summaryResult.data || null);
+    setLoadError(summaryResult.error || null);
+    setLoading(false);
+  }, [canReadFromSupabase, dateFilter, statusFilter]);
+
+  useEffect(() => {
+    if (!canReadFromSupabase) return;
+    void loadReviewData();
+  }, [canReadFromSupabase, loadReviewData]);
+
+  const handleOpenSelfie = async (entryId, clockType) => {
+    if (!canReadFromSupabase) return;
+    const key = `${entryId}:${clockType}`;
+    setOpeningSelfieKey(key);
+    let entryDetail = detailCache[entryId] || null;
+    if (!entryDetail) {
+      const detailResult = await getStaffTimeEntryById(entryId);
+      if (detailResult.error || !detailResult.data) {
+        setOpeningSelfieKey('');
+        toast.error(detailResult.error?.message || 'Unable to load entry detail.');
+        return;
+      }
+      entryDetail = detailResult.data;
+      setDetailCache((prev) => ({ ...prev, [entryId]: detailResult.data }));
+    }
+    const hasPath =
+      clockType === 'clock_in' ? Boolean(entryDetail.clock_in_selfie_path) : Boolean(entryDetail.clock_out_selfie_path);
+    if (!hasPath) {
+      setOpeningSelfieKey('');
+      toast.error(`${clockType === 'clock_in' ? 'Clock-in' : 'Clock-out'} selfie is not available for this entry.`);
+      return;
+    }
+    const urlResult = await getStaffTimeSelfieSignedUrl({ entryId, clockType });
+    setOpeningSelfieKey('');
+    if (urlResult.error || !urlResult.data?.signed_url) {
+      toast.error(urlResult.error?.message || 'Unable to open selfie preview.');
+      return;
+    }
+    window.open(urlResult.data.signed_url, '_blank', 'noopener,noreferrer');
+  };
+
+  if (isDemoRole) {
+    return isHq ? <HqOverviewDemo /> : <BranchSupervisorOverviewDemo />;
+  }
+  if (!isSupabaseConfigured()) {
+    return (
+      <div className="mx-auto max-w-5xl space-y-4 pb-8">
+        <PageHeader title="Staff Time Clock" description="Read-only review dashboard (HQ/supervisor)." />
+        <Card>
+          <CardContent className="pt-6 text-sm text-muted-foreground">
+            Supabase is not configured, so review data cannot be loaded in non-demo mode.
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+  if (!session?.user?.id) {
+    return (
+      <div className="mx-auto max-w-5xl space-y-4 pb-8">
+        <PageHeader title="Staff Time Clock" description="Read-only review dashboard (HQ/supervisor)." />
+        <Card>
+          <CardContent className="pt-6 text-sm text-muted-foreground">
+            Sign in to Supabase to load staff time review entries.
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
+  return (
+    <div className="mx-auto max-w-5xl space-y-4 pb-8">
+      <PageHeader
+        title="Staff Time Clock"
+        description={
+          isHq
+            ? 'Read-only HQ review dashboard. Visibility is controlled by RLS.'
+            : 'Read-only branch supervisor review dashboard. Visibility is controlled by RLS.'
+        }
+      />
+      <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
+        <Card>
+          <CardContent className="pt-5">
+            <p className="text-sm text-muted-foreground">Total entries</p>
+            <p className="text-2xl font-semibold">{summary?.totalEntries ?? entries.length}</p>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="pt-5">
+            <p className="text-sm text-muted-foreground">Pending/exceptions</p>
+            <p className="text-2xl font-semibold">
+              {(summary?.pendingReviewCount ?? 0) + (summary?.outsideGeofenceCount ?? 0) + (summary?.missedClockOutCount ?? 0)}
+            </p>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="pt-5">
+            <p className="text-sm text-muted-foreground">On shift</p>
+            <p className="text-2xl font-semibold">{summary?.onShiftCount ?? 0}</p>
+          </CardContent>
+        </Card>
+      </div>
+      <Card>
+        <CardContent className="pt-4">
+          <div className="flex flex-col gap-2 md:flex-row md:items-end">
+            <label className="text-sm">
+              <span className="mb-1 block text-muted-foreground">Date</span>
+              <input
+                type="date"
+                value={dateFilter}
+                onChange={(e) => setDateFilter(e.target.value)}
+                className="w-full rounded-md border bg-background px-3 py-2 md:w-48"
+              />
+            </label>
+            <label className="text-sm">
+              <span className="mb-1 block text-muted-foreground">Status</span>
+              <select
+                value={statusFilter}
+                onChange={(e) => setStatusFilter(e.target.value)}
+                className="w-full rounded-md border bg-background px-3 py-2 md:w-56"
+              >
+                <option value="">All statuses</option>
+                <option value="valid">valid</option>
+                <option value="outside_geofence">outside_geofence</option>
+                <option value="pending_review">pending_review</option>
+                <option value="missed_clock_out">missed_clock_out</option>
+                <option value="approved_exception">approved_exception</option>
+                <option value="rejected_exception">rejected_exception</option>
+              </select>
+            </label>
+            <Button type="button" variant="outline" className="md:ml-auto" onClick={() => void loadReviewData()} disabled={loading}>
+              {loading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <RefreshCcw className="mr-2 h-4 w-4" />}
+              Refresh
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
+      {loadError && (
+        <Card>
+          <CardContent className="pt-6 text-sm text-destructive">
+            Unable to load review data right now. {loadError.message || 'Please try again.'}
+          </CardContent>
+        </Card>
+      )}
+      {!loadError && !loading && entries.length === 0 && (
+        <Card>
+          <CardContent className="pt-6 text-sm text-muted-foreground">No staff time entries found for the current filters.</CardContent>
+        </Card>
+      )}
+      <div className="space-y-3">
+        {loading && (
+          <Card>
+            <CardContent className="flex items-center gap-2 pt-6 text-sm text-muted-foreground">
+              <Loader2 className="h-4 w-4 animate-spin" />
+              Loading staff time entries...
+            </CardContent>
+          </Card>
+        )}
+        {!loading &&
+          entries.map((entry) => (
+            <Card key={entry.id}>
+              <CardContent className="space-y-3 pt-4 text-sm">
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                  <div className="space-y-1">
+                    <p className="font-medium">Entry {entry.id.slice(0, 8)}</p>
+                    <p className="text-xs text-muted-foreground">
+                      Staff: <span className="font-mono">{entry.profile_id || '—'}</span> · Branch:{' '}
+                      <span className="font-mono">{entry.branch_id || '—'}</span>
+                    </p>
+                  </div>
+                  <Badge variant={getReviewStatusVariant(entry.status)}>{reviewStatusLabel(entry.status)}</Badge>
+                </div>
+                <div className="grid grid-cols-1 gap-2 text-xs md:grid-cols-2">
+                  <p>Clock in: {entry.clock_in_at ? formatDemoTime(entry.clock_in_at) : '—'}</p>
+                  <p>Clock out: {entry.clock_out_at ? formatDemoTime(entry.clock_out_at) : '—'}</p>
+                  <p>In distance/accuracy: {entry.clock_in_distance_meters ?? '—'}m / {entry.clock_in_accuracy_meters ?? '—'}m</p>
+                  <p>Out distance/accuracy: {entry.clock_out_distance_meters ?? '—'}m / {entry.clock_out_accuracy_meters ?? '—'}m</p>
+                </div>
+                <div className="flex flex-col gap-2 sm:flex-row">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() => void handleOpenSelfie(entry.id, 'clock_in')}
+                    disabled={openingSelfieKey === `${entry.id}:clock_in`}
+                  >
+                    {openingSelfieKey === `${entry.id}:clock_in` ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <ExternalLink className="mr-2 h-4 w-4" />}
+                    View clock-in selfie
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() => void handleOpenSelfie(entry.id, 'clock_out')}
+                    disabled={openingSelfieKey === `${entry.id}:clock_out`}
+                  >
+                    {openingSelfieKey === `${entry.id}:clock_out` ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <ExternalLink className="mr-2 h-4 w-4" />}
+                    View clock-out selfie
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          ))}
+      </div>
+    </div>
+  );
+}
+
+function BranchSupervisorOverviewDemo() {
   return (
     <div className="mx-auto max-w-4xl space-y-6 pb-8">
       <PageHeader
@@ -1358,7 +1617,7 @@ function BranchSupervisorOverview() {
   );
 }
 
-function HqOverview() {
+function HqOverviewDemo() {
   return (
     <div className="mx-auto max-w-5xl space-y-6 pb-8">
       <PageHeader
@@ -1445,6 +1704,14 @@ function HqOverview() {
       </Card>
     </div>
   );
+}
+
+function BranchSupervisorOverview() {
+  return <StaffTimeReviewDashboard isHq={false} />;
+}
+
+function HqOverview() {
+  return <StaffTimeReviewDashboard isHq />;
 }
 
 export default function StaffTimeClock() {
