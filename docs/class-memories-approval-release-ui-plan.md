@@ -299,8 +299,14 @@ Implemented in Phase 2:
 
 Still not implemented:
 
-- Approval/release UI wiring.
 - Parent Latest Memory real UI wiring.
 - Parent Memories History real UI wiring.
+- Hide/archive UI wiring (service path exists; UI remains future).
+ 
+Update:
 
-Checkpoint status: approval/release write path + smoke validation now exist; UI phases remain future work.
+- A minimal role-gated **Class Memories Review** UI is now wired in `ParentUpdates` for HQ admin and branch supervisor.
+- Review UI supports submitted-memory list, signed URL preview, approve & release, and reject with reason.
+- Parent-facing Latest Memory and Memories History remain intentionally unwired.
+
+Checkpoint status: approval/release write path and first review UI are implemented; parent memory display phases remain future work.

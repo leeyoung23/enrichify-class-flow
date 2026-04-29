@@ -75,7 +75,7 @@ Outcome:
 
 ## 6) What remains unwired
 
-- Approval/release UI.
+- Approval/release UI in `ParentUpdates` is now minimally wired for HQ/branch supervisor review actions.
 - Parent Latest Memory UI.
 - Parent Memories History/archive UI.
 - Video upload support and thumbnail pipeline.
@@ -95,4 +95,4 @@ Why this is next:
 
 ---
 
-Checkpoint status: Teacher Add Memory upload UI is wired for review submission, safety guards are in place, demoRole remains local-only, and approval + parent display phases remain future work.
+Checkpoint status: Teacher Add Memory upload UI is wired for review submission, downstream staff review UI now exists for HQ/branch supervisor in `ParentUpdates`, and parent display phases remain future work.

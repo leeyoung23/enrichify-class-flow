@@ -3,10 +3,10 @@ import { useOutletContext } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { listClasses, listStudentsByClass, listParentUpdates, createParentUpdate, listAttendanceRecords, listHomeworkAttachments } from '@/services/dataService';
 import { getSelectedDemoRole } from '@/services/authService';
-import { ROLES, isTeacherRole } from '@/services/permissionService';
+import { ROLES, getRole, isTeacherRole } from '@/services/permissionService';
 import { isSupabaseConfigured } from '@/services/supabaseClient';
-import { uploadClassMemory } from '@/services/supabaseUploadService';
-import { updateParentCommentDraft, releaseParentComment, updateWeeklyProgressReportDraft, releaseWeeklyProgressReport } from '@/services/supabaseWriteService';
+import { getClassMemorySignedUrl, listClassMemories, uploadClassMemory } from '@/services/supabaseUploadService';
+import { approveClassMemory, rejectClassMemory, updateParentCommentDraft, releaseParentComment, updateWeeklyProgressReportDraft, releaseWeeklyProgressReport } from '@/services/supabaseWriteService';
 import { generateParentCommentDraft } from '@/services/aiDraftService';
 import { useSupabaseAuthState } from '@/hooks/useSupabaseAuthState';
 import { Sparkles, Save, Loader2, CheckCircle2, Share2, MessageSquarePlus, Eye, Pencil } from 'lucide-react';
@@ -94,9 +94,15 @@ export default function ParentUpdates() {
   const [memoryTitle, setMemoryTitle] = useState('');
   const [memoryCaption, setMemoryCaption] = useState('');
   const [memoryFile, setMemoryFile] = useState(null);
+  const [reviewStatusFilter, setReviewStatusFilter] = useState('submitted');
+  const [previewingMemoryId, setPreviewingMemoryId] = useState('');
   const queryClient = useQueryClient();
   const isTeacher = isTeacherRole(user);
+  const role = getRole(user);
+  const isMemoryReviewer = role === ROLES.HQ_ADMIN || role === ROLES.BRANCH_SUPERVISOR;
   const isDemoMode = Boolean(getSelectedDemoRole());
+  const hasSupabaseSession = Boolean(supabaseAppUser?.id);
+  const canUseSupabaseMemoryReview = isMemoryReviewer && !isDemoMode && isSupabaseConfigured() && hasSupabaseSession;
 
   const { data: classes = [] } = useQuery({
     queryKey: ['classes-updates', user?.role, user?.email],
@@ -127,6 +133,20 @@ export default function ParentUpdates() {
     queryFn: () => listHomeworkAttachments(user),
     enabled: !!user,
     initialData: [],
+  });
+  const {
+    data: reviewMemories = [],
+    isLoading: reviewMemoriesLoading,
+  } = useQuery({
+    queryKey: ['class-memories-review', role, reviewStatusFilter, user?.branch_id, supabaseAppUser?.id],
+    queryFn: async () => {
+      const result = await listClassMemories({ status: reviewStatusFilter });
+      if (result.error) {
+        throw new Error(result.error.message || 'Unable to load Class Memories for review.');
+      }
+      return result.data || [];
+    },
+    enabled: canUseSupabaseMemoryReview,
   });
 
   const selectedStudent = students.find((s) => s.id === selectedStudentId);
@@ -321,6 +341,38 @@ export default function ParentUpdates() {
     },
     onError: (error) => {
       toast.error(error?.message || 'Unable to save parent update');
+    },
+  });
+  const reviewApproveMutation = useMutation({
+    mutationFn: async (memoryId) => {
+      const result = await approveClassMemory({ memoryId });
+      if (result.error || !result.data) {
+        throw new Error(result.error?.message || 'Unable to approve and release Memory.');
+      }
+      return result.data;
+    },
+    onSuccess: () => {
+      toast.success('Memory approved and released.');
+      queryClient.invalidateQueries({ queryKey: ['class-memories-review'] });
+    },
+    onError: (error) => {
+      toast.error(error?.message || 'Unable to approve Memory.');
+    },
+  });
+  const reviewRejectMutation = useMutation({
+    mutationFn: async ({ memoryId, reason }) => {
+      const result = await rejectClassMemory({ memoryId, reason });
+      if (result.error || !result.data) {
+        throw new Error(result.error?.message || 'Unable to reject Memory.');
+      }
+      return result.data;
+    },
+    onSuccess: () => {
+      toast.success('Memory rejected.');
+      queryClient.invalidateQueries({ queryKey: ['class-memories-review'] });
+    },
+    onError: (error) => {
+      toast.error(error?.message || 'Unable to reject Memory.');
     },
   });
 
@@ -585,6 +637,34 @@ export default function ParentUpdates() {
       toast.error(error?.message || 'Unable to submit Memory for review.');
     },
   });
+  const handleOpenMemoryPreview = async (memoryId) => {
+    if (isDemoMode) {
+      toast.message('Demo mode: Memory preview is local-only in this milestone.');
+      return;
+    }
+    setPreviewingMemoryId(memoryId);
+    try {
+      const result = await getClassMemorySignedUrl({ memoryId, expiresIn: 120 });
+      if (result.error || !result.data?.signed_url) {
+        toast.error(result.error?.message || 'Unable to open Memory preview.');
+        return;
+      }
+      window.open(result.data.signed_url, '_blank', 'noopener,noreferrer');
+    } finally {
+      setPreviewingMemoryId('');
+    }
+  };
+
+  const handleRejectMemory = (memoryId) => {
+    const reason = window.prompt('Enter rejection reason for this Memory:');
+    if (typeof reason !== 'string' || !reason.trim()) {
+      toast.message('Rejection reason is required.');
+      return;
+    }
+    reviewRejectMutation.mutate({ memoryId, reason: reason.trim() });
+  };
+
+  const showNoClassesState = classes.length === 0 && !isMemoryReviewer;
 
   return (
     <div>
@@ -593,7 +673,7 @@ export default function ParentUpdates() {
         description={isTeacher ? 'Manage quick parent comments and weekly progress reports for assigned demo students. Nothing is sent automatically.' : 'Review parent comments and weekly progress reports in demo mode only.'}
       />
 
-      {classes.length === 0 ? (
+      {showNoClassesState ? (
         <EmptyState
           icon={MessageSquarePlus}
           title="No classes available"
@@ -602,6 +682,90 @@ export default function ParentUpdates() {
       ) : (
         <div className="grid grid-cols-1 lg:grid-cols-5 gap-6">
           <div className="lg:col-span-3 space-y-4">
+            {isMemoryReviewer && (
+              <Card className="p-6">
+                <h3 className="font-semibold mb-2">Class Memories Review</h3>
+                <p className="text-sm text-muted-foreground mb-4">Review submitted Memories and control release to parents. Parents only see approved Memories.</p>
+                {isDemoMode ? (
+                  <Card className="p-4 border-dashed">
+                    <p className="text-sm text-muted-foreground">Demo mode only: Class Memories review is local placeholder in this milestone. No Supabase read/write actions are executed.</p>
+                  </Card>
+                ) : !hasSupabaseSession || !isSupabaseConfigured() ? (
+                  <Card className="p-4 border-dashed">
+                    <p className="text-sm text-muted-foreground">Supabase authenticated staff session is required to review submitted Memories.</p>
+                  </Card>
+                ) : (
+                  <>
+                    <div className="mb-4 w-full sm:w-[220px]">
+                      <Select value={reviewStatusFilter} onValueChange={setReviewStatusFilter}>
+                        <SelectTrigger><SelectValue placeholder="Filter review status" /></SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="submitted">Submitted</SelectItem>
+                          <SelectItem value="approved">Approved</SelectItem>
+                          <SelectItem value="rejected">Rejected</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    {reviewMemoriesLoading ? (
+                      <p className="text-sm text-muted-foreground">Loading submitted Memories...</p>
+                    ) : reviewMemories.length === 0 ? (
+                      <EmptyState
+                        icon={Eye}
+                        title="No Memories for this status"
+                        description="Submitted Memories will appear here for review."
+                      />
+                    ) : (
+                      <div className="space-y-3">
+                        {reviewMemories.map((memory) => (
+                          <Card key={memory.id} className="p-4">
+                            <div className="flex items-start justify-between gap-3 mb-3">
+                              <div>
+                                <p className="font-medium">{memory.title?.trim() || 'Untitled Memory'}</p>
+                                <p className="text-xs text-muted-foreground">{memory.caption?.trim() || 'No caption provided.'}</p>
+                              </div>
+                              <Badge variant="outline">{memory.visibility_status || 'submitted'}</Badge>
+                            </div>
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs text-muted-foreground mb-3">
+                              <p>Branch: {memory.branch_id || '—'}</p>
+                              <p>Class: {memory.class_id || '—'}</p>
+                              <p>Student: {memory.student_id || 'Class-wide'}</p>
+                              <p>Uploaded by: {memory.uploaded_by_profile_id || '—'}</p>
+                              <p>Uploaded: {memory.created_at ? new Date(memory.created_at).toLocaleString('en-AU') : '—'}</p>
+                            </div>
+                            <div className="flex flex-wrap gap-2">
+                              <Button
+                                variant="outline"
+                                onClick={() => handleOpenMemoryPreview(memory.id)}
+                                disabled={previewingMemoryId === memory.id}
+                              >
+                                {previewingMemoryId === memory.id ? 'Opening...' : 'View Memory'}
+                              </Button>
+                              {memory.visibility_status === 'submitted' && (
+                                <>
+                                  <Button
+                                    onClick={() => reviewApproveMutation.mutate(memory.id)}
+                                    disabled={reviewApproveMutation.isPending || reviewRejectMutation.isPending}
+                                  >
+                                    Approve & Release
+                                  </Button>
+                                  <Button
+                                    variant="outline"
+                                    onClick={() => handleRejectMemory(memory.id)}
+                                    disabled={reviewApproveMutation.isPending || reviewRejectMutation.isPending}
+                                  >
+                                    Reject
+                                  </Button>
+                                </>
+                              )}
+                            </div>
+                          </Card>
+                        ))}
+                      </div>
+                    )}
+                  </>
+                )}
+              </Card>
+            )}
             {isTeacher && (
               <Card className="p-6">
                 <h3 className="font-semibold mb-2">Parent Updates</h3>

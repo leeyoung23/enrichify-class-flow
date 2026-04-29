@@ -29,6 +29,7 @@ Scope note:
 - Teacher flow has many controls in one panel; risk of accidental taps and state confusion.
 - “All updates” card rows include status badge + action button + metadata; can feel cramped on narrow widths.
 - Teacher Add Memory upload card is now present; include image file-input usability and submit CTA tap-size checks at ~390px.
+- HQ/Branch Supervisor Class Memories review card is now present; verify memory-card action wrapping (View Memory, Approve & Release, Reject) on narrow screens.
 
 ### `FeeTracking`
 
@@ -109,6 +110,7 @@ Status update:
 - `AppLayout`/sidebar responsive behavior review: implemented with minimal fix to avoid content squeeze on small screens while preserving desktop sidebar behavior.
 - `StaffTimeClock` mobile mock UI: implemented (see `docs/staff-time-clock-mobile-ui-plan.md` §0).
 - `ParentUpdates` minimal Teacher Add Memory upload card: implemented; include in mobile QA pass.
+- `ParentUpdates` minimal HQ/Branch Supervisor Class Memories review card: implemented; include in mobile QA pass.
 - Remaining mobile QA/polish items:
   - `ParentUpdates` mobile review flow density
 
