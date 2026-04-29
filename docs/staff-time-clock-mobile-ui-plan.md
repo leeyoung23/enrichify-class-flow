@@ -23,7 +23,6 @@ Planning and terminology reference for the **staff** clock experience. HQ/superv
 
 - **`getStaffTimeSelfieSignedUrl`** in review/history UI (teacher recent list remains local/mock copy).
 - Supervisor / HQ **review dashboard** with live exception queues, signed-url selfie viewer, and exports.
-- **Align server-side** `clockInStaff` / `clockOutStaff` **distance/status rule** with per-branch **`geofence_radius_meters`** (service still uses a fixed threshold for `status` today; client preview uses branch radius when loaded).
 - **Exception approval** workflow and **adjustment requests** in product UI.
 
 Related checkpoints:

@@ -75,7 +75,7 @@ Supporting pieces (not repeated in every checklist but relevant): `src/services/
 
 ## 6) Known limitations
 
-- **Client vs server geofence rule:** Teacher UI uses **`branches.geofence_radius_meters`** (when loaded) for `evaluateGeofence`; **`clockInStaff` / `clockOutStaff`** still derive `status` with a **fixed distance threshold** in the service until that layer reads branch radius (out of scope for the geofence-load task). Staff may see UI **valid** while server row uses a different status, or the reverse — verify before relying on status for payroll.
+- **Status consistency depends on submit inputs:** `clockInStaff` / `clockOutStaff` now accept `geofenceStatus` + `radiusMeters` from UI and validate status (`valid`, `outside_geofence`, `pending_review`); if absent/invalid, service falls back to shared `evaluateGeofence` with `distanceMeters`/`accuracyMeters` and default radius. Avoid bypassing UI checks when integrating new clients.
 - **HQ/supervisor** live **review dashboard** is not wired; teacher page still includes **mock** reporting cards for those roles.
 - **`getStaffTimeSelfieSignedUrl`** exists in the service but is **not** surfaced in teacher review/history UI.
 - **Exception approval workflow** (supervisor decisions on `outside_geofence` / `pending_review` rows) is **not** wired in product UI.
@@ -102,11 +102,11 @@ Use **demo accounts** or a **dedicated dev project** only. Do **not** use real p
 
 ## 8) Recommended next milestone
 
-**Recommend: align `clockInStaff` / `clockOutStaff` server-side status** with the same **per-branch** `geofence_radius_meters` (and optionally recompute distance server-side) so stored `staff_time_entries.status` matches what staff see in the mobile GPS card.
+**Recommend: HQ/supervisor Staff Time Clock review dashboard planning** (exception queues, status filters, signed-selfie view using `getStaffTimeSelfieSignedUrl`).
 
-**Why:** Branch geofence is now loaded for **client** checks; supervisors and reports will read **server** `status`. Until both use the same radius/rule, exception queues and staff-facing badges can disagree.
+**Why:** Mobile punch flow now has branch geofence loading and status consistency at submit. The highest product gap is operational review and actioning of exceptions.
 
-**Alternative:** **HQ/supervisor Staff Time Clock review dashboard** (queues, `getStaffTimeSelfieSignedUrl` in UI) if operations needs visibility before a small service change — document the client/server threshold mismatch until aligned.
+**Alternative:** Add server-side branch geofence lookup inside `clockInStaff` / `clockOutStaff` (derive status from DB radius even without UI-provided values) for stricter multi-client hardening.
 
 ---
 

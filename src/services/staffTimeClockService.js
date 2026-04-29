@@ -1,7 +1,8 @@
 import { isSupabaseConfigured, supabase } from "./supabaseClient.js";
+import { evaluateGeofence, DEFAULT_GEOFENCE_RADIUS_METERS } from "./locationVerificationService.js";
 
 const STAFF_CLOCK_SELFIES_BUCKET = "staff-clock-selfies";
-const DISTANCE_VALID_THRESHOLD_METERS = 150;
+const ALLOWED_GEOFENCE_STATUSES = new Set(["valid", "outside_geofence", "pending_review"]);
 
 function toIsoDate(value = new Date()) {
   return new Date(value).toISOString().slice(0, 10);
@@ -21,11 +22,26 @@ function normalizeNumber(value, fieldName) {
   return { value: numeric, error: null };
 }
 
-function deriveStatusFromDistance(distanceMeters) {
-  if (!Number.isFinite(distanceMeters)) {
-    return "pending_review";
+function normalizeGeofenceStatus(status) {
+  if (typeof status !== "string") return null;
+  const value = status.trim();
+  return ALLOWED_GEOFENCE_STATUSES.has(value) ? value : null;
+}
+
+function resolveStatusFromGeofence({ geofenceStatus, distanceMeters, accuracyMeters, radiusMeters }) {
+  const provided = normalizeGeofenceStatus(geofenceStatus);
+  if (provided) return { status: provided, source: "provided" };
+
+  const evaluated = evaluateGeofence({
+    distanceMeters,
+    accuracyMeters,
+    radiusMeters,
+  });
+  if (!evaluated.error && evaluated.data?.status && ALLOWED_GEOFENCE_STATUSES.has(evaluated.data.status)) {
+    return { status: evaluated.data.status, source: "evaluated" };
   }
-  return distanceMeters <= DISTANCE_VALID_THRESHOLD_METERS ? "valid" : "outside_geofence";
+
+  return { status: "pending_review", source: "fallback" };
 }
 
 function buildSelfiePath({ branchId, profileId, entryId, clockType, fileName }) {
@@ -50,6 +66,8 @@ export async function clockInStaff({
   longitude,
   accuracyMeters,
   distanceMeters,
+  radiusMeters,
+  geofenceStatus,
   selfieFile,
   fileName,
   contentType,
@@ -80,7 +98,13 @@ export async function clockInStaff({
     }
 
     const nowIso = new Date().toISOString();
-    const status = deriveStatusFromDistance(dist.value);
+    const statusResolution = resolveStatusFromGeofence({
+      geofenceStatus,
+      distanceMeters: dist.value,
+      accuracyMeters: acc.value,
+      radiusMeters,
+    });
+    const status = statusResolution.status;
     const entryId = crypto.randomUUID();
     const selfiePath = buildSelfiePath({
       branchId,
@@ -134,7 +158,8 @@ export async function clockInStaff({
         entry: createResult.data,
         storage_bucket: STAFF_CLOCK_SELFIES_BUCKET,
         selfie_path: selfiePath,
-        status_rule: `distance<=${DISTANCE_VALID_THRESHOLD_METERS}:valid else outside_geofence`,
+        status_rule: `provided(valid/outside_geofence/pending_review) or evaluateGeofence(radius default ${DEFAULT_GEOFENCE_RADIUS_METERS}m)`,
+        status_source: statusResolution.source,
       },
       error: null,
     };
@@ -149,6 +174,8 @@ export async function clockOutStaff({
   longitude,
   accuracyMeters,
   distanceMeters,
+  radiusMeters,
+  geofenceStatus,
   selfieFile,
   fileName,
   contentType,
@@ -190,7 +217,13 @@ export async function clockOutStaff({
     }
 
     const nowIso = new Date().toISOString();
-    const derivedStatus = deriveStatusFromDistance(dist.value);
+    const statusResolution = resolveStatusFromGeofence({
+      geofenceStatus,
+      distanceMeters: dist.value,
+      accuracyMeters: acc.value,
+      radiusMeters,
+    });
+    const derivedStatus = statusResolution.status;
 
     let selfiePath = null;
     if (selfieFile) {
@@ -284,7 +317,8 @@ export async function clockOutStaff({
         entry: closeResult.data,
         storage_bucket: selfiePath ? STAFF_CLOCK_SELFIES_BUCKET : null,
         selfie_path: selfiePath,
-        status_rule: `distance<=${DISTANCE_VALID_THRESHOLD_METERS}:valid else outside_geofence`,
+        status_rule: `provided(valid/outside_geofence/pending_review) or evaluateGeofence(radius default ${DEFAULT_GEOFENCE_RADIUS_METERS}m)`,
+        status_source: statusResolution.source,
       },
       error: null,
     };

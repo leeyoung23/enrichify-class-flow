@@ -75,6 +75,7 @@ async function run() {
   let failureCount = 0;
   let createdEntryId = null;
   let branchId = null;
+  let branchRadiusMeters = null;
   let inSelfiePath = null;
   let outSelfiePath = null;
 
@@ -124,6 +125,7 @@ async function run() {
     failureCount += 1;
   } else {
     branchId = visibleBranch.data.id;
+    branchRadiusMeters = Number(visibleBranch.data.geofence_radius_meters) || 150;
     print("PASS", `Teacher: using branch ${visibleBranch.data.name || branchId}`);
   }
 
@@ -135,6 +137,8 @@ async function run() {
       longitude: 151.209,
       accuracyMeters: 8,
       distanceMeters: 120,
+      radiusMeters: branchRadiusMeters,
+      geofenceStatus: "valid",
       selfieFile: fakeInBlob,
       fileName: "fake-clock-in-selfie.jpg",
       contentType: "image/jpeg",
@@ -169,6 +173,10 @@ async function run() {
         print("WARNING", "Teacher: clock-in selfie path missing");
         failureCount += 1;
       }
+      if (verifyEntry.data.status !== "valid") {
+        print("WARNING", `Teacher: expected clock-in status valid, got ${verifyEntry.data.status || "null"}`);
+        failureCount += 1;
+      }
     }
 
     const inSignedUrl = await getStaffTimeSelfieSignedUrl({
@@ -189,6 +197,8 @@ async function run() {
       longitude: 151.2091,
       accuracyMeters: 9,
       distanceMeters: 110,
+      radiusMeters: branchRadiusMeters,
+      geofenceStatus: "valid",
       selfieFile: fakeOutBlob,
       fileName: "fake-clock-out-selfie.jpg",
       contentType: "image/jpeg",
@@ -203,6 +213,10 @@ async function run() {
     } else {
       outSelfiePath = clockOutResult.data.selfie_path || clockOutResult.data.entry.clock_out_selfie_path || null;
       print("PASS", "Teacher: clock out fields set");
+      if (clockOutResult.data.entry.status !== "valid") {
+        print("WARNING", `Teacher: expected clock-out status valid, got ${clockOutResult.data.entry.status || "null"}`);
+        failureCount += 1;
+      }
     }
   }
 
