@@ -205,13 +205,6 @@ drop policy if exists schools_select_012 on public.schools;
 create policy schools_select_012 on public.schools for select using (
   public.is_hq_admin()
   or public.is_branch_supervisor_for_branch(branch_id)
-  or (
-    branch_id is null
-    and (
-      public.current_user_role() = 'branch_supervisor'
-      or public.current_user_role() = 'teacher'
-    )
-  )
   or exists (
     select 1
     from public.student_school_profiles ssp
@@ -234,13 +227,6 @@ drop policy if exists curriculum_profiles_select_012 on public.curriculum_profil
 create policy curriculum_profiles_select_012 on public.curriculum_profiles for select using (
   public.is_hq_admin()
   or public.is_branch_supervisor_for_branch(branch_id)
-  or (
-    branch_id is null
-    and (
-      public.current_user_role() = 'branch_supervisor'
-      or public.current_user_role() = 'teacher'
-    )
-  )
   or exists (
     select 1
     from public.class_curriculum_assignments cca
