@@ -1,14 +1,15 @@
 # Fee Tracking receipt upload UI checkpoint
 
-This checkpoint documents the **parent Fee Tracking receipt upload UI** wired to Supabase for authenticated **non-demo** parent users. It does not cover supervisor or HQ verification UI.
+This checkpoint documents the **parent receipt upload UI** wired to Supabase for authenticated **non-demo** parent users via the parent portal. It does not cover supervisor or HQ verification UI.
 
 ## 1) What was implemented
 
 - **Read path:** `listFeeRecords` in `dataService.js` loads real `fee_records` from Supabase when demo role is off and Supabase is configured, mapping rows to the existing Fee Tracking card shape and exposing `fee_records.id` as the record `id` (with `data_source: 'supabase_fee_records'`).
-- **Fee Tracking page:** Parents can access Fee Tracking; per-row file input, **Upload Receipt** (calls `uploadFeeReceipt`), loading and toast feedback, and query invalidation after success.
+- **Parent portal page (`/parent-view`):** Parents can upload payment receipt files from the Fee Status card using **Upload Payment Receipt** (calls `uploadFeeReceipt`), with loading and toast feedback.
 - **Optional view:** **View Uploaded Receipt** opens a **signed URL** from `getFeeReceiptSignedUrl` for rows that already have receipt metadata.
 - **Guards:** Client-side MIME allowlist (PNG, JPEG, PDF; plain text allowed for testing) and **5MB** max size before upload.
 - **No auto-verification:** Upload updates receipt metadata and verification state per service/RLS behavior; no UI action marks payment verified.
+- **Staff route separation:** `/fee-tracking` remains a staff review route for HQ and branch supervisor only.
 
 Supporting layers (already present from earlier milestones):
 
@@ -20,7 +21,7 @@ Supporting layers (already present from earlier milestones):
 | Area | File |
 |------|------|
 | Fee list read + id for upload | `src/services/dataService.js` |
-| Parent upload UI + signed URL button | `src/pages/FeeTracking.jsx` |
+| Parent upload UI + signed URL button | `src/pages/ParentView.jsx` |
 | Upload + signed URL service | `src/services/supabaseUploadService.js` |
 | Automated upload smoke test | `scripts/supabase-fee-receipt-upload-smoke-test.mjs` |
 | Service/smoke checkpoint | `docs/fee-receipt-upload-smoke-test-checkpoint.md` |
@@ -30,7 +31,7 @@ This document: `docs/fee-tracking-receipt-upload-ui-checkpoint.md`.
 
 ## 3) Parent upload lifecycle
 
-1. Parent selects a file on an eligible fee row (non-demo, Supabase session, real fee row id).
+1. Parent opens `/parent-view` and selects a file in the Fee Status card (non-demo, Supabase session, real fee row id).
 2. **File type/size guard** runs in the browser; invalid choices are rejected with a message (no upload).
 3. **`uploadFeeReceipt`** uploads the file object to the private **`fee-receipts`** bucket (path convention enforced server-side via storage policies).
 4. **`fee_records`** row is updated with receipt metadata (e.g. path, bucket, uploader, timestamps, submitted verification state) per existing service and RLS/trigger rules.
@@ -55,11 +56,11 @@ This document: `docs/fee-tracking-receipt-upload-ui-checkpoint.md`.
 Use **fake or non-sensitive test files only** (e.g. tiny PNG/JPEG/PDF or test plain text if your policy allows it in dev).
 
 - [ ] Log in as a **real parent** user (non-demo) against a dev Supabase project with fee receipt policies applied.
-- [ ] Open **`/fee-tracking`**.
+- [ ] Open **`/parent-view`**.
 - [ ] Select a **small test file** within allowed types and under 5MB; upload; confirm success toast and list refresh.
 - [ ] Confirm **`fee_records`** metadata and **`verification_status`** reflect **submitted / pending review** (not auto-verified paid).
 - [ ] Use **View Uploaded Receipt** and confirm the file opens via **signed URL** only.
-- [ ] Open **`/fee-tracking?demoRole=parent`** (or equivalent demo entry): confirm **no** Supabase upload runs and demo/local behavior only.
+- [ ] Open **`/parent-view?demoRole=parent`** (or equivalent demo entry): confirm **no** Supabase upload runs and demo/local behavior only.
 
 ## 7) What remains
 

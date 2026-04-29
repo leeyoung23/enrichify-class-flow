@@ -6,9 +6,9 @@ Planning only. No app UI, runtime verification logic, or schema changes in this 
 
 As of the Fee Tracking receipt upload checkpoint:
 
-- **Parent (authenticated, non-demo):** Can open Fee Tracking, select a file (type/size guard), call `uploadFeeReceipt`, refresh list after success, and use **View Uploaded Receipt** via `getFeeReceiptSignedUrl` (private `fee-receipts` bucket, signed URL only).
+- **Parent (authenticated, non-demo):** Can use `/parent-view` Fee Status card to select a file (type/size guard), call `uploadFeeReceipt`, refresh status after success, and use **View Uploaded Receipt** via `getFeeReceiptSignedUrl` (private `fee-receipts` bucket, signed URL only).
 - **HQ admin / branch supervisor:** Can access the same Fee Tracking page and see fee rows from `listFeeRecords` (Supabase path when not in demo mode maps `fee_records` including receipt and verification-related columns). **Mark as Paid** remains **demo-only** (`markFeeRecordPaid` mutates in-memory demo data only).
-- **Teacher:** Fee Tracking access is not granted in the current page (`canAccess` is HQ, branch supervisor, parent only). No receipt verification UI exists.
+- **Teacher:** Fee Tracking access is not granted in the current page (`canAccess` is HQ, branch supervisor only). No receipt verification UI exists.
 - **Verification / rejection:** There is **no** real Supabase-backed **Verify** or **Reject** action in the UI. Receipt lifecycle after upload is driven by metadata/RLS from upload only; staff actions are **not wired**.
 
 References: `src/pages/FeeTracking.jsx`, `src/services/dataService.js` (`listFeeRecords`, `markFeeRecordPaid`), `docs/fee-tracking-receipt-upload-ui-checkpoint.md`.

@@ -1,7 +1,10 @@
 import React, { useMemo, useState, useEffect } from 'react';
-import { getCurrentUser } from '@/services/authService';
+import { getCurrentUser, getSelectedDemoRole } from '@/services/authService';
 import { getStudentById, getClassById, listAttendanceRecords, listParentUpdatesByStudent, getStudentFeeStatus, listHomeworkAttachmentsByStudent, uploadHomeworkAttachment } from '@/services/dataService';
 import { canAccessStudentRecord, ROLES } from '@/services/permissionService';
+import { uploadFeeReceipt, getFeeReceiptSignedUrl } from '@/services/supabaseUploadService';
+import { useSupabaseAuthState } from '@/hooks/useSupabaseAuthState';
+import { isSupabaseConfigured } from '@/services/supabaseClient';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -10,6 +13,7 @@ import {
   GraduationCap, CheckCircle2, XCircle, Clock, Umbrella,
   BookOpen, BookX, Minus, Upload, ExternalLink, FileText, Loader2, Sparkles
 } from 'lucide-react';
+import { toast } from 'sonner';
 
 const ATTENDANCE_ICONS = {
   present: { icon: CheckCircle2, label: 'Present', color: 'text-green-600' },
@@ -438,10 +442,15 @@ function ClassMemoriesDemoSection({ className }) {
 }
 
 export default function ParentView() {
+  const { user: supabaseUser } = useSupabaseAuthState();
   const urlParams = new URLSearchParams(window.location.search);
   const studentId = urlParams.get('student');
   const previewRole = urlParams.get('demoRole');
   const isDemoStudentPreview = previewRole === 'student';
+  const isDemoMode = Boolean(getSelectedDemoRole());
+  const hasSupabaseSession = Boolean(supabaseUser?.id);
+  const ALLOWED_RECEIPT_TYPES = new Set(['image/png', 'image/jpeg', 'application/pdf', 'text/plain']);
+  const MAX_RECEIPT_FILE_SIZE_BYTES = 5 * 1024 * 1024;
 
   const [student, setStudent] = useState(null);
   const [cls, setCls] = useState(null);
@@ -451,6 +460,9 @@ export default function ParentView() {
   const [notFound, setNotFound] = useState(false);
   const [viewer, setViewer] = useState(null);
   const [feeStatus, setFeeStatus] = useState(null);
+  const [selectedReceiptFile, setSelectedReceiptFile] = useState(null);
+  const [receiptUploadLoading, setReceiptUploadLoading] = useState(false);
+  const [receiptLinkLoading, setReceiptLinkLoading] = useState(false);
   const [homeworkAttachments, setHomeworkAttachments] = useState([]);
 
   const latestApprovedUpdate = useMemo(() => updates[0], [updates]);
@@ -490,6 +502,101 @@ export default function ParentView() {
       }
     })();
   }, [studentId]);
+
+  const refreshFeeStatus = async () => {
+    if (!viewer || !student?.id) return;
+    const fee = await getStudentFeeStatus(viewer, student.id);
+    setFeeStatus(fee || null);
+  };
+
+  const handleReceiptFileSelect = (event) => {
+    const file = event.target.files?.[0] || null;
+    if (!file) {
+      setSelectedReceiptFile(null);
+      return;
+    }
+    if (!ALLOWED_RECEIPT_TYPES.has(file.type)) {
+      toast.message('Allowed receipt file types: PNG, JPEG, PDF (text file allowed for testing only).');
+      return;
+    }
+    if (file.size > MAX_RECEIPT_FILE_SIZE_BYTES) {
+      toast.message('Receipt file must be 5MB or smaller.');
+      return;
+    }
+    setSelectedReceiptFile(file);
+  };
+
+  const handleReceiptUpload = async () => {
+    if (!feeStatus?.id) {
+      toast.message('No fee record is available for receipt upload.');
+      return;
+    }
+    if (!selectedReceiptFile) {
+      toast.message('Please select a receipt file first.');
+      return;
+    }
+    if (isDemoMode) {
+      toast.message('Demo parent mode stays local and does not upload to Supabase.');
+      return;
+    }
+    if (!isSupabaseConfigured() || !hasSupabaseSession) {
+      toast.message('A Supabase parent session is required to upload a receipt.');
+      return;
+    }
+    if (feeStatus.data_source !== 'supabase_fee_records') {
+      toast.message('No real Supabase fee record is available for this parent.');
+      return;
+    }
+
+    try {
+      setReceiptUploadLoading(true);
+      const result = await uploadFeeReceipt({
+        feeRecordId: feeStatus.id,
+        file: selectedReceiptFile,
+        fileName: selectedReceiptFile.name,
+        contentType: selectedReceiptFile.type || 'application/octet-stream',
+      });
+      if (result?.error) {
+        toast.error(result.error.message || 'Unable to upload receipt');
+        return;
+      }
+      setSelectedReceiptFile(null);
+      await refreshFeeStatus();
+      toast.success('Receipt uploaded successfully. Status submitted for staff review.');
+    } catch (error) {
+      toast.error(error?.message || 'Unable to upload receipt');
+    } finally {
+      setReceiptUploadLoading(false);
+    }
+  };
+
+  const handleOpenUploadedReceipt = async () => {
+    if (!feeStatus?.id) {
+      toast.message('No fee record is available for receipt viewing.');
+      return;
+    }
+    if (isDemoMode) {
+      toast.message('Demo parent mode does not open Supabase receipt links.');
+      return;
+    }
+    if (!isSupabaseConfigured() || !hasSupabaseSession || feeStatus.data_source !== 'supabase_fee_records') {
+      toast.message('Receipt link is available only for real Supabase parent records.');
+      return;
+    }
+    try {
+      setReceiptLinkLoading(true);
+      const result = await getFeeReceiptSignedUrl({ feeRecordId: feeStatus.id });
+      if (result?.error || !result?.data?.signed_url) {
+        toast.error(result?.error?.message || 'Unable to open uploaded receipt.');
+        return;
+      }
+      window.open(result.data.signed_url, '_blank', 'noopener,noreferrer');
+    } catch (error) {
+      toast.error(error?.message || 'Unable to open uploaded receipt.');
+    } finally {
+      setReceiptLinkLoading(false);
+    }
+  };
 
   if (loading) {
     return (
@@ -606,6 +713,34 @@ export default function ParentView() {
                       <div><p className="text-xs text-muted-foreground">Status</p><p className="capitalize">{feeStatus.payment_status}</p></div>
                       <div><p className="text-xs text-muted-foreground">Due Date</p><p>{feeStatus.due_date}</p></div>
                       <div><p className="text-xs text-muted-foreground">Receipt Uploaded</p><p>{feeStatus.receipt_uploaded ? 'Yes' : 'No'}</p></div>
+                    </div>
+                    <div className="mt-4 space-y-2">
+                      <p className="text-xs text-muted-foreground">Payment Receipts</p>
+                      <input
+                        type="file"
+                        accept=".png,.jpg,.jpeg,.pdf,.txt"
+                        onChange={handleReceiptFileSelect}
+                        disabled={receiptUploadLoading}
+                        className="block w-full text-sm"
+                      />
+                      <Button
+                        variant="outline"
+                        className="w-full sm:w-auto"
+                        onClick={handleReceiptUpload}
+                        disabled={receiptUploadLoading}
+                      >
+                        {receiptUploadLoading ? 'Uploading...' : 'Upload Payment Receipt'}
+                      </Button>
+                      {feeStatus.receipt_uploaded && (
+                        <Button
+                          variant="ghost"
+                          className="w-full sm:w-auto"
+                          onClick={handleOpenUploadedReceipt}
+                          disabled={receiptLinkLoading}
+                        >
+                          View Uploaded Receipt
+                        </Button>
+                      )}
                     </div>
                   </CardContent>
                 </Card>

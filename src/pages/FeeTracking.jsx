@@ -2,17 +2,12 @@ import React from 'react';
 import { useOutletContext } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { listFeeRecords, markFeeRecordPaid, getFeeDashboardSummary } from '@/services/dataService';
-import { uploadFeeReceipt, getFeeReceiptSignedUrl } from '@/services/supabaseUploadService';
-import { useSupabaseAuthState } from '@/hooks/useSupabaseAuthState';
-import { getSelectedDemoRole } from '@/services/authService';
-import { isSupabaseConfigured } from '@/services/supabaseClient';
 import PageHeader from '@/components/shared/PageHeader';
 import EmptyState from '@/components/shared/EmptyState';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Wallet, Loader2 } from 'lucide-react';
-import { toast } from 'sonner';
+import { Wallet } from 'lucide-react';
 
 const STATUS_STYLES = {
   unpaid: 'bg-red-100 text-red-700 border-red-200',
@@ -24,17 +19,10 @@ const STATUS_STYLES = {
 
 export default function FeeTracking() {
   const { user } = useOutletContext();
-  const { user: supabaseUser } = useSupabaseAuthState();
   const role = user?.role;
   const queryClient = useQueryClient();
-  const isDemoMode = Boolean(getSelectedDemoRole());
-  const hasSupabaseSession = Boolean(supabaseUser?.id);
-  const canAccess = role === 'hq_admin' || role === 'branch_supervisor' || role === 'parent';
+  const canAccess = role === 'hq_admin' || role === 'branch_supervisor';
   const canMarkPaid = role === 'hq_admin' || role === 'branch_supervisor';
-  const canParentUpload = role === 'parent';
-  const [selectedFiles, setSelectedFiles] = React.useState({});
-  const ALLOWED_FILE_TYPES = new Set(['image/png', 'image/jpeg', 'application/pdf', 'text/plain']);
-  const MAX_FILE_SIZE_BYTES = 5 * 1024 * 1024;
 
   const { data: feeRecords = [] } = useQuery({
     queryKey: ['fee-records', user?.role, user?.email, user?.branch_id],
@@ -50,79 +38,6 @@ export default function FeeTracking() {
       queryClient.invalidateQueries({ queryKey: ['fee-records'] });
     },
   });
-
-  const uploadMutation = useMutation({
-    mutationFn: async ({ feeRecordId, file }) => {
-      return uploadFeeReceipt({
-        feeRecordId,
-        file,
-        fileName: file?.name,
-        contentType: file?.type || 'application/octet-stream',
-      });
-    },
-    onSuccess: (result, payload) => {
-      if (result?.error) {
-        throw new Error(result.error.message || 'Failed to upload receipt');
-      }
-      queryClient.invalidateQueries({ queryKey: ['fee-records'] });
-      setSelectedFiles((prev) => ({ ...prev, [payload.feeRecordId]: null }));
-      toast.success('Receipt uploaded successfully. Status is now submitted for review.');
-    },
-    onError: (error) => {
-      toast.error(error?.message || 'Unable to upload receipt');
-    },
-  });
-
-  const signedUrlMutation = useMutation({
-    mutationFn: async (feeRecordId) => getFeeReceiptSignedUrl({ feeRecordId }),
-    onSuccess: (result) => {
-      if (result?.error || !result?.data?.signed_url) {
-        toast.error(result?.error?.message || 'Unable to generate receipt link');
-        return;
-      }
-      window.open(result.data.signed_url, '_blank', 'noopener,noreferrer');
-    },
-    onError: (error) => {
-      toast.error(error?.message || 'Unable to open receipt');
-    },
-  });
-
-  const onSelectReceiptFile = (recordId, file) => {
-    if (!file) {
-      setSelectedFiles((prev) => ({ ...prev, [recordId]: null }));
-      return;
-    }
-    if (!ALLOWED_FILE_TYPES.has(file.type)) {
-      toast.message('Allowed file types: PNG, JPEG, PDF (text file allowed for testing only).');
-      return;
-    }
-    if (file.size > MAX_FILE_SIZE_BYTES) {
-      toast.message('File size must be 5MB or smaller.');
-      return;
-    }
-    setSelectedFiles((prev) => ({ ...prev, [recordId]: file }));
-  };
-
-  const handleUploadReceipt = (record) => {
-    const file = selectedFiles[record.id];
-    if (!file) {
-      toast.message('Please select a file before uploading.');
-      return;
-    }
-    if (isDemoMode) {
-      toast.message('Demo mode keeps fee receipt uploads local only.');
-      return;
-    }
-    if (!isSupabaseConfigured() || !hasSupabaseSession) {
-      toast.message('Supabase session is required for receipt upload.');
-      return;
-    }
-    if (!record?.id || record.data_source !== 'supabase_fee_records') {
-      toast.message('No real fee record is available for Supabase upload.');
-      return;
-    }
-    uploadMutation.mutate({ feeRecordId: record.id, file });
-  };
 
   if (!canAccess) {
     return (
@@ -194,37 +109,6 @@ export default function FeeTracking() {
                     <Button onClick={() => markPaidMutation.mutate(record.id)} disabled={markPaidMutation.isPending} className="w-full xl:w-auto">
                       Mark as Paid
                     </Button>
-                  </div>
-                )}
-                {canParentUpload && (
-                  <div className="space-y-2">
-                    <input
-                      type="file"
-                      accept=".png,.jpg,.jpeg,.pdf,.txt"
-                      onChange={(e) => onSelectReceiptFile(record.id, e.target.files?.[0] || null)}
-                      disabled={uploadMutation.isPending}
-                      className="block w-full text-sm"
-                    />
-                    <Button
-                      variant="outline"
-                      onClick={() => handleUploadReceipt(record)}
-                      disabled={uploadMutation.isPending}
-                      className="w-full"
-                    >
-                      {uploadMutation.isPending ? (
-                        <span className="inline-flex items-center gap-2"><Loader2 className="h-4 w-4 animate-spin" /> Uploading...</span>
-                      ) : 'Upload Receipt'}
-                    </Button>
-                    {record.receipt_uploaded && !isDemoMode && isSupabaseConfigured() && hasSupabaseSession && record.data_source === 'supabase_fee_records' && (
-                      <Button
-                        variant="ghost"
-                        onClick={() => signedUrlMutation.mutate(record.id)}
-                        disabled={signedUrlMutation.isPending}
-                        className="w-full"
-                      >
-                        View Uploaded Receipt
-                      </Button>
-                    )}
                   </div>
                 )}
                 </div>
