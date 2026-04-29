@@ -184,6 +184,17 @@ All enforcement at **Postgres RLS**; UI checks are never sufficient.
   - manually applied in dev project
   - runtime/service/UI still pending by design
 
+## 12) Service + smoke checkpoint note
+
+- Added service file: `src/services/staffTimeClockService.js`
+  - `clockInStaff(...)`
+  - `clockOutStaff(...)`
+  - `getStaffTimeSelfieSignedUrl(...)`
+- Added smoke script: `scripts/supabase-staff-time-clock-smoke-test.mjs`
+- Added package command: `npm run test:supabase:staff-time-clock`
+- Test scope remains fake GPS inputs and fake tiny selfie blobs only.
+- No app UI clock-in wiring and no real location/camera runtime integration in this phase.
+
 ---
 
 *Document type: planning + checkpoint notes. Demo **Staff Time Clock** UI is a non-persistent prototype; migrations and real clock persistence are not implied by the placeholder alone.*

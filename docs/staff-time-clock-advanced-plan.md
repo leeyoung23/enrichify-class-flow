@@ -11,6 +11,9 @@ Draft status update:
 
 - SQL/storage/RLS draft file created: `supabase/sql/010_staff_time_clock_foundation.sql`.
 - SQL draft has now been manually applied in a dev Supabase project checkpoint.
+- Service/smoke implementation added:
+  - `src/services/staffTimeClockService.js`
+  - `scripts/supabase-staff-time-clock-smoke-test.mjs`
 - No UI/runtime clock-in implementation is added yet.
 - No live location/camera access is implemented in this phase.
 - Private selfie bucket design is included as draft policy only.
@@ -214,13 +217,13 @@ Security design notes:
 
 ## 11) Immediate next recommendation
 
-Recommended next: **A. SQL/storage/RLS draft for `staff_time_entries` + `staff-clock-selfies`**.
+Recommended next: **Service wiring into future mobile clock flow (no real live location/camera rollout yet)**.
 
 Why:
 
-- This is the highest-risk foundation for correctness and security before UI wiring.
-- Geofence, evidence immutability, role scope, and private selfie access need DB/policy clarity first.
-- It keeps scope disciplined: define secure contracts early, then build UI/services against stable constraints.
+- SQL/storage/RLS foundation is applied in dev and service + smoke scaffolding now exists.
+- The next step is controlled runtime integration planning against existing service contracts.
+- Keep rollout safe by continuing fake/dev validation before any real-device capture features.
 
 ## 12) Next implementation prompt
 
@@ -275,3 +278,15 @@ Planning verdict: Staff Time Clock should be built as an evidence-based attendan
   - security review
   - role-by-role RLS test pass
   - storage path lifecycle finalization
+
+## 14) Service + smoke checkpoint note
+
+- Added service methods:
+  - `clockInStaff(...)`
+  - `clockOutStaff(...)`
+  - `getStaffTimeSelfieSignedUrl(...)`
+- Added smoke command:
+  - `npm run test:supabase:staff-time-clock`
+- Smoke path uses fake GPS values and fake tiny selfie blobs only.
+- No real location/camera access is implemented in app runtime.
+- Real mobile clock-in UI remains a future phase.

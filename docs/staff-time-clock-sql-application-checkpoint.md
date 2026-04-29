@@ -31,22 +31,32 @@ Scope note:
 - Staff is scoped to own entries.
 - Parent/student access is blocked.
 
-## 4) What remains
+## 4) Service + smoke progress
 
-- Staff Time Clock service write methods are not implemented yet.
-- Staff selfie upload/signed URL runtime service is not implemented yet.
-- Fake-location/fake-selfie smoke test is not implemented yet.
+Implemented:
+
+- Service file: `src/services/staffTimeClockService.js`
+  - `clockInStaff(...)`
+  - `clockOutStaff(...)`
+  - `getStaffTimeSelfieSignedUrl(...)`
+- Smoke script: `scripts/supabase-staff-time-clock-smoke-test.mjs`
+- Command: `npm run test:supabase:staff-time-clock`
+- Smoke inputs remain fake GPS values + fake tiny selfie blob only.
+
+## 5) What remains
+
 - Real mobile clock-in/out UI is not implemented yet.
 - Supervisor/HQ review/report runtime UI is not implemented yet.
+- Real location/camera capture flow is not implemented yet.
 
-## 5) Recommended next milestone
+## 6) Recommended next milestone
 
-Recommended next: **Staff Time Clock service + smoke test with fake location and fake selfie blob only**.
+Recommended next: **Staff Time Clock runtime integration (service wiring into future mobile clock flow), still using controlled fake test data in non-production validation**.
 
 Reason:
 
-- SQL/RLS/storage foundation is now in place at draft-applied level in dev.
-- Next highest-value checkpoint is proving role-scoped write/read behavior with fake evidence data before UI wiring.
+- SQL/RLS/storage foundation is in place and service/smoke now exist.
+- Next value is controlled runtime wiring without enabling real live location/camera in early validation.
 
 ---
 

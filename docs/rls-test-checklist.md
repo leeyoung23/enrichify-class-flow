@@ -129,6 +129,10 @@ Reminder: **Frontend filtering is not security. RLS must enforce access at datab
 - Draft patch reference: `supabase/sql/010_staff_time_clock_foundation.sql` (manual review/apply only).
 - Draft includes branch geofence columns, `staff_time_entries`, optional adjustment requests, and private `staff-clock-selfies` policy draft.
 - Manual dev-project application checkpoint recorded at `docs/staff-time-clock-sql-application-checkpoint.md`.
+- Service + smoke references:
+  - `src/services/staffTimeClockService.js`
+  - `scripts/supabase-staff-time-clock-smoke-test.mjs`
+  - `npm run test:supabase:staff-time-clock`
 - Runtime location/camera access is still not implemented.
 - Continue using fake users and fake selfie blobs only for future validation.
 
