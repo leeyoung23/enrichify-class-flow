@@ -4,7 +4,8 @@ Planning for staff **punch in / punch out** and related reporting. **Student att
 
 **Demo UI (current):** A **placeholder** page exists at **`/staff-time-clock`** (`src/pages/StaffTimeClock.jsx`) for **HQ Admin**, **Branch Supervisor**, and **Teacher** roles only — **local state and fake tables**; **no Supabase writes**, no schema, no clock persistence. **Parents and students** have **no** nav link; the route is not in their allow lists.
 
-**Still future:** SQL (`staff_time_entries`, RLS), authenticated writes, storage, and production clock flows — see sections below.
+**Still future:** authenticated runtime writes, mobile capture flow, and production clock operations.
+SQL/storage/RLS foundation draft now exists at `supabase/sql/010_staff_time_clock_foundation.sql` (**manual review/apply only; not applied yet**).
 
 ---
 
@@ -161,9 +162,23 @@ All enforcement at **Postgres RLS**; UI checks are never sufficient.
 
 ## 10) Next recommended action
 
-**Finish Supabase Auth route guard integration (Phase 3C redirect/login hardening in `docs/supabase-auth-route-guard-integration-plan.md`) before building production staff clock writes.**
+**Run manual review + role-based validation for `supabase/sql/010_staff_time_clock_foundation.sql`, then align Phase 3C auth hardening before runtime clock services.**
 
 **Why:** Punch events must attach to the **real logged-in `profile_id`** with enforceable RLS. Until non-demo sessions reliably reflect Supabase `profiles` with RLS-tested inserts, clock data would be ambiguous. Schema design (Phase 1–2) can proceed in parallel on paper; **replace the demo placeholder** with real services only after auth/write phases.
+
+## 11) 010 draft checkpoint note
+
+- Added draft file: `supabase/sql/010_staff_time_clock_foundation.sql`.
+- Draft includes:
+  - additive branch geofence columns
+  - `staff_time_entries` table (evidence fields)
+  - optional `staff_time_adjustment_requests`
+  - RLS draft policies (HQ/branch supervisor/staff scope)
+  - private `staff-clock-selfies` bucket + draft storage policies
+- Not included in this patch:
+  - runtime UI/service clock implementation
+  - live location/camera integration
+  - automatic SQL apply
 
 ---
 

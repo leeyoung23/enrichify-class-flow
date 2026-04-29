@@ -124,6 +124,22 @@ Reminder: **Frontend filtering is not security. RLS must enforce access at datab
 - Service method and UI upload flow are still not implemented.
 - Continue using fake test files/data only during policy validation.
 
+### Staff Time Clock draft patch note
+
+- Draft patch reference: `supabase/sql/010_staff_time_clock_foundation.sql` (manual review/apply only).
+- Draft includes branch geofence columns, `staff_time_entries`, optional adjustment requests, and private `staff-clock-selfies` policy draft.
+- Draft is **not applied yet** and does not add runtime location/camera access.
+- Continue using fake users and fake selfie blobs only for future validation.
+
+#### Staff Time Clock role checks (after manual apply in dev only)
+
+- HQ can read/review all staff time entries and related selfie objects.
+- Branch supervisor can read/review own-branch entries and selfies only.
+- Staff can insert/select own entries only.
+- Staff can close own open entry (clock-out update path) but cannot rewrite clock-in evidence.
+- Staff can submit own adjustment request only for own entry.
+- Parent/student must have zero access to staff time entries and staff-clock-selfies.
+
 ## Execution Notes
 
 - Run tests with fake users for each role.

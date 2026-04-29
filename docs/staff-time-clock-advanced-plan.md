@@ -7,6 +7,14 @@ Scope note:
 - Planning only in this step.
 - No app UI/runtime/service/SQL/storage changes are introduced by this document.
 
+Draft status update:
+
+- SQL/storage/RLS draft file created: `supabase/sql/010_staff_time_clock_foundation.sql`.
+- Draft is additive/manual and is **not applied yet**.
+- No UI/runtime clock-in implementation is added yet.
+- No live location/camera access is implemented in this phase.
+- Private selfie bucket design is included as draft policy only.
+
 ## 1) Product principle
 
 Staff Time Clock should prove attendance fairly, not just record a button click.
@@ -250,3 +258,16 @@ Validation:
 ---
 
 Planning verdict: Staff Time Clock should be built as an evidence-based attendance system (identity + timestamp + geofence snapshot + selfie + review workflow), not a simple button clock.
+
+## 13) Draft patch note (manual apply)
+
+- Reference draft: `supabase/sql/010_staff_time_clock_foundation.sql`
+- Includes:
+  - branch geofence columns (`latitude`, `longitude`, `geofence_radius_meters`)
+  - `staff_time_entries` and optional `staff_time_adjustment_requests`
+  - RLS draft policies for HQ/branch supervisor/staff scopes
+  - private `staff-clock-selfies` bucket and conservative draft storage policies
+- Still pending before any apply:
+  - security review
+  - role-by-role RLS test pass
+  - storage path lifecycle finalization
