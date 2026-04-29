@@ -4,7 +4,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { getSelectedDemoRole } from '@/services/authService';
 import { listFeeRecords, markFeeRecordPaid, getFeeDashboardSummary } from '@/services/dataService';
 import { getFeeReceiptSignedUrl } from '@/services/supabaseUploadService';
-import { verifyFeeReceipt } from '@/services/supabaseWriteService';
+import { rejectFeeReceipt, verifyFeeReceipt } from '@/services/supabaseWriteService';
 import { useSupabaseAuthState } from '@/hooks/useSupabaseAuthState';
 import PageHeader from '@/components/shared/PageHeader';
 import EmptyState from '@/components/shared/EmptyState';
@@ -33,6 +33,7 @@ export default function FeeTracking() {
   const hasSupabaseSession = Boolean(isSupabaseAuthAvailable && session?.user);
   const [proofLoadingByRecord, setProofLoadingByRecord] = useState({});
   const [verifyLoadingRecordId, setVerifyLoadingRecordId] = useState(null);
+  const [rejectLoadingRecordId, setRejectLoadingRecordId] = useState(null);
 
   const { data: feeRecords = [] } = useQuery({
     queryKey: ['fee-records', user?.role, user?.email, user?.branch_id],
@@ -67,6 +68,27 @@ export default function FeeTracking() {
     onError: (error) => {
       toast.error(error?.message || 'Unable to verify payment proof');
       setVerifyLoadingRecordId(null);
+    },
+  });
+  const rejectMutation = useMutation({
+    mutationFn: async ({ feeRecordId, internalNote }) => {
+      const result = await rejectFeeReceipt({
+        feeRecordId,
+        internalNote,
+      });
+      if (result?.error || !result?.data) {
+        throw new Error(result?.error?.message || 'Unable to request resubmission');
+      }
+      return result.data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['fee-records'] });
+      toast.success('Payment proof rejected. Resubmission requested.');
+      setRejectLoadingRecordId(null);
+    },
+    onError: (error) => {
+      toast.error(error?.message || 'Unable to request resubmission');
+      setRejectLoadingRecordId(null);
     },
   });
 
@@ -116,6 +138,34 @@ export default function FeeTracking() {
     }
     setVerifyLoadingRecordId(recordId);
     verifyMutation.mutate({ feeRecordId: recordId });
+  };
+
+  const handleRejectPayment = (record) => {
+    if (isDemoMode) {
+      toast.message('Demo mode keeps rejection local and does not write to Supabase.');
+      return;
+    }
+    if (!hasSupabaseSession || record?.data_source !== 'supabase_fee_records') {
+      toast.message('Rejection is available only for authenticated Supabase staff records.');
+      return;
+    }
+    const recordId = record?.fee_record_id || record?.id;
+    if (!recordId) {
+      toast.message('Fee record id is not available for rejection.');
+      return;
+    }
+
+    const reason = window.prompt('Internal note (required): why is this proof being rejected?');
+    if (typeof reason !== 'string' || !reason.trim()) {
+      toast.message('Internal note is required to request resubmission.');
+      return;
+    }
+
+    setRejectLoadingRecordId(recordId);
+    rejectMutation.mutate({
+      feeRecordId: recordId,
+      internalNote: reason.trim(),
+    });
   };
 
   if (!canAccess) {
@@ -206,6 +256,24 @@ export default function FeeTracking() {
                       className="w-full xl:w-auto"
                     >
                       {verifyMutation.isPending && verifyLoadingRecordId === (record.fee_record_id || record.id) ? 'Verifying...' : 'Verify Payment'}
+                    </Button>
+                  </div>
+                )}
+                {record.receipt_uploaded && (
+                  (record.verification_status === 'submitted'
+                    || record.verification_status === 'under_review'
+                    || record.payment_status === 'pending verification')
+                ) && (
+                  <div>
+                    <Button
+                      variant="outline"
+                      onClick={() => handleRejectPayment(record)}
+                      disabled={rejectMutation.isPending}
+                      className="w-full xl:w-auto"
+                    >
+                      {rejectMutation.isPending && rejectLoadingRecordId === (record.fee_record_id || record.id)
+                        ? 'Rejecting...'
+                        : 'Reject / Request Resubmission'}
                     </Button>
                   </div>
                 )}

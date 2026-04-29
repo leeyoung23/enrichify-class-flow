@@ -171,7 +171,7 @@ Add npm script e.g. `test:supabase:fee-receipt:verify` when Phase 2 lands.
 | **Phase 1** | This planning doc (`docs/fee-receipt-verification-ui-plan.md`). |
 | **Phase 2** | `verifyFeeReceipt` / `rejectFeeReceipt` in `supabaseWriteService.js` + `scripts/supabase-fee-receipt-verification-smoke-test.mjs` + npm script; align parent SELECT if needed for rejected visibility. **Status: implemented.** |
 | **Phase 3** | Wire **Verify** for HQ + branch supervisor on Fee Tracking (non-demo, Supabase rows only). **Status: implemented.** |
-| **Phase 4** | Wire **Reject** with required internal note + confirmations. |
+| **Phase 4** | Wire **Reject** with required internal note + confirmations. **Status: implemented.** |
 | **Phase 5** | Parent status polish (badges, copy, optional parent-visible rejection summary), `verified_by` display names, production validation. |
 
 ## 11) Phase 2 implementation checkpoint (service + smoke test)
@@ -201,9 +201,24 @@ Implemented in this phase:
 
 Still intentionally not wired:
 
-- **Reject / Request Resubmission** UI.
 - Invoice/e-invoice automation.
 - Parent upload remains in `ParentView` (not staff Fee Tracking).
+
+## 13) Phase 4 implementation checkpoint (Reject / Request Resubmission UI)
+
+Implemented in this phase:
+
+- Staff-side `FeeTracking` now shows **Reject / Request Resubmission** for receipt-uploaded, reviewable rows.
+- Action requires an internal note/reason before mutation.
+- Action calls `rejectFeeReceipt({ feeRecordId, internalNote })`.
+- Includes loading state, success/error toast, and fee records refetch after success.
+- Non-demo + authenticated Supabase session + `supabase_fee_records` source are required before reject write calls.
+
+Still intentionally future:
+
+- Automated office request/email to parent after rejection.
+- Invoice/e-invoice automation after confirmed internal payment flow.
+- Parent rejected-status UX/copy polish (if policy/copy alignment needs additional work).
 
 ## 10) Next implementation prompt (Phase 2: service + smoke test only)
 
