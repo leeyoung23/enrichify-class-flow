@@ -168,8 +168,9 @@ AI needs structured learning context to be truly differentiated, accurate, and s
 Current status note:
 
 - School/curriculum SQL/RLS draft now exists at `supabase/sql/012_school_curriculum_foundation.sql`.
-- It is additive/manual draft only and is not applied yet.
+- It is additive/manual draft and is now manually applied in Supabase dev.
 - There is still no school/curriculum UI wiring, no runtime service wiring, and no AI integration wiring for this domain yet.
+- Application checkpoint is documented at `docs/school-curriculum-sql-application-checkpoint.md`.
 
 ## 12) Next immediate milestone prompt (copy-paste)
 

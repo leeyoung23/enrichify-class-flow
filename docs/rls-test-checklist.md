@@ -200,10 +200,12 @@ Reminder: **Frontend filtering is not security. RLS must enforce access at datab
   - parent/student read-only linked child/self context
   - parent/student no template/manage writes
 - Draft status:
-  - not applied yet
+  - manually applied in dev
   - no UI/runtime service wiring yet
   - no AI integration yet
-  - manual review required before any dev execution
+  - continue fake-data-only role checks before any UI/runtime wiring
+- Manual application checkpoint:
+  - `docs/school-curriculum-sql-application-checkpoint.md`
 
 #### School/Curriculum role checks (after manual apply in dev only)
 
