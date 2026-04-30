@@ -271,3 +271,34 @@ Validation efficiency rule:
   - npm run lint
   - npm run typecheck
 ```
+
+## 18) Implementation checkpoint (Create Homework UI shell)
+
+Implemented in this milestone:
+
+- `Create Homework` shell is now added in `Homework` with clear entry point near the tracker controls.
+- shell is separate from the submission review/release panel to avoid workflow clutter.
+- form fields now include:
+  - assignment type (`class` / `selected_students` / `individual`)
+  - class selector
+  - conditional student selector for selected/individual
+  - title, subject, instructions, due date, optional notes
+  - `Save` / `Cancel`
+- assignment-type behavior now follows this plan in UI validation:
+  - class: no student selection required
+  - selected_students: one or more students required
+  - individual: exactly one student required
+- demo mode remains local-only:
+  - save simulates local success and appends fake task/assignee rows
+  - no Supabase writes
+  - no upload
+  - no provider/API call
+- authenticated non-demo mode is intentionally preview-only:
+  - save is blocked with safe "wiring coming next" messaging
+  - `createHomeworkTaskWithAssignees(...)` is not called yet
+
+Still future:
+
+- real create-write wiring to `createHomeworkTaskWithAssignees(...)`
+- manual marked-file upload path
+- AI provider integration

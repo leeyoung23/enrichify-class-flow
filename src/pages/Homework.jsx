@@ -5,6 +5,8 @@ import { AlertCircle, BookOpen, CheckCircle2, ExternalLink, RefreshCw, Send, Spa
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
 import PageHeader from '@/components/shared/PageHeader';
@@ -89,6 +91,9 @@ const DEMO_HOMEWORK_STUDENTS = [
   { id: 'demo-student-01', name: 'Student Demo A', school: 'School A', stream: 'Year 5 Literacy Boost' },
   { id: 'demo-student-02', name: 'Student Demo B', school: 'School B', stream: 'Year 5 Mixed Support' },
   { id: 'demo-student-03', name: 'Student Demo C', school: 'School C', stream: 'Year 5 Extension' },
+];
+const DEMO_HOMEWORK_CLASSES = [
+  { id: 'demo-class-1', label: 'Demo Class A - Year 5 Mixed Group' },
 ];
 
 const DEMO_TASK_ASSIGNEES = [
@@ -225,6 +230,19 @@ export default function Homework() {
   const [aiDraftSafetyNote, setAiDraftSafetyNote] = useState('');
   const [demoSubmissions, setDemoSubmissions] = useState(() => DEMO_HOMEWORK_SUBMISSIONS);
   const [demoFeedbackRows, setDemoFeedbackRows] = useState(() => DEMO_HOMEWORK_FEEDBACK);
+  const [demoCreatedTasks, setDemoCreatedTasks] = useState([]);
+  const [demoCreatedAssignees, setDemoCreatedAssignees] = useState([]);
+  const [createHomeworkOpen, setCreateHomeworkOpen] = useState(false);
+  const [createForm, setCreateForm] = useState({
+    assignmentType: 'class',
+    classId: DEMO_HOMEWORK_CLASSES[0]?.id || '',
+    studentIds: [],
+    title: '',
+    subject: '',
+    instructions: '',
+    dueDate: '',
+    notes: '',
+  });
 
   const { data: tasks = [], isLoading: tasksLoading } = useQuery({
     queryKey: ['homework-review-tasks', role, supabaseAppUser?.id],
@@ -331,7 +349,11 @@ export default function Homework() {
     },
   });
 
-  const taskRows = isDemoMode ? DEMO_HOMEWORK_TASKS : tasks;
+  const demoTaskRows = useMemo(
+    () => [...demoCreatedTasks, ...DEMO_HOMEWORK_TASKS],
+    [demoCreatedTasks]
+  );
+  const taskRows = isDemoMode ? demoTaskRows : tasks;
   const submissionRows = isDemoMode ? demoSubmissions : submissions;
   const feedbackDataRows = isDemoMode ? demoFeedbackRows : feedbackRows;
   const submissionFileRows = isDemoMode ? DEMO_HOMEWORK_FILES : submissionFiles;
@@ -358,12 +380,12 @@ export default function Homework() {
 
   const demoAssignmentsByTask = useMemo(() => {
     const map = new Map();
-    for (const row of DEMO_TASK_ASSIGNEES) {
+    for (const row of [...DEMO_TASK_ASSIGNEES, ...demoCreatedAssignees]) {
       if (!map.has(row.homework_task_id)) map.set(row.homework_task_id, new Set());
       map.get(row.homework_task_id).add(row.student_id);
     }
     return map;
-  }, []);
+  }, [demoCreatedAssignees]);
 
   const demoTaskTrackerRows = useMemo(() => {
     if (!isDemoMode) return [];
@@ -405,7 +427,7 @@ export default function Homework() {
   const demoStudentTrackerRows = useMemo(() => {
     if (!isDemoMode) return [];
     return DEMO_HOMEWORK_STUDENTS.map((student) => {
-      const assignedTasks = DEMO_HOMEWORK_TASKS.filter((task) => (
+      const assignedTasks = demoTaskRows.filter((task) => (
         task.assignment_scope === 'class'
         || (demoAssignmentsByTask.get(task.id)?.has(student.id))
       ));
@@ -440,7 +462,7 @@ export default function Homework() {
       };
       return { student, items, counts };
     });
-  }, [isDemoMode, demoAssignmentsByTask, demoSubmissions, demoFeedbackRows]);
+  }, [isDemoMode, demoAssignmentsByTask, demoSubmissions, demoFeedbackRows, demoTaskRows]);
 
   const selectedDemoTaskTracker = useMemo(
     () => demoTaskTrackerRows.find((row) => row.task.id === selectedTaskId) || demoTaskTrackerRows[0] || null,
@@ -473,6 +495,132 @@ export default function Homework() {
     if (rawStatus === 'submitted' || rawStatus === 'reviewed') return 'Submitted';
     if (rawStatus === 'assigned') return isOverdue ? 'Follow-up Needed' : 'Not Submitted';
     return 'Not Submitted';
+  };
+
+  const createClassOptions = useMemo(() => {
+    if (isDemoMode) return DEMO_HOMEWORK_CLASSES;
+    return classOptions.map((classId, index) => ({ id: classId, label: `Class option ${index + 1}` }));
+  }, [isDemoMode, classOptions]);
+
+  const createStudentOptions = useMemo(() => {
+    if (isDemoMode) return DEMO_HOMEWORK_STUDENTS;
+    return nonDemoStudentIdOptions.map((studentId, index) => ({
+      id: studentId,
+      name: `Student option ${index + 1}`,
+      school: '',
+      stream: '',
+    }));
+  }, [isDemoMode, nonDemoStudentIdOptions]);
+
+  const resetCreateForm = (nextAssignmentType = 'class') => {
+    setCreateForm({
+      assignmentType: nextAssignmentType,
+      classId: isDemoMode ? (DEMO_HOMEWORK_CLASSES[0]?.id || '') : (classOptions[0] || ''),
+      studentIds: [],
+      title: '',
+      subject: '',
+      instructions: '',
+      dueDate: '',
+      notes: '',
+    });
+  };
+
+  const openCreateHomeworkShell = (assignmentType = 'class') => {
+    resetCreateForm(assignmentType);
+    if (assignmentType === 'individual' && selectedStudentId) {
+      setCreateForm((prev) => ({ ...prev, studentIds: [selectedStudentId] }));
+    }
+    if (isDemoMode) {
+      setCreateForm((prev) => ({ ...prev, classId: DEMO_HOMEWORK_CLASSES[0]?.id || prev.classId }));
+    } else if (resolvedTrackerClassId && isUuidLike(resolvedTrackerClassId)) {
+      setCreateForm((prev) => ({ ...prev, classId: resolvedTrackerClassId }));
+    }
+    setCreateHomeworkOpen(true);
+  };
+
+  const setAssignmentType = (assignmentType) => {
+    setCreateForm((prev) => ({
+      ...prev,
+      assignmentType,
+      studentIds: assignmentType === 'class' ? [] : prev.studentIds,
+    }));
+  };
+
+  const toggleCreateStudent = (studentId) => {
+    setCreateForm((prev) => {
+      if (prev.assignmentType === 'individual') {
+        return { ...prev, studentIds: [studentId] };
+      }
+      const set = new Set(prev.studentIds);
+      if (set.has(studentId)) set.delete(studentId);
+      else set.add(studentId);
+      return { ...prev, studentIds: [...set] };
+    });
+  };
+
+  const clearSelectedStudents = () => {
+    setCreateForm((prev) => ({ ...prev, studentIds: [] }));
+  };
+
+  const saveCreateHomeworkShell = () => {
+    const trimmedTitle = createForm.title.trim();
+    if (!trimmedTitle) {
+      toast.error('Title is required.');
+      return;
+    }
+    if (!createForm.classId) {
+      toast.error('Class is required.');
+      return;
+    }
+    if (!isDemoMode && !isUuidLike(createForm.classId)) {
+      toast.error('A valid class selection is required.');
+      return;
+    }
+    if (createForm.assignmentType === 'selected_students' && createForm.studentIds.length === 0) {
+      toast.error('Select one or more students for selected students assignment.');
+      return;
+    }
+    if (createForm.assignmentType === 'individual' && createForm.studentIds.length !== 1) {
+      toast.error('Individual assignment requires exactly one student.');
+      return;
+    }
+    if (createForm.dueDate && !/^\d{4}-\d{2}-\d{2}$/.test(createForm.dueDate.trim())) {
+      toast.error('Due date must be YYYY-MM-DD.');
+      return;
+    }
+
+    if (!isDemoMode) {
+      toast.message('Create Homework wiring is coming next. This shell is preview-only in authenticated mode.');
+      return;
+    }
+
+    const assignmentScope = createForm.assignmentType;
+    const taskId = `demo-created-task-${Date.now()}`;
+    const safeDueDate = createForm.dueDate.trim() || null;
+    const taskRow = {
+      id: taskId,
+      title: trimmedTitle,
+      subject: createForm.subject.trim() || null,
+      instructions: createForm.instructions.trim() || null,
+      due_date: safeDueDate,
+      assignment_scope: assignmentScope,
+      class_id: createForm.classId,
+      notes: createForm.notes.trim() || null,
+    };
+    setDemoCreatedTasks((prev) => [taskRow, ...prev]);
+
+    if (assignmentScope !== 'class') {
+      const assigneeRows = createForm.studentIds.map((studentId) => ({
+        homework_task_id: taskId,
+        student_id: studentId,
+      }));
+      setDemoCreatedAssignees((prev) => [...assigneeRows, ...prev]);
+    }
+
+    setSelectedTaskId(taskId);
+    setCreateHomeworkOpen(false);
+    resetCreateForm('class');
+    toast.success('Demo mode: homework assignment created locally.');
   };
 
   useEffect(() => {
@@ -723,27 +871,197 @@ export default function Homework() {
       ) : (
         <div className="space-y-4">
           <Card className="p-2 sm:p-3">
-            <div className="flex flex-wrap gap-2">
-              <Button
-                type="button"
-                variant={activeViewMode === 'by_task' ? 'default' : 'outline'}
-                className="min-h-10"
-                onClick={() => setActiveViewMode('by_task')}
-              >
-                <BookOpen className="h-4 w-4 mr-1" />
-                By Task
-              </Button>
-              <Button
-                type="button"
-                variant={activeViewMode === 'by_student' ? 'default' : 'outline'}
-                className="min-h-10"
-                onClick={() => setActiveViewMode('by_student')}
-              >
-                <Users className="h-4 w-4 mr-1" />
-                By Student
-              </Button>
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <div className="flex flex-wrap gap-2">
+                <Button
+                  type="button"
+                  variant={activeViewMode === 'by_task' ? 'default' : 'outline'}
+                  className="min-h-10"
+                  onClick={() => setActiveViewMode('by_task')}
+                >
+                  <BookOpen className="h-4 w-4 mr-1" />
+                  By Task
+                </Button>
+                <Button
+                  type="button"
+                  variant={activeViewMode === 'by_student' ? 'default' : 'outline'}
+                  className="min-h-10"
+                  onClick={() => setActiveViewMode('by_student')}
+                >
+                  <Users className="h-4 w-4 mr-1" />
+                  By Student
+                </Button>
+              </div>
+              <div className="flex flex-wrap gap-2">
+                {isDemoMode && activeViewMode === 'by_student' ? (
+                  <Button
+                    type="button"
+                    variant="outline"
+                    className="min-h-10"
+                    onClick={() => openCreateHomeworkShell('individual')}
+                  >
+                    Quick individual create
+                  </Button>
+                ) : null}
+                <Button
+                  type="button"
+                  className="min-h-10"
+                  onClick={() => openCreateHomeworkShell('class')}
+                >
+                  Create Homework
+                </Button>
+              </div>
             </div>
           </Card>
+
+          {createHomeworkOpen ? (
+            <Card className="p-4 sm:p-5">
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <p className="font-medium">Create Homework</p>
+                <Badge variant="outline">
+                  assignment_scope = {createForm.assignmentType}
+                </Badge>
+              </div>
+              <p className="text-xs text-muted-foreground mt-1">
+                {isDemoMode
+                  ? 'Demo-only shell: local fake create simulation. No Supabase write or provider call is made.'
+                  : 'Preview-only shell: real create wiring is coming next. Save is intentionally blocked in this milestone.'}
+              </p>
+              <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2">
+                <div className="space-y-2">
+                  <Label>Assignment type</Label>
+                  <Select value={createForm.assignmentType} onValueChange={setAssignmentType}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select assignment type" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="class">Whole class</SelectItem>
+                      <SelectItem value="selected_students">Selected students</SelectItem>
+                      <SelectItem value="individual">Individual student</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-2">
+                  <Label>Class</Label>
+                  <Select
+                    value={createForm.classId}
+                    onValueChange={(value) => setCreateForm((prev) => ({ ...prev, classId: value }))}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select class" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {createClassOptions.map((option) => (
+                        <SelectItem key={option.id} value={option.id}>
+                          {option.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-2 sm:col-span-2">
+                  <Label>Title</Label>
+                  <Input
+                    value={createForm.title}
+                    onChange={(event) => setCreateForm((prev) => ({ ...prev, title: event.target.value }))}
+                    placeholder="Homework title"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label>Subject</Label>
+                  <Input
+                    value={createForm.subject}
+                    onChange={(event) => setCreateForm((prev) => ({ ...prev, subject: event.target.value }))}
+                    placeholder="Subject"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label>Due date</Label>
+                  <Input
+                    type="date"
+                    value={createForm.dueDate}
+                    onChange={(event) => setCreateForm((prev) => ({ ...prev, dueDate: event.target.value }))}
+                  />
+                </div>
+                <div className="space-y-2 sm:col-span-2">
+                  <Label>Instructions</Label>
+                  <Textarea
+                    className="min-h-[96px]"
+                    value={createForm.instructions}
+                    onChange={(event) => setCreateForm((prev) => ({ ...prev, instructions: event.target.value }))}
+                    placeholder="Assignment instructions"
+                  />
+                </div>
+                <div className="space-y-2 sm:col-span-2">
+                  <Label>Notes (optional)</Label>
+                  <Textarea
+                    className="min-h-[84px]"
+                    value={createForm.notes}
+                    onChange={(event) => setCreateForm((prev) => ({ ...prev, notes: event.target.value }))}
+                    placeholder="Optional teacher notes"
+                  />
+                </div>
+              </div>
+
+              {createForm.assignmentType !== 'class' ? (
+                <div className="mt-4 space-y-2">
+                  <div className="flex flex-wrap items-center justify-between gap-2">
+                    <p className="text-sm font-medium">
+                      Select students {createForm.assignmentType === 'individual' ? '(exactly one)' : '(one or more)'}
+                    </p>
+                    <div className="flex items-center gap-2">
+                      <Badge variant="outline">Selected {createForm.studentIds.length}</Badge>
+                      <Button type="button" size="sm" variant="outline" onClick={clearSelectedStudents}>
+                        Clear selected
+                      </Button>
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+                    {createStudentOptions.map((student) => {
+                      const selected = createForm.studentIds.includes(student.id);
+                      return (
+                        <button
+                          key={student.id}
+                          type="button"
+                          onClick={() => toggleCreateStudent(student.id)}
+                          className={`rounded-lg border p-3 text-left ${selected ? 'border-primary bg-primary/5' : 'border-border'}`}
+                        >
+                          <p className="text-sm font-medium">{student.name}</p>
+                          {student.school || student.stream ? (
+                            <p className="text-xs text-muted-foreground">
+                              {[student.school, student.stream].filter(Boolean).join(' · ')}
+                            </p>
+                          ) : null}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              ) : null}
+
+              <div className="mt-4 rounded-lg border border-dashed p-3 text-xs text-muted-foreground">
+                Summary: {createForm.assignmentType} assignment
+                {createForm.dueDate ? ` · due ${createForm.dueDate}` : ''}.
+                {' '}No auto-release, no auto-save, no real write in this milestone.
+              </div>
+              <div className="mt-4 flex flex-wrap gap-2">
+                <Button type="button" className="min-h-10" onClick={saveCreateHomeworkShell}>
+                  Save
+                </Button>
+                <Button
+                  type="button"
+                  className="min-h-10"
+                  variant="outline"
+                  onClick={() => {
+                    setCreateHomeworkOpen(false);
+                    resetCreateForm('class');
+                  }}
+                >
+                  Cancel
+                </Button>
+              </div>
+            </Card>
+          ) : null}
 
           <div className="grid grid-cols-1 xl:grid-cols-5 gap-4">
           <div className="xl:col-span-2 space-y-4">

@@ -212,10 +212,13 @@ Current status note:
 - Authenticated non-demo Homework now wires real `By Task` tracker read using `listHomeworkTrackerByClass(...)` with UUID-safe class handling.
 - Authenticated non-demo Homework now wires real `By Student` tracker read using `listHomeworkTrackerByStudent(...)` with UUID-safe student selection from visible homework data.
 - `By Task` tracker behavior remains preserved while adding `By Student`.
-- Selected-student assignment write services remain future.
+- `Homework` now includes `Create Homework` UI shell with demo parity:
+  - local/demo mode uses fake local form + fake local create simulation only,
+  - authenticated mode shows preview shell but blocks final save (real write wiring intentionally deferred).
+- Selected-student assignment write services are already implemented in service layer and are not yet called by this new shell milestone.
 - Manual marked-file upload remains future.
 - Existing homework runtime/UI workflow remains unchanged until later service/UI migration; parent assigned-but-not-submitted visibility should later move to assignee-row based reads.
-- Assignment creation UI flow remains future (service proof completed first).
+- Real assignment creation write wiring remains future (service proof completed first).
 - Manual marked-file upload remains future.
 - AI provider integration remains future.
 - Announcements/Internal Communications remains future.
