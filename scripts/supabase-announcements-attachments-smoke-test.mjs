@@ -56,6 +56,11 @@ async function resolveProfileContext(supabase) {
   return { data: profileRead.data, error: null };
 }
 
+function summarizeProfileContext(profile) {
+  if (!profile) return "profile_unavailable";
+  return `role=${profile.role || "unknown"} active=${String(Boolean(profile.is_active))} branch=${profile.branch_id || "null"}`;
+}
+
 async function run() {
   const [{ signInWithEmailPassword, signOut }, readService, writeService, uploadService, { supabase }] = await Promise.all([
     import("../src/services/supabaseAuthService.js"),
@@ -139,6 +144,7 @@ async function run() {
         const hqAnnouncementId = hqCreate.data.announcement.id;
         cleanupAnnouncements.push(hqAnnouncementId);
         printResult("PASS", "HQ: created announcement fixture");
+        printResult("CHECK", `HQ context: ${summarizeProfileContext(hqCtx.data)}`);
 
         const uploadResult = await uploadAnnouncementAttachment({
           announcementId: hqAnnouncementId,
@@ -150,6 +156,9 @@ async function run() {
         });
         if (uploadResult.error || !uploadResult.data?.attachment?.id) {
           printResult("CHECK", `HQ: upload skipped/blocked (${uploadResult.error?.message || "unknown"})`);
+          if (uploadResult.error?.cleanup_warning) {
+            printResult("CHECK", `HQ: metadata cleanup warning (${uploadResult.error.cleanup_warning})`);
+          }
         } else {
           const attachmentId = uploadResult.data.attachment.id;
           cleanupAttachments.push(attachmentId);
@@ -212,6 +221,7 @@ async function run() {
         supervisorAnnouncementId = supervisorCreate.data.announcement.id;
         cleanupAnnouncements.push(supervisorAnnouncementId);
         printResult("PASS", "Supervisor: created announcement fixture");
+        printResult("CHECK", `Supervisor context: ${summarizeProfileContext(supervisorCtx.data)}`);
 
         const publishResult = await publishAnnouncement({ announcementId: supervisorAnnouncementId });
         if (publishResult.error) {
@@ -231,6 +241,9 @@ async function run() {
         });
         if (supervisorUpload.error || !supervisorUpload.data?.attachment?.id) {
           printResult("CHECK", `Supervisor: upload skipped/blocked (${supervisorUpload.error?.message || "unknown"})`);
+          if (supervisorUpload.error?.cleanup_warning) {
+            printResult("CHECK", `Supervisor: metadata cleanup warning (${supervisorUpload.error.cleanup_warning})`);
+          }
         } else {
           cleanupAttachments.push(supervisorUpload.data.attachment.id);
           printResult("PASS", "Supervisor: uploadAnnouncementAttachment succeeded");
@@ -259,6 +272,7 @@ async function run() {
   if (teacherSignIn.ok) {
     const teacherCtx = await resolveProfileContext(supabase);
     teacherProfileId = teacherCtx.data?.id || null;
+    printResult("CHECK", `Teacher context: ${summarizeProfileContext(teacherCtx.data)}`);
     if (supervisorAnnouncementId) {
       const teacherAnnouncements = await listAnnouncements({
         status: "published",

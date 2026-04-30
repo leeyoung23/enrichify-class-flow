@@ -100,6 +100,12 @@ Storage verification:
   - `docs/announcements-attachments-service-smoke-checkpoint.md`
 - No UI wiring in this checkpoint.
 - No MyTasks integration, Company News pop-up, parent-facing rollout, notifications/emails, or live chat in this checkpoint.
+- Upload CHECK investigation update:
+  - metadata insert RLS is the current blocker for HQ/supervisor/teacher attachment uploads,
+  - storage object insert policy is not the first failing gate in current smoke output.
+- Manual/dev-only follow-up patch draft now exists:
+  - `supabase/sql/024_fix_announcements_attachments_insert_rls.sql`
+- `024` is not auto-applied; manual dev SQL Editor review/apply is required before expected upload PASS path.
 
 ## 9) Recommended next milestone
 

@@ -425,6 +425,11 @@ Current status note:
   - smoke script: `scripts/supabase-announcements-attachments-smoke-test.mjs`,
   - command: `npm run test:supabase:announcements:attachments`,
   - checkpoint doc: `docs/announcements-attachments-service-smoke-checkpoint.md`.
+- Upload CHECK investigation update:
+  - current upload CHECKs are blocked at metadata insert RLS on `announcement_attachments` (before storage object insert),
+  - follow-up manual/dev SQL patch draft now exists:
+    - `supabase/sql/024_fix_announcements_attachments_insert_rls.sql`,
+  - `024` keeps parent/student blocked, keeps `parent_facing_media` blocked, and avoids storage public-access widening.
 - Attachments UI remains unwired in this checkpoint.
 - Checkpoint doc:
   - `docs/announcements-attachments-sql-application-checkpoint.md`.

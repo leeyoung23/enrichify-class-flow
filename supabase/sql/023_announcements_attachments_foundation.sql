@@ -182,10 +182,86 @@ as $$
   )
 $$;
 
+create or replace function public.can_insert_manage_announcement_attachment_row_023(
+  row_announcement_id uuid,
+  row_uploaded_by_profile_id uuid,
+  row_file_role text,
+  row_released_to_parent boolean,
+  row_released_at timestamptz,
+  row_released_by_profile_id uuid
+)
+returns boolean
+language sql
+stable
+security definer
+set search_path = public
+as $$
+  select coalesce(
+    row_uploaded_by_profile_id = auth.uid()
+    and row_file_role in ('hq_attachment', 'supervisor_attachment', 'response_upload')
+    and row_file_role <> 'parent_facing_media'
+    and row_released_to_parent = false
+    and row_released_at is null
+    and row_released_by_profile_id is null
+    and exists (
+      select 1
+      from public.announcements a
+      where a.id = row_announcement_id
+        and a.audience_type = 'internal_staff'
+        and (
+          public.is_hq_admin()
+          or public.is_branch_supervisor_for_branch(a.branch_id)
+        )
+        and (
+          public.is_hq_admin()
+          or public.current_user_role() = 'branch_supervisor'
+        )
+    ),
+    false
+  )
+$$;
+
+create or replace function public.can_insert_teacher_announcement_attachment_row_023(
+  row_announcement_id uuid,
+  row_uploaded_by_profile_id uuid,
+  row_file_role text,
+  row_released_to_parent boolean,
+  row_released_at timestamptz,
+  row_released_by_profile_id uuid
+)
+returns boolean
+language sql
+stable
+security definer
+set search_path = public
+as $$
+  select coalesce(
+    row_uploaded_by_profile_id = auth.uid()
+    and row_file_role = 'response_upload'
+    and row_file_role <> 'parent_facing_media'
+    and row_released_to_parent = false
+    and row_released_at is null
+    and row_released_by_profile_id is null
+    and public.current_user_role() = 'teacher'
+    and exists (
+      select 1
+      from public.announcements a
+      where a.id = row_announcement_id
+        and a.audience_type = 'internal_staff'
+        and public.can_access_announcement(a.id)
+    ),
+    false
+  )
+$$;
+
 comment on function public.can_access_announcement_attachment(uuid) is
   '023 draft helper. Phase 2 internal attachments only. Parent/student blocked. parent_facing_media blocked.';
 comment on function public.can_manage_announcement_attachment(uuid) is
   '023 draft helper. HQ full manage + supervisor own-branch manage for internal attachment rows.';
+comment on function public.can_insert_manage_announcement_attachment_row_023(uuid, uuid, text, boolean, timestamptz, uuid) is
+  '023 insert-safe row predicate for HQ/supervisor internal attachment metadata insert path. Avoids self-row helper dependency.';
+comment on function public.can_insert_teacher_announcement_attachment_row_023(uuid, uuid, text, boolean, timestamptz, uuid) is
+  '023 insert-safe row predicate for teacher response_upload path. Keeps parent/student and parent_facing_media blocked.';
 
 -- -----------------------------------------------------------------------------
 -- 5) Enable RLS
@@ -210,27 +286,13 @@ create policy announcement_attachments_insert_manage_023
 on public.announcement_attachments
 for insert
 with check (
-  uploaded_by_profile_id = auth.uid()
-  and file_role <> 'parent_facing_media'
-  and released_to_parent = false
-  and released_at is null
-  and released_by_profile_id is null
-  and exists (
-    select 1
-    from public.announcements a
-    where a.id = announcement_attachments.announcement_id
-      and a.audience_type = 'internal_staff'
-      and (
-        public.is_hq_admin()
-        or public.is_branch_supervisor_for_branch(a.branch_id)
-      )
-      and (
-        (public.is_hq_admin() and file_role in ('hq_attachment', 'supervisor_attachment', 'response_upload'))
-        or (
-          public.current_user_role() = 'branch_supervisor'
-          and file_role in ('hq_attachment', 'supervisor_attachment', 'response_upload')
-        )
-      )
+  public.can_insert_manage_announcement_attachment_row_023(
+    announcement_id,
+    uploaded_by_profile_id,
+    file_role,
+    released_to_parent,
+    released_at,
+    released_by_profile_id
   )
 );
 
@@ -239,18 +301,13 @@ create policy announcement_attachments_insert_teacher_023
 on public.announcement_attachments
 for insert
 with check (
-  uploaded_by_profile_id = auth.uid()
-  and file_role = 'response_upload'
-  and released_to_parent = false
-  and released_at is null
-  and released_by_profile_id is null
-  and exists (
-    select 1
-    from public.announcements a
-    where a.id = announcement_attachments.announcement_id
-      and a.audience_type = 'internal_staff'
-      and public.current_user_role() = 'teacher'
-      and public.can_access_announcement(a.id)
+  public.can_insert_teacher_announcement_attachment_row_023(
+    announcement_id,
+    uploaded_by_profile_id,
+    file_role,
+    released_to_parent,
+    released_at,
+    released_by_profile_id
   )
 );
 

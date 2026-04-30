@@ -512,6 +512,13 @@ Reminder: **Frontend filtering is not security. RLS must enforce access at datab
   - `npm run test:supabase:announcements:attachments`
 - Service/smoke checkpoint doc:
   - `docs/announcements-attachments-service-smoke-checkpoint.md`
+- Upload CHECK diagnosis note:
+  - current CHECK originates at metadata insert RLS on `announcement_attachments` before storage object insert.
+- Insert-RLS follow-up patch draft:
+  - `supabase/sql/024_fix_announcements_attachments_insert_rls.sql` (manual/dev-only apply).
+- Post-apply expectation:
+  - rerun `npm run test:supabase:announcements:attachments`,
+  - upload/list/signed URL checks should move from CHECK to PASS where role/fixture prerequisites are valid.
 - `023` phase boundary:
   - parent/student access blocked,
   - `parent_facing_media` is reserved but blocked in this phase,

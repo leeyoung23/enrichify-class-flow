@@ -30,6 +30,12 @@ No UI/runtime/service/SQL changes in this checkpoint.
 - Attachments UI wiring remains future.
 - MyTasks integration remains future.
 - Company News pop-up remains future.
+- Upload CHECK investigation status:
+  - current blocker is metadata insert RLS on `announcement_attachments` (not storage object insert gate),
+  - manual/dev-only fix draft exists at `supabase/sql/024_fix_announcements_attachments_insert_rls.sql`,
+  - `024` applies insert-safe row-predicate helper pattern and recreates only attachment insert policies.
+- Source-of-truth SQL draft `023` has been aligned to the same insert-safe helper pattern.
+- `024` still requires manual dev review/apply before upload PASS proof.
 
 ## 1) Current state
 

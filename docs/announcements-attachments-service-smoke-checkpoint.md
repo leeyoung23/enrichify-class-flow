@@ -55,7 +55,34 @@ Coverage intent:
 - Cleanup of fake attachment rows + objects + fake announcement fixtures.
 - Safe `CHECK` behavior when fixture/password prerequisites are unavailable.
 
-## 5) Boundaries preserved
+## 5) Upload CHECK investigation status
+
+- Current CHECK root cause is in **metadata insert RLS** (`announcement_attachments`), not object upload/storage policy.
+- Evidence:
+  - smoke failure message is `new row violates row-level security policy for table "announcement_attachments"` before any object upload attempt,
+  - parent/student read blocks and teacher blocked-from-`hq_attachment` checks still PASS.
+- A manual/dev-only SQL patch draft is now added:
+  - `supabase/sql/024_fix_announcements_attachments_insert_rls.sql`
+- `024` adds explicit insert-safe row-predicate helpers and recreates only the two insert policies:
+  - `announcement_attachments_insert_manage_023`
+  - `announcement_attachments_insert_teacher_023`
+- `024` keeps strict boundaries:
+  - parent/student blocked,
+  - `parent_facing_media` blocked,
+  - no storage public access widening,
+  - no update/delete/select relaxation.
+- Source-of-truth draft alignment was also applied to:
+  - `supabase/sql/023_announcements_attachments_foundation.sql`
+
+## 6) Manual apply requirement
+
+- `024` is draft-only and is **not auto-applied**.
+- Until manual dev apply of `024`, upload paths can continue to show safe CHECK blocks.
+- After manual apply, rerun:
+  - `npm run test:supabase:announcements:attachments`
+  - expected: upload/list/signed URL paths move from CHECK to PASS where fixtures are valid.
+
+## 7) Boundaries preserved
 
 - No attachment UI wiring yet.
 - No MyTasks integration.
