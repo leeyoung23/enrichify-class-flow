@@ -204,7 +204,10 @@ Current status note:
   - `listHomeworkFiles({ homeworkSubmissionId, fileRole, parentVisibleOnly })`
   - `releaseHomeworkFileToParent(...)`
 - Marked-file smoke test is now added at `scripts/supabase-homework-marked-file-smoke-test.mjs` with package command `npm run test:supabase:homework:marked-file`.
-- Teacher marked-file upload UI wiring remains future.
+- Teacher marked-file UI shell is now added in `src/pages/Homework.jsx` review detail panel:
+  - demo mode uses local fake list/upload/release/view behavior only,
+  - authenticated non-demo mode currently shows shell + disabled controls while real wiring remains pending.
+- Real teacher marked-file upload/release service wiring in UI remains future.
 - Parent released marked-file display runtime wiring remains future.
 - Assignee-aware homework read service baseline is now added in `src/services/supabaseReadService.js`:
   - `listHomeworkTaskAssignees(...)`

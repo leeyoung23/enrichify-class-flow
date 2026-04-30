@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { useOutletContext } from 'react-router-dom';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { AlertCircle, BookOpen, CheckCircle2, ExternalLink, RefreshCw, Send, Sparkles, Users } from 'lucide-react';
+import { AlertCircle, BookOpen, CheckCircle2, ExternalLink, Eye, RefreshCw, Send, Sparkles, Upload, Users } from 'lucide-react';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -166,6 +166,37 @@ const DEMO_HOMEWORK_FILES = [
   },
 ];
 
+const DEMO_MARKED_HOMEWORK_FILES = [
+  {
+    id: 'demo-marked-file-2',
+    homework_submission_id: 'demo-homework-submission-2',
+    file_role: 'teacher_marked_homework',
+    released_to_parent: false,
+    file_name: 'demo-marked-math-a.pdf',
+    content_type: 'application/pdf',
+    file_size_bytes: 164000,
+    staff_note: 'Demo internal marking note: review algebra steps.',
+    uploaded_by_label: 'Demo Teacher',
+    released_by_label: null,
+    released_at: null,
+    created_at: '2026-05-11T13:00:00.000Z',
+  },
+  {
+    id: 'demo-marked-file-3',
+    homework_submission_id: 'demo-homework-submission-3',
+    file_role: 'teacher_marked_homework',
+    released_to_parent: true,
+    file_name: 'demo-marked-extension-c.jpg',
+    content_type: 'image/jpeg',
+    file_size_bytes: 121000,
+    staff_note: 'Demo internal note: extension challenge completed well.',
+    uploaded_by_label: 'Demo Teacher',
+    released_by_label: 'Demo Supervisor',
+    released_at: '2026-05-12T10:00:00.000Z',
+    created_at: '2026-05-12T09:10:00.000Z',
+  },
+];
+
 const DEMO_HOMEWORK_FEEDBACK = [
   {
     id: 'demo-homework-feedback-2',
@@ -231,6 +262,9 @@ export default function Homework() {
   const [aiDraftSafetyNote, setAiDraftSafetyNote] = useState('');
   const [demoSubmissions, setDemoSubmissions] = useState(() => DEMO_HOMEWORK_SUBMISSIONS);
   const [demoFeedbackRows, setDemoFeedbackRows] = useState(() => DEMO_HOMEWORK_FEEDBACK);
+  const [demoMarkedFiles, setDemoMarkedFiles] = useState(() => DEMO_MARKED_HOMEWORK_FILES);
+  const [demoMarkedFileNameBySubmissionId, setDemoMarkedFileNameBySubmissionId] = useState({});
+  const [demoMarkedNoteBySubmissionId, setDemoMarkedNoteBySubmissionId] = useState({});
   const [demoCreatedTasks, setDemoCreatedTasks] = useState([]);
   const [demoCreatedAssignees, setDemoCreatedAssignees] = useState([]);
   const [createHomeworkOpen, setCreateHomeworkOpen] = useState(false);
@@ -378,6 +412,16 @@ export default function Homework() {
     () => taskRows.find((item) => item.id === selectedTaskId) || null,
     [taskRows, selectedTaskId]
   );
+  const selectedMarkedFiles = useMemo(() => {
+    if (!selectedSubmissionId) return [];
+    if (isDemoMode) {
+      return demoMarkedFiles
+        .filter((row) => row.homework_submission_id === selectedSubmissionId)
+        .sort((a, b) => new Date(b.created_at || 0).getTime() - new Date(a.created_at || 0).getTime());
+    }
+    return [];
+  }, [selectedSubmissionId, isDemoMode, demoMarkedFiles]);
+  const markedWorkWiringPending = !isDemoMode;
 
   const demoAssignmentsByTask = useMemo(() => {
     const map = new Map();
@@ -862,6 +906,58 @@ export default function Homework() {
       return;
     }
     window.open(result.data.signed_url, '_blank', 'noopener,noreferrer');
+  };
+
+  const demoMarkedFileName = selectedSubmissionId ? (demoMarkedFileNameBySubmissionId[selectedSubmissionId] || '') : '';
+  const demoMarkedNote = selectedSubmissionId ? (demoMarkedNoteBySubmissionId[selectedSubmissionId] || '') : '';
+
+  const handleDemoMarkedUpload = () => {
+    if (!selectedSubmissionId) {
+      toast.message('Select a submission before adding marked work.');
+      return;
+    }
+    const rawName = (demoMarkedFileNameBySubmissionId[selectedSubmissionId] || '').trim();
+    const fileName = rawName || `demo-marked-${selectedSubmissionId.slice(0, 8)}.pdf`;
+    const staffNote = (demoMarkedNoteBySubmissionId[selectedSubmissionId] || '').trim();
+    const nowIso = new Date().toISOString();
+    const row = {
+      id: `demo-marked-file-${Date.now()}`,
+      homework_submission_id: selectedSubmissionId,
+      file_role: 'teacher_marked_homework',
+      released_to_parent: false,
+      file_name: fileName,
+      content_type: fileName.toLowerCase().endsWith('.jpg') || fileName.toLowerCase().endsWith('.jpeg')
+        ? 'image/jpeg'
+        : (fileName.toLowerCase().endsWith('.png') ? 'image/png' : 'application/pdf'),
+      file_size_bytes: 128000,
+      staff_note: staffNote || null,
+      uploaded_by_label: 'Demo Teacher',
+      released_by_label: null,
+      released_at: null,
+      created_at: nowIso,
+    };
+    setDemoMarkedFiles((prev) => [row, ...prev]);
+    setDemoMarkedFileNameBySubmissionId((prev) => ({ ...prev, [selectedSubmissionId]: '' }));
+    setDemoMarkedNoteBySubmissionId((prev) => ({ ...prev, [selectedSubmissionId]: '' }));
+    toast.success('Demo mode: marked file added locally. No upload was performed.');
+  };
+
+  const handleDemoMarkedView = (fileId) => {
+    toast.message(`Demo mode: marked file preview only (${fileId}). No signed URL call is made.`);
+  };
+
+  const handleDemoMarkedRelease = (fileId) => {
+    setDemoMarkedFiles((prev) => prev.map((row) => (
+      row.id === fileId
+        ? {
+          ...row,
+          released_to_parent: true,
+          released_at: new Date().toISOString(),
+          released_by_label: 'Demo Supervisor',
+        }
+        : row
+    )));
+    toast.success('Demo mode: marked file release toggled locally.');
   };
 
   const draftFeedbackWithAi = async () => {
@@ -1564,6 +1660,137 @@ export default function Homework() {
                           </div>
                         ))}
                       </div>
+                    )}
+                  </div>
+                </Card>
+
+                <Card className="p-5 space-y-3">
+                  <div className="flex flex-wrap items-center justify-between gap-2">
+                    <p className="font-medium">Marked work</p>
+                    <Badge variant="outline">Staff process layer</Badge>
+                  </div>
+                  <p className="text-xs text-muted-foreground">
+                    Marked work remains internal until released to parent. Parent display is a later milestone.
+                  </p>
+                  {isDemoMode ? (
+                    <div className="rounded-lg border border-dashed p-3 space-y-3 bg-muted/20">
+                      <p className="text-sm font-medium">Demo marked-file controls (local only)</p>
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                        <div className="space-y-1">
+                          <Label className="text-xs">Marked file name (fake)</Label>
+                          <Input
+                            placeholder="demo-marked-file.pdf"
+                            value={demoMarkedFileName}
+                            onChange={(event) => {
+                              if (!selectedSubmissionId) return;
+                              const value = event.target.value || '';
+                              setDemoMarkedFileNameBySubmissionId((prev) => ({ ...prev, [selectedSubmissionId]: value }));
+                            }}
+                          />
+                        </div>
+                        <div className="space-y-1">
+                          <Label className="text-xs">Staff note (optional)</Label>
+                          <Input
+                            placeholder="Internal note for staff only"
+                            value={demoMarkedNote}
+                            onChange={(event) => {
+                              if (!selectedSubmissionId) return;
+                              const value = event.target.value || '';
+                              setDemoMarkedNoteBySubmissionId((prev) => ({ ...prev, [selectedSubmissionId]: value }));
+                            }}
+                          />
+                        </div>
+                      </div>
+                      <div className="flex flex-wrap gap-2">
+                        <Button type="button" className="min-h-10" onClick={handleDemoMarkedUpload}>
+                          <Upload className="h-4 w-4 mr-1" />
+                          Upload marked file
+                        </Button>
+                        <Button
+                          type="button"
+                          variant="outline"
+                          className="min-h-10"
+                          disabled
+                        >
+                          <Eye className="h-4 w-4 mr-1" />
+                          View file
+                        </Button>
+                      </div>
+                      <p className="text-xs text-muted-foreground">
+                        Demo-only simulation. No Supabase writes/uploads/signed URL calls are made here.
+                      </p>
+                    </div>
+                  ) : (
+                    <div className="rounded-lg border border-dashed p-3 space-y-2 bg-muted/20">
+                      <p className="text-sm font-medium">Marked-file wiring coming next</p>
+                      <p className="text-xs text-muted-foreground">
+                        UI shell is in place. Real marked-file upload/list/release wiring will be enabled in a follow-up milestone.
+                      </p>
+                      <div className="flex flex-wrap gap-2">
+                        <Button type="button" className="min-h-10" disabled={markedWorkWiringPending}>
+                          <Upload className="h-4 w-4 mr-1" />
+                          Upload marked file
+                        </Button>
+                        <Button type="button" variant="outline" className="min-h-10" disabled={markedWorkWiringPending}>
+                          <Eye className="h-4 w-4 mr-1" />
+                          View file
+                        </Button>
+                        <Button type="button" variant="outline" className="min-h-10" disabled={markedWorkWiringPending}>
+                          <Send className="h-4 w-4 mr-1" />
+                          Release to parent
+                        </Button>
+                      </div>
+                    </div>
+                  )}
+                  <div className="space-y-2">
+                    {selectedMarkedFiles.length === 0 ? (
+                      <p className="text-sm text-muted-foreground">
+                        {isDemoMode
+                          ? 'No demo marked files yet for this submission.'
+                          : 'Marked-file list will appear here after real service wiring.'}
+                      </p>
+                    ) : (
+                      selectedMarkedFiles.map((fileRow) => (
+                        <div key={fileRow.id} className="rounded-lg border p-3 space-y-2">
+                          <div className="flex flex-wrap items-center justify-between gap-2">
+                            <p className="text-sm font-medium">{fileRow.file_name || 'Marked file'}</p>
+                            <Badge
+                              variant="outline"
+                              className={fileRow.released_to_parent ? 'bg-emerald-100 text-emerald-700 border-emerald-200' : 'bg-slate-100 text-slate-700 border-slate-200'}
+                            >
+                              {fileRow.released_to_parent ? 'Released to parent' : 'Internal'}
+                            </Badge>
+                          </div>
+                          <p className="text-xs text-muted-foreground">
+                            Uploaded by {fileRow.uploaded_by_label || 'Staff'} · {fileRow.created_at ? new Date(fileRow.created_at).toLocaleString('en-AU') : 'time unavailable'}
+                          </p>
+                          {fileRow.released_to_parent ? (
+                            <p className="text-xs text-muted-foreground">
+                              Released by {fileRow.released_by_label || 'Staff'} · {fileRow.released_at ? new Date(fileRow.released_at).toLocaleString('en-AU') : 'time unavailable'}
+                            </p>
+                          ) : null}
+                          {fileRow.staff_note ? (
+                            <p className="text-xs text-amber-700">Staff note: {fileRow.staff_note}</p>
+                          ) : null}
+                          <div className="flex flex-wrap gap-2">
+                            <Button type="button" size="sm" variant="outline" className="min-h-10" onClick={() => handleDemoMarkedView(fileRow.id)}>
+                              <Eye className="h-4 w-4 mr-1" />
+                              View file
+                            </Button>
+                            <Button
+                              type="button"
+                              size="sm"
+                              variant="outline"
+                              className="min-h-10"
+                              onClick={() => handleDemoMarkedRelease(fileRow.id)}
+                              disabled={fileRow.released_to_parent}
+                            >
+                              <Send className="h-4 w-4 mr-1" />
+                              Release to parent
+                            </Button>
+                          </div>
+                        </div>
+                      ))
                     )}
                   </div>
                 </Card>

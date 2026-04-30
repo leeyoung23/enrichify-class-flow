@@ -224,3 +224,16 @@ Validation efficiency rule:
   - npm run typecheck
 - Do not run unrelated smoke suites unless shared runtime/services changed.
 ```
+
+## 16) UI shell checkpoint update
+
+- Teacher `Homework` review detail panel now includes a `Marked work` UI shell.
+- Demo parity is now present:
+  - local fake marked-file list
+  - local fake upload simulation
+  - local fake release toggle
+  - local fake view action
+- Real authenticated mode currently shows shell/disabled controls and safe `wiring coming next` copy.
+- No real marked-file service calls are wired in this UI-shell milestone.
+- Parent released marked-file display remains future.
+- AI OCR/provider integration remains future.

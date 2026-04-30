@@ -147,6 +147,9 @@ Status update:
 - `Homework` authenticated `By Task` tracker wiring is now added; include in mobile QA pass.
 - `Homework` authenticated `By Student` tracker wiring is now added; include in mobile QA pass.
 - `Homework` Create Homework shell now includes authenticated non-demo guarded save wiring to existing assignment write service; include in mobile QA pass.
+- `Homework` review detail now includes `Marked work` UI shell with demo parity; include in mobile QA pass:
+  - demo mode: local fake marked-file list/upload/release/view simulation only,
+  - authenticated non-demo mode: shell + disabled controls with safe `wiring coming next` copy (no real marked-file service calls in this phase).
 - Remaining mobile QA/polish items:
   - `ParentUpdates` mobile review flow density
 
