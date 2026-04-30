@@ -57,6 +57,17 @@ begin
   if not exists (
     select 1
     from pg_constraint
+    where conname = 'announcement_attachments_file_size_max_023'
+      and conrelid = 'public.announcement_attachments'::regclass
+  ) then
+    alter table public.announcement_attachments
+      add constraint announcement_attachments_file_size_max_023
+      check (file_size is null or file_size <= 26214400);
+  end if;
+
+  if not exists (
+    select 1
+    from pg_constraint
     where conname = 'announcement_attachments_release_consistency_023'
       and conrelid = 'public.announcement_attachments'::regclass
   ) then
@@ -83,6 +94,8 @@ create index if not exists announcement_attachments_created_at_idx
   on public.announcement_attachments(created_at);
 create index if not exists announcement_attachments_released_to_parent_idx
   on public.announcement_attachments(released_to_parent);
+create unique index if not exists announcement_attachments_storage_path_uniq_idx
+  on public.announcement_attachments(storage_path);
 
 -- -----------------------------------------------------------------------------
 -- 4) Helper functions for RLS readability / recursion avoidance

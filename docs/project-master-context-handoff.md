@@ -405,8 +405,10 @@ Current status note:
 - Announcements attachments Phase 2 SQL/RLS draft now exists at `supabase/sql/023_announcements_attachments_foundation.sql`:
   - manual/dev-first draft only,
   - not auto-applied,
+  - pre-apply security/data-model review completed,
   - no production apply assumption,
   - drafts `announcement_attachments` metadata table + internal staff RLS + private storage policies,
+  - includes review hardening: unique `storage_path` index and bounded `file_size` check (`<= 25MB`),
   - keeps parent/student blocked and keeps `parent_facing_media` blocked in this phase.
 - Attachments runtime service/UI wiring remains future.
 - Recommended next milestone now is:

@@ -485,6 +485,7 @@ Reminder: **Frontend filtering is not security. RLS must enforce access at datab
 - Draft patch reference: `supabase/sql/023_announcements_attachments_foundation.sql` (manual review/apply only).
 - `023` status:
   - manual/dev-first SQL draft prepared,
+  - pre-apply security/data-model review completed,
   - not applied automatically,
   - no production apply assumption,
   - fake/dev data only.
@@ -494,6 +495,9 @@ Reminder: **Frontend filtering is not security. RLS must enforce access at datab
   - helper access/manage functions,
   - RLS on `announcement_attachments`,
   - private storage bucket/policies for `announcements-attachments`.
+- `023` review hardening:
+  - `announcement_attachments.storage_path` unique index added to block duplicate-path metadata collisions.
+  - `announcement_attachments.file_size` max check added (`<= 26214400`) in addition to non-negative check.
 - `023` phase boundary:
   - parent/student access blocked,
   - `parent_facing_media` is reserved but blocked in this phase,

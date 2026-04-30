@@ -484,12 +484,16 @@ Why A first:
 
 - Draft SQL now exists at `supabase/sql/023_announcements_attachments_foundation.sql`.
 - `023` is manual/dev-first SQL draft only and is not auto-applied.
+- `023` has now had a focused pre-apply security/data-model review.
 - `023` drafts:
   - `announcement_attachments` metadata table,
   - attachment role constraints/indexes,
   - helper access functions,
   - RLS policies for HQ/supervisor/teacher internal attachment access,
   - private storage bucket/policies for `announcements-attachments` (signed URL model; no public access).
+- `023` review hardening now includes:
+  - unique `storage_path` metadata guard (prevents duplicate-path object policy collisions),
+  - bounded attachment `file_size` guard (`<= 25MB`).
 - Parent-facing media remains blocked in `023` (`parent_facing_media` is reserved but not exposed).
 - Attachments service/UI wiring remains future.
 - MyTasks integration remains future.

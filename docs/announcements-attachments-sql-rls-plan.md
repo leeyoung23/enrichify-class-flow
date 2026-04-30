@@ -10,6 +10,10 @@ No UI/runtime/service/SQL changes in this checkpoint.
 - `023` is manual/dev-first SQL draft only.
 - `023` is not applied automatically and has no production apply assumption.
 - `023` keeps parent-facing media blocked in this phase.
+- `023` pre-apply security review is completed in-repo before manual Supabase apply.
+- `023` review hardening added:
+  - unique metadata path guard (`announcement_attachments.storage_path` unique index) to prevent storage-path collision/path-guess metadata poisoning,
+  - `file_size` upper bound guard (`<= 26214400` bytes) in addition to non-negative check.
 - Attachments service/UI wiring remains future.
 - MyTasks integration remains future.
 - Company News pop-up remains future.
