@@ -157,3 +157,22 @@ Do not run build/lint/smoke suite unless runtime files change.
 - Demo parity behavior is local fake-data only (mark read/done/undone, local reply, local create shell save).
 - Authenticated mode is intentionally preview-only with no real service wiring in this milestone.
 - See `docs/staff-announcements-ui-shell-checkpoint.md` for implementation details and boundaries.
+
+## 11) Recommended next milestone update
+
+Options:
+
+- A. Real authenticated Announcements UI wiring
+- B. Attachments SQL/RLS
+- C. MyTasks integration plan
+- D. Company News pop-up design
+- E. Parent-facing announcements/events plan
+
+Recommendation: **A. Real authenticated Announcements UI wiring**.
+
+Why A first:
+
+- Backend/service/RLS path is already proven.
+- Staff Announcements UI shell already exists.
+- Next missing step is wiring real authenticated read/status/reply/create to existing service methods.
+- Attachments/MyTasks/Company News should wait until core authenticated workflow is real.

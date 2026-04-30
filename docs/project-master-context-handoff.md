@@ -388,6 +388,9 @@ Current status note:
   - staff nav tab added after `Dashboard` for HQ/supervisor/teacher only,
   - demo mode uses local fake behavior (local create/status/reply only; no Supabase calls),
   - authenticated mode is intentionally preview-only with no real announcements service wiring in this milestone.
+- Announcements next milestone priority is now:
+  - real authenticated Announcements UI wiring first (read/status/reply/create using existing services),
+  - then attachments, MyTasks integration, Company News pop-up behavior, and parent-facing rollout.
 - Announcements attachments remain Phase 2+ and are intentionally not included in `020`.
 - Announcements MyTasks integration remains Phase 2+ and is intentionally not included in `020`.
 - Company News pop-up runtime behavior remains Phase 3.

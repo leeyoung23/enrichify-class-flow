@@ -64,6 +64,10 @@ Scope note:
   - create-request shell fields and Save/Cancel actions in demo mode,
   - disabled attachment placeholder readability.
 - Authenticated mode is preview-only in this milestone; verify clear copy and no action confusion.
+- For next authenticated wiring milestone, re-check:
+  - card density when live rows are loaded,
+  - action-button wrap with real status/reply controls,
+  - empty/loading/error states on ~390px.
 
 ### `Dashboard`
 

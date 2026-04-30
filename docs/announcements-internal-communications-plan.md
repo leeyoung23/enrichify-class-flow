@@ -420,3 +420,22 @@ Next manual step:
 - Authenticated mode is preview-only in this milestone (no real service wiring yet).
 - Attachments/MyTasks/Company News pop-up/parent-facing announcements/live chat remain future.
 
+### Next milestone update (post UI shell)
+
+Options:
+
+- A. Real authenticated Announcements UI wiring
+- B. Attachments SQL/RLS
+- C. MyTasks integration plan
+- D. Company News pop-up design
+- E. Parent-facing announcements/events plan
+
+Recommendation: **A. Real authenticated Announcements UI wiring**.
+
+Why A first:
+
+- Backend/service/RLS core path is already proven by smoke.
+- UI shell is already implemented and role-scoped.
+- Next practical gap is authenticated read/status/reply/create wiring to existing service methods.
+- Attachments/MyTasks/Company News/parent-facing rollout should remain later.
+
