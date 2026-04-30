@@ -357,6 +357,15 @@ Current status note:
   - HQ/supervisor create and teacher-targeted proof remains incomplete pending focused fixture/RLS investigation,
   - latest diagnosis shows HQ/supervisor fake profiles are currently inactive (`is_active=false`), which causes `current_user_role()` helper checks to fail staff-role authorization as designed,
   - recommendation: resolve create/RLS CHECK skips before Announcements UI wiring.
+- Announcements fake fixture activation SQL draft `021` is now prepared:
+  - `supabase/sql/021_announcements_phase1_fake_fixture_activation.sql`,
+  - manual/dev-only draft (not auto-applied),
+  - fake `example.test` fixture activation/alignment only,
+  - no RLS weakening, no real data, no secrets.
+- Next required step for Announcements Phase 1 proof:
+  - manual review/apply `021` in Supabase dev SQL Editor,
+  - rerun `npm run test:supabase:announcements:phase1`,
+  - keep Announcements UI wiring paused until create/status/reply path is proven.
 - Announcements attachments remain Phase 2+ and are intentionally not included in `020`.
 - Announcements MyTasks integration remains Phase 2+ and is intentionally not included in `020`.
 - Company News pop-up runtime behavior remains Phase 3.

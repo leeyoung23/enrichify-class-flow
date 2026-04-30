@@ -2,6 +2,12 @@
 
 Checkpoint scope: planning only for fake/dev staff fixture activation and verification.
 
+Current update:
+
+- `supabase/sql/021_announcements_phase1_fake_fixture_activation.sql` is now drafted.
+- `021` is manual/dev-only and has not been auto-applied.
+- `021` purpose is fake staff fixture activation/alignment only (no RLS weakening, no real data).
+
 ## 1) Current smoke result
 
 Current `npm run test:supabase:announcements:phase1` status:
@@ -110,9 +116,9 @@ Expected outcomes after correct fake fixture activation:
 ## 9) Implementation sequence
 
 - Phase 1: this planning document.
-- Phase 2: draft `021` dev-only fixture activation SQL.
+- Phase 2: draft `021` dev-only fixture activation SQL. **Completed (draft only).**
 - Phase 3: manual review of `021`.
-- Phase 4: manual apply in Supabase dev SQL Editor.
+- Phase 4: manual apply in Supabase dev SQL Editor (not production).
 - Phase 5: rerun `npm run test:supabase:announcements:phase1`.
 - Phase 6: document checkpoint result.
 - Phase 7: proceed to Staff Announcements UI shell only when create/read/status/reply paths are proven, or remaining skips are clearly optional and non-blocking.

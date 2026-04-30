@@ -385,6 +385,18 @@ Reminder: **Frontend filtering is not security. RLS must enforce access at datab
 - Negative test: branch supervisor must not insert/update `announcement_targets` rows for another branch profile/branch/class scope.
 - Verification checkpoint: `pg_policies` query returned 16 policy rows across the four announcements Phase 1 tables in dev after manual `020` apply.
 
+##### Announcements fake fixture activation draft note
+
+- Draft patch reference: `supabase/sql/021_announcements_phase1_fake_fixture_activation.sql` (manual/dev-only apply; fake data only).
+- `021` purpose is fixture activation/alignment for fake staff smoke prerequisites only.
+- `021` scope is constrained to fake `example.test` identities already used by seed/smoke:
+  - `hq.demo@example.test`
+  - `supervisor.demo@example.test`
+  - `teacher.demo@example.test`
+  - plus verification rows for parent/student fixtures.
+- `021` does not weaken RLS and does not include real data, passwords, or secrets.
+- After manual dev apply, rerun: `npm run test:supabase:announcements:phase1`.
+
 ##### Announcements Phase 1 service smoke reference
 
 - Smoke script: `scripts/supabase-announcements-phase1-smoke-test.mjs`

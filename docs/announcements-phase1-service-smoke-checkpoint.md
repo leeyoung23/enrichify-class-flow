@@ -2,6 +2,13 @@
 
 Checkpoint scope: documentation only for Announcements Phase 1 service + smoke milestone.
 
+Fixture activation update:
+
+- `supabase/sql/021_announcements_phase1_fake_fixture_activation.sql` is now drafted for manual dev-only use.
+- `021` is not auto-applied and has not been applied by this checkpoint update.
+- `021` only targets fake `example.test` fixture activation/alignment for smoke prerequisites.
+- `021` does not weaken RLS and does not introduce real data.
+
 ## 1) What was implemented
 
 - Added Phase 1 Announcements read service methods.
@@ -113,6 +120,9 @@ Interpretation:
 
 ## 8) What remains future
 
+- Manual review/apply of `021` fake fixture activation in Supabase dev SQL Editor.
+- Rerun `npm run test:supabase:announcements:phase1` after manual apply and record proof.
+- Keep UI wiring blocked until create/status/reply path is proven with active fake staff fixtures.
 - Resolve CHECK skips and fully prove create paths.
 - Staff Announcements UI shell.
 - Attachments.
