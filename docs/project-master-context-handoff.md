@@ -213,6 +213,10 @@ Current status note:
   - demo mode uses local fake released marked-file display and local preview toast only,
   - authenticated non-demo mode currently shows safe waiting copy shell only,
   - real parent marked-file list/signed URL wiring remains future.
+- Parent `Teacher-marked work` real read/open wiring is now added in `src/pages/ParentView.jsx` for authenticated non-demo flow:
+  - read uses `listHomeworkFiles({ homeworkSubmissionId, fileRole: 'teacher_marked_homework', parentVisibleOnly: true })` for visible submission UUIDs only,
+  - open uses `getHomeworkFileSignedUrl(...)` signed URL only,
+  - parent-safe empty state remains and does not hint unreleased file existence.
 - Parent marked-file release boundary remains protected in this shell milestone:
   - no parent visibility for unreleased teacher-marked files,
   - no teacher controls/upload controls in parent area,

@@ -11,6 +11,8 @@ import {
   listHomeworkTasks,
   listHomeworkSubmissions,
   listHomeworkFeedback,
+  listHomeworkFiles,
+  getHomeworkFileSignedUrl,
   createHomeworkSubmission,
   uploadHomeworkFile,
 } from '@/services/supabaseUploadService';
@@ -70,6 +72,19 @@ function formatMarkedWorkMetaDate(value) {
   const parsed = new Date(value);
   if (Number.isNaN(parsed.getTime())) return '';
   return parsed.toLocaleDateString('en-AU');
+}
+
+function getMarkedWorkTypeLabel(contentType, fileName) {
+  const safeContentType = typeof contentType === 'string' ? contentType.trim().toLowerCase() : '';
+  if (safeContentType === 'application/pdf') return 'PDF';
+  if (safeContentType === 'image/jpeg') return 'JPG image';
+  if (safeContentType === 'image/png') return 'PNG image';
+  if (safeContentType === 'image/webp') return 'WEBP image';
+  if (safeContentType.startsWith('image/')) return 'Image';
+  const extension = typeof fileName === 'string' && fileName.includes('.')
+    ? fileName.split('.').pop().toUpperCase()
+    : '';
+  return extension || 'File';
 }
 
 function ParentHomeworkStatusSection({
@@ -1083,13 +1098,36 @@ export default function ParentView() {
             return [row.id, latestFeedback || null];
           })
       );
+      const latestSubmissionRows = Array.from(latestSubmissionByTaskId.values());
+      const markedWorkEntries = await Promise.all(
+        latestSubmissionRows
+          .filter((row) => isUuidLike(row?.id))
+          .map(async (row) => {
+            const fileResult = await listHomeworkFiles({
+              homeworkSubmissionId: row.id,
+              fileRole: 'teacher_marked_homework',
+              parentVisibleOnly: true,
+            });
+            if (fileResult.error) return [row.id, []];
+            const files = Array.isArray(fileResult.data) ? fileResult.data : [];
+            const parentSafeFiles = files.map((fileRow) => ({
+              id: fileRow.id,
+              homeworkFileId: fileRow.id,
+              fileName: fileRow.file_name || 'Marked work file',
+              fileTypeLabel: getMarkedWorkTypeLabel(fileRow.content_type, fileRow.file_name),
+              releasedAtLabel: formatMarkedWorkMetaDate(fileRow.released_at || fileRow.created_at),
+              viewDisabled: !isUuidLike(fileRow.id),
+            }));
+            return [row.id, parentSafeFiles];
+          })
+      );
 
       setParentHomeworkTasks(tasks);
-      setParentHomeworkSubmissions(Array.from(latestSubmissionByTaskId.values()));
+      setParentHomeworkSubmissions(latestSubmissionRows);
       setParentHomeworkFeedbackBySubmissionId(
         Object.fromEntries(feedbackEntries.filter((entry) => entry[1]))
       );
-      setParentHomeworkMarkedWorkBySubmissionId({});
+      setParentHomeworkMarkedWorkBySubmissionId(Object.fromEntries(markedWorkEntries));
     } catch (error) {
       setParentHomeworkTasks([]);
       setParentHomeworkSubmissions([]);
@@ -1106,8 +1144,28 @@ export default function ParentView() {
       toast.message(`Demo preview only: ${item?.fileName || 'Marked work file'} is not opened from Supabase in demo mode.`);
       return;
     }
-    toast.message('Marked work preview will be available after parent-safe file viewing is wired.');
-  }, [isDemoMode]);
+    if (!isSupabaseConfigured() || !hasSupabaseSession) {
+      toast.message('Marked work preview is available only for authenticated parent sessions.');
+      return;
+    }
+    const homeworkFileId = item?.homeworkFileId;
+    if (!isUuidLike(homeworkFileId)) {
+      toast.error('Marked work is not available to open right now.');
+      return;
+    }
+    (async () => {
+      try {
+        const signedUrlResult = await getHomeworkFileSignedUrl({ homeworkFileId, expiresIn: 300 });
+        if (signedUrlResult.error || !signedUrlResult.data?.signed_url) {
+          toast.error('Marked work is not available to open right now.');
+          return;
+        }
+        window.open(signedUrlResult.data.signed_url, '_blank', 'noopener,noreferrer');
+      } catch {
+        toast.error('Marked work is not available to open right now.');
+      }
+    })();
+  }, [isDemoMode, hasSupabaseSession]);
 
   useEffect(() => {
     void loadParentHomeworkStatus();

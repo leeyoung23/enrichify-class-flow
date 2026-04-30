@@ -154,6 +154,10 @@ Status update:
 - `ParentView` now includes parent `Teacher-marked work` display shell with demo parity only; include in mobile QA pass:
   - demo mode: local fake released marked-file card + local preview toast only,
   - authenticated non-demo mode: safe waiting copy shell only in this milestone (no real parent marked-file list/signed URL wiring yet).
+- `ParentView` parent `Teacher-marked work` is now wired for authenticated non-demo read/open:
+  - read uses `listHomeworkFiles({ fileRole: 'teacher_marked_homework', parentVisibleOnly: true })` per visible submission,
+  - open uses `getHomeworkFileSignedUrl(...)` signed URL only,
+  - unreleased files remain hidden, no teacher controls/internal notes exposed.
 - Remaining mobile QA/polish items:
   - `ParentUpdates` mobile review flow density
 

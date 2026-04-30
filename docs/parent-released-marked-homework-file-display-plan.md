@@ -217,3 +217,21 @@ Parent `Marked work` display shell is now added in `ParentView` with demo parity
   - `getHomeworkFileSignedUrl(...)`
 - Parent release boundary remains protected: no teacher controls, no upload controls, no internal notes, and no unreleased-file hints in parent output.
 - AI OCR/provider behavior remains future and is still not exposed in parent marked-file display.
+
+## 17) Checkpoint update (real parent wiring milestone)
+
+Real parent marked-file read/open wiring is now added in `ParentView` for authenticated non-demo parent flow:
+
+- Read path now uses:
+  - `listHomeworkFiles({ homeworkSubmissionId, fileRole: 'teacher_marked_homework', parentVisibleOnly: true })`
+- Read calls only run for parent-visible homework submissions with valid UUID submission IDs.
+- Parent UI continues to show only safe file metadata (name/type/date-style label) and one `View marked work` action.
+- Empty state remains privacy-safe and neutral:
+  - `Marked work will appear here once your teacher releases it.`
+- Open path now uses:
+  - `getHomeworkFileSignedUrl({ homeworkFileId })`
+- File open uses signed URL only in a new tab/window; no public URL usage.
+- Unreleased marked files remain hidden by parentVisibleOnly + RLS path; parent UI does not hint whether unreleased files exist.
+- Parent area still excludes teacher controls, upload controls, `staff_note`, `internal_note`, and raw IDs.
+- Demo mode remains local fake parity only (no Supabase list/signed-url calls).
+- AI OCR/provider wiring remains future and is not part of this milestone.
