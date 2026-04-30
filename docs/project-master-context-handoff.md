@@ -404,15 +404,24 @@ Current status note:
 - Notification/email workflow remains a future milestone.
 - Announcements attachments Phase 2 SQL/RLS draft now exists at `supabase/sql/023_announcements_attachments_foundation.sql`:
   - manual/dev-first draft only,
-  - not auto-applied,
+  - now manually applied in Supabase dev (successful),
   - pre-apply security/data-model review completed,
   - no production apply assumption,
   - drafts `announcement_attachments` metadata table + internal staff RLS + private storage policies,
   - includes review hardening: unique `storage_path` index and bounded `file_size` check (`<= 25MB`),
   - keeps parent/student blocked and keeps `parent_facing_media` blocked in this phase.
+- `023` application verification checkpoint confirms:
+  - `announcement_attachments` exists with 13 verified columns,
+  - metadata RLS policies exist on `announcement_attachments`,
+  - helper functions exist (`announcement_attachment_announcement_id`, `announcement_attachment_branch_id`, `can_access_announcement_attachment`, `can_manage_announcement_attachment`),
+  - storage bucket `announcements-attachments` exists with `public=false`,
+  - storage object policies exist for select/insert/update/delete paths.
+- Checkpoint doc:
+  - `docs/announcements-attachments-sql-application-checkpoint.md`.
 - Attachments runtime service/UI wiring remains future.
 - Recommended next milestone now is:
-  - **Announcements attachments SQL/RLS planning** first,
+  - **Announcements attachments upload/list/signed URL service + smoke test** first,
+  - then attachment UI shell,
   - then MyTasks integration planning,
   - then Company News warm pop-up planning and parent-facing announcement/event planning,
   - live chat feasibility remains later/optional.

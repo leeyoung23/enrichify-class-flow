@@ -14,6 +14,10 @@ No UI/runtime/service/SQL changes in this checkpoint.
 - `023` review hardening added:
   - unique metadata path guard (`announcement_attachments.storage_path` unique index) to prevent storage-path collision/path-guess metadata poisoning,
   - `file_size` upper bound guard (`<= 26214400` bytes) in addition to non-negative check.
+- `023` is now manually applied in Supabase dev SQL Editor (success).
+- No production apply in this checkpoint.
+- No runtime/UI/service changes in this checkpoint.
+- Application checkpoint doc: `docs/announcements-attachments-sql-application-checkpoint.md`.
 - Attachments service/UI wiring remains future.
 - MyTasks integration remains future.
 - Company News pop-up remains future.
@@ -203,12 +207,13 @@ Why A first:
 
 Choose:
 
-- A. Draft Announcements attachments SQL/RLS foundation
+- A. Announcements attachments upload/list/signed URL service + smoke test
 - B. Announcements attachments UI shell
 - C. MyTasks integration plan
 - D. Company News pop-up design
+- E. Parent-facing announcements/events plan
 
-Recommendation: **A. Draft Announcements attachments SQL/RLS foundation**.
+Recommendation: **A. Announcements attachments upload/list/signed URL service + smoke test**.
 
 ## 15) Next implementation prompt (copy-paste)
 
@@ -222,7 +227,7 @@ Branch:
 cursor/safe-lint-typecheck-486d
 
 Latest expected commit:
-Add Announcements attachments SQL RLS plan
+Document Announcements attachments SQL application
 
 Before doing anything, verify:
 - git branch --show-current
@@ -230,13 +235,15 @@ Before doing anything, verify:
 - git status --short
 
 Task:
-Draft Announcements attachments SQL/RLS foundation only.
+Announcements attachments service + smoke test only.
 
 Hard constraints:
 - Do not change app UI.
 - Do not change runtime logic.
 - Do not add services.
 - Do not apply SQL.
+- Do not change Supabase SQL.
+- Do not change RLS/storage policies.
 - Do not call real AI APIs.
 - Do not add provider keys.
 - Do not expose env values or passwords.
@@ -251,11 +258,14 @@ Hard constraints:
 - Do not start live chat in this milestone.
 
 Deliverables:
-1) Draft SQL for `announcement_attachments` table with safe constraints/indexes.
-2) Draft RLS for HQ/supervisor/teacher internal attachment flows.
-3) Draft storage policy/path convention for private bucket + signed URL access.
-4) Draft smoke test plan for upload/list/signed-url/block paths.
-5) Keep parent-facing media and MyTasks integration explicitly out of this SQL patch.
+1) `src/services/supabaseUploadService.js` attachment methods:
+   - `uploadAnnouncementAttachment(...)`
+   - `listAnnouncementAttachments(...)`
+   - `getAnnouncementAttachmentSignedUrl(...)`
+2) Fake/dev-only attachments smoke script:
+   - role-scope and storage policy checks for HQ/supervisor/teacher + parent/student blocked
+3) Package script entry for the smoke test.
+4) Docs update with smoke command and expected PASS/CHECK outcomes.
 
 Validation efficiency rule:
 Docs/planning only.

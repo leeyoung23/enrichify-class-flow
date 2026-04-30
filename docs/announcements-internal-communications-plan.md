@@ -424,20 +424,20 @@ Next manual step:
 
 Options:
 
-- A. Real authenticated Announcements UI wiring
-- B. Attachments SQL/RLS
+- A. Announcements attachments upload/list/signed URL service + smoke test
+- B. Announcements attachments UI shell
 - C. MyTasks integration plan
 - D. Company News pop-up design
 - E. Parent-facing announcements/events plan
 
-Recommendation: **A. Real authenticated Announcements UI wiring**.
+Recommendation: **A. Announcements attachments upload/list/signed URL service + smoke test**.
 
 Why A first:
 
-- Backend/service/RLS core path is already proven by smoke.
-- UI shell is already implemented and role-scoped.
-- Next practical gap is authenticated read/status/reply/create wiring to existing service methods.
-- Attachments/MyTasks/Company News/parent-facing rollout should remain later.
+- SQL/RLS/storage attachment foundation is now manually applied in dev.
+- Service-level verification should be completed before attachment UI wiring.
+- Privacy-sensitive attachment role and storage boundaries must be proven with smoke checks first.
+- This follows the homework marked-file backend-first safety pattern.
 
 ### Real authenticated UI wiring update
 
@@ -494,6 +494,14 @@ Why A first:
 - `023` review hardening now includes:
   - unique `storage_path` metadata guard (prevents duplicate-path object policy collisions),
   - bounded attachment `file_size` guard (`<= 25MB`).
+- `023` is now manually applied in Supabase dev SQL Editor (successful apply).
+- Verification checkpoint confirmed:
+  - `announcement_attachments` exists with 13 columns,
+  - metadata RLS policies exist on `announcement_attachments`,
+  - helper functions verified (`announcement_attachment_announcement_id`, `announcement_attachment_branch_id`, `can_access_announcement_attachment`, `can_manage_announcement_attachment`),
+  - private storage bucket `announcements-attachments` exists with `public=false`,
+  - storage object policies exist for select/insert/update/delete.
+- No production apply and no runtime/UI/service changes in this checkpoint.
 - Parent-facing media remains blocked in `023` (`parent_facing_media` is reserved but not exposed).
 - Attachments service/UI wiring remains future.
 - MyTasks integration remains future.

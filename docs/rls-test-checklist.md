@@ -498,6 +498,14 @@ Reminder: **Frontend filtering is not security. RLS must enforce access at datab
 - `023` review hardening:
   - `announcement_attachments.storage_path` unique index added to block duplicate-path metadata collisions.
   - `announcement_attachments.file_size` max check added (`<= 26214400`) in addition to non-negative check.
+- `023` manual dev apply status: completed (Supabase dev SQL Editor success).
+- Application checkpoint doc: `docs/announcements-attachments-sql-application-checkpoint.md`.
+- Verification checkpoint confirmed:
+  - `announcement_attachments` exists with 13 verified columns,
+  - metadata policies present (`announcement_attachments_select_023`, `announcement_attachments_insert_manage_023`, `announcement_attachments_insert_teacher_023`, `announcement_attachments_update_023`, `announcement_attachments_delete_023`),
+  - helper functions present (`announcement_attachment_announcement_id`, `announcement_attachment_branch_id`, `can_access_announcement_attachment`, `can_manage_announcement_attachment`),
+  - storage bucket `announcements-attachments` exists with `public=false`,
+  - storage object policies present (`announcements_attachments_storage_select_023`, `announcements_attachments_storage_insert_023`, `announcements_attachments_storage_update_023`, `announcements_attachments_storage_delete_023`).
 - `023` phase boundary:
   - parent/student access blocked,
   - `parent_facing_media` is reserved but blocked in this phase,
