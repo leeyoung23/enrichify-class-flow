@@ -437,3 +437,21 @@ Security boundary reminder:
 - No auto-notification/email behavior added.
 - No UI/runtime page wiring added in this milestone.
 
+## 22) Service smoke checkpoint result
+
+Validation result:
+
+- Build/lint/typecheck passed for this milestone.
+- `test:supabase:announcements:phase1` completed successfully with safe CHECK skips in current fixture context.
+
+CHECK outcomes to resolve next:
+
+- HQ create path not proven in current fixture context.
+- Branch supervisor create/publish path not proven in current fixture context.
+- Teacher targeted flow not proven due fixture dependency.
+- Cross-branch negative check not proven due missing prerequisite fixture.
+
+Recommendation:
+
+- Investigate create/RLS fixture gaps before Announcements UI wiring.
+

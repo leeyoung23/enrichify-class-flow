@@ -392,6 +392,9 @@ Reminder: **Frontend filtering is not security. RLS must enforce access at datab
 - Service coverage reference:
   - `src/services/supabaseReadService.js`
   - `src/services/supabaseWriteService.js`
+- Current checkpoint note:
+  - smoke exits successfully,
+  - HQ/supervisor create and teacher-targeted flows currently show CHECK skips in fixture context and need focused follow-up validation.
 
 ### Homework marked-file role/release draft patch note
 

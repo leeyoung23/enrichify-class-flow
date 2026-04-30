@@ -119,6 +119,24 @@ Scope reminder:
 
 - Attachments, MyTasks integration, Company News pop-up, parent-facing announcements/events, and live chat remain future.
 
+## 13) Service smoke checkpoint (current result)
+
+Smoke status:
+
+- Build/lint/typecheck passed.
+- `npm run test:supabase:announcements:phase1` exited successfully.
+- Current CHECK skips:
+  - HQ create check skipped (RLS blocked in fixture context),
+  - supervisor create check skipped (RLS blocked in fixture context),
+  - teacher targeted flow skipped (create fixtures unavailable),
+  - cross-branch negative check skipped (fixture prerequisite unavailable).
+
+Checkpoint interpretation:
+
+- CHECK outcomes are safe and do not weaken policy behavior.
+- Create/target paths are not fully proven yet.
+- Recommended next step before UI wiring: investigate create/RLS CHECK skips with focused fixture/service validation.
+
 ## 9) Recommended next milestone
 
 Options:

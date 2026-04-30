@@ -351,6 +351,11 @@ Current status note:
   - no service role in frontend,
   - no attachment upload/public URL behavior in this milestone,
   - no auto email/notification behavior in this milestone.
+- Announcements service smoke checkpoint result (current):
+  - build/lint/typecheck passed,
+  - `test:supabase:announcements:phase1` exited successfully with safe CHECK skips in current fixture context,
+  - HQ/supervisor create and teacher-targeted proof remains incomplete pending focused fixture/RLS investigation,
+  - recommendation: resolve create/RLS CHECK skips before Announcements UI wiring.
 - Announcements attachments remain Phase 2+ and are intentionally not included in `020`.
 - Announcements MyTasks integration remains Phase 2+ and is intentionally not included in `020`.
 - Company News pop-up runtime behavior remains Phase 3.

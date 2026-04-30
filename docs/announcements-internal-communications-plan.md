@@ -384,3 +384,14 @@ Next manual step:
   - no auto notifications/emails,
   - no service role usage in frontend.
 
+### Service smoke checkpoint result
+
+- `npm run test:supabase:announcements:phase1` now exists and runs in current milestone.
+- Current run is successful but has safe CHECK skips in fixture context:
+  - HQ create check skipped,
+  - supervisor create check skipped,
+  - teacher targeted flow skipped,
+  - cross-branch target negative check skipped.
+- Interpretation: backend service structure is in place, but create/target proof is incomplete until fixture/RLS context is investigated.
+- Recommendation remains backend-first: resolve CHECK skips before staff Announcements UI shell wiring.
+
