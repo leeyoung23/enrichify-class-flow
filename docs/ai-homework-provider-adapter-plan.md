@@ -232,6 +232,14 @@ Why A first:
 - Live auth/scope boundary should be validated before provider integration work.
 - Provider wiring should not begin until server boundary is proven in dev.
 
+Current status note:
+
+- Latest deploy attempt from this environment was blocked by missing Supabase CLI access token.
+- Deployed regression still reports function unavailable (`CHECK` skip).
+- Provider remains disabled/unwired.
+- No provider keys were added.
+- Teacher approval gate remains mandatory.
+
 ## 17) Next implementation prompt
 
 ```text

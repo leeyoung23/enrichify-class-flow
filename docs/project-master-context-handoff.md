@@ -269,6 +269,8 @@ Current status note:
 - Frontend wrapper is now added at `src/services/aiDraftService.js` (`generateHomeworkFeedbackDraftViaEdgeFunction(...)`) with stable `{ data, error }` handling and required-ID validation; local mock remains default unless explicitly feature-flagged.
 - Deployed regression script is now added at `scripts/ai-homework-edge-function-deployed-regression-test.mjs` to validate Edge Function auth/scope behavior in dev deployment with fake/dev fixtures and graceful `CHECK` skips when credentials/fixtures/deployment are unavailable.
 - Frontend `Homework` page remains on local mock draft button path in this phase; provider wiring and broader deployed-environment auth regression hardening remain future work.
+- Latest deploy check attempt for `generate-homework-feedback-draft` from this environment was blocked by missing Supabase CLI access token; deployed regression remains unavailable-skip until authenticated dev deploy is run.
+- Provider integration remains unwired/disabled; no provider keys added; draft-only and teacher-approval gate remain unchanged.
 - AI homework feedback remains a future milestone after full human workflow hardening.
 - Notification/email workflow remains a future milestone.
 

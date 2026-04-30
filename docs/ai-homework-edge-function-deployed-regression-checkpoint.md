@@ -88,3 +88,36 @@ Why A first:
 - Feature-flagged UI path should wait until live function is deployed and validated.
 - No real provider is required for this step.
 - This confirms production-like auth/scope boundary behavior before exposure.
+
+## 10) Latest deploy attempt status
+
+Latest verification run in this environment:
+
+- Attempted deploy command:
+  - `npx supabase functions deploy generate-homework-feedback-draft`
+- Deploy result:
+  - blocked before deploy due missing CLI auth token.
+  - CLI message: access token not provided (`supabase login` or `SUPABASE_ACCESS_TOKEN` required).
+- No function code changes were made.
+- No provider key or secret was added.
+
+Latest deployed regression result:
+
+- `npm run test:ai:homework-edge:deployed`
+- current outcome remains:
+  - `[CHECK] Skipped: deployed function unavailable in current dev project`
+
+Supporting validation run (targeted set) completed:
+
+- `npm run build`
+- `npm run lint`
+- `npm run typecheck`
+- `npm run test:ai:homework-feedback:mock`
+- `npm run test:ai:homework-edge:stub`
+- `npm run test:ai:homework-edge:wrapper`
+- `npm run test:ai:homework-edge:deployed`
+
+Result summary:
+
+- local/runtime validation commands passed.
+- deployed regression still unavailable-skip pending actual deploy from authenticated CLI context.
