@@ -23,6 +23,11 @@ import {
   listAnnouncementTargets,
 } from '@/services/supabaseReadService';
 import {
+  getAnnouncementAttachmentSignedUrl,
+  listAnnouncementAttachments,
+  uploadAnnouncementAttachment,
+} from '@/services/supabaseUploadService';
+import {
   createAnnouncementReply,
   createAnnouncementRequest,
   markAnnouncementRead,
@@ -30,6 +35,11 @@ import {
 } from '@/services/supabaseWriteService';
 
 const FILTERS = ['Requests', 'Company News', 'Done', 'Pending'];
+const ANNOUNCEMENT_ATTACHMENT_ROLE_OPTIONS = [
+  { value: 'hq_attachment', label: 'HQ Attachment' },
+  { value: 'supervisor_attachment', label: 'Supervisor Attachment' },
+  { value: 'response_upload', label: 'Response Upload' },
+];
 
 const DEMO_ANNOUNCEMENTS = [
   {
@@ -84,6 +94,31 @@ const DEMO_ANNOUNCEMENTS = [
   },
 ];
 
+const DEMO_ANNOUNCEMENT_ATTACHMENTS = {
+  'demo-ann-1': [
+    {
+      id: 'demo-att-1',
+      file_name: 'north-reading-guideline.pdf',
+      file_role: 'hq_attachment',
+      mime_type: 'application/pdf',
+      file_size: 189240,
+      created_at: '2026-05-01T09:00:00.000Z',
+      staff_note: 'Reference checklist only.',
+    },
+  ],
+  'demo-ann-2': [
+    {
+      id: 'demo-att-2',
+      file_name: 'teacher-weekly-response.jpg',
+      file_role: 'response_upload',
+      mime_type: 'image/jpeg',
+      file_size: 245112,
+      created_at: '2026-05-01T09:30:00.000Z',
+      staff_note: 'Draft response evidence.',
+    },
+  ],
+};
+
 function statusTone(status) {
   if (status === 'done') return 'bg-emerald-100 text-emerald-700 border-emerald-200';
   if (status === 'undone') return 'bg-orange-100 text-orange-700 border-orange-200';
@@ -98,6 +133,38 @@ function priorityTone(priority) {
   return 'bg-amber-100 text-amber-700 border-amber-200';
 }
 
+function formatFileSize(bytes) {
+  const value = Number(bytes || 0);
+  if (!Number.isFinite(value) || value <= 0) return 'Unknown size';
+  if (value < 1024) return `${value} B`;
+  if (value < 1024 * 1024) return `${(value / 1024).toFixed(1)} KB`;
+  return `${(value / (1024 * 1024)).toFixed(1)} MB`;
+}
+
+function formatAttachmentDate(value) {
+  if (!value) return 'Unknown date';
+  const parsed = new Date(value);
+  if (Number.isNaN(parsed.getTime())) return 'Unknown date';
+  return parsed.toLocaleDateString();
+}
+
+function formatFileType(mimeType) {
+  const normalized = String(mimeType || '').trim();
+  if (!normalized) return 'Unknown type';
+  return normalized;
+}
+
+function roleCanUploadAttachment(role) {
+  return role === ROLES.HQ_ADMIN || role === ROLES.BRANCH_SUPERVISOR || role === ROLES.TEACHER;
+}
+
+function getAllowedAttachmentRoles(role) {
+  if (role === ROLES.HQ_ADMIN) return ['hq_attachment', 'supervisor_attachment'];
+  if (role === ROLES.BRANCH_SUPERVISOR) return ['supervisor_attachment'];
+  if (role === ROLES.TEACHER) return ['response_upload'];
+  return [];
+}
+
 export default function Announcements() {
   const { user } = useOutletContext();
   const { appUser: supabaseAppUser } = useSupabaseAuthState();
@@ -108,6 +175,8 @@ export default function Announcements() {
   const isStaff = role === ROLES.HQ_ADMIN || role === ROLES.BRANCH_SUPERVISOR || role === ROLES.TEACHER;
   const canCreateInDemo = role === ROLES.HQ_ADMIN || role === ROLES.BRANCH_SUPERVISOR;
   const canCreateInAuth = role === ROLES.HQ_ADMIN || role === ROLES.BRANCH_SUPERVISOR;
+  const canUploadAttachments = roleCanUploadAttachment(role);
+  const allowedAttachmentRoles = getAllowedAttachmentRoles(role);
   const canUseSupabaseAnnouncements = isStaff && !isDemoMode && isSupabaseConfigured() && Boolean(supabaseAppUser?.id);
 
   const [activeFilter, setActiveFilter] = useState('Requests');
@@ -131,6 +200,17 @@ export default function Announcements() {
     targetRole: '',
     targetProfileId: '',
   });
+  const [demoAttachmentsByAnnouncementId, setDemoAttachmentsByAnnouncementId] = useState(DEMO_ANNOUNCEMENT_ATTACHMENTS);
+  const [uploadRole, setUploadRole] = useState(allowedAttachmentRoles[0] || 'response_upload');
+  const [uploadNote, setUploadNote] = useState('');
+  const [uploadFile, setUploadFile] = useState(null);
+  const [demoUploadName, setDemoUploadName] = useState('');
+
+  useEffect(() => {
+    if (!allowedAttachmentRoles.includes(uploadRole)) {
+      setUploadRole(allowedAttachmentRoles[0] || 'response_upload');
+    }
+  }, [allowedAttachmentRoles, uploadRole]);
 
   const announcementsQuery = useQuery({
     queryKey: ['announcements-internal-staff', supabaseAppUser?.id, role],
@@ -206,6 +286,16 @@ export default function Announcements() {
         statuses: Array.isArray(statusesResult.data) ? statusesResult.data : [],
         replies: Array.isArray(repliesResult.data) ? repliesResult.data : [],
       };
+    },
+  });
+
+  const attachmentsQuery = useQuery({
+    queryKey: ['announcement-attachments', selected?.id, supabaseAppUser?.id, role],
+    enabled: canUseSupabaseAnnouncements && Boolean(selected?.id),
+    queryFn: async () => {
+      const result = await listAnnouncementAttachments({ announcementId: selected.id });
+      if (result.error) throw new Error('Unable to load attachments right now.');
+      return Array.isArray(result.data) ? result.data : [];
     },
   });
 
@@ -293,6 +383,50 @@ export default function Announcements() {
       await refreshAnnouncements();
     },
     onError: (error) => toast.error(error?.message || 'Unable to add reply right now.'),
+  });
+
+  const uploadAttachmentMutation = useMutation({
+    mutationFn: async () => {
+      if (!selected?.id) throw new Error('Select an announcement first.');
+      if (!uploadFile) throw new Error('Select a file before uploading.');
+      if (!allowedAttachmentRoles.includes(uploadRole)) {
+        throw new Error('Attachment role is not allowed for this account.');
+      }
+      const result = await uploadAnnouncementAttachment({
+        announcementId: selected.id,
+        file: uploadFile,
+        fileRole: uploadRole,
+        staffNote: uploadNote.trim() || undefined,
+      });
+      if (result.error) {
+        throw new Error('Attachment upload is unavailable right now.');
+      }
+      return result.data;
+    },
+    onSuccess: async () => {
+      setUploadFile(null);
+      setUploadNote('');
+      toast.success('Attachment uploaded.');
+      await queryClient.invalidateQueries({ queryKey: ['announcement-attachments'] });
+    },
+    onError: (error) => toast.error(error?.message || 'Attachment upload is unavailable right now.'),
+  });
+
+  const viewAttachmentMutation = useMutation({
+    mutationFn: async (attachmentId) => {
+      const result = await getAnnouncementAttachmentSignedUrl({ attachmentId, expiresIn: 300 });
+      if (result.error || !result.data?.signed_url) {
+        throw new Error('Attachment is unavailable right now.');
+      }
+      return result.data.signed_url;
+    },
+    onSuccess: (signedUrl) => {
+      const opened = window.open(signedUrl, '_blank', 'noopener,noreferrer');
+      if (!opened) {
+        toast.error('Allow pop-ups to open the attachment.');
+      }
+    },
+    onError: () => toast.error('Attachment is unavailable right now.'),
   });
 
   function toTargetPayload(form) {
@@ -394,6 +528,35 @@ export default function Announcements() {
       targetProfileId: '',
     });
   };
+
+  const onDemoUploadAttachment = () => {
+    if (!selected?.id) return;
+    if (!allowedAttachmentRoles.includes(uploadRole)) return;
+    const selectedName = demoUploadName.trim();
+    const fallbackName = role === ROLES.TEACHER
+      ? `demo-response-${Date.now()}.pdf`
+      : `demo-internal-${Date.now()}.pdf`;
+    const nextAttachment = {
+      id: `demo-att-${Date.now()}`,
+      file_name: selectedName || fallbackName,
+      file_role: uploadRole,
+      mime_type: 'application/pdf',
+      file_size: 125000,
+      created_at: new Date().toISOString(),
+      staff_note: uploadNote.trim() || null,
+    };
+    setDemoAttachmentsByAnnouncementId((prev) => ({
+      ...prev,
+      [selected.id]: [nextAttachment, ...(prev[selected.id] || [])],
+    }));
+    setDemoUploadName('');
+    setUploadNote('');
+    toast.success('Demo attachment saved locally.');
+  };
+
+  const demoAttachments = selected ? (demoAttachmentsByAnnouncementId[selected.id] || []) : [];
+  const authAttachments = Array.isArray(attachmentsQuery.data) ? attachmentsQuery.data : [];
+  const attachmentRows = isDemoMode ? demoAttachments : authAttachments;
 
   if (!isStaff) {
     return (
@@ -664,10 +827,108 @@ export default function Announcements() {
                   </div>
 
                   <div className="rounded-lg border border-dashed p-3">
-                    <p className="text-xs text-muted-foreground">Attachments coming in Phase 2</p>
-                    <Button size="sm" variant="outline" className="mt-2 min-h-10" disabled>
-                      Upload placeholder (disabled)
-                    </Button>
+                    <p className="text-sm font-medium">Attachments</p>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      Internal staff attachments only. Parent-facing media remains disabled in this milestone.
+                    </p>
+
+                    {canUploadAttachments ? (
+                      <div className="mt-3 grid grid-cols-1 sm:grid-cols-2 gap-2">
+                        <div className="space-y-1">
+                          <Label>Attachment role</Label>
+                          <Select value={uploadRole} onValueChange={setUploadRole}>
+                            <SelectTrigger>
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {ANNOUNCEMENT_ATTACHMENT_ROLE_OPTIONS
+                                .filter((option) => allowedAttachmentRoles.includes(option.value))
+                                .map((option) => (
+                                  <SelectItem key={option.value} value={option.value}>
+                                    {option.label}
+                                  </SelectItem>
+                                ))}
+                            </SelectContent>
+                          </Select>
+                        </div>
+                        <div className="space-y-1 sm:col-span-2">
+                          <Label>{isDemoMode ? 'Demo file name (optional)' : 'Select file'}</Label>
+                          {isDemoMode ? (
+                            <Input
+                              value={demoUploadName}
+                              onChange={(e) => setDemoUploadName(e.target.value)}
+                              placeholder="demo-response-note.pdf"
+                            />
+                          ) : (
+                            <Input
+                              type="file"
+                              onChange={(e) => setUploadFile(e.target.files?.[0] || null)}
+                              disabled={uploadAttachmentMutation.isPending}
+                            />
+                          )}
+                        </div>
+                        <div className="space-y-1 sm:col-span-2">
+                          <Label>Staff note (optional)</Label>
+                          <Textarea
+                            value={uploadNote}
+                            onChange={(e) => setUploadNote(e.target.value)}
+                            className="min-h-[80px]"
+                            placeholder="Add internal context for staff only"
+                          />
+                        </div>
+                        <div className="sm:col-span-2">
+                          <Button
+                            size="sm"
+                            className="min-h-10"
+                            onClick={() => (isDemoMode ? onDemoUploadAttachment() : uploadAttachmentMutation.mutate())}
+                            disabled={!isDemoMode && uploadAttachmentMutation.isPending}
+                          >
+                            {isDemoMode
+                              ? 'Save demo attachment'
+                              : (uploadAttachmentMutation.isPending ? 'Uploading...' : 'Upload attachment')}
+                          </Button>
+                        </div>
+                      </div>
+                    ) : null}
+
+                    <div className="mt-3 space-y-2">
+                      {isDemoMode ? null : (attachmentsQuery.isLoading ? (
+                        <p className="text-xs text-muted-foreground">Loading attachments...</p>
+                      ) : null)}
+                      {!isDemoMode && attachmentsQuery.isError ? (
+                        <p className="text-xs text-amber-700">Attachments are temporarily unavailable.</p>
+                      ) : null}
+                      {attachmentRows.length === 0 ? (
+                        <p className="text-xs text-muted-foreground">No attachments yet.</p>
+                      ) : (
+                        attachmentRows.map((attachment) => (
+                          <div key={attachment.id} className="rounded-lg border p-2">
+                            <p className="text-xs font-medium">{attachment.file_name || 'Untitled attachment'}</p>
+                            <p className="text-xs text-muted-foreground">
+                              {attachment.file_role || 'unknown_role'} · {formatFileType(attachment.mime_type)} · {formatFileSize(attachment.file_size)} · {formatAttachmentDate(attachment.created_at)}
+                            </p>
+                            {attachment.staff_note ? (
+                              <p className="text-xs text-muted-foreground mt-1">{attachment.staff_note}</p>
+                            ) : null}
+                            <div className="mt-2">
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                className="min-h-9"
+                                onClick={() => (
+                                  isDemoMode
+                                    ? toast.success('Demo attachment view only (local simulation).')
+                                    : viewAttachmentMutation.mutate(attachment.id)
+                                )}
+                                disabled={!isDemoMode && viewAttachmentMutation.isPending}
+                              >
+                                View
+                              </Button>
+                            </div>
+                          </div>
+                        ))
+                      )}
+                    </div>
                   </div>
                 </Card>
               )}

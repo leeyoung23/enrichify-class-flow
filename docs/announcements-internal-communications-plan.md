@@ -16,6 +16,14 @@ Roadmap implication:
 - Rationale: backend/service/RLS/storage path is now proven, so safe next step is internal staff upload/list/view UI wiring.
 - Keep MyTasks integration, Company News warm pop-up, parent-facing announcements/events, and report/PDF/AI OCR for later milestones.
 
+## Checkpoint update (staff attachments UI wired)
+
+- Staff Announcements detail panel now supports internal staff attachment list/upload/view.
+- Authenticated non-demo mode uses existing attachment services and signed URL access.
+- Demo mode keeps local-only fake attachment simulation (no Supabase calls).
+- Parent-facing media remains disabled/reserved and parent/student access remains out of scope.
+- MyTasks integration, Company News pop-up, parent-facing announcements/events, notifications/emails, and live chat remain future.
+
 ## 1) Product purpose
 
 This module should reduce operational reliance on ad-hoc WhatsApp and Google Drive flows by providing a structured communication layer inside the portal.

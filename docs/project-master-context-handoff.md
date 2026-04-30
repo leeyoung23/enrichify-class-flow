@@ -448,14 +448,21 @@ Current status note:
   - `INSERT ... RETURNING` select-RLS issue addressed by `025`,
   - internal attachment boundary (service + RLS + storage) is proven for main paths.
 - Attachments UI remains unwired in this checkpoint.
+- Staff Announcements attachments UI wiring is now active in `src/pages/Announcements.jsx`:
+  - authenticated non-demo detail panel now wires attachment list/upload/view with existing services only,
+  - list uses `listAnnouncementAttachments({ announcementId })`,
+  - upload uses `uploadAnnouncementAttachment({ announcementId, file, fileRole, staffNote })`,
+  - view uses `getAnnouncementAttachmentSignedUrl({ attachmentId, expiresIn: 300 })` with signed URL open in new tab,
+  - no raw `storage_path` shown in UI,
+  - demo mode attachment behavior remains local-only fake list/upload/view simulation (no Supabase calls).
 - Checkpoint doc:
   - `docs/announcements-attachments-sql-application-checkpoint.md`.
 - PASS checkpoint doc:
   - `docs/announcements-attachments-service-smoke-pass-checkpoint.md`.
-- Attachments runtime service/UI wiring remains future.
+- Attachments UI checkpoint doc:
+  - `docs/staff-announcements-attachments-ui-checkpoint.md`.
 - Recommended next milestone now is:
-  - **Staff Announcements attachments UI wiring** first,
-  - then MyTasks integration planning,
+  - **MyTasks integration planning** next,
   - then Company News warm pop-up planning and parent-facing announcement/event planning,
   - live chat feasibility remains later/optional.
 

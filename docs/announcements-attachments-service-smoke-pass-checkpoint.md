@@ -75,13 +75,20 @@ Environment: Supabase dev only (fake/dev identities and fake/dev files only)
 
 ## 6) What remains for future milestones
 
-- Staff attachment UI wiring.
 - MyTasks integration.
 - Company News warm pop-up.
 - Parent-facing announcements/events.
 - Optional live chat later.
 - Notification/email automation later.
 - Report/PDF/AI OCR later.
+- Delete attachment UI action (optional future, after additional UX/security confirmation).
+
+## 6.1) UI wiring update (staff-only)
+
+- Staff Announcements detail panel now has real authenticated attachment list/upload/view wiring.
+- Uses existing service methods only; no SQL/RLS changes.
+- Demo mode remains local-only fake attachment list/upload/view simulation.
+- No parent-facing media enablement and no public URL flow introduced.
 
 ## 7) Recommended next milestone
 

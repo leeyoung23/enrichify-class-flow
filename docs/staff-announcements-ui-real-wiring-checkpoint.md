@@ -2,6 +2,12 @@
 
 Checkpoint scope: authenticated non-demo Staff Announcements wiring using existing Phase 1 services, while preserving demo local-only behavior.
 
+## Update: attachments UI wiring milestone
+
+- Staff Announcements detail panel now includes real internal attachment list/upload/view wiring using existing attachment services.
+- Demo mode attachment behavior remains local-only simulation with no Supabase upload/list/signed URL calls.
+- No SQL/RLS/storage policy changes were made in this milestone.
+
 ## 1) What was implemented
 
 - Authenticated read wiring in non-demo staff mode.
@@ -83,12 +89,12 @@ Checkpoint scope: authenticated non-demo Staff Announcements wiring using existi
 
 ## 8) What remains future
 
-- Attachments.
 - MyTasks integration.
 - Company News warm pop-up behavior.
 - Parent-facing announcements/events.
 - Live chat (later and optional).
 - Notification/email automation (future only).
+- Delete-attachment UI action remains future unless additional RLS proof is required.
 
 ## 9) Recommended next milestone
 

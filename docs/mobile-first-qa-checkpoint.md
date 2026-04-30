@@ -62,7 +62,7 @@ Scope note:
   - request cards stacking and badge wrapping,
   - detail card action button wrapping (`Mark Read`, `Done`, `Undone`, `Add Reply`),
   - create-request shell fields and Save/Cancel actions in demo mode,
-  - disabled attachment placeholder readability.
+  - attachment list/upload/view panel readability and button wrapping.
 - Authenticated non-demo mode is now wired for live staff read/create/status/reply actions.
 - Re-check on ~390px and ~768px:
   - card density with live rows,
@@ -70,7 +70,8 @@ Scope note:
   - create-request form wrapping including optional branch/target inputs,
   - loading/empty/error states remain clear and non-technical.
 - Keep safety messaging in QA notes:
-  - no attachments/upload actions enabled yet,
+  - attachments are internal staff-only,
+  - no parent-facing media enabled,
   - no Company News pop-up behavior yet,
   - no parent-facing announcements/events yet,
   - no live chat/notification behavior in this phase.
