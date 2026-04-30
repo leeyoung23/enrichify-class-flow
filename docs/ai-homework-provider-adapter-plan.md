@@ -21,7 +21,9 @@ Current implementation baseline:
 - Edge Function stub exists (`generate-homework-feedback-draft`).
 - Edge Function auth/scope checks exist.
 - Frontend wrapper exists for Edge Function invocation.
-- Deployed regression script exists, with prior `CHECK` skip when function was unavailable in dev.
+- Deployed regression script exists and now reaches live deployed dev function.
+- Live deployed auth/blocking checks currently pass for missing/invalid/blocked role cases.
+- Allowed staff-role and mismatch live checks are currently `CHECK`-skipped due fixture gaps.
 - Real AI provider is not wired.
 - OCR/vision/rubric marking is not implemented.
 
@@ -205,7 +207,7 @@ Future validation targets:
 Recommended phased sequence:
 
 - Phase 1: this provider adapter plan.
-- Phase 2: deploy/check Edge Function in dev and rerun deployed regression.
+- Phase 2: dev fixture alignment for deployed Edge Function regression (allowed-role coverage).
 - Phase 3: provider adapter stub with provider disabled.
 - Phase 4: provider adapter with fake provider response.
 - Phase 5: real provider behind Edge Function secret boundary.
@@ -217,25 +219,29 @@ Recommended phased sequence:
 
 Choose:
 
-- A. Deploy Edge Function to Supabase dev + rerun deployed regression
+- A. Dev fixture alignment for deployed AI Edge Function regression
 - B. Provider adapter stub with provider disabled
 - C. Real provider adapter wiring
 - D. AI audit/logging SQL planning
 - E. OCR/vision evidence extraction planning
 - F. Announcements/Internal Communications planning
 
-Recommendation: **A. Deploy Edge Function to Supabase dev + rerun deployed regression**
+Recommendation: **A. Dev fixture alignment for deployed AI Edge Function regression**
 
 Why A first:
 
-- Deployed regression previously `CHECK`-skipped because function was unavailable.
-- Live auth/scope boundary should be validated before provider integration work.
-- Provider wiring should not begin until server boundary is proven in dev.
+- Live function is now reachable in deployed regression.
+- Blocking cases already pass (`401`/`403` boundary checks).
+- Allowed staff cases and mismatch checks are still skipped due fixture gaps.
+- Before provider integration, live allowed-role and mismatch behavior should be proven.
+- This keeps the child-data AI boundary safer before any provider wiring.
 
 Current status note:
 
-- Latest deploy attempt from this environment was blocked by missing Supabase CLI access token.
-- Deployed regression still reports function unavailable (`CHECK` skip).
+- Supabase CLI login was completed manually and project is linked to `fwturqeaagacoiepvpwb`.
+- `generate-homework-feedback-draft` is deployed to Supabase dev and reachable.
+- Deployed regression now reports PASS for missing/invalid auth and blocked parent/student roles.
+- Allowed teacher/branch supervisor/HQ and mismatch checks remain `CHECK` due missing accessible fake fixtures.
 - Provider remains disabled/unwired.
 - No provider keys were added.
 - Teacher approval gate remains mandatory.
@@ -260,7 +266,7 @@ Before doing anything, verify:
 - git status --short
 
 Task:
-Deploy `generate-homework-feedback-draft` Edge Function to Supabase dev and rerun deployed regression.
+Dev fixture alignment for deployed AI Edge Function regression planning only.
 
 Hard constraints:
 - Do not change app UI.
@@ -274,13 +280,16 @@ Hard constraints:
 - Keep draft-only + teacher approval + no auto-release behavior.
 
 Steps:
-1) Verify Supabase project linkage/CLI status for dev environment.
-2) Deploy `generate-homework-feedback-draft` function to dev.
-3) Run deployed regression:
-   - `npm run test:ai:homework-edge:deployed`
-4) Capture PASS/WARNING/CHECK outcomes and fixture availability notes.
-5) Document deployment + regression checkpoint.
+1) Review current deployed regression checkpoint where function is reachable and blocking cases pass.
+2) Plan fake/dev fixture alignment for:
+   - assigned teacher allowed case
+   - branch supervisor own-branch allowed case
+   - HQ allowed case
+   - relationship mismatch checks using an allowed-role fixture
+3) Define minimum fixture metadata needed for stable live regression coverage.
+4) Document fixture ownership/maintenance approach for dev environment.
+5) Produce a test-run checklist and expected PASS/CHECK behavior after fixture alignment.
 
 Validation rule:
-- Runtime/deploy step; run only targeted commands above plus `git diff --name-only` for changed files.
+- Docs-only change; run only `git diff --name-only`.
 ```

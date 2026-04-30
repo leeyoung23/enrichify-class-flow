@@ -41,10 +41,25 @@ A deployed regression test script was added for `generate-homework-feedback-draf
 
 ## 5) Current run result
 
-- `npm run test:ai:homework-edge:deployed` completed as graceful `CHECK` skip.
-- Reason: deployed function unavailable in current dev project.
-- This is not a code failure.
-- Live auth/scope coverage remains pending actual deployment.
+`npm run test:ai:homework-edge:deployed` now reaches the live deployed function in Supabase dev.
+
+Current deployed regression outcome:
+
+- `PASS` missing auth -> `401`
+- `PASS` invalid token -> `401`
+- `PASS` parent blocked -> `403`
+- `PASS` student blocked -> `403`
+- `CHECK` assigned teacher allowed case skipped (no accessible fake homework submission fixture)
+- `CHECK` branch supervisor allowed case skipped (no accessible fake homework submission fixture)
+- `CHECK` HQ allowed case skipped (no accessible fake homework submission fixture)
+- `CHECK` relationship mismatch skipped (no allowed-role fixture available)
+
+Interpretation:
+
+- This is clear progress from the previous unavailable-function `CHECK` skip.
+- Live auth/blocking boundary is now partially verified in deployed dev.
+- No unsafe access was observed in the live checks executed.
+- Staff allow-case and mismatch live verification still needs better dev fixtures before provider wiring.
 
 ## 6) Safety boundaries
 
@@ -71,9 +86,11 @@ Validated in the implementation milestone:
 
 ## 8) What remains
 
-- deploy `generate-homework-feedback-draft` to Supabase dev
-- rerun deployed regression against live function
 - confirm fake role fixtures
+- ensure accessible fake fixture for assigned teacher allowed case
+- ensure accessible fake fixture for branch supervisor own-branch allowed case
+- ensure accessible fake fixture for HQ allowed case
+- ensure allowed-role fixture for relationship mismatch live checks
 - feature-flagged UI wiring after live regression
 - real provider integration later
 - audit/logging later
@@ -89,35 +106,19 @@ Why A first:
 - No real provider is required for this step.
 - This confirms production-like auth/scope boundary behavior before exposure.
 
-## 10) Latest deploy attempt status
+## 10) Dev deployment status checkpoint
 
-Latest verification run in this environment:
+Deployment status in this milestone:
 
-- Attempted deploy command:
-  - `npx supabase functions deploy generate-homework-feedback-draft`
-- Deploy result:
-  - blocked before deploy due missing CLI auth token.
-  - CLI message: access token not provided (`supabase login` or `SUPABASE_ACCESS_TOKEN` required).
-- No function code changes were made.
-- No provider key or secret was added.
+- Supabase CLI login was completed manually.
+- Dev project is linked to project ref `fwturqeaagacoiepvpwb`.
+- `generate-homework-feedback-draft` is deployed to Supabase dev.
+- Deployed regression now confirms the function is reachable.
 
-Latest deployed regression result:
+Provider/secrets safety confirmations:
 
-- `npm run test:ai:homework-edge:deployed`
-- current outcome remains:
-  - `[CHECK] Skipped: deployed function unavailable in current dev project`
-
-Supporting validation run (targeted set) completed:
-
-- `npm run build`
-- `npm run lint`
-- `npm run typecheck`
-- `npm run test:ai:homework-feedback:mock`
-- `npm run test:ai:homework-edge:stub`
-- `npm run test:ai:homework-edge:wrapper`
-- `npm run test:ai:homework-edge:deployed`
-
-Result summary:
-
-- local/runtime validation commands passed.
-- deployed regression still unavailable-skip pending actual deploy from authenticated CLI context.
+- No real AI provider call was made.
+- No provider key was added.
+- No provider secret was configured.
+- No `.env.local` file was committed.
+- No key/env values were logged.

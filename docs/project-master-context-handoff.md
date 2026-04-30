@@ -267,9 +267,17 @@ Current status note:
 - Supabase Edge Function homework AI stub is now added at `supabase/functions/generate-homework-feedback-draft/index.ts` with local handler `supabase/functions/generate-homework-feedback-draft/handler.js` and local contract test `scripts/ai-homework-edge-function-stub-test.mjs`.
 - Homework Edge Function stub now includes auth/scope helper flow with Supabase JWT user verification path, role gating (teacher/branch supervisor/HQ only), and submission/task/student/class relationship checks while preserving deterministic draft-only mock output.
 - Frontend wrapper is now added at `src/services/aiDraftService.js` (`generateHomeworkFeedbackDraftViaEdgeFunction(...)`) with stable `{ data, error }` handling and required-ID validation; local mock remains default unless explicitly feature-flagged.
-- Deployed regression script is now added at `scripts/ai-homework-edge-function-deployed-regression-test.mjs` to validate Edge Function auth/scope behavior in dev deployment with fake/dev fixtures and graceful `CHECK` skips when credentials/fixtures/deployment are unavailable.
+- Deployed regression script is now added at `scripts/ai-homework-edge-function-deployed-regression-test.mjs` to validate Edge Function auth/scope behavior in dev deployment with fake/dev fixtures and graceful `CHECK` handling when fixtures are unavailable.
 - Frontend `Homework` page remains on local mock draft button path in this phase; provider wiring and broader deployed-environment auth regression hardening remain future work.
-- Latest deploy check attempt for `generate-homework-feedback-draft` from this environment was blocked by missing Supabase CLI access token; deployed regression remains unavailable-skip until authenticated dev deploy is run.
+- Supabase CLI login is now completed manually and project is linked to `fwturqeaagacoiepvpwb`.
+- `generate-homework-feedback-draft` is now deployed to Supabase dev and reachable via deployed regression.
+- Deployed regression now shows:
+  - `PASS` missing auth -> `401`
+  - `PASS` invalid token -> `401`
+  - `PASS` parent blocked -> `403`
+  - `PASS` student blocked -> `403`
+  - `CHECK` teacher/branch supervisor/HQ allowed-role cases due missing accessible fake fixtures
+  - `CHECK` relationship mismatch due missing allowed-role fixture
 - Provider integration remains unwired/disabled; no provider keys added; draft-only and teacher-approval gate remain unchanged.
 - AI homework feedback remains a future milestone after full human workflow hardening.
 - Notification/email workflow remains a future milestone.
