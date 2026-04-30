@@ -13,6 +13,11 @@ const HOMEWORK_SUBMISSION_STATUS_VALUES = new Set([
   "approved_for_parent",
   "archived",
 ]);
+const HOMEWORK_FILE_ROLE_VALUES = new Set([
+  "parent_uploaded_homework",
+  "teacher_marked_homework",
+  "feedback_attachment",
+]);
 const SAFE_HOMEWORK_CONTENT_TYPES = new Set([
   "text/plain",
   "application/pdf",
@@ -659,6 +664,122 @@ export async function uploadHomeworkFile({
   }
 }
 
+export async function uploadMarkedHomeworkFile({
+  homeworkSubmissionId,
+  file,
+  notes,
+  fileName,
+  contentType,
+} = {}) {
+  if (!isSupabaseConfigured() || !supabase) {
+    return { data: null, error: { message: "Supabase is not configured" } };
+  }
+  if (!isUuidLike(homeworkSubmissionId)) {
+    return { data: null, error: { message: "homeworkSubmissionId must be a UUID" } };
+  }
+  if (!file) return { data: null, error: { message: "file is required" } };
+
+  const resolvedContentType = trimString(contentType || file?.type || "application/octet-stream");
+  if (!SAFE_HOMEWORK_CONTENT_TYPES.has(resolvedContentType)) {
+    return { data: null, error: { message: "Unsupported homework file content type" } };
+  }
+  const fileSizeBytes = Number(file?.size || 0);
+  if (!Number.isFinite(fileSizeBytes) || fileSizeBytes <= 0 || fileSizeBytes > MAX_HOMEWORK_FILE_BYTES) {
+    return { data: null, error: { message: "Homework file size must be > 0 and <= 2MB" } };
+  }
+
+  try {
+    const { profileId, error: authError } = await getAuthenticatedProfileIdOrError();
+    if (authError || !profileId) return { data: null, error: authError };
+
+    const submissionId = trimString(homeworkSubmissionId);
+    const submissionRead = await supabase
+      .from("homework_submissions")
+      .select("id,homework_task_id,branch_id,class_id,student_id")
+      .eq("id", submissionId)
+      .maybeSingle();
+    if (submissionRead.error || !submissionRead.data) {
+      return { data: null, error: { message: submissionRead.error?.message || "Homework submission not visible" } };
+    }
+    const submission = submissionRead.data;
+    const safeName = sanitizeFileName(fileName || file?.name || "marked-homework-file.txt");
+    const markedName = `marked-${safeName}`;
+    const objectPath = buildHomeworkObjectPath({
+      branchId: submission.branch_id,
+      classId: submission.class_id,
+      studentId: submission.student_id,
+      homeworkTaskId: submission.homework_task_id,
+      homeworkSubmissionId: submissionId,
+      fileName: markedName,
+    });
+    const nowIso = new Date().toISOString();
+
+    // Metadata-first upload keeps parity with existing homework storage policy.
+    const createRow = await supabase
+      .from("homework_files")
+      .insert({
+        homework_submission_id: submissionId,
+        storage_bucket: HOMEWORK_SUBMISSIONS_BUCKET,
+        storage_path: objectPath,
+        file_name: markedName,
+        content_type: resolvedContentType,
+        file_size_bytes: Math.round(fileSizeBytes),
+        uploaded_by_profile_id: profileId,
+        file_role: "teacher_marked_homework",
+        released_to_parent: false,
+        released_at: null,
+        released_by_profile_id: null,
+        marked_by_profile_id: profileId,
+        staff_note: getOptionalText(notes, 2000),
+        created_at: nowIso,
+      })
+      .select("id,homework_submission_id,file_role,released_to_parent,released_at,released_by_profile_id,marked_by_profile_id,staff_note,storage_bucket,storage_path,file_name,content_type,file_size_bytes,uploaded_by_profile_id,created_at")
+      .maybeSingle();
+
+    if (createRow.error || !createRow.data?.id) {
+      return {
+        data: null,
+        error: { message: createRow.error?.message || "Failed to create marked homework metadata row" },
+      };
+    }
+
+    const uploadResult = await supabase.storage
+      .from(HOMEWORK_SUBMISSIONS_BUCKET)
+      .upload(objectPath, file, {
+        upsert: false,
+        contentType: resolvedContentType,
+      });
+
+    if (uploadResult.error) {
+      const cleanup = await supabase
+        .from("homework_files")
+        .delete()
+        .eq("id", createRow.data.id)
+        .select("id")
+        .maybeSingle();
+      return {
+        data: null,
+        error: {
+          message: uploadResult.error.message || "Failed to upload marked homework object",
+          cleanup_warning: cleanup.error?.message || null,
+        },
+      };
+    }
+
+    return {
+      data: {
+        homework_file: createRow.data,
+        storage_bucket: HOMEWORK_SUBMISSIONS_BUCKET,
+        storage_path: objectPath,
+        metadata_first: true,
+      },
+      error: null,
+    };
+  } catch (err) {
+    return { data: null, error: { message: err?.message || String(err) } };
+  }
+}
+
 export async function getHomeworkFileSignedUrl({ homeworkFileId, expiresIn = 60 } = {}) {
   if (!isSupabaseConfigured() || !supabase) {
     return { data: null, error: { message: "Supabase is not configured" } };
@@ -765,26 +886,64 @@ export async function listHomeworkSubmissions({ homeworkTaskId, studentId, class
   }
 }
 
-export async function listHomeworkFiles({ homeworkSubmissionId } = {}) {
+export async function listHomeworkFiles({ homeworkSubmissionId, fileRole, parentVisibleOnly = false } = {}) {
   if (!isSupabaseConfigured() || !supabase) {
     return { data: [], error: { message: "Supabase is not configured" } };
   }
   if (homeworkSubmissionId != null && homeworkSubmissionId !== "" && !isUuidLike(homeworkSubmissionId)) {
     return { data: [], error: { message: "homeworkSubmissionId must be a UUID when provided" } };
   }
+  if (fileRole != null && trimString(fileRole) !== "" && !HOMEWORK_FILE_ROLE_VALUES.has(trimString(fileRole))) {
+    return { data: [], error: { message: "fileRole is invalid when provided" } };
+  }
 
   try {
+    const selectFields = parentVisibleOnly
+      ? "id,homework_submission_id,file_role,released_to_parent,released_at,storage_bucket,storage_path,file_name,content_type,file_size_bytes,uploaded_by_profile_id,marked_by_profile_id,created_at"
+      : "id,homework_submission_id,file_role,released_to_parent,released_at,released_by_profile_id,marked_by_profile_id,staff_note,storage_bucket,storage_path,file_name,content_type,file_size_bytes,uploaded_by_profile_id,created_at";
     let query = supabase
       .from("homework_files")
-      .select("id,homework_submission_id,storage_bucket,storage_path,file_name,content_type,file_size_bytes,uploaded_by_profile_id,created_at")
+      .select(selectFields)
       .order("created_at", { ascending: false });
 
     if (isUuidLike(homeworkSubmissionId)) query = query.eq("homework_submission_id", trimString(homeworkSubmissionId));
+    if (trimString(fileRole)) query = query.eq("file_role", trimString(fileRole));
+    if (parentVisibleOnly) {
+      query = query.or("file_role.eq.parent_uploaded_homework,and(file_role.in.(teacher_marked_homework,feedback_attachment),released_to_parent.eq.true)");
+    }
 
     const { data, error } = await query;
     return { data: Array.isArray(data) ? data : [], error: error ?? null };
   } catch (err) {
     return { data: [], error: { message: err?.message || String(err) } };
+  }
+}
+
+export async function releaseHomeworkFileToParent({ fileId } = {}) {
+  if (!isSupabaseConfigured() || !supabase) {
+    return { data: null, error: { message: "Supabase is not configured" } };
+  }
+  if (!isUuidLike(fileId)) {
+    return { data: null, error: { message: "fileId must be a UUID" } };
+  }
+
+  try {
+    const { profileId, error: authError } = await getAuthenticatedProfileIdOrError();
+    if (authError || !profileId) return { data: null, error: authError };
+    const nowIso = new Date().toISOString();
+    const { data, error } = await supabase
+      .from("homework_files")
+      .update({
+        released_to_parent: true,
+        released_at: nowIso,
+        released_by_profile_id: profileId,
+      })
+      .eq("id", trimString(fileId))
+      .select("id,homework_submission_id,file_role,released_to_parent,released_at,released_by_profile_id,marked_by_profile_id,storage_bucket,storage_path,file_name,content_type,file_size_bytes,uploaded_by_profile_id,created_at")
+      .maybeSingle();
+    return { data: data ?? null, error: error ?? null };
+  } catch (err) {
+    return { data: null, error: { message: err?.message || String(err) } };
   }
 }
 

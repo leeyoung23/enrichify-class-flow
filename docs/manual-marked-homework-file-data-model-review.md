@@ -283,3 +283,13 @@ Validation efficiency rule:
 - Application checkpoint is documented at `docs/homework-file-role-release-sql-application-checkpoint.md`.
 - Verified manually in dev: new `homework_files` columns, helper functions, and homework/storage policies exist.
 - No production apply and no runtime/UI/service wiring in this checkpoint.
+
+## 18) Service + smoke update
+
+- Manual marked-file backend service methods are now added in `src/services/supabaseUploadService.js`:
+  - `uploadMarkedHomeworkFile(...)`
+  - `listHomeworkFiles({ homeworkSubmissionId, fileRole, parentVisibleOnly })`
+  - `releaseHomeworkFileToParent(...)`
+- Marked-file smoke test is now added at `scripts/supabase-homework-marked-file-smoke-test.mjs`.
+- Package command is now available: `npm run test:supabase:homework:marked-file`.
+- Teacher marked-file UI and parent released marked-file display remain future.

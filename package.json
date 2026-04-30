@@ -24,6 +24,7 @@
     "test:supabase:school-curriculum:write": "node scripts/supabase-school-curriculum-write-smoke-test.mjs",
     "test:supabase:school-profile:write": "node scripts/supabase-school-profile-write-smoke-test.mjs",
     "test:supabase:homework:upload": "node scripts/supabase-homework-upload-smoke-test.mjs",
+    "test:supabase:homework:marked-file": "node scripts/supabase-homework-marked-file-smoke-test.mjs",
     "test:supabase:homework:feedback": "node scripts/supabase-homework-feedback-smoke-test.mjs",
     "test:supabase:homework:assignees:read": "node scripts/supabase-homework-assignees-read-smoke-test.mjs",
     "test:supabase:homework:tracker:read": "node scripts/supabase-homework-tracker-read-smoke-test.mjs",

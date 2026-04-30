@@ -199,7 +199,12 @@ Current status note:
   - checkpoint doc: `docs/homework-file-role-release-sql-application-checkpoint.md`
 - `018` adds role/release metadata to `homework_files` and release-aware read restrictions so parent/student marked-file visibility is gated until release.
 - `018` draft preserves current parent upload compatibility via backward-compatible default `file_role = 'parent_uploaded_homework'`.
-- Teacher marked-file upload runtime service/UI wiring remains future.
+- Manual marked-file service methods are now added in `src/services/supabaseUploadService.js`:
+  - `uploadMarkedHomeworkFile(...)`
+  - `listHomeworkFiles({ homeworkSubmissionId, fileRole, parentVisibleOnly })`
+  - `releaseHomeworkFileToParent(...)`
+- Marked-file smoke test is now added at `scripts/supabase-homework-marked-file-smoke-test.mjs` with package command `npm run test:supabase:homework:marked-file`.
+- Teacher marked-file upload UI wiring remains future.
 - Parent released marked-file display runtime wiring remains future.
 - Assignee-aware homework read service baseline is now added in `src/services/supabaseReadService.js`:
   - `listHomeworkTaskAssignees(...)`

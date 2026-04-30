@@ -359,6 +359,9 @@ Reminder: **Frontend filtering is not security. RLS must enforce access at datab
 - Draft status:
   - manually applied in Supabase dev (SQL Editor success)
   - application checkpoint: `docs/homework-file-role-release-sql-application-checkpoint.md`
+  - marked-file service methods are now added in `src/services/supabaseUploadService.js`
+  - marked-file smoke test is now added at `scripts/supabase-homework-marked-file-smoke-test.mjs`
+  - package command: `npm run test:supabase:homework:marked-file`
   - fake/dev data validation only
   - teacher marked-file upload service/UI remains future
   - parent marked-file display remains future

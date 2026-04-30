@@ -310,3 +310,12 @@ Validation efficiency rule:
   - no production apply
   - no UI/runtime/service changes
 - Next recommended implementation step is service + smoke validation for marked-file upload/release boundaries before UI wiring.
+
+## 19) Service + smoke checkpoint
+
+- Manual marked-file upload/read/release service methods are now added in `src/services/supabaseUploadService.js`.
+- New smoke script is now added at `scripts/supabase-homework-marked-file-smoke-test.mjs`.
+- Package command is now available: `npm run test:supabase:homework:marked-file`.
+- Teacher marked-file UI remains future.
+- Parent marked-file display remains future.
+- AI OCR/provider integration remains future.

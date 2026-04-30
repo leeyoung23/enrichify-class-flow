@@ -84,6 +84,24 @@ Database policy/model now supports:
 - Smoke test proving parent cannot see before release and can see after release
 - AI marked-file OCR/vision integration (later)
 
+## 11) Service + smoke milestone update
+
+Marked-file backend service and smoke coverage are now added (fake/dev only):
+
+- Service methods in `src/services/supabaseUploadService.js`:
+  - `uploadMarkedHomeworkFile(...)`
+  - `listHomeworkFiles({ homeworkSubmissionId, fileRole, parentVisibleOnly })`
+  - `releaseHomeworkFileToParent(...)`
+- New smoke test: `scripts/supabase-homework-marked-file-smoke-test.mjs`
+- Package command: `npm run test:supabase:homework:marked-file`
+
+Notes:
+
+- Teacher marked-file UI remains future.
+- Parent released marked-file display remains future.
+- AI OCR/provider integration remains future.
+- Announcements/Internal Communications remains future.
+
 ## 9) Recommended next milestone
 
 Recommendation: **Manual marked-file upload service + smoke test**.
