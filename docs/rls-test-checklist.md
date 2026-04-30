@@ -357,8 +357,8 @@ Reminder: **Frontend filtering is not security. RLS must enforce access at datab
   - object read gate mirrors metadata role/release gate
   - metadata-first upload flow remains required
 - Draft status:
-  - SQL/RLS draft only
-  - not auto-applied
+  - manually applied in Supabase dev (SQL Editor success)
+  - application checkpoint: `docs/homework-file-role-release-sql-application-checkpoint.md`
   - fake/dev data validation only
   - teacher marked-file upload service/UI remains future
   - parent marked-file display remains future

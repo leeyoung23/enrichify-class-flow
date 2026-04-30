@@ -276,3 +276,10 @@ Validation efficiency rule:
 - Draft introduces `homework_files.file_role` and file-level release metadata for release-gated parent visibility.
 - Teacher marked-file upload service/UI and parent marked-file display remain future milestones.
 - Existing parent upload metadata-first flow is preserved by backward-compatible defaults (`file_role = 'parent_uploaded_homework'`).
+
+## 17) SQL application checkpoint update
+
+- `018` has now been manually applied in Supabase dev (SQL Editor success).
+- Application checkpoint is documented at `docs/homework-file-role-release-sql-application-checkpoint.md`.
+- Verified manually in dev: new `homework_files` columns, helper functions, and homework/storage policies exist.
+- No production apply and no runtime/UI/service wiring in this checkpoint.

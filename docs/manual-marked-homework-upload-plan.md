@@ -301,3 +301,12 @@ Validation efficiency rule:
 - Parent upload flow compatibility is preserved through default `file_role = 'parent_uploaded_homework'`.
 - Teacher marked-file upload runtime wiring remains future.
 - Parent marked-file display runtime wiring remains future.
+
+## 18) SQL application checkpoint (manual dev)
+
+- `supabase/sql/018_homework_file_roles_release_foundation.sql` has now been manually applied in Supabase dev (SQL Editor success).
+- Application checkpoint doc: `docs/homework-file-role-release-sql-application-checkpoint.md`.
+- This milestone remains SQL-application documentation only:
+  - no production apply
+  - no UI/runtime/service changes
+- Next recommended implementation step is service + smoke validation for marked-file upload/release boundaries before UI wiring.
