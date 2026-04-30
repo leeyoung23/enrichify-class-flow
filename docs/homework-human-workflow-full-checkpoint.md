@@ -1,110 +1,161 @@
 # Homework Human Workflow Full Checkpoint
 
-## 1) What is now complete
+## 1) Updated checkpoint status
 
-- Parent homework status/list is implemented.
-- Parent homework upload form is implemented.
-- Teacher Homework review UI is implemented.
-- Homework feedback write/release backend is implemented.
-- Parent released feedback display is implemented.
-- Clean upload and feedback smoke tests are implemented and passing in dev/fake-data workflow.
+Homework human workflow is now functionally complete at a strong internal prototype level.
 
-## 2) Key implementation files/areas
+The end-to-end human path now covers assignment, submission, review, feedback release, marked-file release, and parent-facing visibility with release-gated boundaries preserved.
 
-- `supabase/sql/014_homework_upload_review_foundation.sql`
-- `supabase/sql/015_fix_homework_upload_rls_policies.sql`
-- `supabase/sql/016_fix_homework_parent_submission_insert.sql`
-- `src/services/supabaseUploadService.js`
-- `src/services/supabaseWriteService.js`
-- `src/pages/Homework.jsx`
-- `src/pages/ParentView.jsx`
-- `scripts/supabase-homework-upload-smoke-test.mjs`
-- `scripts/supabase-homework-feedback-smoke-test.mjs`
-- `docs/homework-upload-clean-flow-checkpoint.md`
-- `docs/teacher-homework-review-ui-checkpoint.md`
-- `docs/parent-homework-upload-form-checkpoint.md`
-- `docs/parent-homework-feedback-display-checkpoint.md`
+## 2) Full human workflow now supported
 
-## 3) End-to-end workflow
+The complete loop now supports:
 
-Human homework loop now operates as:
+1. Staff creates homework.
+2. Assignment scope supports whole class, selected students, and individual assignment.
+3. Homework appears in teacher `By Task` and `By Student` trackers.
+4. Parent/student submits homework.
+5. Teacher/staff reviews homework submissions.
+6. Teacher/staff writes feedback (`feedback_text`), next step (`next_step`), and internal note (`internal_note` staff-only path).
+7. Supervisor/HQ releases feedback to parent.
+8. Teacher/staff uploads teacher-marked homework file.
+9. Marked file remains private before release.
+10. Supervisor/HQ releases marked file.
+11. Parent sees released feedback.
+12. Parent sees released marked file.
 
-1. Homework task exists and is assigned/open.
-2. Parent sees assigned homework in `ParentView`.
-3. Parent uploads work through parent upload form.
-4. Homework file is stored in private storage path.
-5. Teacher/staff views submission and file in `Homework`.
-6. Teacher/staff saves draft feedback.
-7. Staff marks reviewed, returns for revision, or releases feedback.
-8. Parent sees released feedback only (not draft/internal).
+## 3) Key frontend areas implemented
 
-## 4) Input -> process -> output integrity
+- `src/pages/Homework.jsx` Create Homework form.
+- `src/pages/Homework.jsx` `By Task` tracker.
+- `src/pages/Homework.jsx` `By Student` tracker.
+- `src/pages/Homework.jsx` review detail panel.
+- `src/pages/Homework.jsx` teacher `Marked work` section in review panel.
+- `src/pages/ParentView.jsx` homework status/upload section.
+- `src/pages/ParentView.jsx` released feedback display.
+- `src/pages/ParentView.jsx` released marked-file display.
 
-- Parent input path exists (status/list + upload).
-- Teacher/staff process path exists (review queue + feedback actions).
-- Parent output path exists (released feedback display).
-- Review/release gate exists before parent feedback visibility.
-- `internal_note` remains protected from parent path.
-- Draft feedback remains hidden from parent path.
-- Private homework files are accessed by signed URL only.
+## 4) Key backend/service areas implemented
 
-## 5) Role boundaries
+Data model/service coverage now includes:
 
-- **HQ:** all-branch visibility/review via RLS policy scope.
-- **Branch supervisor:** own-branch review/release via RLS policy scope.
-- **Teacher:** assigned-class review workflow.
-- **Parent:** linked-child status/upload/released feedback only.
-- **Student:** optional/future-only for expanded homework flow.
-- **demoRole:** local/demo-only behavior with no Supabase writes.
+- `homework_tasks`
+- `homework_submissions`
+- `homework_files`
+- `homework_feedback`
+- `homework_task_assignees`
+- `assignment_scope`
+- `createHomeworkTaskWithAssignees(...)`
+- `listHomeworkTrackerByClass(...)`
+- `listHomeworkTrackerByStudent(...)`
+- `uploadHomeworkFile(...)`
+- `uploadMarkedHomeworkFile(...)`
+- `listHomeworkFiles(...)`
+- `releaseHomeworkFileToParent(...)`
+- `getHomeworkFileSignedUrl(...)`
+- feedback write/release methods
+- relevant smoke tests for assignment, tracker reads, assignees reads, upload, feedback, and marked files
 
-## 6) Security/RLS/storage
+## 5) Flexible enrichment homework support
 
-- Supabase anon client + JWT only.
-- No service role key in frontend.
-- Private `homework-submissions` bucket for homework files.
-- No public file URLs.
-- Linked-child parent scope is enforced.
-- Assigned-class teacher scope is enforced.
-- Feedback release gate controls parent visibility.
-- `internal_note` is never parent-visible.
+Current workflow now supports mixed delivery models needed in enrichment contexts:
 
-## 7) Smoke tests
+- class-level homework
+- selected-student homework
+- individual homework
+- assigned-but-not-submitted visibility path
+- mixed school/form/syllabus operational reality
+- `By Student` tracker improves enrichment teaching flow beyond class-only homework visibility
 
-Documented smoke commands:
+## 6) Manual marking support
 
+Manual marking is now a first-class path:
+
+- AI is not the only marking pathway.
+- Teachers can mark externally.
+- Teacher/staff can upload marked files.
+- Marked files remain private until explicit release.
+- Parents only see released marked files.
+- Access uses signed URLs only.
+
+## 7) Safety/privacy boundaries
+
+- Parent visibility remains linked-child scoped.
+- No cross-family visibility.
+- Draft/internal feedback remains hidden from parent path.
+- `internal_note` remains hidden from parent path.
+- `staff_note` remains hidden from parent path.
+- Marked files remain release-gated.
+- No public object URLs in parent flow.
+- Frontend uses anon client + JWT model; no service role key in frontend.
+- No auto-release behavior was added.
+- Automatic notification flow is not added yet.
+
+## 8) demoRole behavior
+
+- Demo/local preview remains fake/local.
+- No Supabase writes/uploads/signed URL calls in demo actions.
+- No provider/API calls in demo actions.
+- Demo parity exists for teacher and parent homework/marked-file sections.
+
+## 9) Tests/smoke coverage
+
+Major relevant validation commands:
+
+- `npm run build`
+- `npm run lint`
+- `npm run typecheck`
+- `npm run test:supabase:homework:assignment:write`
+- `npm run test:supabase:homework:tracker:read`
+- `npm run test:supabase:homework:assignees:read`
 - `npm run test:supabase:homework:upload`
-  - Proves parent submission + metadata-first private upload + signed URL access path + scoped visibility + cleanup flow.
 - `npm run test:supabase:homework:feedback`
-  - Proves draft/create-update, review/release lifecycle, parent draft-hidden check, parent released-visible check, `internal_note` protection, and cleanup flow.
+- `npm run test:supabase:homework:marked-file`
+- `npm run test:ai:homework-feedback:mock`
 
-## 8) Known limitations
+Note:
 
-- No AI homework marking/feedback yet.
-- No notification/email for homework events yet.
-- No production retention/deletion policy yet.
-- Unrelated parent/student credential checks remain limited by available fake credentials.
-- Broader iOS/Android mobile QA is still future.
-- No advanced versioning/multiple submission history UX yet.
+- Prior `CHECK` skips in some historical runs were fixture/credential availability checks only, not policy broadening.
 
-## 9) Strategic significance
+## 10) What remains future
 
-- Homework is now a real learning-evidence layer in product workflow.
-- This foundation prepares AI marking/feedback planning and safe integration.
-- Future AI can use curriculum context + student profile + uploaded work + teacher review history.
-- Human approval remains mandatory before any parent-visible release.
+- Real AI provider integration.
+- OCR/vision/text extraction for uploaded/marked files.
+- Rubric-based AI marking.
+- AI audit/logging hardening.
+- Parent notification/email flows.
+- Printable/exportable PDF reports.
+- Homework assignment edit/archive UI.
+- Selected-student creation UX polish.
+- Announcements/Internal Communications module.
 
-## 10) Recommended next milestone
+## 11) Strategic significance
 
-Recommendation: **A. AI homework marking/feedback planning**
+Homework is now operating as a real learning-evidence layer, not only a placeholder workflow.
 
-Why A next:
+This creates a stronger foundation where AI can build on real human process instead of replacing it. Future AI feedback can incorporate assignment scope, curriculum context, uploaded student work, marked files, teacher feedback history, and release gates.
 
-- Human homework workflow is now complete enough to plan AI support responsibly.
-- AI should generate draft marking/feedback only.
-- Teacher/staff must review and approve before parent release.
-- No auto-release should be introduced.
+Teacher approval remains mandatory for parent-facing output.
 
-## 11) Next implementation prompt
+## 12) Recommended next milestone
+
+Choose:
+
+- A. Resume AI Edge Function/provider path
+- B. AI audit/logging planning
+- C. OCR/marked-file evidence extraction planning
+- D. Attendance parent notification planning
+- E. Printable/exportable PDF report planning
+- F. Announcements/Internal Communications planning
+
+Recommendation: **A. Resume AI Edge Function/provider path**
+
+Why A first:
+
+- Human homework workflow is now strong enough to support safe provider integration.
+- AI/provider integration can now resume with lower operational risk.
+- Guardrails remain mandatory: draft-only output, teacher-approved flow, and never auto-released.
+
+## 13) Next implementation prompt
 
 ```text
 Continue this same project only.
@@ -115,45 +166,37 @@ Project folder:
 Branch:
 cursor/safe-lint-typecheck-486d
 
+Latest expected commit:
+<fill-latest-commit>
+
 Before doing anything, verify:
 - git branch --show-current
 - git log --oneline -12
 - git status --short
 
 Task:
-AI homework marking/feedback planning only.
+Resume AI Edge Function/provider path planning for homework feedback draft flow.
 
 Scope rules:
-- Planning/docs only.
-- Do not change app UI.
-- Do not change runtime logic.
-- Do not add services in this step.
-- Do not change Supabase SQL.
-- Do not change RLS policies.
-- Do not upload files.
-- Do not call real AI APIs.
-- Do not add provider keys.
-- Do not expose env values or passwords.
+- Planning/docs only in this step.
+- Do not change app UI/runtime logic in this planning pass.
+- Do not change Supabase SQL/RLS in this planning pass.
+- Do not apply SQL.
+- Do not expose env values or provider secrets.
 - Do not commit .env.local.
-- Do not use service role key in frontend.
-- Do not remove demoRole.
-- Do not remove demo/local fallback.
-- Use fake/dev data only.
+- Keep draft-only + teacher-approved + no auto-release rule explicit.
 
-Planning deliverables:
-1) AI homework marking/feedback draft architecture (human-in-the-loop first).
-2) Safety gates:
-   - teacher/staff review required
-   - no parent auto-release
-   - no draft leakage
-3) Parent visibility policy alignment with existing release gate.
-4) Proposed evaluation rubric for AI draft quality/safety.
-5) Phased rollout (mock -> internal pilot -> limited release).
-6) Risks, non-goals, and validation scope.
+Deliverables:
+1) Provider adapter plan (draft-only path) with:
+   - Edge Function boundary
+   - input/output contract
+   - timeout/retry/error handling
+   - safe fallback behavior
+2) Approval/release guardrail checklist for teacher/staff.
+3) Validation and rollout sequence from mock -> provider-backed draft.
+4) Risks/non-goals and monitoring/audit recommendations.
 
 Validation efficiency rule:
-- Docs-only change.
-- Run only:
+- Docs-only change:
   - git diff --name-only
-- Do not run build/lint/typecheck/smoke unless runtime files changed.
 ```
