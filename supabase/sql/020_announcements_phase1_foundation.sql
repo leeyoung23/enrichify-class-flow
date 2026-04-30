@@ -302,8 +302,61 @@ as $$
   )
 $$;
 
+create or replace function public.can_manage_announcement_target_write(
+  announcement_uuid uuid,
+  target_kind text,
+  target_branch uuid,
+  target_profile uuid
+)
+returns boolean
+language sql
+stable
+security definer
+set search_path = public
+as $$
+  select coalesce(
+    (
+      public.is_hq_admin()
+      and exists (
+        select 1
+        from public.announcements a
+        where a.id = announcement_uuid
+          and a.audience_type = 'internal_staff'
+      )
+    )
+    or (
+      public.current_user_role() = 'branch_supervisor'
+      and exists (
+        select 1
+        from public.announcements a
+        where a.id = announcement_uuid
+          and a.audience_type = 'internal_staff'
+          and public.is_branch_supervisor_for_branch(a.branch_id)
+          and (
+            (
+              target_kind in ('branch', 'role', 'class')
+              and target_branch = a.branch_id
+            )
+            or (
+              target_kind = 'profile'
+              and exists (
+                select 1
+                from public.profiles p
+                where p.id = target_profile
+                  and p.branch_id = a.branch_id
+              )
+            )
+          )
+      )
+    ),
+    false
+  )
+$$;
+
 comment on function public.is_announcement_targeted_to_profile(uuid, uuid) is
   '020 draft helper. Class target_type is reserved for future schema extension; Phase 1 targeting checks profile/role/branch only.';
+comment on function public.can_manage_announcement_target_write(uuid, text, uuid, uuid) is
+  '020 review hardening: supervisors can only write target rows within their own announcement branch scope; HQ retains full internal-staff scope.';
 
 -- -----------------------------------------------------------------------------
 -- 6) Enable RLS
@@ -391,7 +444,12 @@ create policy announcement_targets_insert_020
 on public.announcement_targets
 for insert
 with check (
-  public.can_manage_announcement(announcement_id)
+  public.can_manage_announcement_target_write(
+    announcement_id,
+    target_type,
+    branch_id,
+    target_profile_id
+  )
 );
 
 drop policy if exists announcement_targets_update_020 on public.announcement_targets;
@@ -402,7 +460,12 @@ using (
   public.can_manage_announcement(announcement_id)
 )
 with check (
-  public.can_manage_announcement(announcement_id)
+  public.can_manage_announcement_target_write(
+    announcement_id,
+    target_type,
+    branch_id,
+    target_profile_id
+  )
 );
 
 drop policy if exists announcement_targets_delete_020 on public.announcement_targets;

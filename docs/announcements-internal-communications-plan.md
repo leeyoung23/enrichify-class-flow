@@ -340,3 +340,11 @@ Next manual step:
 
 - Review `supabase/sql/020_announcements_phase1_foundation.sql` before any manual apply in Supabase dev.
 
+### 020 pre-apply security review update
+
+- `020` has now been reviewed before manual Supabase apply.
+- Review hardening fix was made in `020`:
+  - supervisor target-row writes are now constrained to own announcement branch scope via `can_manage_announcement_target_write(...)`.
+- Attachments/MyTasks/pop-up/parent-facing/live-chat phase boundaries remain unchanged.
+- Manual apply is still pending and must remain dev-only after final review sign-off.
+

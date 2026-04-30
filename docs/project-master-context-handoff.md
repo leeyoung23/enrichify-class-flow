@@ -312,6 +312,9 @@ Current status note:
   - not applied automatically in this milestone,
   - drafted tables: `announcements`, `announcement_targets`, `announcement_statuses`, `announcement_replies`,
   - conservative internal staff RLS scope for HQ/supervisor/teacher; parent/student access remains blocked in Phase 1.
+- `020` pre-apply review hardening is now completed before manual dev apply:
+  - fixed supervisor target-write scope gap by adding helper `can_manage_announcement_target_write(...)`,
+  - `announcement_targets` insert/update now enforce own-branch scope for branch supervisor target writes.
 - Announcements attachments remain Phase 2+ and are intentionally not included in `020`.
 - Announcements MyTasks integration remains Phase 2+ and is intentionally not included in `020`.
 - Company News pop-up runtime behavior remains Phase 3.

@@ -375,3 +375,19 @@ Next manual step:
 
 - Review `supabase/sql/020_announcements_phase1_foundation.sql` line-by-line, then manually apply in Supabase **dev** SQL editor only after review sign-off.
 
+## 19) 020 pre-apply review hardening checkpoint
+
+Review result before manual apply:
+
+- `020` was reviewed for table/constraint validity, helper safety, and RLS boundary behavior.
+- One policy issue was fixed in `020` before apply:
+  - added `public.can_manage_announcement_target_write(...)`,
+  - tightened `announcement_targets` insert/update checks so branch supervisors can only write target rows inside their own announcement branch scope,
+  - HQ/internal-staff management path remains available.
+- Remaining conservative assumption:
+  - `target_type = 'class'` remains schema-allowed but class-level FK wiring is deferred; Phase 1 policy keeps class targeting branch-scoped for supervisor writes.
+
+Exact next manual Supabase step:
+
+- Re-review updated `supabase/sql/020_announcements_phase1_foundation.sql`, then manually apply in Supabase **dev** SQL editor only (fake/dev data only).
+
