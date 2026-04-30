@@ -268,3 +268,11 @@ Validation efficiency rule:
   - git diff --name-only
 - Do not run build/lint/typecheck/smoke unless runtime files changed.
 ```
+
+## 16) SQL draft status update
+
+- Additive SQL/RLS draft is now prepared at `supabase/sql/018_homework_file_roles_release_foundation.sql`.
+- Draft remains manual/dev-first only and is not auto-applied.
+- Draft introduces `homework_files.file_role` and file-level release metadata for release-gated parent visibility.
+- Teacher marked-file upload service/UI and parent marked-file display remain future milestones.
+- Existing parent upload metadata-first flow is preserved by backward-compatible defaults (`file_role = 'parent_uploaded_homework'`).

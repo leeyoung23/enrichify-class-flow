@@ -194,6 +194,11 @@ Current status note:
   - checkpoint doc: `docs/homework-task-assignees-sql-application-checkpoint.md`
 - `017` introduces optional `homework_tasks.assignment_scope` and `homework_task_assignees` RLS model to support explicit student/small-group assignment rows.
 - `017` includes an assignee alignment guard so task/branch/class/student mismatch rows are rejected at write time.
+- Manual marked homework file role/release additive SQL/RLS draft now exists at `supabase/sql/018_homework_file_roles_release_foundation.sql` (manual/dev-first, fake-data validation only, not auto-applied).
+- `018` draft adds role/release metadata to `homework_files` and release-aware read restrictions so parent/student marked-file visibility is gated until release.
+- `018` draft preserves current parent upload compatibility via backward-compatible default `file_role = 'parent_uploaded_homework'`.
+- Teacher marked-file upload runtime service/UI wiring remains future.
+- Parent released marked-file display runtime wiring remains future.
 - Assignee-aware homework read service baseline is now added in `src/services/supabaseReadService.js`:
   - `listHomeworkTaskAssignees(...)`
   - `listAssignedHomeworkForStudent(...)`

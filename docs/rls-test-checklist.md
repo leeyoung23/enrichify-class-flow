@@ -333,6 +333,47 @@ Reminder: **Frontend filtering is not security. RLS must enforce access at datab
   - assignment-aware submission insert should not regress class-scope uploads
   - assignee row alignment guard should reject task/class/branch/student mismatch writes
 
+### Homework marked-file role/release draft patch note
+
+- Draft patch reference: `supabase/sql/018_homework_file_roles_release_foundation.sql` (manual review/apply only).
+- Draft adds additive `homework_files` fields:
+  - `file_role`
+  - `released_to_parent`
+  - `released_at`
+  - `released_by_profile_id`
+  - `marked_by_profile_id`
+  - `staff_note`
+- Draft role values:
+  - `parent_uploaded_homework`
+  - `teacher_marked_homework`
+  - `feedback_attachment`
+- Draft RLS intent:
+  - staff can read review files in scope before release
+  - parent/student can read marked/feedback files only when `released_to_parent = true`
+  - parent/student cannot create `teacher_marked_homework` or `feedback_attachment`
+  - parent/student cannot set release metadata
+- Draft storage intent:
+  - private `homework-submissions` bucket remains
+  - object read gate mirrors metadata role/release gate
+  - metadata-first upload flow remains required
+- Draft status:
+  - SQL/RLS draft only
+  - not auto-applied
+  - fake/dev data validation only
+  - teacher marked-file upload service/UI remains future
+  - parent marked-file display remains future
+
+#### Homework marked-file role checks (after manual apply in dev only)
+
+- HQ can read/manage all homework files and release metadata.
+- Branch supervisor can read/manage own-branch homework files and release metadata.
+- Teacher can read/upload in assigned class scope; teacher release/edit authority remains intentionally conservative until product confirms release ownership.
+- Parent can read linked-child `parent_uploaded_homework` rows and released marked/feedback rows only.
+- Student can read self `parent_uploaded_homework` rows and released marked/feedback rows only.
+- Parent/student cannot insert `teacher_marked_homework` or `feedback_attachment`.
+- Parent/student cannot set `released_to_parent`, `released_at`, or `released_by_profile_id`.
+- No cross-family visibility for metadata or storage object reads.
+
 ## Execution Notes
 
 - Run tests with fake users for each role.
