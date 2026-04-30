@@ -146,7 +146,7 @@ Status update:
 - `Homework` `By Task` / `By Student` UI shell with demo parity is now implemented; include in mobile QA pass.
 - `Homework` authenticated `By Task` tracker wiring is now added; include in mobile QA pass.
 - `Homework` authenticated `By Student` tracker wiring is now added; include in mobile QA pass.
-- `Homework` Create Homework shell (demo parity only) is now added; include in mobile QA pass.
+- `Homework` Create Homework shell now includes authenticated non-demo guarded save wiring to existing assignment write service; include in mobile QA pass.
 - Remaining mobile QA/polish items:
   - `ParentUpdates` mobile review flow density
 

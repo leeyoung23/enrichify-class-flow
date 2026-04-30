@@ -85,8 +85,10 @@ Selected homework assignment write-service MVP is now implemented and verified a
 
 ## 9) What remains
 
-- Teacher assignment creation UI
-- edit/archive assignment UI
+- Teacher assignment creation UI wiring is now started in `Homework` using `createHomeworkTaskWithAssignees(...)` for authenticated non-demo save.
+- Remaining UI work is polish/refinement:
+  - selected-student creation UX polish
+  - edit/archive assignment UI
 - manual marked-file upload path
 - parent assigned homework UX polish
 - AI marking using flexible assignment context

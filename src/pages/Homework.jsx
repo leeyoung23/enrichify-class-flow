@@ -31,6 +31,7 @@ import {
   listHomeworkTasks,
 } from '@/services/supabaseUploadService';
 import {
+  createHomeworkTaskWithAssignees,
   createOrUpdateHomeworkFeedback,
   markHomeworkSubmissionReviewed,
   releaseHomeworkFeedbackToParent,
@@ -512,6 +513,16 @@ export default function Homework() {
     }));
   }, [isDemoMode, nonDemoStudentIdOptions]);
 
+  const resolvedCreateBranchId = useMemo(() => {
+    if (isDemoMode) return null;
+    if (!isUuidLike(createForm.classId)) return null;
+    const taskMatch = tasks.find((task) => task?.class_id === createForm.classId && isUuidLike(task?.branch_id));
+    if (isUuidLike(taskMatch?.branch_id)) return taskMatch.branch_id;
+    const trackerMatch = trackerByClassRows.find((row) => row?.task?.class_id === createForm.classId && isUuidLike(row?.task?.branch_id));
+    if (isUuidLike(trackerMatch?.task?.branch_id)) return trackerMatch.task.branch_id;
+    return null;
+  }, [isDemoMode, createForm.classId, tasks, trackerByClassRows]);
+
   const resetCreateForm = (nextAssignmentType = 'class') => {
     setCreateForm({
       assignmentType: nextAssignmentType,
@@ -590,7 +601,11 @@ export default function Homework() {
     }
 
     if (!isDemoMode) {
-      toast.message('Create Homework wiring is coming next. This shell is preview-only in authenticated mode.');
+      if (!isUuidLike(resolvedCreateBranchId)) {
+        toast.error('Valid class/branch context is required before saving.');
+        return;
+      }
+      createHomeworkMutation.mutate();
       return;
     }
 
@@ -783,6 +798,59 @@ export default function Homework() {
     },
   });
 
+  const createHomeworkMutation = useMutation({
+    mutationFn: async () => {
+      const trimmedTitle = createForm.title.trim();
+      if (!trimmedTitle) throw new Error('Title is required.');
+      if (!isUuidLike(createForm.classId)) throw new Error('A valid class selection is required.');
+      if (!isUuidLike(resolvedCreateBranchId)) {
+        throw new Error('Valid class/branch context is required before saving.');
+      }
+      if (createForm.assignmentType === 'selected_students' && createForm.studentIds.length === 0) {
+        throw new Error('Select one or more students for selected students assignment.');
+      }
+      if (createForm.assignmentType === 'individual' && createForm.studentIds.length !== 1) {
+        throw new Error('Individual assignment requires exactly one student.');
+      }
+      if (createForm.dueDate && !/^\d{4}-\d{2}-\d{2}$/.test(createForm.dueDate.trim())) {
+        throw new Error('Due date must be YYYY-MM-DD.');
+      }
+
+      const result = await createHomeworkTaskWithAssignees({
+        branchId: resolvedCreateBranchId,
+        classId: createForm.classId,
+        title: trimmedTitle,
+        instructions: createForm.instructions.trim() || null,
+        subject: createForm.subject.trim() || null,
+        dueDate: createForm.dueDate.trim() || null,
+        assignmentScope: createForm.assignmentType,
+        studentIds: createForm.assignmentType === 'class' ? [] : createForm.studentIds,
+        notes: createForm.notes.trim() || null,
+      });
+
+      if (result.error) {
+        throw new Error(result.error.message || 'Unable to create homework right now.');
+      }
+      return result.data || null;
+    },
+    onSuccess: (data) => {
+      toast.success('Homework assignment created.');
+      setCreateHomeworkOpen(false);
+      resetCreateForm('class');
+      if (data?.task?.id) {
+        setActiveViewMode('by_task');
+        setSelectedTaskId(data.task.id);
+      }
+      void queryClient.invalidateQueries({ queryKey: ['homework-review-tasks'] });
+      void queryClient.invalidateQueries({ queryKey: ['homework-tracker-by-class'] });
+      void queryClient.invalidateQueries({ queryKey: ['homework-tracker-by-student'] });
+      void queryClient.invalidateQueries({ queryKey: ['homework-review-submissions'] });
+    },
+    onError: (error) => {
+      toast.error(error?.message || 'Unable to create homework right now.');
+    },
+  });
+
   const openFile = async (homeworkFileId) => {
     if (isDemoMode) {
       toast.message(`Demo mode: preview-only file ${homeworkFileId}. No signed URL call is made.`);
@@ -925,7 +993,7 @@ export default function Homework() {
               <p className="text-xs text-muted-foreground mt-1">
                 {isDemoMode
                   ? 'Demo-only shell: local fake create simulation. No Supabase write or provider call is made.'
-                  : 'Preview-only shell: real create wiring is coming next. Save is intentionally blocked in this milestone.'}
+                  : 'Authenticated staff mode uses guarded create wiring with RLS. Save stays draft-safe and does not affect review/release actions.'}
               </p>
               <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2">
                 <div className="space-y-2">
@@ -1042,11 +1110,16 @@ export default function Homework() {
               <div className="mt-4 rounded-lg border border-dashed p-3 text-xs text-muted-foreground">
                 Summary: {createForm.assignmentType} assignment
                 {createForm.dueDate ? ` · due ${createForm.dueDate}` : ''}.
-                {' '}No auto-release, no auto-save, no real write in this milestone.
+                {' '}No auto-release and no auto-save. Create uses existing write service only when class/branch context is valid.
               </div>
               <div className="mt-4 flex flex-wrap gap-2">
-                <Button type="button" className="min-h-10" onClick={saveCreateHomeworkShell}>
-                  Save
+                <Button
+                  type="button"
+                  className="min-h-10"
+                  onClick={saveCreateHomeworkShell}
+                  disabled={!isDemoMode && createHomeworkMutation.isPending}
+                >
+                  {!isDemoMode && createHomeworkMutation.isPending ? 'Saving...' : 'Save'}
                 </Button>
                 <Button
                   type="button"

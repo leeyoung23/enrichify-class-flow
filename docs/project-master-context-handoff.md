@@ -214,11 +214,11 @@ Current status note:
 - `By Task` tracker behavior remains preserved while adding `By Student`.
 - `Homework` now includes `Create Homework` UI shell with demo parity:
   - local/demo mode uses fake local form + fake local create simulation only,
-  - authenticated mode shows preview shell but blocks final save (real write wiring intentionally deferred).
-- Selected-student assignment write services are already implemented in service layer and are not yet called by this new shell milestone.
+- authenticated non-demo mode now wires guarded save to existing `createHomeworkTaskWithAssignees(...)` with validation and query refresh behavior.
+- Selected-student assignment write services are now used by the `Homework` create shell in authenticated non-demo mode.
 - Manual marked-file upload remains future.
 - Existing homework runtime/UI workflow remains unchanged until later service/UI migration; parent assigned-but-not-submitted visibility should later move to assignee-row based reads.
-- Real assignment creation write wiring remains future (service proof completed first).
+- Real assignment edit/archive wiring remains future.
 - Manual marked-file upload remains future.
 - AI provider integration remains future.
 - Announcements/Internal Communications remains future.

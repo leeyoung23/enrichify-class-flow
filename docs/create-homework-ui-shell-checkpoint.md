@@ -2,12 +2,12 @@
 
 ## 1) What was implemented
 
-Create Homework UI shell is now implemented in `Homework` as a safe milestone before real write wiring.
+Create Homework UI shell is now implemented in `Homework` with real authenticated save wiring to the existing write service while preserving demo/local safety.
 
 - clear create entry point is available in the tracker workspace
 - create shell is separate from submission review/release actions
 - demo mode supports local fake create simulation
-- authenticated mode remains preview-only for creation save
+- authenticated mode now saves through existing assignment write service when class/branch context is valid
 - existing By Task / By Student tracker and review/release flows remain preserved
 
 ## 2) Files changed
@@ -72,10 +72,12 @@ Individual:
 
 ## 6) Real authenticated behavior
 
-- create shell is preview-only in this milestone
-- final save is intentionally blocked
-- safe message indicates Create Homework wiring is coming next
-- no call to `createHomeworkTaskWithAssignees(...)`
+- create shell now supports guarded real save in authenticated non-demo staff mode
+- final save calls `createHomeworkTaskWithAssignees(...)` (existing service; no new duplicate service)
+- save is blocked when class/branch context is missing or invalid
+- loading state is shown during save
+- success closes/resets form and invalidates tracker/task review queries for refresh
+- failure shows safe error messages
 - real By Task tracker remains intact
 - real By Student tracker remains intact
 - review/release workflow remains intact
@@ -111,7 +113,6 @@ Note:
 
 ## 9) What remains
 
-- wire real create save to `createHomeworkTaskWithAssignees(...)`
 - post-create tracker refresh
 - selected-student creation UX polish
 - edit/archive assignment UI
