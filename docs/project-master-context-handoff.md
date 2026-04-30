@@ -289,6 +289,15 @@ Current status note:
   - fake-only branch/class/student/task/submission baseline for deployed regression,
   - helper SELECT output for local `AI_HOMEWORK_TEST_*` values,
   - not applied automatically in this milestone.
+- `019` fixture baseline is now manually applied in Supabase dev only (no production apply) using fake/dev data only.
+- Live deployed AI homework Edge Function regression now has full PASS coverage:
+  - `PASS` missing auth -> `401`
+  - `PASS` invalid token -> `401`
+  - `PASS` parent blocked -> `403`
+  - `PASS` student blocked -> `403`
+  - `PASS` assigned teacher/branch supervisor own-branch/HQ allowed-role cases
+  - `PASS` mismatched task/student/class blocked cases
+  - `PASS` draft-only safety note present and no auto-save side effect
 - Provider integration remains unwired/disabled; no provider keys added; draft-only and teacher-approval gate remain unchanged.
 - AI homework feedback remains a future milestone after full human workflow hardening.
 - Notification/email workflow remains a future milestone.

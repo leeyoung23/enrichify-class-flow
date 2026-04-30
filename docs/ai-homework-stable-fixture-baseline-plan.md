@@ -101,16 +101,16 @@ Recommended approach:
 - Use obviously fake naming/emails (`*.example.test`).
 - Never apply to production.
 
-Implementation draft status:
+Implementation status update:
 
 - Dev-only additive SQL draft is now created at `supabase/sql/019_ai_homework_deployed_regression_fixture.sql`.
-- `019` is manual/dev-only and is **not applied yet** in this checkpoint.
+- `019` was manually applied in Supabase dev only.
 - `019` includes helper output query for:
   - `AI_HOMEWORK_TEST_SUBMISSION_ID`
   - `AI_HOMEWORK_TEST_TASK_ID`
   - `AI_HOMEWORK_TEST_STUDENT_ID`
   - `AI_HOMEWORK_TEST_CLASS_ID`
-- After manual dev apply, copy output IDs into local `.env.local` only and rerun:
+- Helper query output IDs are copied into local `.env.local` only, then rerun:
   - `npm run test:ai:homework-edge:deployed`
 
 ## 7) RLS/auth considerations
@@ -176,22 +176,21 @@ After stable baseline exists:
 
 Choose:
 
-- A. Draft dev-only AI homework fixture baseline SQL/setup
-- B. Provider adapter stub with provider disabled
-- C. Real provider adapter wiring
-- D. AI audit/logging planning
-- E. OCR/vision evidence extraction planning
-- F. Announcements/Internal Communications planning
+- A. Provider adapter stub with provider disabled
+- B. Real provider adapter wiring
+- C. AI audit/logging planning
+- D. OCR/vision evidence extraction planning
+- E. Announcements/Internal Communications planning
 
-Recommendation: **A. Draft dev-only AI homework fixture baseline SQL/setup**.
+Recommendation: **A. Provider adapter stub with provider disabled**.
 
 Why A first:
 
-- Deployed regression script is ready (explicit IDs + discovery fallback).
-- Function is reachable.
-- Blocking checks already pass.
-- Allowed-role checks require stable fake baseline before provider work.
-- This keeps AI boundary validation safe and evidence-driven.
+- Live deployed function boundary is now proven with full PASS coverage.
+- Provider should still be introduced behind a disabled/stub adapter first.
+- This keeps provider secrets controlled server-side.
+- This avoids jumping directly to real provider calls.
+- This preserves the draft-only teacher approval gate.
 
 ## 13) Next implementation prompt (copy-paste)
 

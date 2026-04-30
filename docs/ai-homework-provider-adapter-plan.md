@@ -22,8 +22,7 @@ Current implementation baseline:
 - Edge Function auth/scope checks exist.
 - Frontend wrapper exists for Edge Function invocation.
 - Deployed regression script exists and now reaches live deployed dev function.
-- Live deployed auth/blocking checks currently pass for missing/invalid/blocked role cases.
-- Allowed staff-role and mismatch live checks are currently `CHECK`-skipped due fixture gaps.
+- Live deployed regression now fully passes for allow/deny/mismatch coverage.
 - Real AI provider is not wired.
 - OCR/vision/rubric marking is not implemented.
 
@@ -207,41 +206,38 @@ Future validation targets:
 Recommended phased sequence:
 
 - Phase 1: this provider adapter plan.
-- Phase 2: dev fixture alignment for deployed Edge Function regression (allowed-role coverage).
-- Phase 3: provider adapter stub with provider disabled.
-- Phase 4: provider adapter with fake provider response.
-- Phase 5: real provider behind Edge Function secret boundary.
-- Phase 6: feature-flagged UI path.
-- Phase 7: audit/logging.
-- Phase 8: OCR/vision/rubric later.
+- Phase 2: provider adapter stub with provider disabled.
+- Phase 3: provider adapter with fake provider response.
+- Phase 4: real provider behind Edge Function secret boundary.
+- Phase 5: feature-flagged UI path.
+- Phase 6: audit/logging.
+- Phase 7: OCR/vision/rubric later.
 
 ## 16) Recommended next milestone
 
 Choose:
 
-- A. Dev fixture alignment for deployed AI Edge Function regression
-- B. Provider adapter stub with provider disabled
-- C. Real provider adapter wiring
-- D. AI audit/logging SQL planning
-- E. OCR/vision evidence extraction planning
-- F. Announcements/Internal Communications planning
+- A. Provider adapter stub with provider disabled
+- B. Real provider adapter wiring
+- C. AI audit/logging SQL planning
+- D. OCR/vision evidence extraction planning
+- E. Announcements/Internal Communications planning
 
-Recommendation: **A. Dev fixture alignment for deployed AI Edge Function regression**
+Recommendation: **A. Provider adapter stub with provider disabled**
 
 Why A first:
 
-- Live function is now reachable in deployed regression.
-- Blocking cases already pass (`401`/`403` boundary checks).
-- Allowed staff cases and mismatch checks are still skipped due fixture gaps.
-- Before provider integration, live allowed-role and mismatch behavior should be proven.
-- This keeps the child-data AI boundary safer before any provider wiring.
+- Live deployed function boundary is now proven across allow and deny paths.
+- Provider should still be introduced behind a disabled/stub adapter first.
+- This keeps provider secrets inside the server boundary.
+- This avoids jumping directly to real provider calls.
+- This preserves the draft-only teacher approval gate.
 
 Current status note:
 
 - Supabase CLI login was completed manually and project is linked to `fwturqeaagacoiepvpwb`.
 - `generate-homework-feedback-draft` is deployed to Supabase dev and reachable.
-- Deployed regression now reports PASS for missing/invalid auth and blocked parent/student roles.
-- Allowed teacher/branch supervisor/HQ and mismatch checks remain `CHECK` due missing accessible fake fixtures.
+- Deployed regression now reports full PASS for missing/invalid auth, blocked parent/student roles, allowed teacher/branch supervisor/HQ paths, and mismatch blocking checks.
 - Deployed regression now supports optional explicit fixture IDs (`AI_HOMEWORK_TEST_SUBMISSION_ID`, `AI_HOMEWORK_TEST_TASK_ID`, `AI_HOMEWORK_TEST_STUDENT_ID`, `AI_HOMEWORK_TEST_CLASS_ID`) with UUID + relationship validation and role-accessible discovery fallback.
 - Provider remains disabled/unwired.
 - No provider keys were added.
