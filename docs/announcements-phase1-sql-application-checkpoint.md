@@ -131,6 +131,12 @@ Smoke status:
   - teacher targeted flow skipped (create fixtures unavailable),
   - cross-branch negative check skipped (fixture prerequisite unavailable).
 
+Investigation update:
+
+- Improved smoke diagnostics now show HQ and supervisor fixture profiles are currently `is_active=false`.
+- `public.current_user_role()` helper intentionally filters for active profiles only, so inactive fixtures are treated as unauthorized for staff role checks.
+- Result: HQ/supervisor create paths are blocked by current RLS helper logic due fixture state, not due service payload mismatch.
+
 Checkpoint interpretation:
 
 - CHECK outcomes are safe and do not weaken policy behavior.

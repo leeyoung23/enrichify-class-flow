@@ -395,6 +395,7 @@ Reminder: **Frontend filtering is not security. RLS must enforce access at datab
 - Current checkpoint note:
   - smoke exits successfully,
   - HQ/supervisor create and teacher-targeted flows currently show CHECK skips in fixture context and need focused follow-up validation.
+  - current diagnosis: HQ/supervisor fixture profiles are inactive (`is_active=false`), so role helper checks intentionally return non-staff scope for those sessions.
 
 ### Homework marked-file role/release draft patch note
 

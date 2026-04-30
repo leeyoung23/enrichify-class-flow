@@ -355,6 +355,7 @@ Current status note:
   - build/lint/typecheck passed,
   - `test:supabase:announcements:phase1` exited successfully with safe CHECK skips in current fixture context,
   - HQ/supervisor create and teacher-targeted proof remains incomplete pending focused fixture/RLS investigation,
+  - latest diagnosis shows HQ/supervisor fake profiles are currently inactive (`is_active=false`), which causes `current_user_role()` helper checks to fail staff-role authorization as designed,
   - recommendation: resolve create/RLS CHECK skips before Announcements UI wiring.
 - Announcements attachments remain Phase 2+ and are intentionally not included in `020`.
 - Announcements MyTasks integration remains Phase 2+ and is intentionally not included in `020`.

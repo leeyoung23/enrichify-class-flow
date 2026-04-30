@@ -455,3 +455,8 @@ Recommendation:
 
 - Investigate create/RLS fixture gaps before Announcements UI wiring.
 
+Latest diagnosis note:
+
+- Smoke diagnostics now indicate HQ and branch supervisor fixture profiles are `is_active=false`.
+- This aligns with helper behavior in `current_user_role()` (`is_active = true` requirement), which explains create-path RLS blocks without requiring policy weakening.
+

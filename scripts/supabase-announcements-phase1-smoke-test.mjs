@@ -56,6 +56,14 @@ async function resolveCurrentProfileContext(supabase) {
   return { data: profileRead.data, error: null };
 }
 
+function summarizeProfileContext(profile) {
+  if (!profile) return "profile_unavailable";
+  const role = typeof profile.role === "string" ? profile.role : "unknown";
+  const active = String(Boolean(profile.is_active));
+  const branch = isUuidLike(profile.branch_id) ? "uuid" : String(profile.branch_id || "null");
+  return `role=${role} active=${active} branch=${branch}`;
+}
+
 async function run() {
   const [{ signInWithEmailPassword, signOut }, readService, writeService, { supabase }] = await Promise.all([
     import("../src/services/supabaseAuthService.js"),
@@ -127,6 +135,13 @@ async function run() {
     if (hqProfileCtx.error || !hqProfileCtx.data?.id) {
       printResult("CHECK", "HQ Admin: create check skipped (profile context unavailable)");
     } else {
+      const contextSummary = summarizeProfileContext(hqProfileCtx.data);
+      if (hqProfileCtx.data.role !== "hq_admin") {
+        printResult("CHECK", `HQ Admin: fixture role mismatch (${contextSummary})`);
+      }
+      if (hqProfileCtx.data.is_active === false) {
+        printResult("CHECK", `HQ Admin: fixture inactive (${contextSummary})`);
+      }
       const createResult = await createAnnouncementRequest({
         branchId: hqProfileCtx.data.branch_id || null,
         title: `Smoke HQ Announcement ${new Date().toISOString()}`,
@@ -139,7 +154,10 @@ async function run() {
         targets: [],
       });
       if (createResult.error || !createResult.data?.announcement?.id) {
-        printResult("CHECK", `HQ Admin: create announcement check skipped (${createResult.error?.message || "unknown"})`);
+        printResult(
+          "CHECK",
+          `HQ Admin: create announcement check skipped (${createResult.error?.message || "unknown"}; ${contextSummary})`
+        );
       } else {
         hqAnnouncementId = createResult.data.announcement.id;
         createdAnnouncementIds.push(hqAnnouncementId);
@@ -159,6 +177,13 @@ async function run() {
     if (supervisorCtx.error || !supervisorCtx.data?.id || !isUuidLike(supervisorCtx.data.branch_id)) {
       printResult("CHECK", "Branch Supervisor: own-branch create check skipped (profile/branch context unavailable)");
     } else {
+      const contextSummary = summarizeProfileContext(supervisorCtx.data);
+      if (supervisorCtx.data.role !== "branch_supervisor") {
+        printResult("CHECK", `Branch Supervisor: fixture role mismatch (${contextSummary})`);
+      }
+      if (supervisorCtx.data.is_active === false) {
+        printResult("CHECK", `Branch Supervisor: fixture inactive (${contextSummary})`);
+      }
       const createResult = await createAnnouncementRequest({
         branchId: supervisorCtx.data.branch_id,
         title: `Smoke Supervisor Announcement ${new Date().toISOString()}`,
@@ -171,7 +196,10 @@ async function run() {
         targets: [{ targetType: "branch", branchId: supervisorCtx.data.branch_id }],
       });
       if (createResult.error || !createResult.data?.announcement?.id) {
-        printResult("CHECK", `Branch Supervisor: own-branch create check skipped (${createResult.error?.message || "unknown"})`);
+        printResult(
+          "CHECK",
+          `Branch Supervisor: own-branch create check skipped (${createResult.error?.message || "unknown"}; ${contextSummary})`
+        );
       } else {
         supervisorAnnouncementId = createResult.data.announcement.id;
         createdAnnouncementIds.push(supervisorAnnouncementId);

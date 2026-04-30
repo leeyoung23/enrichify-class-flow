@@ -88,6 +88,14 @@ Current safe CHECK skips:
 - Teacher targeted flow skipped because create fixtures were unavailable.
 - Cross-branch negative check skipped because fixture prerequisite was unavailable.
 
+Root-cause diagnosis from improved smoke logging:
+
+- HQ fixture profile resolved as `role=hq_admin` but `is_active=false`.
+- Branch supervisor fixture profile resolved as `role=branch_supervisor` but `is_active=false`.
+- `public.current_user_role()` in `supabase/sql/002_rls_helper_functions.sql` requires `profiles.is_active = true`.
+- Because role helper returns null for inactive profiles, `announcements_insert_020` RLS blocks create for both HQ and supervisor.
+- This indicates fixture/profile-state mismatch, not policy weakening.
+
 Interpretation:
 
 - Smoke script exits successfully with these CHECK outcomes.
@@ -130,7 +138,7 @@ Why A first:
 
 - Service methods already exist.
 - Smoke test already exists.
-- HQ/supervisor create flows are not fully proven yet.
+- HQ/supervisor create flows are not fully proven yet due fixture active-state mismatch.
 - UI should wait until service/RLS create path is confirmed.
 - Prevents building UI over broken or fixture-dependent backend behavior.
 
