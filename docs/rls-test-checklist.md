@@ -333,6 +333,25 @@ Reminder: **Frontend filtering is not security. RLS must enforce access at datab
   - assignment-aware submission insert should not regress class-scope uploads
   - assignee row alignment guard should reject task/class/branch/student mismatch writes
 
+### AI homework deployed regression fixture draft note
+
+- Draft patch reference: `supabase/sql/019_ai_homework_deployed_regression_fixture.sql` (manual/dev-only apply).
+- Purpose: provide a stable fake baseline for deployed AI Edge regression allowed-role + mismatch checks.
+- `019` scope is additive only:
+  - fake branch/class/student
+  - fake guardian link
+  - fake teacher-class assignment
+  - fake homework task + fake homework submission
+- `019` includes helper SELECT output for:
+  - `AI_HOMEWORK_TEST_SUBMISSION_ID`
+  - `AI_HOMEWORK_TEST_TASK_ID`
+  - `AI_HOMEWORK_TEST_STUDENT_ID`
+  - `AI_HOMEWORK_TEST_CLASS_ID`
+- After manual apply in dev:
+  1. copy those IDs into local `.env.local` only (never commit),
+  2. run `npm run test:ai:homework-edge:deployed`,
+  3. confirm teacher/supervisor/HQ allowed and mismatch checks can move from `CHECK` to `PASS`.
+
 ### Homework marked-file role/release draft patch note
 
 - Draft patch reference: `supabase/sql/018_homework_file_roles_release_foundation.sql` (manual review/apply only).

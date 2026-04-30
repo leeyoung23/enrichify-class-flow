@@ -283,6 +283,12 @@ Current status note:
   - UUID + relationship validation for explicit fixture IDs before allowed-role tests,
   - role-accessible fallback discovery when explicit IDs are not configured,
   - clearer `CHECK` reasons when fixtures are unavailable.
+- Dev-only stable fixture baseline SQL draft is now added at `supabase/sql/019_ai_homework_deployed_regression_fixture.sql`:
+  - additive/manual-dev only,
+  - no destructive operations,
+  - fake-only branch/class/student/task/submission baseline for deployed regression,
+  - helper SELECT output for local `AI_HOMEWORK_TEST_*` values,
+  - not applied automatically in this milestone.
 - Provider integration remains unwired/disabled; no provider keys added; draft-only and teacher-approval gate remain unchanged.
 - AI homework feedback remains a future milestone after full human workflow hardening.
 - Notification/email workflow remains a future milestone.

@@ -92,6 +92,16 @@ Validated with:
 - Provider adapter remains future.
 - OCR/rubric remains future.
 
+Fixture baseline SQL draft status:
+
+- Dev-only additive draft created: `supabase/sql/019_ai_homework_deployed_regression_fixture.sql`
+- `019` is not auto-applied and not applied in this checkpoint.
+- `019` includes helper SELECT output for `AI_HOMEWORK_TEST_*` IDs.
+- Next manual step remains:
+  1) run `019` in Supabase dev SQL editor,
+  2) copy returned IDs into local `.env.local` only,
+  3) rerun `npm run test:ai:homework-edge:deployed`.
+
 ## 9) Recommended next milestone
 
 Choose:

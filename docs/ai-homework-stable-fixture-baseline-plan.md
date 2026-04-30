@@ -101,6 +101,18 @@ Recommended approach:
 - Use obviously fake naming/emails (`*.example.test`).
 - Never apply to production.
 
+Implementation draft status:
+
+- Dev-only additive SQL draft is now created at `supabase/sql/019_ai_homework_deployed_regression_fixture.sql`.
+- `019` is manual/dev-only and is **not applied yet** in this checkpoint.
+- `019` includes helper output query for:
+  - `AI_HOMEWORK_TEST_SUBMISSION_ID`
+  - `AI_HOMEWORK_TEST_TASK_ID`
+  - `AI_HOMEWORK_TEST_STUDENT_ID`
+  - `AI_HOMEWORK_TEST_CLASS_ID`
+- After manual dev apply, copy output IDs into local `.env.local` only and rerun:
+  - `npm run test:ai:homework-edge:deployed`
+
 ## 7) RLS/auth considerations
 
 Baseline must satisfy:
