@@ -204,3 +204,16 @@ Validation efficiency rule:
   - npm run lint
   - npm run typecheck
 ```
+
+## 16) Checkpoint update (shell milestone)
+
+Parent `Marked work` display shell is now added in `ParentView` with demo parity only:
+
+- Demo parent mode shows a local fake released marked-file card under released teacher feedback.
+- Demo `View marked work` stays local preview/toast only (no Supabase reads, no signed URLs).
+- Authenticated non-demo parent mode currently shows safe waiting/empty copy only for marked work in this shell milestone.
+- Real parent marked-file wiring remains future:
+  - `listHomeworkFiles({ fileRole: 'teacher_marked_homework', parentVisibleOnly: true })`
+  - `getHomeworkFileSignedUrl(...)`
+- Parent release boundary remains protected: no teacher controls, no upload controls, no internal notes, and no unreleased-file hints in parent output.
+- AI OCR/provider behavior remains future and is still not exposed in parent marked-file display.

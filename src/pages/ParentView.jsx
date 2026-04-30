@@ -65,17 +65,26 @@ function formatReleasedDateLabel(value) {
   return date.toLocaleDateString('en-AU');
 }
 
+function formatMarkedWorkMetaDate(value) {
+  if (!value) return '';
+  const parsed = new Date(value);
+  if (Number.isNaN(parsed.getTime())) return '';
+  return parsed.toLocaleDateString('en-AU');
+}
+
 function ParentHomeworkStatusSection({
   isDemoMode,
   loading,
   error,
   tasks,
   feedbackBySubmissionId,
+  markedWorkBySubmissionId,
   uploadDraftByTaskId,
   submitLoadingByTaskId,
   onUploadFileChange,
   onUploadNoteChange,
   onSubmitTaskUpload,
+  onViewMarkedWork,
 }) {
   if (loading) {
     return (
@@ -126,6 +135,9 @@ function ParentHomeworkStatusSection({
         {tasks.map((task) => {
           const statusMeta = PARENT_HOMEWORK_STATUS_META[task.parentStatus] || PARENT_HOMEWORK_STATUS_META.not_submitted;
           const feedbackRow = task.latestSubmissionId ? feedbackBySubmissionId[task.latestSubmissionId] : null;
+          const markedWorkItems = task.latestSubmissionId
+            ? (markedWorkBySubmissionId[task.latestSubmissionId] || [])
+            : [];
           const hasReleasedFeedback = Boolean(
             feedbackRow?.feedback_text || feedbackRow?.next_step || feedbackRow?.released_to_parent_at
           );
@@ -169,6 +181,40 @@ function ParentHomeworkStatusSection({
               ) : null}
               {showRevisionWaitingCopy ? (
                 <p className="text-xs text-muted-foreground">Please revise and resubmit. Teacher feedback will appear here after release.</p>
+              ) : null}
+              {hasReleasedFeedback ? (
+                <div className="rounded-md border bg-muted/20 px-2.5 py-2 space-y-2">
+                  <p className="text-xs font-medium text-foreground">Teacher-marked work</p>
+                  {markedWorkItems.length > 0 ? (
+                    <div className="space-y-2">
+                      {markedWorkItems.map((item) => (
+                        <div key={item.id} className="rounded-md border bg-background p-2.5 space-y-1.5">
+                          <p className="text-xs font-medium leading-snug text-foreground break-words">
+                            {item.fileName}
+                          </p>
+                          <p className="text-[11px] text-muted-foreground">
+                            {item.fileTypeLabel}
+                            {item.releasedAtLabel ? ` • Released ${item.releasedAtLabel}` : ''}
+                          </p>
+                          <Button
+                            type="button"
+                            size="sm"
+                            variant="outline"
+                            className="min-h-8 px-2.5 text-xs"
+                            onClick={() => onViewMarkedWork(item)}
+                            disabled={item.viewDisabled}
+                          >
+                            View marked work
+                          </Button>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <p className="text-xs text-muted-foreground">
+                      Marked work will appear here once your teacher releases it.
+                    </p>
+                  )}
+                </div>
               ) : null}
               {isUploadAllowed ? (
                 <div className="rounded-md border border-dashed p-3 space-y-2">
@@ -796,6 +842,7 @@ export default function ParentView() {
   const [parentHomeworkTasks, setParentHomeworkTasks] = useState([]);
   const [parentHomeworkSubmissions, setParentHomeworkSubmissions] = useState([]);
   const [parentHomeworkFeedbackBySubmissionId, setParentHomeworkFeedbackBySubmissionId] = useState({});
+  const [parentHomeworkMarkedWorkBySubmissionId, setParentHomeworkMarkedWorkBySubmissionId] = useState({});
   const [homeworkUploadDraftByTaskId, setHomeworkUploadDraftByTaskId] = useState({});
   const [homeworkSubmitLoadingByTaskId, setHomeworkSubmitLoadingByTaskId] = useState({});
 
@@ -930,6 +977,7 @@ export default function ParentView() {
       setParentHomeworkTasks([]);
       setParentHomeworkSubmissions([]);
       setParentHomeworkFeedbackBySubmissionId({});
+      setParentHomeworkMarkedWorkBySubmissionId({});
       return;
     }
     if (isDemoMode) {
@@ -964,6 +1012,17 @@ export default function ParentView() {
           released_to_parent_at: '2026-05-11T10:00:00.000Z',
         },
       });
+      setParentHomeworkMarkedWorkBySubmissionId({
+        'demo-homework-submission-2': [
+          {
+            id: 'demo-marked-file-1',
+            fileName: 'reading-reflection-marked.pdf',
+            fileTypeLabel: 'PDF',
+            releasedAtLabel: formatMarkedWorkMetaDate('2026-05-11T10:10:00.000Z'),
+            viewDisabled: false,
+          },
+        ],
+      });
       return;
     }
     if (!hasSupabaseSession || !isSupabaseConfigured() || !student?.id || !cls?.id) {
@@ -972,6 +1031,7 @@ export default function ParentView() {
       setParentHomeworkTasks([]);
       setParentHomeworkSubmissions([]);
       setParentHomeworkFeedbackBySubmissionId({});
+      setParentHomeworkMarkedWorkBySubmissionId({});
       return;
     }
     if (!isUuidLike(student.id) || !isUuidLike(cls.id)) {
@@ -980,6 +1040,7 @@ export default function ParentView() {
       setParentHomeworkTasks([]);
       setParentHomeworkSubmissions([]);
       setParentHomeworkFeedbackBySubmissionId({});
+      setParentHomeworkMarkedWorkBySubmissionId({});
       return;
     }
 
@@ -1028,15 +1089,25 @@ export default function ParentView() {
       setParentHomeworkFeedbackBySubmissionId(
         Object.fromEntries(feedbackEntries.filter((entry) => entry[1]))
       );
+      setParentHomeworkMarkedWorkBySubmissionId({});
     } catch (error) {
       setParentHomeworkTasks([]);
       setParentHomeworkSubmissions([]);
       setParentHomeworkFeedbackBySubmissionId({});
+      setParentHomeworkMarkedWorkBySubmissionId({});
       setParentHomeworkError(error?.message || 'Unable to load homework status.');
     } finally {
       setParentHomeworkLoading(false);
     }
   }, [isDemoStudentPreview, isDemoMode, hasSupabaseSession, student?.id, cls?.id]);
+
+  const handleViewMarkedWork = useCallback((item) => {
+    if (isDemoMode) {
+      toast.message(`Demo preview only: ${item?.fileName || 'Marked work file'} is not opened from Supabase in demo mode.`);
+      return;
+    }
+    toast.message('Marked work preview will be available after parent-safe file viewing is wired.');
+  }, [isDemoMode]);
 
   useEffect(() => {
     void loadParentHomeworkStatus();
@@ -1465,11 +1536,13 @@ export default function ParentView() {
                 error={parentHomeworkError}
                 tasks={parentHomeworkTasksWithStatus}
                 feedbackBySubmissionId={parentHomeworkFeedbackBySubmissionId}
+                markedWorkBySubmissionId={parentHomeworkMarkedWorkBySubmissionId}
                 uploadDraftByTaskId={homeworkUploadDraftByTaskId}
                 submitLoadingByTaskId={homeworkSubmitLoadingByTaskId}
                 onUploadFileChange={handleHomeworkUploadFileChange}
                 onUploadNoteChange={handleHomeworkUploadNoteChange}
                 onSubmitTaskUpload={handleSubmitHomeworkForTask}
+                onViewMarkedWork={handleViewMarkedWork}
               />
               <LatestParentComment updates={updates} />
               <LatestWeeklyProgressReport updates={updates} />

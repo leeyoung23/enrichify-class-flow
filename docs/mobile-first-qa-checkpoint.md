@@ -27,6 +27,7 @@ Scope note:
 - ParentView read-only Homework status list is now present; verify badge readability and card wrapping for multiple tasks on ~390px.
 - ParentView Homework upload form is now present for upload-allowed statuses; verify stacked input + note + submit CTA at ~390px.
 - ParentView released homework feedback display is now present; verify feedback summary readability, released date placement, and optional expand/collapse comfort on ~390px.
+- ParentView `Teacher-marked work` shell is now present under released feedback; verify compact file card readability, metadata wrapping, and single `View marked work` action comfort on ~390px.
 
 ### `ParentUpdates`
 
@@ -150,6 +151,9 @@ Status update:
 - `Homework` review detail now includes `Marked work` UI shell with demo parity; include in mobile QA pass:
   - demo mode: local fake marked-file list/upload/release/view simulation only,
   - authenticated non-demo mode: real marked-file upload/list/view/release wiring now uses existing marked-file services with loading/empty/error handling.
+- `ParentView` now includes parent `Teacher-marked work` display shell with demo parity only; include in mobile QA pass:
+  - demo mode: local fake released marked-file card + local preview toast only,
+  - authenticated non-demo mode: safe waiting copy shell only in this milestone (no real parent marked-file list/signed URL wiring yet).
 - Remaining mobile QA/polish items:
   - `ParentUpdates` mobile review flow density
 

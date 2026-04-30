@@ -209,6 +209,15 @@ Current status note:
   - authenticated non-demo mode now wires real marked-file upload/list/view/release actions with existing marked-file services.
 - Marked-file release action does not auto-release feedback and does not trigger notification side effects in this phase.
 - Parent released marked-file display runtime wiring remains future.
+- Parent `Teacher-marked work` display shell is now added in `src/pages/ParentView.jsx` under released feedback cards:
+  - demo mode uses local fake released marked-file display and local preview toast only,
+  - authenticated non-demo mode currently shows safe waiting copy shell only,
+  - real parent marked-file list/signed URL wiring remains future.
+- Parent marked-file release boundary remains protected in this shell milestone:
+  - no parent visibility for unreleased teacher-marked files,
+  - no teacher controls/upload controls in parent area,
+  - no internal notes/raw IDs in parent output.
+- AI OCR/provider path for marked files remains future and is not wired in parent display flow.
 - Assignee-aware homework read service baseline is now added in `src/services/supabaseReadService.js`:
   - `listHomeworkTaskAssignees(...)`
   - `listAssignedHomeworkForStudent(...)`
