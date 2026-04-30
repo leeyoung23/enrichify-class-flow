@@ -416,12 +416,21 @@ Current status note:
   - helper functions exist (`announcement_attachment_announcement_id`, `announcement_attachment_branch_id`, `can_access_announcement_attachment`, `can_manage_announcement_attachment`),
   - storage bucket `announcements-attachments` exists with `public=false`,
   - storage object policies exist for select/insert/update/delete paths.
+- Announcements attachments service + smoke checkpoint is now added:
+  - service methods in `src/services/supabaseUploadService.js`:
+    - `uploadAnnouncementAttachment(...)`
+    - `listAnnouncementAttachments(...)`
+    - `getAnnouncementAttachmentSignedUrl(...)`
+    - `deleteAnnouncementAttachment(...)` (cleanup helper path),
+  - smoke script: `scripts/supabase-announcements-attachments-smoke-test.mjs`,
+  - command: `npm run test:supabase:announcements:attachments`,
+  - checkpoint doc: `docs/announcements-attachments-service-smoke-checkpoint.md`.
+- Attachments UI remains unwired in this checkpoint.
 - Checkpoint doc:
   - `docs/announcements-attachments-sql-application-checkpoint.md`.
 - Attachments runtime service/UI wiring remains future.
 - Recommended next milestone now is:
-  - **Announcements attachments upload/list/signed URL service + smoke test** first,
-  - then attachment UI shell,
+  - **Announcements attachments UI shell** first,
   - then MyTasks integration planning,
   - then Company News warm pop-up planning and parent-facing announcement/event planning,
   - live chat feasibility remains later/optional.

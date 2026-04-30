@@ -503,7 +503,17 @@ Why A first:
   - storage object policies exist for select/insert/update/delete.
 - No production apply and no runtime/UI/service changes in this checkpoint.
 - Parent-facing media remains blocked in `023` (`parent_facing_media` is reserved but not exposed).
-- Attachments service/UI wiring remains future.
+- Attachments service methods are now implemented in `src/services/supabaseUploadService.js`:
+  - `uploadAnnouncementAttachment(...)`
+  - `listAnnouncementAttachments(...)`
+  - `getAnnouncementAttachmentSignedUrl(...)`
+  - `deleteAnnouncementAttachment(...)` (cleanup helper path)
+- Attachments fake/dev smoke script now exists:
+  - `scripts/supabase-announcements-attachments-smoke-test.mjs`
+  - package command: `npm run test:supabase:announcements:attachments`
+- Service/smoke checkpoint doc:
+  - `docs/announcements-attachments-service-smoke-checkpoint.md`
+- Attachments UI remains unwired in this checkpoint.
 - MyTasks integration remains future.
 - Company News pop-up behavior remains future.
 

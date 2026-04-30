@@ -506,6 +506,12 @@ Reminder: **Frontend filtering is not security. RLS must enforce access at datab
   - helper functions present (`announcement_attachment_announcement_id`, `announcement_attachment_branch_id`, `can_access_announcement_attachment`, `can_manage_announcement_attachment`),
   - storage bucket `announcements-attachments` exists with `public=false`,
   - storage object policies present (`announcements_attachments_storage_select_023`, `announcements_attachments_storage_insert_023`, `announcements_attachments_storage_update_023`, `announcements_attachments_storage_delete_023`).
+- Service + smoke references:
+  - `src/services/supabaseUploadService.js` (`uploadAnnouncementAttachment`, `listAnnouncementAttachments`, `getAnnouncementAttachmentSignedUrl`)
+  - `scripts/supabase-announcements-attachments-smoke-test.mjs`
+  - `npm run test:supabase:announcements:attachments`
+- Service/smoke checkpoint doc:
+  - `docs/announcements-attachments-service-smoke-checkpoint.md`
 - `023` phase boundary:
   - parent/student access blocked,
   - `parent_facing_media` is reserved but blocked in this phase,

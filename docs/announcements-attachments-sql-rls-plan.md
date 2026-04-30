@@ -18,7 +18,16 @@ No UI/runtime/service/SQL changes in this checkpoint.
 - No production apply in this checkpoint.
 - No runtime/UI/service changes in this checkpoint.
 - Application checkpoint doc: `docs/announcements-attachments-sql-application-checkpoint.md`.
-- Attachments service/UI wiring remains future.
+- Attachments service methods are now added in `src/services/supabaseUploadService.js`:
+  - `uploadAnnouncementAttachment(...)`
+  - `listAnnouncementAttachments(...)`
+  - `getAnnouncementAttachmentSignedUrl(...)`
+  - `deleteAnnouncementAttachment(...)` (cleanup helper)
+- Attachments smoke script is now added:
+  - `scripts/supabase-announcements-attachments-smoke-test.mjs`
+  - `npm run test:supabase:announcements:attachments`
+- Service/smoke checkpoint doc: `docs/announcements-attachments-service-smoke-checkpoint.md`.
+- Attachments UI wiring remains future.
 - MyTasks integration remains future.
 - Company News pop-up remains future.
 
@@ -207,13 +216,13 @@ Why A first:
 
 Choose:
 
-- A. Announcements attachments upload/list/signed URL service + smoke test
-- B. Announcements attachments UI shell
-- C. MyTasks integration plan
-- D. Company News pop-up design
-- E. Parent-facing announcements/events plan
+- A. Announcements attachments UI shell
+- B. MyTasks integration plan
+- C. Company News pop-up design
+- D. Parent-facing announcements/events plan
+- E. Live chat feasibility plan
 
-Recommendation: **A. Announcements attachments upload/list/signed URL service + smoke test**.
+Recommendation: **A. Announcements attachments UI shell**.
 
 ## 15) Next implementation prompt (copy-paste)
 
@@ -235,7 +244,7 @@ Before doing anything, verify:
 - git status --short
 
 Task:
-Announcements attachments service + smoke test only.
+Announcements attachments UI shell only (service-backed; no SQL changes).
 
 Hard constraints:
 - Do not change app UI.
@@ -258,14 +267,13 @@ Hard constraints:
 - Do not start live chat in this milestone.
 
 Deliverables:
-1) `src/services/supabaseUploadService.js` attachment methods:
+1) Staff Announcements attachments UI shell (internal only; no parent-facing behavior).
+2) Wire existing attachment service methods (no SQL/RLS edits):
    - `uploadAnnouncementAttachment(...)`
    - `listAnnouncementAttachments(...)`
    - `getAnnouncementAttachmentSignedUrl(...)`
-2) Fake/dev-only attachments smoke script:
-   - role-scope and storage policy checks for HQ/supervisor/teacher + parent/student blocked
-3) Package script entry for the smoke test.
-4) Docs update with smoke command and expected PASS/CHECK outcomes.
+3) Preserve role boundaries and safe fallback behavior.
+4) Keep MyTasks/Company News/parent-facing/live-chat out of scope.
 
 Validation efficiency rule:
 Docs/planning only.

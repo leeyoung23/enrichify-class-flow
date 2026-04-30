@@ -81,35 +81,45 @@ Storage verification:
 
 ## 7) What remains unwired
 
-- `uploadAnnouncementAttachment(...)`
-- `listAnnouncementAttachments(...)`
-- `getAnnouncementAttachmentSignedUrl(...)`
-- Announcements attachments smoke test coverage
 - Staff attachment UI
 - MyTasks integration
 - Company News pop-up
 - Parent-facing announcements/events
 
-## 8) Recommended next milestone
+## 8) Service + smoke checkpoint update
+
+- Service methods are now added in `src/services/supabaseUploadService.js`:
+  - `uploadAnnouncementAttachment(...)`
+  - `listAnnouncementAttachments(...)`
+  - `getAnnouncementAttachmentSignedUrl(...)`
+  - `deleteAnnouncementAttachment(...)` (cleanup helper path)
+- New smoke script added:
+  - `scripts/supabase-announcements-attachments-smoke-test.mjs`
+  - package command: `npm run test:supabase:announcements:attachments`
+- Service/smoke checkpoint doc:
+  - `docs/announcements-attachments-service-smoke-checkpoint.md`
+- No UI wiring in this checkpoint.
+- No MyTasks integration, Company News pop-up, parent-facing rollout, notifications/emails, or live chat in this checkpoint.
+
+## 9) Recommended next milestone
 
 Choose:
 
-- A. Announcements attachments upload/list/signed URL service + smoke test
-- B. Announcements attachments UI shell
-- C. MyTasks integration plan
-- D. Company News pop-up design
-- E. Parent-facing announcements/events plan
+- A. Announcements attachments UI shell
+- B. MyTasks integration plan
+- C. Company News pop-up design
+- D. Parent-facing announcements/events plan
+- E. Live chat feasibility plan
 
-Recommendation: **A. Announcements attachments upload/list/signed URL service + smoke test**.
+Recommendation: **A. Announcements attachments UI shell**.
 
 Why A first:
 
-- SQL/RLS/storage foundation is now manually applied in dev.
-- Service-level proof should be completed before any UI wiring.
-- Attachment privacy boundaries should be verified first with role + storage smoke tests.
-- This follows the homework marked-file safe rollout pattern (backend/RLS proof before UI).
+- SQL/RLS/storage foundation is applied and service/smoke path now exists.
+- Next practical step is controlled UI shell wiring against existing service helpers.
+- Keep MyTasks/Company News/parent-facing scope deferred.
 
-## 9) Next implementation prompt (copy-paste)
+## 10) Next implementation prompt (copy-paste)
 
 ```text
 Continue this same project only.

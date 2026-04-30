@@ -3,7 +3,9 @@ import { isSupabaseConfigured, supabase } from "./supabaseClient.js";
 const FEE_RECEIPTS_BUCKET = "fee-receipts";
 const CLASS_MEMORIES_BUCKET = "class-memories";
 const HOMEWORK_SUBMISSIONS_BUCKET = "homework-submissions";
+const ANNOUNCEMENTS_ATTACHMENTS_BUCKET = "announcements-attachments";
 const MAX_HOMEWORK_FILE_BYTES = 2 * 1024 * 1024;
+const MAX_ANNOUNCEMENT_ATTACHMENT_BYTES = 25 * 1024 * 1024;
 const HOMEWORK_TASK_STATUS_VALUES = new Set(["draft", "assigned", "closed", "archived"]);
 const HOMEWORK_SUBMISSION_STATUS_VALUES = new Set([
   "submitted",
@@ -24,6 +26,24 @@ const SAFE_HOMEWORK_CONTENT_TYPES = new Set([
   "image/png",
   "image/jpeg",
   "image/webp",
+]);
+const ANNOUNCEMENT_ATTACHMENT_ROLE_VALUES = new Set([
+  "hq_attachment",
+  "supervisor_attachment",
+  "response_upload",
+]);
+const SAFE_ANNOUNCEMENT_ATTACHMENT_CONTENT_TYPES = new Set([
+  "text/plain",
+  "application/pdf",
+  "image/png",
+  "image/jpeg",
+  "image/webp",
+  "application/msword",
+  "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+  "application/vnd.ms-excel",
+  "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+  "application/vnd.ms-powerpoint",
+  "application/vnd.openxmlformats-officedocument.presentationml.presentation",
 ]);
 
 function sanitizeFileName(fileName = "") {
@@ -92,6 +112,15 @@ function buildHomeworkObjectPath({
 }) {
   const safeName = sanitizeFileName(fileName || "homework-file.txt");
   return `${branchId}/${classId}/${studentId}/${homeworkTaskId}/${homeworkSubmissionId}-${safeName}`;
+}
+
+function buildAnnouncementAttachmentObjectPath({
+  announcementId,
+  attachmentId,
+  fileName,
+}) {
+  const safeName = sanitizeFileName(fileName || "announcement-attachment.txt");
+  return `${announcementId}/${attachmentId}/${safeName}`;
 }
 
 export async function uploadFeeReceipt({ feeRecordId, file, fileName, contentType } = {}) {
@@ -971,5 +1000,248 @@ export async function listHomeworkFeedback({ homeworkSubmissionId, parentVisible
     return { data: Array.isArray(data) ? data : [], error: error ?? null };
   } catch (err) {
     return { data: [], error: { message: err?.message || String(err) } };
+  }
+}
+
+export async function uploadAnnouncementAttachment({
+  announcementId,
+  file,
+  fileRole = "response_upload",
+  staffNote,
+  fileName,
+  contentType,
+} = {}) {
+  if (!isSupabaseConfigured() || !supabase) {
+    return { data: null, error: { message: "Supabase is not configured" } };
+  }
+  if (!isUuidLike(announcementId)) {
+    return { data: null, error: { message: "announcementId must be a UUID" } };
+  }
+  if (!file) {
+    return { data: null, error: { message: "file is required" } };
+  }
+
+  const normalizedRole = trimString(fileRole || "response_upload");
+  if (!ANNOUNCEMENT_ATTACHMENT_ROLE_VALUES.has(normalizedRole)) {
+    return { data: null, error: { message: "fileRole must be hq_attachment, supervisor_attachment, or response_upload" } };
+  }
+
+  const resolvedContentType = trimString(contentType || file?.type || "application/octet-stream");
+  if (!SAFE_ANNOUNCEMENT_ATTACHMENT_CONTENT_TYPES.has(resolvedContentType)) {
+    return { data: null, error: { message: "Unsupported announcement attachment content type" } };
+  }
+  const fileSizeBytes = Number(file?.size || 0);
+  if (
+    !Number.isFinite(fileSizeBytes) ||
+    fileSizeBytes <= 0 ||
+    fileSizeBytes > MAX_ANNOUNCEMENT_ATTACHMENT_BYTES
+  ) {
+    return { data: null, error: { message: "Announcement attachment file size must be > 0 and <= 25MB" } };
+  }
+
+  try {
+    const { profileId, error: authError } = await getAuthenticatedProfileIdOrError();
+    if (authError || !profileId) return { data: null, error: authError };
+
+    const attachmentId = crypto.randomUUID();
+    const nowIso = new Date().toISOString();
+    const safeName = sanitizeFileName(fileName || file?.name || "announcement-attachment.txt");
+    const objectPath = buildAnnouncementAttachmentObjectPath({
+      announcementId: trimString(announcementId),
+      attachmentId,
+      fileName: safeName,
+    });
+
+    const metadataInsert = await supabase
+      .from("announcement_attachments")
+      .insert({
+        id: attachmentId,
+        announcement_id: trimString(announcementId),
+        uploaded_by_profile_id: profileId,
+        file_role: normalizedRole,
+        file_name: safeName,
+        storage_path: objectPath,
+        mime_type: resolvedContentType,
+        file_size: Math.round(fileSizeBytes),
+        staff_note: getOptionalText(staffNote, 2000),
+        created_at: nowIso,
+        released_to_parent: false,
+        released_at: null,
+        released_by_profile_id: null,
+      })
+      .select("id,announcement_id,uploaded_by_profile_id,file_role,file_name,mime_type,file_size,staff_note,created_at,released_to_parent,released_at,released_by_profile_id")
+      .maybeSingle();
+
+    if (metadataInsert.error || !metadataInsert.data?.id) {
+      return {
+        data: null,
+        error: { message: metadataInsert.error?.message || "Failed to create announcement attachment metadata" },
+      };
+    }
+
+    const objectUpload = await supabase.storage
+      .from(ANNOUNCEMENTS_ATTACHMENTS_BUCKET)
+      .upload(objectPath, file, {
+        upsert: false,
+        contentType: resolvedContentType,
+      });
+
+    if (objectUpload.error) {
+      const cleanup = await supabase
+        .from("announcement_attachments")
+        .delete()
+        .eq("id", attachmentId)
+        .select("id")
+        .maybeSingle();
+      return {
+        data: null,
+        error: {
+          message: objectUpload.error.message || "Failed to upload announcement attachment object",
+          cleanup_warning: cleanup.error?.message || null,
+        },
+      };
+    }
+
+    return {
+      data: {
+        attachment: metadataInsert.data,
+        metadata_first: true,
+      },
+      error: null,
+    };
+  } catch (err) {
+    return { data: null, error: { message: err?.message || String(err) } };
+  }
+}
+
+export async function listAnnouncementAttachments({ announcementId, fileRole } = {}) {
+  if (!isSupabaseConfigured() || !supabase) {
+    return { data: [], error: { message: "Supabase is not configured" } };
+  }
+  if (announcementId != null && announcementId !== "" && !isUuidLike(announcementId)) {
+    return { data: [], error: { message: "announcementId must be a UUID when provided" } };
+  }
+  if (fileRole != null && trimString(fileRole) !== "") {
+    const normalizedRole = trimString(fileRole);
+    if (!ANNOUNCEMENT_ATTACHMENT_ROLE_VALUES.has(normalizedRole)) {
+      return { data: [], error: { message: "fileRole must be hq_attachment, supervisor_attachment, or response_upload" } };
+    }
+  }
+
+  try {
+    let query = supabase
+      .from("announcement_attachments")
+      .select("id,announcement_id,uploaded_by_profile_id,file_role,file_name,mime_type,file_size,staff_note,created_at,released_to_parent,released_at,released_by_profile_id")
+      .order("created_at", { ascending: false });
+
+    if (isUuidLike(announcementId)) query = query.eq("announcement_id", trimString(announcementId));
+    if (trimString(fileRole)) query = query.eq("file_role", trimString(fileRole));
+
+    const { data, error } = await query;
+    return { data: Array.isArray(data) ? data : [], error: error ?? null };
+  } catch (err) {
+    return { data: [], error: { message: err?.message || String(err) } };
+  }
+}
+
+export async function getAnnouncementAttachmentSignedUrl({ attachmentId, expiresIn = 60 } = {}) {
+  if (!isSupabaseConfigured() || !supabase) {
+    return { data: null, error: { message: "Supabase is not configured" } };
+  }
+  if (!isUuidLike(attachmentId)) {
+    return { data: null, error: { message: "attachmentId must be a UUID" } };
+  }
+  const ttl = Number.isFinite(Number(expiresIn)) ? Math.max(30, Math.min(3600, Number(expiresIn))) : 60;
+
+  try {
+    const attachmentRead = await supabase
+      .from("announcement_attachments")
+      .select("id,storage_path")
+      .eq("id", trimString(attachmentId))
+      .maybeSingle();
+    if (attachmentRead.error || !attachmentRead.data?.id) {
+      return {
+        data: null,
+        error: { message: attachmentRead.error?.message || "Announcement attachment metadata not visible" },
+      };
+    }
+    if (!trimString(attachmentRead.data.storage_path)) {
+      return { data: null, error: { message: "Announcement attachment storage path is missing" } };
+    }
+
+    const signedUrlResult = await supabase.storage
+      .from(ANNOUNCEMENTS_ATTACHMENTS_BUCKET)
+      .createSignedUrl(attachmentRead.data.storage_path, ttl);
+    if (signedUrlResult.error || !signedUrlResult.data?.signedUrl) {
+      return {
+        data: null,
+        error: { message: signedUrlResult.error?.message || "Failed to create announcement attachment signed URL" },
+      };
+    }
+
+    return {
+      data: {
+        attachment_id: attachmentRead.data.id,
+        signed_url: signedUrlResult.data.signedUrl,
+        bucket: ANNOUNCEMENTS_ATTACHMENTS_BUCKET,
+      },
+      error: null,
+    };
+  } catch (err) {
+    return { data: null, error: { message: err?.message || String(err) } };
+  }
+}
+
+export async function deleteAnnouncementAttachment({ attachmentId } = {}) {
+  if (!isSupabaseConfigured() || !supabase) {
+    return { data: null, error: { message: "Supabase is not configured" } };
+  }
+  if (!isUuidLike(attachmentId)) {
+    return { data: null, error: { message: "attachmentId must be a UUID" } };
+  }
+
+  try {
+    const attachmentRead = await supabase
+      .from("announcement_attachments")
+      .select("id,storage_path")
+      .eq("id", trimString(attachmentId))
+      .maybeSingle();
+    if (attachmentRead.error || !attachmentRead.data?.id) {
+      return {
+        data: null,
+        error: { message: attachmentRead.error?.message || "Announcement attachment metadata not visible" },
+      };
+    }
+
+    const storagePath = trimString(attachmentRead.data.storage_path);
+    const metadataDelete = await supabase
+      .from("announcement_attachments")
+      .delete()
+      .eq("id", trimString(attachmentId))
+      .select("id")
+      .maybeSingle();
+    if (metadataDelete.error || !metadataDelete.data?.id) {
+      return { data: null, error: { message: metadataDelete.error?.message || "Failed to delete announcement attachment metadata" } };
+    }
+
+    let cleanupWarning = null;
+    if (storagePath) {
+      const objectDelete = await supabase.storage
+        .from(ANNOUNCEMENTS_ATTACHMENTS_BUCKET)
+        .remove([storagePath]);
+      if (objectDelete.error) {
+        cleanupWarning = objectDelete.error.message || "Failed to delete announcement attachment object";
+      }
+    }
+
+    return {
+      data: {
+        attachment_id: metadataDelete.data.id,
+        cleanup_warning: cleanupWarning,
+      },
+      error: null,
+    };
+  } catch (err) {
+    return { data: null, error: { message: err?.message || String(err) } };
   }
 }
