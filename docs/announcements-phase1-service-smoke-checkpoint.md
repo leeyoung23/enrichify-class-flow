@@ -1,22 +1,12 @@
 # Announcements Phase 1 Service Smoke Checkpoint
 
 Checkpoint scope: documentation only for Announcements Phase 1 service + smoke milestone.
+Current status update:
 
-Fixture activation update:
-
-- `supabase/sql/021_announcements_phase1_fake_fixture_activation.sql` is now drafted for manual dev-only use.
-- `021` is not auto-applied and has not been applied by this checkpoint update.
-- `021` only targets fake `example.test` fixture activation/alignment for smoke prerequisites.
-- `021` does not weaken RLS and does not introduce real data.
-
-Insert RLS investigation update:
-
-- Root cause shifted after `021` fixture activation: active fake staff profiles now exist, but create still CHECK-skipped.
-- `createAnnouncementRequest(...)` uses `insert(...).select(...)` (INSERT RETURNING).
-- RETURNING requires inserted rows to satisfy `announcements` SELECT policy.
-- Previous SELECT policy depended on table lookup helper path (`can_access_announcement(id)`), which is fragile for create-path row visibility timing.
-- Fix drafted in SQL patch `supabase/sql/022_fix_announcements_insert_rls.sql` with direct row-predicate SELECT/INSERT checks for create path.
-- `022` is manual/dev-only draft and is not auto-applied.
+- `021` fake fixture activation SQL is manually applied in Supabase dev.
+- `022` Announcements insert/select RLS fix SQL is manually applied in Supabase dev.
+- Core Announcements Phase 1 smoke now passes.
+- Main backend service/RLS boundaries are proven for HQ/supervisor/teacher/parent/student paths.
 
 ## 1) What was implemented
 
@@ -95,75 +85,83 @@ Coverage scope:
 - Optional cross-branch supervisor target negative check
 - No attachment/public URL behavior in this milestone
 
-## 6) CHECK/WARNING notes
+## 6) Smoke PASS result
 
-Current safe CHECK skips:
+- PASS HQ Admin: create announcement request succeeded
+- PASS Branch Supervisor: create own-branch announcement request succeeded
+- PASS Branch Supervisor: publish announcement succeeded
+- PASS Teacher: create announcement blocked as expected
+- PASS Branch Supervisor: targeted teacher profile fixture created
+- PASS Teacher: targeted published announcement is visible
+- PASS Teacher: mark announcement read succeeded
+- PASS Teacher: update done_status=done succeeded
+- PASS Teacher: update done_status=undone succeeded
+- PASS Teacher: structured reply insert as self succeeded
+- PASS Teacher: list statuses call succeeded
+- PASS Teacher: list replies call succeeded
+- PASS Teacher: list targets call succeeded under current RLS
+- PASS Parent: internal_staff announcement read blocked/empty as expected
+- PASS Student: internal_staff announcement read blocked/empty as expected
+- PASS No attachment/public URL behavior was exercised in this Phase 1 smoke test
+- PASS Cleanup removed fake announcements
 
-- HQ create check skipped because RLS blocked in current fixture context.
-- Supervisor create check skipped because RLS blocked in current fixture context.
-- Teacher targeted flow skipped because create fixtures were unavailable.
-- Cross-branch negative check skipped because fixture prerequisite was unavailable.
+## 7) CHECK note
 
-Updated root-cause diagnosis:
+- Cross-branch target-write negative check still CHECK-skips because `ANNOUNCEMENTS_TEST_OTHER_BRANCH_ID` is missing.
+- This is optional fixture coverage only.
+- Main create/read/status/reply path is proven.
+- No unsafe access behavior observed.
 
-- Initial blocker was inactive staff fixtures (`is_active=false`) before `021`.
-- After manual `021` apply and active fixtures, create still failed due create-path RLS behavior.
-- Insert write path uses RETURNING, so SELECT policy also gates created rows.
-- `022` addresses this by using direct row predicates for `announcements_select_020` and `announcements_insert_020` while preserving:
-  - HQ internal-staff create,
-  - own-branch supervisor create only,
-  - teacher create blocked,
-  - parent/student blocked,
-  - parent-facing create blocked in Phase 1.
+## 8) Interpretation
 
-Interpretation:
+- Inactive fake staff fixture issue is resolved.
+- Create-path RLS insert/select issue is resolved.
+- HQ can create request announcements.
+- Branch supervisor can create/publish own-branch request announcements.
+- Teacher cannot create but can read targeted published announcements.
+- Teacher can mark read/done/undone and can reply.
+- Parent/student cannot read internal_staff announcements.
+- Cleanup of fake created rows is working.
 
-- Smoke script exits successfully with these CHECK outcomes.
-- CHECK does not mean policy weakening.
-- But create/target flows are not fully proven yet in current fixture context.
-- A focused fixture/RLS/service investigation is needed before UI wiring.
+## 9) Safety boundaries
 
-## 7) Tests run
+- No parent-facing access yet.
+- No attachments.
+- No public URLs.
+- No auto emails/notifications.
+- No live chat.
+- No frontend service-role usage.
+- No UI changes yet in this checkpoint.
 
-- `git diff --name-only`
-- `npm run build`
-- `npm run lint`
-- `npm run typecheck`
-- `npm run test:supabase:announcements:phase1`
+## 10) What remains future
 
-## 8) What remains future
-
-- Manual review/apply of `021` fake fixture activation in Supabase dev SQL Editor.
-- Rerun `npm run test:supabase:announcements:phase1` after manual apply and record proof.
-- Keep UI wiring blocked until create/status/reply path is proven with active fake staff fixtures.
-- Resolve CHECK skips and fully prove create paths.
-- Staff Announcements UI shell.
+- Staff Announcements UI shell with demo parity.
+- Real Announcements UI wiring.
 - Attachments.
 - MyTasks integration.
 - Company News pop-up.
 - Parent-facing announcements/events.
-- Live chat.
-- Auto emails/notifications.
+- Optional live chat much later.
+- Optional cross-branch negative fixture coverage.
 
-## 9) Recommended next milestone
+## 11) Recommended next milestone
 
 Options:
 
-- A. Investigate Announcements create/RLS smoke CHECK skips
-- B. Staff Announcements UI shell with demo parity
+- A. Staff Announcements UI shell with demo parity
+- B. Real Announcements UI wiring
 - C. Attachments SQL/RLS
 - D. MyTasks integration plan
-- E. Company News pop-up design plan
+- E. Company News pop-up design
 
-Recommendation: **A. Investigate Announcements create/RLS smoke CHECK skips**.
+Recommendation: **A. Staff Announcements UI shell with demo parity**.
 
 Why A first:
 
-- Service methods already exist.
-- Smoke test already exists.
-- HQ/supervisor create flows are not fully proven yet due fixture active-state mismatch.
-- UI should wait until service/RLS create path is confirmed.
-- Prevents building UI over broken or fixture-dependent backend behavior.
+- Backend/service/RLS core path is proven.
+- UI shell can be shaped safely without real-write wiring first.
+- Demo parity helps validate workflow before real UI wiring.
+- Attachments/MyTasks/Company News remain later phases.
 
 ## 10) Next implementation prompt (copy-paste)
 

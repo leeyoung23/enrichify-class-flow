@@ -395,3 +395,16 @@ Next manual step:
 - Interpretation: backend service structure is in place, but create/target proof is incomplete until fixture/RLS context is investigated.
 - Recommendation remains backend-first: resolve CHECK skips before staff Announcements UI shell wiring.
 
+### Phase 1 smoke PASS checkpoint update
+
+- `021` fake fixture activation SQL is now manually applied in Supabase dev.
+- `022` Announcements insert/select RLS fix SQL is now manually applied in Supabase dev.
+- Core Phase 1 smoke path is now proven:
+  - HQ create PASS,
+  - supervisor create/publish PASS,
+  - teacher targeted read/status/reply PASS,
+  - parent/student internal_staff block PASS,
+  - cleanup PASS.
+- Optional cross-branch negative fixture remains CHECK-skipped when `ANNOUNCEMENTS_TEST_OTHER_BRANCH_ID` is not configured.
+- Recommended next milestone now shifts to: Staff Announcements UI shell with demo parity.
+

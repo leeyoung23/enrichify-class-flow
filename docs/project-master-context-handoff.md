@@ -375,6 +375,14 @@ Current status note:
   - manual review/apply `022` in Supabase dev SQL Editor,
   - rerun `npm run test:supabase:announcements:phase1`,
   - proceed to UI only after HQ/supervisor create and downstream targeted flow are proven.
+- Announcements Phase 1 smoke PASS checkpoint is now reached in dev:
+  - `021` manually applied,
+  - `022` manually applied,
+  - PASS: HQ create, supervisor own-branch create/publish, teacher targeted read/status/reply, parent/student internal_staff block, cleanup,
+  - CHECK: optional cross-branch negative fixture still skipped without `ANNOUNCEMENTS_TEST_OTHER_BRANCH_ID`.
+- Recommended immediate next milestone is now:
+  - Staff Announcements UI shell with demo parity first,
+  - keep real UI wiring, attachments, MyTasks integration, Company News pop-up, and parent-facing rollout in later phases.
 - Announcements attachments remain Phase 2+ and are intentionally not included in `020`.
 - Announcements MyTasks integration remains Phase 2+ and is intentionally not included in `020`.
 - Company News pop-up runtime behavior remains Phase 3.

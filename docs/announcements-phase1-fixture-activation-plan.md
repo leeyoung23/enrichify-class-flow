@@ -4,29 +4,27 @@ Checkpoint scope: planning only for fake/dev staff fixture activation and verifi
 
 Current update:
 
-- `supabase/sql/021_announcements_phase1_fake_fixture_activation.sql` is now drafted.
-- `021` is manual/dev-only and has not been auto-applied.
-- `021` purpose is fake staff fixture activation/alignment only (no RLS weakening, no real data).
+- `021` fake fixture activation SQL is manually applied in Supabase dev.
+- `022` Announcements insert/select RLS fix SQL is manually applied in Supabase dev.
+- Core Phase 1 smoke path is now proven for main role boundaries.
 
 ## 1) Current smoke result
 
 Current `npm run test:supabase:announcements:phase1` status:
 
-- HQ and supervisor credentials resolve to profile rows.
-- Both staff fixtures are currently inactive:
-  - HQ: `role=hq_admin`, `is_active=false`, `branch=null`
-  - Supervisor: `role=branch_supervisor`, `is_active=false`, `branch=uuid`
-- `public.current_user_role()` requires active profiles (`is_active=true`).
-- RLS blocks HQ/supervisor create checks correctly in this fixture context.
-- Teacher targeted flow is skipped because create fixtures are unavailable.
-- Cross-branch negative check is skipped because prerequisite fixture is unavailable.
+- PASS HQ create request.
+- PASS supervisor own-branch create/publish.
+- PASS teacher create blocked.
+- PASS teacher targeted read/status/reply flow.
+- PASS parent/student internal_staff block.
+- CHECK optional cross-branch negative fixture (missing `ANNOUNCEMENTS_TEST_OTHER_BRANCH_ID`).
+- PASS cleanup for fake announcement rows.
 
-## 2) Root cause
+## 2) Root cause (resolved)
 
-- This is a **fake fixture state problem**.
-- This is **not** a read/write service payload defect based on current evidence.
-- This is **not** a reason to weaken RLS.
-- Active-profile requirement is correct and should remain for production safety.
+- Resolved issue 1: fake fixture active-state mismatch (fixed via `021`).
+- Resolved issue 2: create-path insert/select RLS interplay on INSERT RETURNING (fixed via `022`).
+- No RLS weakening was required.
 
 ## 3) Required fake/dev fixture state
 
@@ -127,20 +125,19 @@ Expected outcomes after correct fake fixture activation:
 
 Options:
 
-- A. Draft 021 Announcements fake fixture activation SQL
-- B. Staff Announcements UI shell with demo parity
-- C. Weaken RLS to allow inactive profiles
-- D. Attachments SQL/RLS
+- A. Staff Announcements UI shell with demo parity
+- B. Real Announcements UI wiring
+- C. Attachments SQL/RLS
+- D. MyTasks integration plan
 - E. Company News pop-up design
 
-Recommendation: **A. Draft 021 Announcements fake fixture activation SQL**.
+Recommendation: **A. Staff Announcements UI shell with demo parity**.
 
 Why A first:
 
-- RLS is correctly blocking inactive profiles.
-- Fake fixture state must be fixed before UI.
-- Backend create/read/status/reply path should be proven first.
-- Weakening RLS would be unsafe.
+- Backend create/read/status/reply boundary is now proven.
+- UI shell can be shaped safely before real write wiring.
+- Demo parity helps validate the workflow without widening runtime risk.
 
 ## 11) Next implementation prompt (copy-paste)
 

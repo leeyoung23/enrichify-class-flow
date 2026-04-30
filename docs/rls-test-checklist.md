@@ -408,7 +408,15 @@ Reminder: **Frontend filtering is not security. RLS must enforce access at datab
   - teacher/parent/student create blocked,
   - no cross-branch widening,
   - no parent-facing insert path opened.
-- After manual dev apply, rerun: `npm run test:supabase:announcements:phase1`.
+- Manual dev apply status: completed.
+- Current smoke checkpoint now proves core Announcements Phase 1 boundaries:
+  - HQ create PASS,
+  - supervisor own-branch create/publish PASS,
+  - teacher create blocked PASS,
+  - teacher targeted read/status/reply PASS,
+  - parent/student internal_staff block PASS,
+  - cleanup PASS.
+- Optional cross-branch negative fixture remains CHECK-skipped when `ANNOUNCEMENTS_TEST_OTHER_BRANCH_ID` is missing.
 
 ##### Announcements Phase 1 service smoke reference
 

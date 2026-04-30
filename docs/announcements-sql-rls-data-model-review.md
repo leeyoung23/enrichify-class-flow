@@ -453,12 +453,12 @@ CHECK outcomes to resolve next:
 
 Recommendation:
 
-- Investigate create/RLS fixture gaps before Announcements UI wiring.
+- Core create/RLS fixture gaps are now resolved for Phase 1 smoke proof.
 
-Latest diagnosis note:
+Latest diagnosis note (historical):
 
-- Smoke diagnostics now indicate HQ and branch supervisor fixture profiles are `is_active=false`.
-- This aligns with helper behavior in `current_user_role()` (`is_active = true` requirement), which explains create-path RLS blocks without requiring policy weakening.
+- Earlier diagnostics showed inactive HQ/supervisor fixtures before manual `021`.
+- After manual `021` + manual `022`, core create/read/status/reply path now passes in dev.
 
 ## 23) Insert RLS fix draft (022)
 
@@ -470,7 +470,7 @@ Updated diagnosis after manual fixture activation (`021`):
 
 Fix draft:
 
-- Added `supabase/sql/022_fix_announcements_insert_rls.sql` (manual/dev-only; not auto-applied).
+- Added `supabase/sql/022_fix_announcements_insert_rls.sql` (manual/dev-only; now manually applied in dev).
 - `022` updates `announcements_select_020` and `announcements_insert_020` to direct row-predicate checks for create safety.
 - Preserved boundaries:
   - internal staff only (`audience_type = 'internal_staff'`),
@@ -479,4 +479,9 @@ Fix draft:
   - `created_by_profile_id = auth.uid()`,
   - insert limited to request drafts (`announcement_type='request'`, `status='draft'`),
   - teacher/parent/student create remains blocked.
+
+Post-apply smoke outcome:
+
+- PASS core path: HQ create, supervisor create/publish, teacher targeted visibility + read/status/reply, parent/student internal_staff block, cleanup.
+- CHECK optional path: cross-branch negative fixture remains skipped when `ANNOUNCEMENTS_TEST_OTHER_BRANCH_ID` is missing.
 

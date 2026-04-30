@@ -147,7 +147,7 @@ Checkpoint interpretation:
 
 Current fix draft status:
 
-- Added `supabase/sql/022_fix_announcements_insert_rls.sql` (manual/dev-only; not auto-applied).
+- Added `supabase/sql/022_fix_announcements_insert_rls.sql` (manual/dev-only).
 - `022` addresses create-path RLS failure after fixture activation by replacing fragile create-path checks with direct row predicates for:
   - `announcements_select_020`
   - `announcements_insert_020`
@@ -159,9 +159,37 @@ Current fix draft status:
   - `announcement_type = 'request'` and `status = 'draft'` for insert path,
   - teacher/parent/student create blocked.
 
-Manual apply requirement:
+Manual apply checkpoint:
 
-- `022` must be manually reviewed/applied in Supabase dev SQL Editor before smoke can prove create PASS.
+- `022` is now manually applied in Supabase dev SQL Editor.
+- Post-apply smoke now proves HQ/supervisor create path PASS while preserving role boundaries.
+
+## 15) Smoke PASS checkpoint (post 021 + 022 manual apply)
+
+PASS lines:
+
+- PASS HQ Admin: create announcement request succeeded
+- PASS Branch Supervisor: create own-branch announcement request succeeded
+- PASS Branch Supervisor: publish announcement succeeded
+- PASS Teacher: create announcement blocked as expected
+- PASS Branch Supervisor: targeted teacher profile fixture created
+- PASS Teacher: targeted published announcement is visible
+- PASS Teacher: mark announcement read succeeded
+- PASS Teacher: update done_status=done succeeded
+- PASS Teacher: update done_status=undone succeeded
+- PASS Teacher: structured reply insert as self succeeded
+- PASS Teacher: list statuses call succeeded
+- PASS Teacher: list replies call succeeded
+- PASS Teacher: list targets call succeeded under current RLS
+- PASS Parent: internal_staff announcement read blocked/empty as expected
+- PASS Student: internal_staff announcement read blocked/empty as expected
+- PASS No attachment/public URL behavior was exercised
+- PASS Cleanup removed fake announcements
+
+CHECK note:
+
+- Cross-branch target-write negative check remains CHECK-skipped because `ANNOUNCEMENTS_TEST_OTHER_BRANCH_ID` is missing.
+- This is optional fixture coverage and does not block main Phase 1 create/read/status/reply proof.
 
 ## 9) Recommended next milestone
 
