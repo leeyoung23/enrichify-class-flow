@@ -5,9 +5,36 @@ loadEnv({ path: ".env.local", quiet: true });
 
 const supabaseUrl = process.env.VITE_SUPABASE_URL || "";
 const supabaseAnonKey = process.env.VITE_SUPABASE_ANON_KEY || "";
+const explicitFixtureIds = {
+  homeworkSubmissionId: process.env.AI_HOMEWORK_TEST_SUBMISSION_ID || "",
+  homeworkTaskId: process.env.AI_HOMEWORK_TEST_TASK_ID || "",
+  studentId: process.env.AI_HOMEWORK_TEST_STUDENT_ID || "",
+  classId: process.env.AI_HOMEWORK_TEST_CLASS_ID || "",
+};
 
 function printResult(kind, message) {
   console.log(`[${kind}] ${message}`);
+}
+
+function isUuid(value) {
+  return /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(String(value || ""));
+}
+
+function hasAnyExplicitFixtureId() {
+  return Object.values(explicitFixtureIds).some((value) => String(value || "").trim());
+}
+
+function hasAllExplicitFixtureIds() {
+  return Object.values(explicitFixtureIds).every((value) => String(value || "").trim());
+}
+
+function hasValidExplicitFixtureIds() {
+  return (
+    isUuid(explicitFixtureIds.homeworkSubmissionId) &&
+    isUuid(explicitFixtureIds.homeworkTaskId) &&
+    isUuid(explicitFixtureIds.studentId) &&
+    isUuid(explicitFixtureIds.classId)
+  );
 }
 
 function buildClient(token = "") {
@@ -110,17 +137,16 @@ async function signInRole(role) {
   return {
     ok: true,
     client,
-    accessToken: data.session.access_token,
   };
 }
 
-async function getAccessiblePayload(client) {
-  const { data: submission } = await client
+async function getSubmissionPayload(client, submissionId) {
+  const query = client
     .from("homework_submissions")
-    .select("id,homework_task_id,student_id,class_id,branch_id")
-    .order("created_at", { ascending: false })
-    .limit(1)
+    .select("id,homework_task_id,student_id,class_id,created_at")
+    .eq("id", submissionId)
     .maybeSingle();
+  const { data: submission } = await query;
   if (!submission) return null;
   return {
     homeworkSubmissionId: submission.id,
@@ -132,6 +158,63 @@ async function getAccessiblePayload(client) {
     tone: "supportive",
     length: "short",
   };
+}
+
+async function resolvePayloadForRole(client, roleLabel) {
+  if (hasAnyExplicitFixtureId()) {
+    if (!hasAllExplicitFixtureIds()) {
+      printResult("CHECK", `${roleLabel}: skipped (AI_HOMEWORK_TEST_* fixture IDs are partially configured)`);
+      return null;
+    }
+    if (!hasValidExplicitFixtureIds()) {
+      printResult("CHECK", `${roleLabel}: skipped (AI_HOMEWORK_TEST_* fixture IDs must be UUIDs)`);
+      return null;
+    }
+    const payload = await getSubmissionPayload(client, explicitFixtureIds.homeworkSubmissionId);
+    if (!payload) {
+      printResult("CHECK", `${roleLabel}: skipped (explicit fixture submission not found or not accessible)`);
+      return null;
+    }
+    if (
+      payload.homeworkTaskId !== explicitFixtureIds.homeworkTaskId ||
+      payload.studentId !== explicitFixtureIds.studentId ||
+      payload.classId !== explicitFixtureIds.classId
+    ) {
+      printResult("CHECK", `${roleLabel}: skipped (explicit fixture IDs do not match submission relationships)`);
+      return null;
+    }
+    printResult("PASS", `${roleLabel}: using explicit AI_HOMEWORK_TEST_* fixture IDs`);
+    return payload;
+  }
+
+  const { data: submissions } = await client
+    .from("homework_submissions")
+    .select("id,created_at")
+    .order("created_at", { ascending: false })
+    .limit(20);
+
+  if (!Array.isArray(submissions) || submissions.length === 0) {
+    printResult("CHECK", `${roleLabel}: skipped (no role-accessible submission candidates discovered)`);
+    return null;
+  }
+
+  for (const candidate of submissions) {
+    if (!isUuid(candidate?.id)) continue;
+    const payload = await getSubmissionPayload(client, candidate.id);
+    if (
+      payload &&
+      isUuid(payload.homeworkSubmissionId) &&
+      isUuid(payload.homeworkTaskId) &&
+      isUuid(payload.studentId) &&
+      isUuid(payload.classId)
+    ) {
+      printResult("PASS", `${roleLabel}: discovered role-accessible fixture payload`);
+      return payload;
+    }
+  }
+
+  printResult("CHECK", `${roleLabel}: skipped (no UUID-valid role-accessible fixture payload discovered)`);
+  return null;
 }
 
 function validateSuccessDraftShape(body) {
@@ -226,9 +309,8 @@ async function run() {
     const session = await signInRole(roles[item.key]);
     if (!session.ok) continue;
 
-    const payload = await getAccessiblePayload(session.client);
+    const payload = await resolvePayloadForRole(session.client, item.expectedLabel);
     if (!payload) {
-      printResult("CHECK", `${item.expectedLabel}: skipped (no accessible fake homework submission found)`);
       await session.client.auth.signOut();
       continue;
     }

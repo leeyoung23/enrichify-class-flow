@@ -106,6 +106,17 @@ Expected behavior:
 - Pros: quick for one-off unblock.
 - Risks: low repeatability, error-prone drift, hard to audit/maintain across contributors.
 
+Implemented strategy update:
+
+- Deployed regression now supports optional explicit fixture IDs via env:
+  - `AI_HOMEWORK_TEST_SUBMISSION_ID`
+  - `AI_HOMEWORK_TEST_TASK_ID`
+  - `AI_HOMEWORK_TEST_STUDENT_ID`
+  - `AI_HOMEWORK_TEST_CLASS_ID`
+- Script validates these IDs as UUIDs and checks submission relationship consistency before use.
+- When explicit IDs are missing, script now falls back to role-scoped discovery of accessible submission candidates and derives payload from accessible rows.
+- If neither path yields a safe payload, script emits clear `CHECK` skip reasons without weakening auth/scope tests.
+
 Recommended strategy:
 
 - **Primary recommendation: B (dev-only seed script) plus targeted discovery in regression script.**
@@ -129,7 +140,7 @@ Potential improvements for `scripts/ai-homework-edge-function-deployed-regressio
   - prefer explicit tagged fake fixture candidates before fallback `latest submission` query
   - avoid ambiguous fixture selection across unrelated dev rows
 - Optional explicit env fixture IDs:
-  - support `RLS_TEST_HOMEWORK_SUBMISSION_ID`, `RLS_TEST_HOMEWORK_TASK_ID`, `RLS_TEST_STUDENT_ID`, `RLS_TEST_CLASS_ID`
+  - support `AI_HOMEWORK_TEST_SUBMISSION_ID`, `AI_HOMEWORK_TEST_TASK_ID`, `AI_HOMEWORK_TEST_STUDENT_ID`, `AI_HOMEWORK_TEST_CLASS_ID`
   - keep graceful fallback to discovery when env IDs are absent
 - Optional setup/teardown helper integration:
   - only if chosen strategy is C or hybrid B+C

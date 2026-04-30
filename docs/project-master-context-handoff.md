@@ -278,6 +278,11 @@ Current status note:
   - `PASS` student blocked -> `403`
   - `CHECK` teacher/branch supervisor/HQ allowed-role cases due missing accessible fake fixtures
   - `CHECK` relationship mismatch due missing allowed-role fixture
+- Deployed regression fixture handling is now improved in `scripts/ai-homework-edge-function-deployed-regression-test.mjs`:
+  - optional explicit fixture env IDs: `AI_HOMEWORK_TEST_SUBMISSION_ID`, `AI_HOMEWORK_TEST_TASK_ID`, `AI_HOMEWORK_TEST_STUDENT_ID`, `AI_HOMEWORK_TEST_CLASS_ID`,
+  - UUID + relationship validation for explicit fixture IDs before allowed-role tests,
+  - role-accessible fallback discovery when explicit IDs are not configured,
+  - clearer `CHECK` reasons when fixtures are unavailable.
 - Provider integration remains unwired/disabled; no provider keys added; draft-only and teacher-approval gate remain unchanged.
 - AI homework feedback remains a future milestone after full human workflow hardening.
 - Notification/email workflow remains a future milestone.

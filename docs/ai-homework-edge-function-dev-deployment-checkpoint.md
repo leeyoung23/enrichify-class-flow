@@ -59,6 +59,19 @@ From deployed regression run:
 - Relationship mismatch live checks with an allowed-role fixture.
 - Real provider adapter remains future.
 
+## 6.1) Fixture discovery/setup implementation update
+
+- Deployed regression script now supports optional explicit fixture env IDs:
+  - `AI_HOMEWORK_TEST_SUBMISSION_ID`
+  - `AI_HOMEWORK_TEST_TASK_ID`
+  - `AI_HOMEWORK_TEST_STUDENT_ID`
+  - `AI_HOMEWORK_TEST_CLASS_ID`
+- Explicit fixture IDs are UUID-validated and relationship-validated before use.
+- If explicit IDs are not configured, script uses role-accessible payload discovery fallback.
+- If fixture data is still unavailable, script reports clear `CHECK` skip reasons.
+- Auth blocking checks remain active and unchanged.
+- No provider key and no real provider call were added.
+
 ## 7) Recommended next milestone
 
 Choose:
