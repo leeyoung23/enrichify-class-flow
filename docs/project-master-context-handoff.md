@@ -315,6 +315,22 @@ Current status note:
 - `020` pre-apply review hardening is now completed before manual dev apply:
   - fixed supervisor target-write scope gap by adding helper `can_manage_announcement_target_write(...)`,
   - `announcement_targets` insert/update now enforce own-branch scope for branch supervisor target writes.
+- `020` is now manually applied in Supabase dev SQL Editor (Success / No rows returned):
+  - no production apply,
+  - no runtime/UI/service changes in this checkpoint,
+  - Phase 1 tables confirmed in dev:
+    - `announcements`
+    - `announcement_targets`
+    - `announcement_statuses`
+    - `announcement_replies`,
+  - `pg_policies` verification showed policies for all four tables (16 rows visible),
+  - helper verification confirmed:
+    - `announcement_branch_id`
+    - `can_access_announcement`
+    - `can_manage_announcement`
+    - `can_manage_announcement_target_write`
+    - `is_announcement_targeted_to_profile`,
+  - `information_schema` verification returned 42 column rows across the four Phase 1 tables.
 - Announcements attachments remain Phase 2+ and are intentionally not included in `020`.
 - Announcements MyTasks integration remains Phase 2+ and is intentionally not included in `020`.
 - Company News pop-up runtime behavior remains Phase 3.

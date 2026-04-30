@@ -391,3 +391,32 @@ Exact next manual Supabase step:
 
 - Re-review updated `supabase/sql/020_announcements_phase1_foundation.sql`, then manually apply in Supabase **dev** SQL editor only (fake/dev data only).
 
+## 20) 020 manual dev application checkpoint
+
+Application status update:
+
+- `supabase/sql/020_announcements_phase1_foundation.sql` has now been manually applied in Supabase **dev** SQL Editor.
+- Apply result: **Success. No rows returned.**
+- No production apply was performed.
+- No runtime/UI/service changes were made in this checkpoint.
+
+Verification summary:
+
+- Phase 1 tables confirmed:
+  - `announcements`
+  - `announcement_targets`
+  - `announcement_statuses`
+  - `announcement_replies`
+- `pg_policies` verification showed policies for all four tables (**16 policy rows** visible).
+- Helper functions verified:
+  - `announcement_branch_id`
+  - `can_access_announcement`
+  - `can_manage_announcement`
+  - `can_manage_announcement_target_write`
+  - `is_announcement_targeted_to_profile`
+- `information_schema.columns` verification returned **42 rows** across the four Phase 1 tables.
+
+Scope boundary reminder:
+
+- Attachments/MyTasks/pop-up/parent-facing/live-chat remain future milestones.
+

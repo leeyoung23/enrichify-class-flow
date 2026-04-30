@@ -383,6 +383,7 @@ Reminder: **Frontend filtering is not security. RLS must enforce access at datab
 - Negative test: teacher cannot read unrelated branch announcement targets/replies/status rows.
 - Negative test: parent/student direct SQL/API reads on Phase 1 announcements tables must fail.
 - Negative test: branch supervisor must not insert/update `announcement_targets` rows for another branch profile/branch/class scope.
+- Verification checkpoint: `pg_policies` query returned 16 policy rows across the four announcements Phase 1 tables in dev after manual `020` apply.
 
 ### Homework marked-file role/release draft patch note
 

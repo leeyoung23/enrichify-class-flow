@@ -348,3 +348,23 @@ Next manual step:
 - Attachments/MyTasks/pop-up/parent-facing/live-chat phase boundaries remain unchanged.
 - Manual apply is still pending and must remain dev-only after final review sign-off.
 
+### 020 manual dev SQL application checkpoint
+
+- `020` is now manually applied in Supabase dev SQL Editor (Success. No rows returned).
+- No production apply in this checkpoint.
+- No runtime/UI/service changes in this checkpoint.
+- Phase 1 dev tables now exist:
+  - `announcements`
+  - `announcement_targets`
+  - `announcement_statuses`
+  - `announcement_replies`
+- `pg_policies` verification showed policy rows for all four tables (16 rows visible).
+- Helper verification confirmed:
+  - `announcement_branch_id`
+  - `can_access_announcement`
+  - `can_manage_announcement`
+  - `can_manage_announcement_target_write`
+  - `is_announcement_targeted_to_profile`
+- Column verification returned 42 rows across the four Phase 1 tables.
+- Attachments/MyTasks/pop-up/parent-facing/live-chat remain future phases.
+
