@@ -143,6 +143,26 @@ Checkpoint interpretation:
 - Create/target paths are not fully proven yet.
 - Recommended next step before UI wiring: investigate create/RLS CHECK skips with focused fixture/service validation.
 
+## 14) Insert RLS fix draft (022)
+
+Current fix draft status:
+
+- Added `supabase/sql/022_fix_announcements_insert_rls.sql` (manual/dev-only; not auto-applied).
+- `022` addresses create-path RLS failure after fixture activation by replacing fragile create-path checks with direct row predicates for:
+  - `announcements_select_020`
+  - `announcements_insert_020`
+- `022` preserves Phase 1 boundaries:
+  - internal-staff only,
+  - HQ create allowed,
+  - branch supervisor create only for own non-null branch,
+  - `created_by_profile_id = auth.uid()` required,
+  - `announcement_type = 'request'` and `status = 'draft'` for insert path,
+  - teacher/parent/student create blocked.
+
+Manual apply requirement:
+
+- `022` must be manually reviewed/applied in Supabase dev SQL Editor before smoke can prove create PASS.
+
 ## 9) Recommended next milestone
 
 Options:

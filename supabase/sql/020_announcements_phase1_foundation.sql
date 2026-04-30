@@ -353,10 +353,69 @@ as $$
   )
 $$;
 
+create or replace function public.can_select_announcement_row_020(
+  row_audience_type text,
+  row_status text,
+  row_branch_id uuid
+)
+returns boolean
+language sql
+stable
+security definer
+set search_path = public
+as $$
+  select coalesce(
+    row_audience_type = 'internal_staff'
+    and (
+      public.is_hq_admin()
+      or public.is_branch_supervisor_for_branch(row_branch_id)
+      or (
+        public.current_user_role() = 'teacher'
+        and row_status = 'published'
+      )
+    ),
+    false
+  )
+$$;
+
+create or replace function public.can_insert_announcement_row_020(
+  row_audience_type text,
+  row_created_by_profile_id uuid,
+  row_branch_id uuid,
+  row_announcement_type text,
+  row_status text
+)
+returns boolean
+language sql
+stable
+security definer
+set search_path = public
+as $$
+  select coalesce(
+    row_audience_type = 'internal_staff'
+    and row_created_by_profile_id = auth.uid()
+    and row_announcement_type = 'request'
+    and row_status = 'draft'
+    and (
+      public.is_hq_admin()
+      or (
+        public.current_user_role() = 'branch_supervisor'
+        and row_branch_id is not null
+        and public.is_branch_supervisor_for_branch(row_branch_id)
+      )
+    ),
+    false
+  )
+$$;
+
 comment on function public.is_announcement_targeted_to_profile(uuid, uuid) is
   '020 draft helper. Class target_type is reserved for future schema extension; Phase 1 targeting checks profile/role/branch only.';
 comment on function public.can_manage_announcement_target_write(uuid, text, uuid, uuid) is
   '020 review hardening: supervisors can only write target rows within their own announcement branch scope; HQ retains full internal-staff scope.';
+comment on function public.can_select_announcement_row_020(text, text, uuid) is
+  '020 create-path hardening: direct row predicate for select/returning checks; avoids self-lookup timing edge during INSERT RETURNING.';
+comment on function public.can_insert_announcement_row_020(text, uuid, uuid, text, text) is
+  '020 create-path hardening: insert checks for internal_staff request drafts by active HQ or own-branch supervisor only.';
 
 -- -----------------------------------------------------------------------------
 -- 6) Enable RLS
@@ -376,7 +435,11 @@ create policy announcements_select_020
 on public.announcements
 for select
 using (
-  public.can_access_announcement(id)
+  public.can_select_announcement_row_020(
+    audience_type,
+    status,
+    branch_id
+  )
 );
 
 drop policy if exists announcements_insert_020 on public.announcements;
@@ -384,14 +447,12 @@ create policy announcements_insert_020
 on public.announcements
 for insert
 with check (
-  audience_type = 'internal_staff'
-  and created_by_profile_id = auth.uid()
-  and (
-    public.is_hq_admin()
-    or (
-      public.current_user_role() = 'branch_supervisor'
-      and public.is_branch_supervisor_for_branch(branch_id)
-    )
+  public.can_insert_announcement_row_020(
+    audience_type,
+    created_by_profile_id,
+    branch_id,
+    announcement_type,
+    status
   )
 );
 

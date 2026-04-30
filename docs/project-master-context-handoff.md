@@ -366,6 +366,15 @@ Current status note:
   - manual review/apply `021` in Supabase dev SQL Editor,
   - rerun `npm run test:supabase:announcements:phase1`,
   - keep Announcements UI wiring paused until create/status/reply path is proven.
+- Announcements create-path RLS follow-up draft is now added:
+  - `supabase/sql/022_fix_announcements_insert_rls.sql`,
+  - manual/dev-only patch (not auto-applied),
+  - fixes HQ/supervisor create-path CHECK after fixture activation by using direct row-predicate checks in `announcements` select/insert policies,
+  - keeps teacher/parent/student create blocked and preserves cross-branch restrictions.
+- Updated Announcements next required proof sequence:
+  - manual review/apply `022` in Supabase dev SQL Editor,
+  - rerun `npm run test:supabase:announcements:phase1`,
+  - proceed to UI only after HQ/supervisor create and downstream targeted flow are proven.
 - Announcements attachments remain Phase 2+ and are intentionally not included in `020`.
 - Announcements MyTasks integration remains Phase 2+ and is intentionally not included in `020`.
 - Company News pop-up runtime behavior remains Phase 3.

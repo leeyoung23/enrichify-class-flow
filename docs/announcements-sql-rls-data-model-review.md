@@ -460,3 +460,23 @@ Latest diagnosis note:
 - Smoke diagnostics now indicate HQ and branch supervisor fixture profiles are `is_active=false`.
 - This aligns with helper behavior in `current_user_role()` (`is_active = true` requirement), which explains create-path RLS blocks without requiring policy weakening.
 
+## 23) Insert RLS fix draft (022)
+
+Updated diagnosis after manual fixture activation (`021`):
+
+- Fake HQ/supervisor/teacher fixtures are now active in dev.
+- HQ/supervisor create still failed because create path uses `INSERT ... RETURNING` and RETURNING is also gated by SELECT policy.
+- Create-path SELECT depended on helper lookup by announcement id, which is fragile during insert visibility timing.
+
+Fix draft:
+
+- Added `supabase/sql/022_fix_announcements_insert_rls.sql` (manual/dev-only; not auto-applied).
+- `022` updates `announcements_select_020` and `announcements_insert_020` to direct row-predicate checks for create safety.
+- Preserved boundaries:
+  - internal staff only (`audience_type = 'internal_staff'`),
+  - HQ create allowed,
+  - branch supervisor own-branch create only (`branch_id` non-null + own branch),
+  - `created_by_profile_id = auth.uid()`,
+  - insert limited to request drafts (`announcement_type='request'`, `status='draft'`),
+  - teacher/parent/student create remains blocked.
+

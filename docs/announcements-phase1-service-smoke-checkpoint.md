@@ -9,6 +9,15 @@ Fixture activation update:
 - `021` only targets fake `example.test` fixture activation/alignment for smoke prerequisites.
 - `021` does not weaken RLS and does not introduce real data.
 
+Insert RLS investigation update:
+
+- Root cause shifted after `021` fixture activation: active fake staff profiles now exist, but create still CHECK-skipped.
+- `createAnnouncementRequest(...)` uses `insert(...).select(...)` (INSERT RETURNING).
+- RETURNING requires inserted rows to satisfy `announcements` SELECT policy.
+- Previous SELECT policy depended on table lookup helper path (`can_access_announcement(id)`), which is fragile for create-path row visibility timing.
+- Fix drafted in SQL patch `supabase/sql/022_fix_announcements_insert_rls.sql` with direct row-predicate SELECT/INSERT checks for create path.
+- `022` is manual/dev-only draft and is not auto-applied.
+
 ## 1) What was implemented
 
 - Added Phase 1 Announcements read service methods.
@@ -95,13 +104,17 @@ Current safe CHECK skips:
 - Teacher targeted flow skipped because create fixtures were unavailable.
 - Cross-branch negative check skipped because fixture prerequisite was unavailable.
 
-Root-cause diagnosis from improved smoke logging:
+Updated root-cause diagnosis:
 
-- HQ fixture profile resolved as `role=hq_admin` but `is_active=false`.
-- Branch supervisor fixture profile resolved as `role=branch_supervisor` but `is_active=false`.
-- `public.current_user_role()` in `supabase/sql/002_rls_helper_functions.sql` requires `profiles.is_active = true`.
-- Because role helper returns null for inactive profiles, `announcements_insert_020` RLS blocks create for both HQ and supervisor.
-- This indicates fixture/profile-state mismatch, not policy weakening.
+- Initial blocker was inactive staff fixtures (`is_active=false`) before `021`.
+- After manual `021` apply and active fixtures, create still failed due create-path RLS behavior.
+- Insert write path uses RETURNING, so SELECT policy also gates created rows.
+- `022` addresses this by using direct row predicates for `announcements_select_020` and `announcements_insert_020` while preserving:
+  - HQ internal-staff create,
+  - own-branch supervisor create only,
+  - teacher create blocked,
+  - parent/student blocked,
+  - parent-facing create blocked in Phase 1.
 
 Interpretation:
 

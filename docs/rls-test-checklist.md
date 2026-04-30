@@ -397,6 +397,19 @@ Reminder: **Frontend filtering is not security. RLS must enforce access at datab
 - `021` does not weaken RLS and does not include real data, passwords, or secrets.
 - After manual dev apply, rerun: `npm run test:supabase:announcements:phase1`.
 
+##### Announcements insert RLS fix draft note
+
+- Draft patch reference: `supabase/sql/022_fix_announcements_insert_rls.sql` (manual/dev-only apply; fake data only).
+- `022` addresses create-path HQ/supervisor insert CHECK after fixture activation.
+- `022` keeps strict Phase 1 boundaries:
+  - internal-staff only,
+  - HQ create allowed,
+  - branch supervisor create only for own branch,
+  - teacher/parent/student create blocked,
+  - no cross-branch widening,
+  - no parent-facing insert path opened.
+- After manual dev apply, rerun: `npm run test:supabase:announcements:phase1`.
+
 ##### Announcements Phase 1 service smoke reference
 
 - Smoke script: `scripts/supabase-announcements-phase1-smoke-test.mjs`
