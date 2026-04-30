@@ -23,6 +23,7 @@ Current implementation baseline:
 - Frontend wrapper exists for Edge Function invocation.
 - Deployed regression script exists and now reaches live deployed dev function.
 - Live deployed regression now fully passes for allow/deny/mismatch coverage.
+- Provider adapter stub now exists in Edge Function layer with provider disabled by default.
 - Real AI provider is not wired.
 - OCR/vision/rubric marking is not implemented.
 
@@ -290,3 +291,19 @@ Steps:
 Validation rule:
 - Docs-only change; run only `git diff --name-only`.
 ```
+
+## 18) Implementation checkpoint (provider adapter stub complete)
+
+- Provider adapter stub module is now added at `supabase/functions/generate-homework-feedback-draft/providerAdapter.js`.
+- Edge Function handler now routes draft generation through adapter entrypoint:
+  - `generateProviderHomeworkFeedbackDraft({ context, providerMode, buildMockDraft })`
+- Default behavior is provider-disabled safe mode (`disabled`) with local deterministic output only.
+- Supported adapter modes now include:
+  - `mock`
+  - `disabled`
+  - `future_real_provider_placeholder`
+- No real provider API calls are wired in this checkpoint.
+- No provider key/secret was added in repo config.
+- Response contract remains stable as `{ data, error }` with existing draft field shape.
+- Draft-only + teacher approval gate remains unchanged (no auto-save, no auto-release).
+- Focused adapter test is now added at `scripts/ai-homework-provider-adapter-test.mjs`.

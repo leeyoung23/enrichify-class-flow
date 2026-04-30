@@ -298,6 +298,11 @@ Current status note:
   - `PASS` assigned teacher/branch supervisor own-branch/HQ allowed-role cases
   - `PASS` mismatched task/student/class blocked cases
   - `PASS` draft-only safety note present and no auto-save side effect
+- AI homework Edge Function provider adapter stub is now added in `supabase/functions/generate-homework-feedback-draft/providerAdapter.js`:
+  - provider mode supports `mock`, `disabled`, and `future_real_provider_placeholder`,
+  - default behavior is provider-disabled local stub output (`externalCall: false`),
+  - no provider keys/secrets added in repo,
+  - no real provider API wiring in this milestone.
 - Provider integration remains unwired/disabled; no provider keys added; draft-only and teacher-approval gate remain unchanged.
 - AI homework feedback remains a future milestone after full human workflow hardening.
 - Notification/email workflow remains a future milestone.

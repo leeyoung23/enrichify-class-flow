@@ -1,3 +1,5 @@
+import { generateProviderHomeworkFeedbackDraft } from "./providerAdapter.js";
+
 function sanitizeText(value, fallback = "") {
   if (typeof value !== "string") return fallback;
   const next = value.trim();
@@ -42,9 +44,24 @@ function buildRequestPayload(body = {}) {
     classId: sanitizeText(body?.classId),
     teacherObservation: sanitizeText(body?.teacherObservation),
     mode: sanitizeText(body?.mode, "stub"),
+    providerMode: sanitizeText(body?.providerMode, readDefaultProviderMode()),
     tone: sanitizeText(body?.tone, "supportive"),
     length: sanitizeText(body?.length, "short"),
   };
+}
+
+function readDefaultProviderMode() {
+  // Provider mode is server-side Edge Function configuration only.
+  // Future real provider keys must stay in Edge secrets, never in VITE_* or frontend runtime.
+  try {
+    const denoEnv = globalThis?.Deno?.env;
+    if (denoEnv && typeof denoEnv.get === "function") {
+      return sanitizeText(denoEnv.get("AI_HOMEWORK_PROVIDER_MODE"), "disabled");
+    }
+  } catch {
+    // Ignore env access errors and keep safe default.
+  }
+  return "disabled";
 }
 
 function validateRequestPayload(payload) {
@@ -163,16 +180,38 @@ export async function handleGenerateHomeworkFeedbackDraftRequestWithResolver(
       );
     }
 
-    const draft = buildMockHomeworkDraft({
+    const context = {
       homeworkSubmissionId: payload.homeworkSubmissionId,
       homeworkTaskId: payload.homeworkTaskId,
       studentId: payload.studentId,
       classId: payload.classId,
       teacherObservation: payload.teacherObservation,
       mode: payload.mode,
+      providerMode: payload.providerMode,
       tone: payload.tone,
       length: payload.length,
+    };
+
+    const providerResult = await generateProviderHomeworkFeedbackDraft({
+      context,
+      providerMode: payload.providerMode,
+      buildMockDraft: buildMockHomeworkDraft,
     });
+
+    // Provider adapter errors must fail safely and never block manual teacher workflow.
+    // Fallback keeps deterministic draft-only output and preserves stable response shape.
+    const draft =
+      providerResult?.draft ||
+      buildMockHomeworkDraft({
+        homeworkSubmissionId: payload.homeworkSubmissionId,
+        homeworkTaskId: payload.homeworkTaskId,
+        studentId: payload.studentId,
+        classId: payload.classId,
+        teacherObservation: payload.teacherObservation,
+        mode: payload.mode,
+        tone: payload.tone,
+        length: payload.length,
+      });
 
     return jsonResponse({
       data: draft,

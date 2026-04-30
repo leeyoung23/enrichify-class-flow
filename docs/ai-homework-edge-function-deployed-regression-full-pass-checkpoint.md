@@ -85,7 +85,7 @@ All required live deployed regression cases now pass:
 
 ## 8) What remains future
 
-- Provider adapter stub with provider disabled.
+- Provider adapter stub with provider disabled (now implemented in Edge Function layer checkpoint).
 - Real provider behind Supabase Edge secret.
 - Feature-flagged UI path to deployed Edge Function (if appropriate).
 - AI audit/logging.
@@ -162,3 +162,15 @@ Run:
 - git diff --name-only
 Do not run build/lint/smoke suite unless runtime files change.
 ```
+
+## 11) Provider adapter stub follow-up status
+
+- Provider adapter stub has now been added in the Edge Function layer:
+  - `supabase/functions/generate-homework-feedback-draft/providerAdapter.js`
+- Provider remains disabled by default (`AI_HOMEWORK_PROVIDER_MODE=disabled` fallback).
+- No real provider call was added.
+- No provider key/secret was added.
+- Existing deployed regression PASS boundary expectations remain unchanged:
+  - allow/deny/mismatch checks stay validated,
+  - draft-only safety note remains present,
+  - no auto-save side effect remains enforced.

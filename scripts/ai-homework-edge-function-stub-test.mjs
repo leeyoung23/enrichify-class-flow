@@ -72,7 +72,14 @@ async function testSuccessShape() {
     "Expected safetyNotes to include draft-only and no auto-release guidance",
   );
   assert(body.data.modelInfo?.externalCall === false, "Expected modelInfo.externalCall to be false");
-  assert(body.data.modelInfo?.provider === "mock_stub", "Expected mock_stub provider marker");
+  assert(
+    body.data.modelInfo?.provider === "provider_stub_disabled",
+    "Expected provider_stub_disabled marker for default provider-disabled mode",
+  );
+  assert(
+    body.data.modelInfo?.providerMode === "disabled",
+    "Expected provider mode to default to disabled",
+  );
 
   printResult("PASS", "POST success shape validated");
 }
