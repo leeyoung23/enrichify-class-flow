@@ -14,6 +14,7 @@ import Students from '@/pages/Students';
 import Attendance from '@/pages/Attendance';
 import ParentUpdates from '@/pages/ParentUpdates';
 import Homework from '@/pages/Homework';
+import Announcements from '@/pages/Announcements';
 import Leads from '@/pages/Leads';
 import ClassSession from '@/pages/ClassSession';
 import ParentView from '@/pages/ParentView';
@@ -120,6 +121,7 @@ const AuthenticatedApp = () => {
         <Route path="/staff-time-clock" element={<StaffTimeClock />} />
         <Route path="/parent-updates" element={<ParentUpdates />} />
         <Route path="/homework" element={<Homework />} />
+        <Route path="/announcements" element={<Announcements />} />
         <Route path="/leads" element={<Leads />} />
         <Route path="/class-session" element={<ClassSession />} />
         <Route path="/observations" element={<Observations />} />

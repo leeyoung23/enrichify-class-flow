@@ -383,6 +383,11 @@ Current status note:
 - Recommended immediate next milestone is now:
   - Staff Announcements UI shell with demo parity first,
   - keep real UI wiring, attachments, MyTasks integration, Company News pop-up, and parent-facing rollout in later phases.
+- Staff Announcements UI shell milestone is now implemented:
+  - route/page: `/announcements` via `src/pages/Announcements.jsx`,
+  - staff nav tab added after `Dashboard` for HQ/supervisor/teacher only,
+  - demo mode uses local fake behavior (local create/status/reply only; no Supabase calls),
+  - authenticated mode is intentionally preview-only with no real announcements service wiring in this milestone.
 - Announcements attachments remain Phase 2+ and are intentionally not included in `020`.
 - Announcements MyTasks integration remains Phase 2+ and is intentionally not included in `020`.
 - Company News pop-up runtime behavior remains Phase 3.

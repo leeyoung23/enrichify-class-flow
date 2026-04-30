@@ -408,3 +408,15 @@ Next manual step:
 - Optional cross-branch negative fixture remains CHECK-skipped when `ANNOUNCEMENTS_TEST_OTHER_BRANCH_ID` is not configured.
 - Recommended next milestone now shifts to: Staff Announcements UI shell with demo parity.
 
+### Staff Announcements UI shell checkpoint update
+
+- Staff Announcements UI shell is now implemented in `src/pages/Announcements.jsx`.
+- Staff nav now includes `Announcements` after `Dashboard` for HQ/supervisor/teacher.
+- Demo mode behavior is local fake-data only:
+  - request/reminder cards,
+  - detail + reply list,
+  - local status actions (`read`, `done`, `undone`),
+  - local `Create Request` shell for HQ/supervisor.
+- Authenticated mode is preview-only in this milestone (no real service wiring yet).
+- Attachments/MyTasks/Company News pop-up/parent-facing announcements/live chat remain future.
+

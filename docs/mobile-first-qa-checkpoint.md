@@ -54,6 +54,17 @@ Scope note:
 - Task cards are mostly mobile-friendly, but status/priority chips + action button can still compress at narrow widths.
 - Filter chip row should be checked for wrap behavior and tap comfort.
 
+### `Announcements`
+
+- Staff Announcements UI shell now exists at `src/pages/Announcements.jsx`.
+- Verify mobile behavior for:
+  - filter chips (`Requests`, `Company News`, `Done`, `Pending`) horizontal scroll/wrap usability,
+  - request cards stacking and badge wrapping,
+  - detail card action button wrapping (`Mark Read`, `Done`, `Undone`, `Add Reply`),
+  - create-request shell fields and Save/Cancel actions in demo mode,
+  - disabled attachment placeholder readability.
+- Authenticated mode is preview-only in this milestone; verify clear copy and no action confusion.
+
 ### `Dashboard`
 
 - Most stat cards already stack responsively, but top metadata bars can get dense with multiple counts.

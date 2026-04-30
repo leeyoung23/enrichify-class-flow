@@ -59,7 +59,7 @@ Checkpoint scope: documentation only for Announcements Phase 1 smoke PASS state.
 
 ## 6) What remains future
 
-- Staff Announcements UI shell with demo parity.
+- Staff Announcements UI shell with demo parity. **Now implemented as UI shell milestone.**
 - Real Announcements UI wiring.
 - Attachments.
 - MyTasks integration.
@@ -149,3 +149,11 @@ Run:
 - `git diff --name-only`
 
 Do not run build/lint/smoke suite unless runtime files change.
+
+## 10) UI shell checkpoint update
+
+- Staff Announcements UI shell now exists at `src/pages/Announcements.jsx`.
+- Staff navigation now includes `Announcements` after `Dashboard` for HQ/supervisor/teacher.
+- Demo parity behavior is local fake-data only (mark read/done/undone, local reply, local create shell save).
+- Authenticated mode is intentionally preview-only with no real service wiring in this milestone.
+- See `docs/staff-announcements-ui-shell-checkpoint.md` for implementation details and boundaries.
