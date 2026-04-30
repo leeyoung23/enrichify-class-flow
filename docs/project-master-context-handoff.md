@@ -478,7 +478,7 @@ Branch:
 cursor/safe-lint-typecheck-486d
 
 Task:
-School/curriculum onboarding foundation planning only.
+MyTasks integration planning for Announcements requests only.
 
 Scope rules:
 - Planning/docs only.
@@ -495,15 +495,17 @@ Scope rules:
 - Do not use service role key in frontend.
 - Do not remove demoRole.
 - Do not remove demo/local fallback.
+- Do not add Company News pop-up behavior.
+- Do not add parent-facing announcements/events.
+- Do not enable parent_facing_media.
 
 Deliverables:
-1) A planning document for school/curriculum onboarding foundation:
-   - target onboarding workflow (HQ + branch + teacher touchpoints)
-   - required entities/relationships already present vs missing
-   - role/RLS visibility matrix
-   - minimal phased rollout plan (read-first, then write)
-   - dependencies for homework and AI milestones
-   - risks, non-goals, and validation scope
+1) A planning document for Announcements -> MyTasks integration:
+   - request/reply/upload to task mapping model
+   - pending/done/undone lifecycle and ownership rules
+   - role visibility matrix (HQ/supervisor/teacher)
+   - constraints and non-goals in this milestone
+   - phased rollout plan (planning first, runtime later)
 2) Clear recommendation of first implementation slice after planning.
 
 Validation efficiency rule:

@@ -67,7 +67,7 @@ Environment: Supabase dev only (fake/dev identities and fake/dev files only)
 - `parent_facing_media` remains reserved only.
 - No public URLs are introduced.
 - No service role is used in frontend.
-- No attachment UI wiring yet.
+- Staff attachment UI wiring is now implemented (internal staff only).
 - No MyTasks integration.
 - No Company News pop-up.
 - No notifications/emails.
@@ -94,21 +94,20 @@ Environment: Supabase dev only (fake/dev identities and fake/dev files only)
 
 Options:
 
-- A. Staff Announcements attachments UI wiring
-- B. MyTasks integration plan
-- C. Company News warm pop-up design
-- D. Parent-facing announcements/events plan
-- E. Report/PDF generation plan
+- A. MyTasks integration planning
+- B. Company News warm pop-up planning
+- C. Parent-facing announcements/events planning
+- D. Attachment delete UI
+- E. Report/PDF/AI OCR planning
 
-Recommendation: **A. Staff Announcements attachments UI wiring**.
+Recommendation: **A. MyTasks integration planning**.
 
 Why A first:
 
-- SQL/RLS/storage/service path is now proven by PASS smoke evidence.
-- Staff Announcements page already contains attachment placeholder direction.
-- Next safe step is wiring upload/list/view for internal staff only.
-- MyTasks can follow once attachment workflow is visible in staff flow.
-- Company News/parent-facing/report-generation should stay in later milestones.
+- Internal request/reply/upload loop now works.
+- MyTasks is the natural next layer for pending/done/undone task visibility.
+- Company News and parent-facing announcements can wait.
+- Attachment delete UI is lower priority than task visibility.
 
 ## 8) Next implementation prompt (copy-paste)
 
@@ -130,7 +129,7 @@ Before doing anything, verify:
 - git status --short
 
 Task:
-Staff Announcements attachments UI wiring only.
+MyTasks integration planning for Announcements requests only.
 
 Hard constraints:
 - Do not change Supabase SQL.
@@ -148,11 +147,12 @@ Hard constraints:
 - Do not remove demo/local fallback.
 - Do not auto-send emails or notifications.
 - Do not start live chat in this milestone.
-- Do not add MyTasks integration.
+- Do not implement MyTasks runtime wiring in this planning step.
 - Do not add Company News pop-up.
 - Do not add parent-facing announcements/events.
 
 Validation efficiency rule:
+- Docs-only checkpoint.
 - Run: git diff --name-only
 - Do not run build/lint/smoke suite unless runtime files change.
 ```

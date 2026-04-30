@@ -75,6 +75,7 @@ Scope note:
   - no Company News pop-up behavior yet,
   - no parent-facing announcements/events yet,
   - no live chat/notification behavior in this phase.
+  - no MyTasks integration in this checkpoint.
 
 ### `Dashboard`
 

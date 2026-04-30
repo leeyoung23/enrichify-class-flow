@@ -12,9 +12,10 @@ Scope: planning only for Announcements/Internal Communications and Document Hub 
 
 Roadmap implication:
 
-- Recommend next milestone **A. Staff Announcements attachments UI wiring**.
-- Rationale: backend/service/RLS/storage path is now proven, so safe next step is internal staff upload/list/view UI wiring.
-- Keep MyTasks integration, Company News warm pop-up, parent-facing announcements/events, and report/PDF/AI OCR for later milestones.
+- Staff attachment UI wiring is now completed.
+- Recommend next milestone **A. MyTasks integration planning**.
+- Rationale: internal request/reply/upload loop now works; next layer is pending/done/undone task visibility planning.
+- Keep Company News warm pop-up, parent-facing announcements/events, and report/PDF/AI OCR for later milestones.
 
 ## Checkpoint update (staff attachments UI wired)
 

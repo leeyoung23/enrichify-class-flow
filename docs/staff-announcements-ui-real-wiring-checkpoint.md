@@ -21,12 +21,12 @@ Checkpoint scope: authenticated non-demo Staff Announcements wiring using existi
 ## 2) Files changed
 
 - `src/pages/Announcements.jsx`
-- `docs/staff-announcements-ui-shell-checkpoint.md`
-- `docs/announcements-phase1-smoke-pass-checkpoint.md`
+- `docs/announcements-attachments-service-smoke-pass-checkpoint.md`
 - `docs/announcements-internal-communications-plan.md`
 - `docs/mobile-first-qa-checkpoint.md`
 - `docs/project-master-context-handoff.md`
 - `docs/staff-announcements-ui-real-wiring-checkpoint.md`
+- `docs/staff-announcements-attachments-ui-checkpoint.md`
 
 ## 3) Authenticated read behavior
 
@@ -70,7 +70,7 @@ Checkpoint scope: authenticated non-demo Staff Announcements wiring using existi
 
 - No SQL/RLS changes.
 - No SQL apply.
-- No attachment upload.
+- No SQL/RLS/service additions for attachments (uses existing attachment services only).
 - No MyTasks integration.
 - No Company News pop-up behavior.
 - No parent-facing announcements.
@@ -78,6 +78,7 @@ Checkpoint scope: authenticated non-demo Staff Announcements wiring using existi
 - No auto emails/notifications.
 - No service role in frontend.
 - No AI/provider/env changes.
+- No `parent_facing_media` enablement.
 
 ## 7) Tests
 
@@ -100,17 +101,17 @@ Checkpoint scope: authenticated non-demo Staff Announcements wiring using existi
 
 Choose:
 
-- A. Announcements attachments SQL/RLS planning
-- B. MyTasks integration planning
-- C. Company News warm pop-up planning
-- D. Parent-facing announcements/events planning
-- E. Live chat feasibility plan
+- A. MyTasks integration planning
+- B. Company News warm pop-up planning
+- C. Parent-facing announcements/events planning
+- D. Attachment delete UI
+- E. Report/PDF/AI OCR planning
 
-Recommendation: **A. Announcements attachments SQL/RLS planning**.
+Recommendation: **A. MyTasks integration planning**.
 
 Why A first:
 
-- Core authenticated request/read/done/reply workflow is now real.
-- Attachments are the next natural document-hub capability.
-- MyTasks can follow once file/request workflow is richer.
-- Company News pop-up and parent-facing posts should remain later phases.
+- Internal request/reply/upload loop now works in staff announcements.
+- MyTasks is the next natural layer for pending/done/undone task visibility.
+- Company News and parent-facing announcements should remain later phases.
+- Attachment delete UI is lower priority than task visibility.
