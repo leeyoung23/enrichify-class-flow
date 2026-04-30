@@ -39,6 +39,10 @@ const HOMEWORK_ASSIGNEE_STATUS_VALUES = new Set([
 ]);
 const HOMEWORK_FEEDBACK_EDITABLE_STATUSES = new Set(["draft", "approved"]);
 const HOMEWORK_FEEDBACK_STATUS_VALUES = new Set(["draft", "approved", "released_to_parent", "archived"]);
+const ANNOUNCEMENT_PRIORITY_VALUES = new Set(["low", "normal", "high", "urgent"]);
+const ANNOUNCEMENT_DONE_STATUS_VALUES = new Set(["pending", "done", "undone"]);
+const ANNOUNCEMENT_REPLY_TYPE_VALUES = new Set(["question", "update", "completion_note"]);
+const ANNOUNCEMENT_TARGET_TYPE_VALUES = new Set(["branch", "role", "profile", "class"]);
 
 function isUuidLike(value) {
   if (typeof value !== "string") return false;
@@ -77,6 +81,36 @@ function normalizeStudentIds(studentIds) {
     unique.add(normalized);
   }
   return [...unique];
+}
+
+function normalizeAnnouncementTargets(targets) {
+  if (!Array.isArray(targets)) return { rows: [], error: null };
+  const rows = [];
+  for (const target of targets) {
+    const targetType = trimString(target?.targetType || target?.target_type);
+    if (!ANNOUNCEMENT_TARGET_TYPE_VALUES.has(targetType)) {
+      return { rows: [], error: { message: "Each targetType must be branch, role, profile, or class" } };
+    }
+    const branchId = trimString(target?.branchId || target?.branch_id);
+    const targetProfileId = trimString(target?.targetProfileId || target?.target_profile_id);
+    const targetRole = trimString(target?.targetRole || target?.target_role);
+    if ((targetType === "branch" || targetType === "class") && !isUuidLike(branchId)) {
+      return { rows: [], error: { message: `targetType ${targetType} requires branchId UUID` } };
+    }
+    if (targetType === "profile" && !isUuidLike(targetProfileId)) {
+      return { rows: [], error: { message: "targetType profile requires targetProfileId UUID" } };
+    }
+    if (targetType === "role" && !targetRole) {
+      return { rows: [], error: { message: "targetType role requires targetRole" } };
+    }
+    rows.push({
+      target_type: targetType,
+      branch_id: isUuidLike(branchId) ? branchId : null,
+      target_profile_id: isUuidLike(targetProfileId) ? targetProfileId : null,
+      target_role: targetRole || null,
+    });
+  }
+  return { rows, error: null };
 }
 
 function buildClassCurriculumWritableFields({ learningFocus, termLabel, startDate, endDate } = {}) {
@@ -1180,6 +1214,301 @@ export async function upsertStudentSchoolProfile({
       .from("student_school_profiles")
       .insert(insertPayload)
       .select(STUDENT_SCHOOL_PROFILE_FIELDS)
+      .maybeSingle();
+    return { data: data ?? null, error: error ?? null };
+  } catch (err) {
+    return { data: null, error: { message: err?.message || String(err) } };
+  }
+}
+
+export async function createAnnouncementRequest({
+  branchId,
+  title,
+  subtitle,
+  body,
+  priority = "normal",
+  dueDate,
+  requiresResponse = false,
+  requiresUpload = false,
+  targets = [],
+} = {}) {
+  if (!isSupabaseConfigured() || !supabase) {
+    return { data: null, error: { message: "Supabase is not configured" } };
+  }
+  if (branchId != null && branchId !== "" && !isUuidLike(branchId)) {
+    return { data: null, error: { message: "branchId must be a UUID when provided" } };
+  }
+  if (!trimString(title)) {
+    return { data: null, error: { message: "title is required" } };
+  }
+  const normalizedPriority = trimString(priority) || "normal";
+  if (!ANNOUNCEMENT_PRIORITY_VALUES.has(normalizedPriority)) {
+    return { data: null, error: { message: "priority must be low, normal, high, or urgent" } };
+  }
+  const normalizedDueDate = normalizeNullableDate(dueDate);
+  if (dueDate != null && normalizedDueDate == null) {
+    return { data: null, error: { message: "dueDate must be YYYY-MM-DD when provided" } };
+  }
+  const normalizedTargets = normalizeAnnouncementTargets(targets);
+  if (normalizedTargets.error) {
+    return { data: null, error: normalizedTargets.error };
+  }
+
+  try {
+    const { profileId, error: authError } = await getAuthenticatedProfileId();
+    if (authError || !profileId) {
+      return { data: null, error: authError || { message: "Authenticated user is required" } };
+    }
+
+    const nowIso = new Date().toISOString();
+    const insertPayload = {
+      branch_id: isUuidLike(branchId) ? trimString(branchId) : null,
+      created_by_profile_id: profileId,
+      announcement_type: "request",
+      title: trimString(title).slice(0, 240),
+      subtitle: normalizeNullableText(subtitle, { maxLength: 240 }),
+      body: normalizeNullableText(body, { maxLength: 8000 }),
+      priority: normalizedPriority,
+      status: "draft",
+      audience_type: "internal_staff",
+      due_date: normalizedDueDate,
+      requires_response: Boolean(requiresResponse),
+      requires_upload: Boolean(requiresUpload),
+      popup_enabled: false,
+      popup_emoji: null,
+      created_at: nowIso,
+      updated_at: nowIso,
+      published_at: null,
+    };
+    const announcementInsert = await supabase
+      .from("announcements")
+      .insert(insertPayload)
+      .select("id,branch_id,created_by_profile_id,announcement_type,title,priority,status,audience_type,due_date,requires_response,requires_upload,created_at,updated_at,published_at")
+      .maybeSingle();
+
+    if (announcementInsert.error || !announcementInsert.data?.id) {
+      return { data: null, error: announcementInsert.error || { message: "Unable to create announcement request" } };
+    }
+
+    if (normalizedTargets.rows.length === 0) {
+      return { data: { announcement: announcementInsert.data, targets: [] }, error: null };
+    }
+
+    const targetRows = normalizedTargets.rows.map((row) => ({
+      announcement_id: announcementInsert.data.id,
+      ...row,
+      created_at: nowIso,
+    }));
+    const targetsInsert = await supabase
+      .from("announcement_targets")
+      .insert(targetRows)
+      .select("id,announcement_id,target_type,branch_id,target_profile_id,target_role,created_at");
+    if (targetsInsert.error) {
+      return {
+        data: { announcement: announcementInsert.data, targets: [] },
+        error: { message: targetsInsert.error?.message || "Announcement created but targets insert failed" },
+      };
+    }
+    return {
+      data: {
+        announcement: announcementInsert.data,
+        targets: Array.isArray(targetsInsert.data) ? targetsInsert.data : [],
+      },
+      error: null,
+    };
+  } catch (err) {
+    return { data: null, error: { message: err?.message || String(err) } };
+  }
+}
+
+export async function publishAnnouncement({ announcementId } = {}) {
+  if (!isSupabaseConfigured() || !supabase) {
+    return { data: null, error: { message: "Supabase is not configured" } };
+  }
+  if (!isUuidLike(announcementId)) {
+    return { data: null, error: { message: "announcementId must be a UUID" } };
+  }
+
+  try {
+    const nowIso = new Date().toISOString();
+    const { data, error } = await supabase
+      .from("announcements")
+      .update({
+        status: "published",
+        published_at: nowIso,
+        updated_at: nowIso,
+      })
+      .eq("id", trimString(announcementId))
+      .select("id,branch_id,created_by_profile_id,status,published_at,updated_at")
+      .maybeSingle();
+    return { data: data ?? null, error: error ?? null };
+  } catch (err) {
+    return { data: null, error: { message: err?.message || String(err) } };
+  }
+}
+
+export async function markAnnouncementRead({ announcementId } = {}) {
+  if (!isSupabaseConfigured() || !supabase) {
+    return { data: null, error: { message: "Supabase is not configured" } };
+  }
+  if (!isUuidLike(announcementId)) {
+    return { data: null, error: { message: "announcementId must be a UUID" } };
+  }
+
+  try {
+    const { profileId, error: authError } = await getAuthenticatedProfileId();
+    if (authError || !profileId) {
+      return { data: null, error: authError || { message: "Authenticated user is required" } };
+    }
+    const nowIso = new Date().toISOString();
+    const existingRead = await supabase
+      .from("announcement_statuses")
+      .select("id,announcement_id,profile_id,read_at,last_seen_at,done_status,done_at,undone_reason,created_at,updated_at")
+      .eq("announcement_id", trimString(announcementId))
+      .eq("profile_id", profileId)
+      .maybeSingle();
+    if (existingRead.error && existingRead.error.code !== "PGRST116") {
+      return { data: null, error: existingRead.error };
+    }
+    if (existingRead.data?.id) {
+      const updateResult = await supabase
+        .from("announcement_statuses")
+        .update({
+          read_at: existingRead.data.read_at || nowIso,
+          last_seen_at: nowIso,
+          updated_at: nowIso,
+        })
+        .eq("id", existingRead.data.id)
+        .select("id,announcement_id,profile_id,read_at,last_seen_at,done_status,done_at,undone_reason,created_at,updated_at")
+        .maybeSingle();
+      return { data: updateResult.data ?? null, error: updateResult.error ?? null };
+    }
+
+    const insertResult = await supabase
+      .from("announcement_statuses")
+      .insert({
+        announcement_id: trimString(announcementId),
+        profile_id: profileId,
+        read_at: nowIso,
+        last_seen_at: nowIso,
+        done_status: "pending",
+        created_at: nowIso,
+        updated_at: nowIso,
+      })
+      .select("id,announcement_id,profile_id,read_at,last_seen_at,done_status,done_at,undone_reason,created_at,updated_at")
+      .maybeSingle();
+    return { data: insertResult.data ?? null, error: insertResult.error ?? null };
+  } catch (err) {
+    return { data: null, error: { message: err?.message || String(err) } };
+  }
+}
+
+export async function updateAnnouncementDoneStatus({ announcementId, doneStatus, undoneReason } = {}) {
+  if (!isSupabaseConfigured() || !supabase) {
+    return { data: null, error: { message: "Supabase is not configured" } };
+  }
+  if (!isUuidLike(announcementId)) {
+    return { data: null, error: { message: "announcementId must be a UUID" } };
+  }
+  const normalizedDoneStatus = trimString(doneStatus);
+  if (!ANNOUNCEMENT_DONE_STATUS_VALUES.has(normalizedDoneStatus)) {
+    return { data: null, error: { message: "doneStatus must be pending, done, or undone" } };
+  }
+
+  try {
+    const { profileId, error: authError } = await getAuthenticatedProfileId();
+    if (authError || !profileId) {
+      return { data: null, error: authError || { message: "Authenticated user is required" } };
+    }
+    const nowIso = new Date().toISOString();
+    const normalizedUndoneReason = normalizeNullableText(undoneReason, { maxLength: 2000 });
+    const doneAt = normalizedDoneStatus === "done" ? nowIso : null;
+    const undoneReasonValue = normalizedDoneStatus === "undone" ? normalizedUndoneReason : null;
+    const existingRead = await supabase
+      .from("announcement_statuses")
+      .select("id")
+      .eq("announcement_id", trimString(announcementId))
+      .eq("profile_id", profileId)
+      .maybeSingle();
+    if (existingRead.error && existingRead.error.code !== "PGRST116") {
+      return { data: null, error: existingRead.error };
+    }
+
+    const payload = {
+      done_status: normalizedDoneStatus,
+      done_at: doneAt,
+      undone_reason: undoneReasonValue,
+      last_seen_at: nowIso,
+      updated_at: nowIso,
+    };
+    if (normalizedDoneStatus !== "pending") {
+      payload.read_at = nowIso;
+    }
+
+    if (existingRead.data?.id) {
+      const updateResult = await supabase
+        .from("announcement_statuses")
+        .update(payload)
+        .eq("id", existingRead.data.id)
+        .select("id,announcement_id,profile_id,read_at,last_seen_at,done_status,done_at,undone_reason,created_at,updated_at")
+        .maybeSingle();
+      return { data: updateResult.data ?? null, error: updateResult.error ?? null };
+    }
+
+    const insertResult = await supabase
+      .from("announcement_statuses")
+      .insert({
+        announcement_id: trimString(announcementId),
+        profile_id: profileId,
+        read_at: payload.read_at || null,
+        last_seen_at: nowIso,
+        done_status: normalizedDoneStatus,
+        done_at: doneAt,
+        undone_reason: undoneReasonValue,
+        created_at: nowIso,
+        updated_at: nowIso,
+      })
+      .select("id,announcement_id,profile_id,read_at,last_seen_at,done_status,done_at,undone_reason,created_at,updated_at")
+      .maybeSingle();
+    return { data: insertResult.data ?? null, error: insertResult.error ?? null };
+  } catch (err) {
+    return { data: null, error: { message: err?.message || String(err) } };
+  }
+}
+
+export async function createAnnouncementReply({ announcementId, body, replyType = "update" } = {}) {
+  if (!isSupabaseConfigured() || !supabase) {
+    return { data: null, error: { message: "Supabase is not configured" } };
+  }
+  if (!isUuidLike(announcementId)) {
+    return { data: null, error: { message: "announcementId must be a UUID" } };
+  }
+  const normalizedBody = normalizeNullableText(body, { maxLength: 8000 });
+  if (!normalizedBody) {
+    return { data: null, error: { message: "body is required" } };
+  }
+  const normalizedReplyType = trimString(replyType) || "update";
+  if (!ANNOUNCEMENT_REPLY_TYPE_VALUES.has(normalizedReplyType)) {
+    return { data: null, error: { message: "replyType must be question, update, or completion_note" } };
+  }
+
+  try {
+    const { profileId, error: authError } = await getAuthenticatedProfileId();
+    if (authError || !profileId) {
+      return { data: null, error: authError || { message: "Authenticated user is required" } };
+    }
+    const nowIso = new Date().toISOString();
+    const { data, error } = await supabase
+      .from("announcement_replies")
+      .insert({
+        announcement_id: trimString(announcementId),
+        profile_id: profileId,
+        body: normalizedBody,
+        reply_type: normalizedReplyType,
+        parent_reply_id: null,
+        created_at: nowIso,
+      })
+      .select("id,announcement_id,profile_id,body,reply_type,parent_reply_id,created_at")
       .maybeSingle();
     return { data: data ?? null, error: error ?? null };
   } catch (err) {

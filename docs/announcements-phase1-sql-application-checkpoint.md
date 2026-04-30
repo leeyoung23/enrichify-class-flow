@@ -79,6 +79,46 @@ Current SQL/RLS-ready scope in dev:
 - Parent-facing announcements/events
 - Live chat
 
+## 12) Service and smoke checkpoint update
+
+Service layer update:
+
+- Read services added in `src/services/supabaseReadService.js`:
+  - `listAnnouncements(...)`
+  - `listAnnouncementTargets(...)`
+  - `listAnnouncementStatuses(...)`
+  - `listAnnouncementReplies(...)`
+- Write services added in `src/services/supabaseWriteService.js`:
+  - `createAnnouncementRequest(...)` (safe default `status = draft`)
+  - `publishAnnouncement(...)`
+  - `markAnnouncementRead(...)`
+  - `updateAnnouncementDoneStatus(...)`
+  - `createAnnouncementReply(...)`
+- Service rules preserved:
+  - anon client + current JWT/RLS only,
+  - no service role in frontend,
+  - no parent-facing write path in this phase,
+  - no attachment upload behavior,
+  - no auto notification/email behavior.
+
+Smoke test update:
+
+- Added `scripts/supabase-announcements-phase1-smoke-test.mjs`.
+- Added package command:
+  - `npm run test:supabase:announcements:phase1`
+- Coverage targets:
+  - HQ create check,
+  - supervisor own-branch create/publish check,
+  - teacher create-block check,
+  - teacher targeted read/status/reply checks,
+  - parent/student internal_staff read-block checks,
+  - optional supervisor cross-branch target-write negative check,
+  - explicit no-attachments/public-URL behavior in this milestone.
+
+Scope reminder:
+
+- Attachments, MyTasks integration, Company News pop-up, parent-facing announcements/events, and live chat remain future.
+
 ## 9) Recommended next milestone
 
 Options:

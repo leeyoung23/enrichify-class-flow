@@ -25,6 +25,18 @@ const HOMEWORK_SUBMISSION_FIELDS =
   "id,homework_task_id,branch_id,class_id,student_id,submitted_by_profile_id,submission_note,status,submitted_at,reviewed_at,reviewed_by_profile_id,created_at,updated_at";
 const HOMEWORK_FEEDBACK_RELEASE_FIELDS =
   "id,homework_submission_id,status,released_to_parent_at,created_at,updated_at";
+const ANNOUNCEMENT_FIELDS =
+  "id,branch_id,created_by_profile_id,announcement_type,title,subtitle,body,priority,status,audience_type,due_date,requires_response,requires_upload,popup_enabled,popup_emoji,created_at,updated_at,published_at";
+const ANNOUNCEMENT_TARGET_FIELDS =
+  "id,announcement_id,target_type,branch_id,target_profile_id,target_role,created_at";
+const ANNOUNCEMENT_STATUS_FIELDS =
+  "id,announcement_id,profile_id,read_at,done_status,done_at,undone_reason,last_seen_at,created_at,updated_at";
+const ANNOUNCEMENT_REPLY_FIELDS =
+  "id,announcement_id,profile_id,body,reply_type,parent_reply_id,created_at";
+const ANNOUNCEMENT_STATUS_VALUES = new Set(["draft", "published", "closed", "archived"]);
+const ANNOUNCEMENT_AUDIENCE_VALUES = new Set(["internal_staff", "parent_facing"]);
+const ANNOUNCEMENT_TYPE_VALUES = new Set(["request", "company_news", "parent_event"]);
+const ANNOUNCEMENT_DONE_STATUS_VALUES = new Set(["pending", "done", "undone"]);
 
 function isUuidLike(value) {
   if (typeof value !== "string") return false;
@@ -792,5 +804,121 @@ export async function listHomeworkTrackerByStudent({ studentId, status } = {}) {
     };
   } catch (error) {
     return { data: null, error };
+  }
+}
+
+export async function listAnnouncements({
+  status,
+  audienceType = "internal_staff",
+  announcementType,
+  doneStatus,
+} = {}) {
+  if (!isSupabaseConfigured() || !supabase) {
+    return { data: [], error: { message: "Supabase is not configured" } };
+  }
+  if (status != null && status !== "" && !ANNOUNCEMENT_STATUS_VALUES.has(trimString(status))) {
+    return { data: [], error: { message: "status must be draft, published, closed, or archived" } };
+  }
+  if (audienceType != null && audienceType !== "" && !ANNOUNCEMENT_AUDIENCE_VALUES.has(trimString(audienceType))) {
+    return { data: [], error: { message: "audienceType must be internal_staff or parent_facing" } };
+  }
+  if (announcementType != null && announcementType !== "" && !ANNOUNCEMENT_TYPE_VALUES.has(trimString(announcementType))) {
+    return { data: [], error: { message: "announcementType must be request, company_news, or parent_event" } };
+  }
+  if (doneStatus != null && doneStatus !== "" && !ANNOUNCEMENT_DONE_STATUS_VALUES.has(trimString(doneStatus))) {
+    return { data: [], error: { message: "doneStatus must be pending, done, or undone" } };
+  }
+
+  try {
+    let query = supabase
+      .from("announcements")
+      .select(`${ANNOUNCEMENT_FIELDS},announcement_statuses(${ANNOUNCEMENT_STATUS_FIELDS})`)
+      .order("created_at", { ascending: false });
+
+    const normalizedAudience = trimString(audienceType);
+    if (normalizedAudience) query = query.eq("audience_type", normalizedAudience);
+    if (status != null && status !== "") query = query.eq("status", trimString(status));
+    if (announcementType != null && announcementType !== "") query = query.eq("announcement_type", trimString(announcementType));
+    if (doneStatus != null && doneStatus !== "") query = query.eq("announcement_statuses.done_status", trimString(doneStatus));
+
+    const { data, error } = await query;
+    if (error) return { data: [], error };
+    return { data: Array.isArray(data) ? data : [], error: null };
+  } catch (error) {
+    return { data: [], error };
+  }
+}
+
+export async function listAnnouncementTargets({ announcementId } = {}) {
+  if (!isSupabaseConfigured() || !supabase) {
+    return { data: [], error: { message: "Supabase is not configured" } };
+  }
+  if (!isUuidLike(announcementId)) {
+    return { data: [], error: { message: "announcementId must be a UUID" } };
+  }
+
+  try {
+    const { data, error } = await supabase
+      .from("announcement_targets")
+      .select(ANNOUNCEMENT_TARGET_FIELDS)
+      .eq("announcement_id", trimString(announcementId))
+      .order("created_at", { ascending: true });
+    if (error) return { data: [], error };
+    return { data: Array.isArray(data) ? data : [], error: null };
+  } catch (error) {
+    return { data: [], error };
+  }
+}
+
+export async function listAnnouncementStatuses({ announcementId, profileId, doneStatus } = {}) {
+  if (!isSupabaseConfigured() || !supabase) {
+    return { data: [], error: { message: "Supabase is not configured" } };
+  }
+  if (announcementId != null && announcementId !== "" && !isUuidLike(announcementId)) {
+    return { data: [], error: { message: "announcementId must be a UUID when provided" } };
+  }
+  if (profileId != null && profileId !== "" && !isUuidLike(profileId)) {
+    return { data: [], error: { message: "profileId must be a UUID when provided" } };
+  }
+  if (doneStatus != null && doneStatus !== "" && !ANNOUNCEMENT_DONE_STATUS_VALUES.has(trimString(doneStatus))) {
+    return { data: [], error: { message: "doneStatus must be pending, done, or undone" } };
+  }
+
+  try {
+    let query = supabase
+      .from("announcement_statuses")
+      .select(ANNOUNCEMENT_STATUS_FIELDS)
+      .order("updated_at", { ascending: false });
+
+    if (isUuidLike(announcementId)) query = query.eq("announcement_id", trimString(announcementId));
+    if (isUuidLike(profileId)) query = query.eq("profile_id", trimString(profileId));
+    if (doneStatus != null && doneStatus !== "") query = query.eq("done_status", trimString(doneStatus));
+
+    const { data, error } = await query;
+    if (error) return { data: [], error };
+    return { data: Array.isArray(data) ? data : [], error: null };
+  } catch (error) {
+    return { data: [], error };
+  }
+}
+
+export async function listAnnouncementReplies({ announcementId } = {}) {
+  if (!isSupabaseConfigured() || !supabase) {
+    return { data: [], error: { message: "Supabase is not configured" } };
+  }
+  if (!isUuidLike(announcementId)) {
+    return { data: [], error: { message: "announcementId must be a UUID" } };
+  }
+
+  try {
+    const { data, error } = await supabase
+      .from("announcement_replies")
+      .select(ANNOUNCEMENT_REPLY_FIELDS)
+      .eq("announcement_id", trimString(announcementId))
+      .order("created_at", { ascending: true });
+    if (error) return { data: [], error };
+    return { data: Array.isArray(data) ? data : [], error: null };
+  } catch (error) {
+    return { data: [], error };
   }
 }

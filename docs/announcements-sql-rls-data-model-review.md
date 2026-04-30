@@ -420,3 +420,20 @@ Scope boundary reminder:
 
 - Attachments/MyTasks/pop-up/parent-facing/live-chat remain future milestones.
 
+## 21) Phase 1 service + smoke update
+
+Implementation update (post SQL apply):
+
+- Added Phase 1 Announcements read services in `src/services/supabaseReadService.js`.
+- Added Phase 1 Announcements write services in `src/services/supabaseWriteService.js`.
+- Added role-scoped smoke test `scripts/supabase-announcements-phase1-smoke-test.mjs`.
+- Added package command `test:supabase:announcements:phase1`.
+
+Security boundary reminder:
+
+- Uses anon client + JWT + RLS only (no service-role frontend path).
+- No attachments in this milestone.
+- No parent-facing runtime read/write path in this milestone.
+- No auto-notification/email behavior added.
+- No UI/runtime page wiring added in this milestone.
+

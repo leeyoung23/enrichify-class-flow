@@ -331,6 +331,26 @@ Current status note:
     - `can_manage_announcement_target_write`
     - `is_announcement_targeted_to_profile`,
   - `information_schema` verification returned 42 column rows across the four Phase 1 tables.
+- Announcements Phase 1 read/write service layer is now added:
+  - `src/services/supabaseReadService.js`:
+    - `listAnnouncements(...)`
+    - `listAnnouncementTargets(...)`
+    - `listAnnouncementStatuses(...)`
+    - `listAnnouncementReplies(...)`
+  - `src/services/supabaseWriteService.js`:
+    - `createAnnouncementRequest(...)` (safe default `status = draft`)
+    - `publishAnnouncement(...)`
+    - `markAnnouncementRead(...)`
+    - `updateAnnouncementDoneStatus(...)`
+    - `createAnnouncementReply(...)`
+- Announcements Phase 1 smoke test is now added:
+  - `scripts/supabase-announcements-phase1-smoke-test.mjs`
+  - package command: `npm run test:supabase:announcements:phase1`
+- Service and smoke layer keep guardrails:
+  - anon client + JWT + RLS only,
+  - no service role in frontend,
+  - no attachment upload/public URL behavior in this milestone,
+  - no auto email/notification behavior in this milestone.
 - Announcements attachments remain Phase 2+ and are intentionally not included in `020`.
 - Announcements MyTasks integration remains Phase 2+ and is intentionally not included in `020`.
 - Company News pop-up runtime behavior remains Phase 3.

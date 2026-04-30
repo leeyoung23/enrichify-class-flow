@@ -385,6 +385,14 @@ Reminder: **Frontend filtering is not security. RLS must enforce access at datab
 - Negative test: branch supervisor must not insert/update `announcement_targets` rows for another branch profile/branch/class scope.
 - Verification checkpoint: `pg_policies` query returned 16 policy rows across the four announcements Phase 1 tables in dev after manual `020` apply.
 
+##### Announcements Phase 1 service smoke reference
+
+- Smoke script: `scripts/supabase-announcements-phase1-smoke-test.mjs`
+- Command: `npm run test:supabase:announcements:phase1`
+- Service coverage reference:
+  - `src/services/supabaseReadService.js`
+  - `src/services/supabaseWriteService.js`
+
 ### Homework marked-file role/release draft patch note
 
 - Draft patch reference: `supabase/sql/018_homework_file_roles_release_foundation.sql` (manual review/apply only).

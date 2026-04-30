@@ -368,3 +368,19 @@ Next manual step:
 - Column verification returned 42 rows across the four Phase 1 tables.
 - Attachments/MyTasks/pop-up/parent-facing/live-chat remain future phases.
 
+### Phase 1 read/write service + smoke checkpoint
+
+- Service-layer Phase 1 methods are now added:
+  - read: `listAnnouncements`, `listAnnouncementTargets`, `listAnnouncementStatuses`, `listAnnouncementReplies`
+  - write: `createAnnouncementRequest`, `publishAnnouncement`, `markAnnouncementRead`, `updateAnnouncementDoneStatus`, `createAnnouncementReply`
+- New smoke test is now added:
+  - `scripts/supabase-announcements-phase1-smoke-test.mjs`
+  - command: `npm run test:supabase:announcements:phase1`
+- This milestone keeps boundaries unchanged:
+  - no app UI changes,
+  - no runtime page behavior changes,
+  - no SQL/RLS changes,
+  - no attachments/MyTasks/pop-up/parent-facing/live-chat implementation,
+  - no auto notifications/emails,
+  - no service role usage in frontend.
+
