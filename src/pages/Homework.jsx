@@ -29,6 +29,8 @@ import {
   listHomeworkFiles,
   listHomeworkSubmissions,
   listHomeworkTasks,
+  releaseHomeworkFileToParent,
+  uploadMarkedHomeworkFile,
 } from '@/services/supabaseUploadService';
 import {
   createHomeworkTaskWithAssignees,
@@ -268,6 +270,8 @@ export default function Homework() {
   const [demoCreatedTasks, setDemoCreatedTasks] = useState([]);
   const [demoCreatedAssignees, setDemoCreatedAssignees] = useState([]);
   const [createHomeworkOpen, setCreateHomeworkOpen] = useState(false);
+  const [markedUploadFile, setMarkedUploadFile] = useState(null);
+  const [markedStaffNote, setMarkedStaffNote] = useState('');
   const [createForm, setCreateForm] = useState({
     assignmentType: 'class',
     classId: DEMO_HOMEWORK_CLASSES[0]?.id || '',
@@ -316,8 +320,23 @@ export default function Homework() {
     queryKey: ['homework-review-files', selectedSubmissionId, role, supabaseAppUser?.id],
     enabled: canUseSupabaseHomework && Boolean(selectedSubmissionId),
     queryFn: async () => {
-      const result = await listHomeworkFiles({ homeworkSubmissionId: selectedSubmissionId });
+      const result = await listHomeworkFiles({
+        homeworkSubmissionId: selectedSubmissionId,
+        fileRole: 'parent_uploaded_homework',
+      });
       if (result.error) throw new Error(result.error.message || 'Unable to load homework files');
+      return result.data || [];
+    },
+  });
+  const { data: markedFilesRows = [], isLoading: markedFilesLoading } = useQuery({
+    queryKey: ['homework-review-marked-files', selectedSubmissionId, role, supabaseAppUser?.id],
+    enabled: canUseSupabaseHomework && Boolean(selectedSubmissionId) && isUuidLike(selectedSubmissionId),
+    queryFn: async () => {
+      const result = await listHomeworkFiles({
+        homeworkSubmissionId: selectedSubmissionId,
+        fileRole: 'teacher_marked_homework',
+      });
+      if (result.error) throw new Error(result.error.message || 'Unable to load marked homework files');
       return result.data || [];
     },
   });
@@ -398,6 +417,7 @@ export default function Homework() {
   const submissionsBusy = isDemoMode ? false : submissionsLoading;
   const feedbackBusy = isDemoMode ? false : feedbackLoading;
   const filesBusy = isDemoMode ? false : filesLoading;
+  const markedFilesBusy = isDemoMode ? false : markedFilesLoading;
 
   const selectedSubmission = useMemo(
     () => submissionRows.find((item) => item.id === selectedSubmissionId) || null,
@@ -419,9 +439,8 @@ export default function Homework() {
         .filter((row) => row.homework_submission_id === selectedSubmissionId)
         .sort((a, b) => new Date(b.created_at || 0).getTime() - new Date(a.created_at || 0).getTime());
     }
-    return [];
-  }, [selectedSubmissionId, isDemoMode, demoMarkedFiles]);
-  const markedWorkWiringPending = !isDemoMode;
+    return Array.isArray(markedFilesRows) ? markedFilesRows : [];
+  }, [selectedSubmissionId, isDemoMode, demoMarkedFiles, markedFilesRows]);
 
   const demoAssignmentsByTask = useMemo(() => {
     const map = new Map();
@@ -742,12 +761,19 @@ export default function Homework() {
     setFeedbackBoundSubmissionId(selectedSubmissionId);
   }, [selectedSubmissionId, feedbackDataRows, feedbackBoundSubmissionId]);
 
+  useEffect(() => {
+    setMarkedUploadFile(null);
+    setMarkedStaffNote('');
+  }, [selectedSubmissionId]);
+
   const refreshReviewData = () => {
     if (isDemoMode) return;
     void queryClient.invalidateQueries({ queryKey: ['homework-tracker-by-class'] });
     void queryClient.invalidateQueries({ queryKey: ['homework-tracker-by-student'] });
     void queryClient.invalidateQueries({ queryKey: ['homework-review-submissions'] });
     void queryClient.invalidateQueries({ queryKey: ['homework-review-feedback'] });
+    void queryClient.invalidateQueries({ queryKey: ['homework-review-files'] });
+    void queryClient.invalidateQueries({ queryKey: ['homework-review-marked-files'] });
   };
 
   const updateDemoSubmissionStatus = (status) => {
@@ -895,6 +921,49 @@ export default function Homework() {
     },
   });
 
+  const uploadMarkedFileMutation = useMutation({
+    mutationFn: async () => {
+      if (!selectedSubmissionId || !isUuidLike(selectedSubmissionId)) {
+        throw new Error('Select a valid submission before uploading marked work.');
+      }
+      if (!markedUploadFile) {
+        throw new Error('Select a marked file before uploading.');
+      }
+      const result = await uploadMarkedHomeworkFile({
+        homeworkSubmissionId: selectedSubmissionId,
+        file: markedUploadFile,
+        notes: markedStaffNote,
+      });
+      if (result.error) throw new Error(result.error.message || 'Unable to upload marked file right now.');
+      return result.data || null;
+    },
+    onSuccess: () => {
+      toast.success('Marked file uploaded.');
+      setMarkedUploadFile(null);
+      setMarkedStaffNote('');
+      void queryClient.invalidateQueries({ queryKey: ['homework-review-marked-files'] });
+    },
+    onError: (error) => {
+      toast.error(error?.message || 'Unable to upload marked file right now.');
+    },
+  });
+
+  const releaseMarkedFileMutation = useMutation({
+    mutationFn: async (fileId) => {
+      if (!isUuidLike(fileId)) throw new Error('Unable to release marked file right now.');
+      const result = await releaseHomeworkFileToParent({ fileId });
+      if (result.error) throw new Error(result.error.message || 'Unable to release marked file to parent.');
+      return result.data || null;
+    },
+    onSuccess: () => {
+      toast.success('Marked file released to parent.');
+      void queryClient.invalidateQueries({ queryKey: ['homework-review-marked-files'] });
+    },
+    onError: (error) => {
+      toast.error(error?.message || 'Unable to release marked file to parent.');
+    },
+  });
+
   const openFile = async (homeworkFileId) => {
     if (isDemoMode) {
       toast.message(`Demo mode: preview-only file ${homeworkFileId}. No signed URL call is made.`);
@@ -903,6 +972,23 @@ export default function Homework() {
     const result = await getHomeworkFileSignedUrl({ homeworkFileId, expiresIn: 120 });
     if (result.error || !result.data?.signed_url) {
       toast.error(result.error?.message || 'Unable to open submitted file');
+      return;
+    }
+    window.open(result.data.signed_url, '_blank', 'noopener,noreferrer');
+  };
+
+  const openMarkedFile = async (homeworkFileId) => {
+    if (isDemoMode) {
+      toast.message(`Demo mode: marked file preview only (${homeworkFileId}). No signed URL call is made.`);
+      return;
+    }
+    if (!isUuidLike(homeworkFileId)) {
+      toast.error('Unable to open marked file.');
+      return;
+    }
+    const result = await getHomeworkFileSignedUrl({ homeworkFileId, expiresIn: 120 });
+    if (result.error || !result.data?.signed_url) {
+      toast.error(result.error?.message || 'Unable to open marked file');
       return;
     }
     window.open(result.data.signed_url, '_blank', 'noopener,noreferrer');
@@ -1722,32 +1808,53 @@ export default function Homework() {
                     </div>
                   ) : (
                     <div className="rounded-lg border border-dashed p-3 space-y-2 bg-muted/20">
-                      <p className="text-sm font-medium">Marked-file wiring coming next</p>
+                      <p className="text-sm font-medium">Marked-file controls</p>
                       <p className="text-xs text-muted-foreground">
-                        UI shell is in place. Real marked-file upload/list/release wiring will be enabled in a follow-up milestone.
+                        Upload and release are staff-only actions. Marked files stay internal until explicitly released.
                       </p>
+                      <div className="space-y-1">
+                        <Label className="text-xs">Upload marked file</Label>
+                        <Input
+                          type="file"
+                          onChange={(event) => setMarkedUploadFile(event.target.files?.[0] || null)}
+                          disabled={!selectedSubmissionId || uploadMarkedFileMutation.isPending}
+                        />
+                      </div>
+                      <div className="space-y-1">
+                        <Label className="text-xs">Staff note (optional)</Label>
+                        <Input
+                          placeholder="Internal note for staff only"
+                          value={markedStaffNote}
+                          onChange={(event) => setMarkedStaffNote(event.target.value)}
+                          disabled={uploadMarkedFileMutation.isPending}
+                        />
+                      </div>
                       <div className="flex flex-wrap gap-2">
-                        <Button type="button" className="min-h-10" disabled={markedWorkWiringPending}>
+                        <Button
+                          type="button"
+                          className="min-h-10"
+                          onClick={() => uploadMarkedFileMutation.mutate()}
+                          disabled={!selectedSubmissionId || uploadMarkedFileMutation.isPending}
+                        >
                           <Upload className="h-4 w-4 mr-1" />
-                          Upload marked file
+                          {uploadMarkedFileMutation.isPending ? 'Uploading...' : 'Upload marked file'}
                         </Button>
-                        <Button type="button" variant="outline" className="min-h-10" disabled={markedWorkWiringPending}>
-                          <Eye className="h-4 w-4 mr-1" />
-                          View file
-                        </Button>
-                        <Button type="button" variant="outline" className="min-h-10" disabled={markedWorkWiringPending}>
-                          <Send className="h-4 w-4 mr-1" />
-                          Release to parent
-                        </Button>
+                        {!canReleaseFeedback ? (
+                          <p className="text-xs text-muted-foreground self-center">
+                            Release remains supervisor/HQ action in this phase.
+                          </p>
+                        ) : null}
                       </div>
                     </div>
                   )}
                   <div className="space-y-2">
-                    {selectedMarkedFiles.length === 0 ? (
+                    {markedFilesBusy ? (
+                      <p className="text-sm text-muted-foreground">Loading marked files...</p>
+                    ) : selectedMarkedFiles.length === 0 ? (
                       <p className="text-sm text-muted-foreground">
                         {isDemoMode
                           ? 'No demo marked files yet for this submission.'
-                          : 'Marked-file list will appear here after real service wiring.'}
+                          : 'No marked files found for this submission yet.'}
                       </p>
                     ) : (
                       selectedMarkedFiles.map((fileRow) => (
@@ -1773,7 +1880,13 @@ export default function Homework() {
                             <p className="text-xs text-amber-700">Staff note: {fileRow.staff_note}</p>
                           ) : null}
                           <div className="flex flex-wrap gap-2">
-                            <Button type="button" size="sm" variant="outline" className="min-h-10" onClick={() => handleDemoMarkedView(fileRow.id)}>
+                            <Button
+                              type="button"
+                              size="sm"
+                              variant="outline"
+                              className="min-h-10"
+                              onClick={() => (isDemoMode ? handleDemoMarkedView(fileRow.id) : openMarkedFile(fileRow.id))}
+                            >
                               <Eye className="h-4 w-4 mr-1" />
                               View file
                             </Button>
@@ -1782,11 +1895,11 @@ export default function Homework() {
                               size="sm"
                               variant="outline"
                               className="min-h-10"
-                              onClick={() => handleDemoMarkedRelease(fileRow.id)}
-                              disabled={fileRow.released_to_parent}
+                              onClick={() => (isDemoMode ? handleDemoMarkedRelease(fileRow.id) : releaseMarkedFileMutation.mutate(fileRow.id))}
+                              disabled={fileRow.released_to_parent || (!isDemoMode && (releaseMarkedFileMutation.isPending || !canReleaseFeedback))}
                             >
                               <Send className="h-4 w-4 mr-1" />
-                              Release to parent
+                              {releaseMarkedFileMutation.isPending && !isDemoMode ? 'Releasing...' : 'Release to parent'}
                             </Button>
                           </div>
                         </div>

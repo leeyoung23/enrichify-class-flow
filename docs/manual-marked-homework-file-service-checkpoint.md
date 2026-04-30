@@ -108,7 +108,7 @@ Executed in the implementation milestone:
 
 ## 9) What remains
 
-- Teacher marked-file UI wiring
+- Teacher marked-file UI runtime wiring is now added in `Homework` review detail panel for authenticated non-demo staff upload/list/view/release actions.
 - Parent released marked-file display wiring
 - Additional parent-facing runtime page behavior for marked files
 - AI OCR/provider integration for marked files

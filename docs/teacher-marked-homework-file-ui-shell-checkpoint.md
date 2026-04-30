@@ -2,14 +2,14 @@
 
 ## 1) What was implemented
 
-Teacher marked-file UI shell is now implemented in the `Homework` review detail panel.
+Teacher marked-file UI is now wired in the `Homework` review detail panel for authenticated non-demo staff, while preserving demo/local behavior.
 
-This milestone is UI-shell only:
+This checkpoint now includes:
 
-- marked-work section structure is added
-- demo/local parity behavior is added
-- authenticated real controls are intentionally visible but disabled
-- no real marked-file upload/list/release service wiring is enabled yet
+- marked-work section structure
+- demo/local parity behavior
+- authenticated real upload/list/view/release wiring for teacher marked files
+- no parent marked-file display changes
 
 ## 2) Files changed
 
@@ -46,15 +46,20 @@ Added behavior in review detail panel:
 
 ## 5) Real authenticated behavior
 
-For non-demo authenticated staff in this milestone:
+For non-demo authenticated staff:
 
 - marked-work shell is visible to staff
-- marked-file controls are currently disabled
-- safe copy is shown: `Marked-file wiring coming next`
-- no call to `uploadMarkedHomeworkFile(...)`
-- no call to `releaseHomeworkFileToParent(...)`
-- no call to `getHomeworkFileSignedUrl(...)` from marked-file section
-- backend behavior remains unchanged
+- marked files are listed with:
+  - `listHomeworkFiles({ homeworkSubmissionId, fileRole: 'teacher_marked_homework' })`
+- marked-file upload uses:
+  - `uploadMarkedHomeworkFile({ homeworkSubmissionId, file, notes })`
+- marked-file view uses:
+  - `getHomeworkFileSignedUrl(...)`
+- marked-file release uses:
+  - `releaseHomeworkFileToParent({ fileId })`
+- selected submission + file guards are enforced before upload
+- loading/empty/success/error states are shown with safe user-facing messages
+- release action updates only marked-file release state (no feedback auto-release, no notification side effects)
 
 ## 6) Workflow preservation
 
@@ -86,7 +91,6 @@ Result: pass in the implementation checkpoint run, with no new regressions repor
 
 ## 8) What remains
 
-- Real marked-file upload/list/release wiring in teacher UI
 - Parent released marked-file display
 - AI OCR/provider integration for marked files
 - Announcements/Internal Communications later

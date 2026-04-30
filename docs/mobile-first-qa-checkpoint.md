@@ -149,7 +149,7 @@ Status update:
 - `Homework` Create Homework shell now includes authenticated non-demo guarded save wiring to existing assignment write service; include in mobile QA pass.
 - `Homework` review detail now includes `Marked work` UI shell with demo parity; include in mobile QA pass:
   - demo mode: local fake marked-file list/upload/release/view simulation only,
-  - authenticated non-demo mode: shell + disabled controls with safe `wiring coming next` copy (no real marked-file service calls in this phase).
+  - authenticated non-demo mode: real marked-file upload/list/view/release wiring now uses existing marked-file services with loading/empty/error handling.
 - Remaining mobile QA/polish items:
   - `ParentUpdates` mobile review flow density
 
