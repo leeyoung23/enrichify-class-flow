@@ -480,6 +480,40 @@ Reminder: **Frontend filtering is not security. RLS must enforce access at datab
 - Validate both UI behavior and direct API/database query behavior.
 - Record pass/fail evidence before enabling real data onboarding.
 
+### Announcements attachments foundation draft note
+
+- Draft patch reference: `supabase/sql/023_announcements_attachments_foundation.sql` (manual review/apply only).
+- `023` status:
+  - manual/dev-first SQL draft prepared,
+  - not applied automatically,
+  - no production apply assumption,
+  - fake/dev data only.
+- `023` draft scope:
+  - new `announcement_attachments` table,
+  - file-role/check constraints and indexes,
+  - helper access/manage functions,
+  - RLS on `announcement_attachments`,
+  - private storage bucket/policies for `announcements-attachments`.
+- `023` phase boundary:
+  - parent/student access blocked,
+  - `parent_facing_media` is reserved but blocked in this phase,
+  - no MyTasks integration,
+  - no Company News pop-up behavior.
+
+#### Announcements attachments role checks (after manual apply in dev only)
+
+- HQ can read/manage all internal announcement attachments.
+- Branch supervisor can read/manage own-branch internal attachments only.
+- Teacher can read attachments for accessible targeted announcements only.
+- Teacher can insert `response_upload` only as `uploaded_by_profile_id = auth.uid()`.
+- Teacher cannot insert `hq_attachment`/`supervisor_attachment`.
+- Parent/student must have zero access to internal attachment metadata and objects.
+- `parent_facing_media` rows must remain blocked in this phase.
+- Storage checks:
+  - no public bucket access,
+  - select/insert object access only via metadata-linked internal role checks,
+  - object update/delete restricted to HQ/supervisor manage path.
+
 ## School/Curriculum + AI Foundation (007) Checks
 
 When `supabase/sql/007_school_curriculum_ai_foundation.sql` is manually applied, validate the following (manually and/or via `npm run test:supabase:read`, which performs **read-only count** checks per fake role for `schools`, `student_school_profiles`, and the other 007 foundation tables after **008** seed data exists):

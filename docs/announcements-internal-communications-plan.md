@@ -480,3 +480,18 @@ Why A first:
 - MyTasks can follow once file/request workflow is richer.
 - Company News/pop-up and parent-facing posts should remain later.
 
+### Phase 2 attachments SQL/RLS draft update
+
+- Draft SQL now exists at `supabase/sql/023_announcements_attachments_foundation.sql`.
+- `023` is manual/dev-first SQL draft only and is not auto-applied.
+- `023` drafts:
+  - `announcement_attachments` metadata table,
+  - attachment role constraints/indexes,
+  - helper access functions,
+  - RLS policies for HQ/supervisor/teacher internal attachment access,
+  - private storage bucket/policies for `announcements-attachments` (signed URL model; no public access).
+- Parent-facing media remains blocked in `023` (`parent_facing_media` is reserved but not exposed).
+- Attachments service/UI wiring remains future.
+- MyTasks integration remains future.
+- Company News pop-up behavior remains future.
+

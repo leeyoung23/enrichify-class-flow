@@ -4,6 +4,16 @@ Scope: planning only for Announcements attachments/document upload as Phase 2 of
 
 No UI/runtime/service/SQL changes in this checkpoint.
 
+## 0) SQL draft status update
+
+- SQL draft now exists at `supabase/sql/023_announcements_attachments_foundation.sql`.
+- `023` is manual/dev-first SQL draft only.
+- `023` is not applied automatically and has no production apply assumption.
+- `023` keeps parent-facing media blocked in this phase.
+- Attachments service/UI wiring remains future.
+- MyTasks integration remains future.
+- Company News pop-up remains future.
+
 ## 1) Current state
 
 - Phase 1 real Staff Announcements workflow exists and is checkpointed.
