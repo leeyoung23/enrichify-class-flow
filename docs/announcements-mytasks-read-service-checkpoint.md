@@ -3,6 +3,14 @@
 Date: 2026-05-01  
 Scope: documentation checkpoint for Announcements-derived MyTasks read service and smoke validation (no UI/SQL/RLS changes in this milestone)
 
+## UI integration update (Announcement Requests)
+
+- `MyTasks` now displays `Announcement Requests` cards using existing `listMyAnnouncementTasks(...)`.
+- Integration remains read-only for announcements in MyTasks.
+- Demo mode remains local-only and does not call Supabase.
+- No announcement write/upload actions were added to MyTasks.
+- No SQL/RLS/service additions were made.
+
 ## 1) What was implemented
 
 - `listMyAnnouncementTasks({ includeDone, statusFilter } = {})` is implemented in `src/services/supabaseReadService.js`.

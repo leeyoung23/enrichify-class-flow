@@ -493,6 +493,19 @@ Current status note:
   - MyTasks UI integration for `Announcement Requests` first,
   - then completion overview helper for HQ/supervisor,
   - SQL view/RPC optimization only if runtime complexity/performance demands it later.
+- MyTasks UI integration checkpoint is now completed for Announcements:
+  - `src/pages/MyTasks.jsx` now renders read-only `Announcement Requests` cards from `listMyAnnouncementTasks(...)`,
+  - demo mode remains local-only with fake announcement task cards and no Supabase calls,
+  - authenticated non-demo staff mode now shows loading/empty/safe-error states for announcement request reads,
+  - `Open Announcement` navigates to `/announcements` with safe context state.
+- Boundaries preserved in MyTasks UI checkpoint:
+  - no SQL/RLS changes,
+  - no new services,
+  - no announcement write/upload actions from MyTasks,
+  - no notification/email automation,
+  - no Company News pop-up behavior,
+  - no parent-facing announcements/events,
+  - no live chat.
 
 ## 12) Next immediate milestone prompt (copy-paste)
 

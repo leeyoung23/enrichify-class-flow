@@ -1,13 +1,15 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import { useOutletContext } from 'react-router-dom';
+import { useNavigate, useOutletContext } from 'react-router-dom';
 import { getSelectedDemoRole, normalizeRole } from '@/services/authService';
 import PageHeader from '@/components/shared/PageHeader';
 import EmptyState from '@/components/shared/EmptyState';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
 import { BellRing } from 'lucide-react';
 import { getTeacherNotifications, listTeacherNotifications } from '@/services/dataService';
 import { updateTeacherTaskAssignmentStatus } from '@/services/supabaseWriteService';
+import { listMyAnnouncementTasks } from '@/services/supabaseReadService';
 import { useSupabaseAuthState } from '@/hooks/useSupabaseAuthState';
 
 const STATUS_STYLES = {
@@ -23,7 +25,126 @@ const PRIORITY_STYLES = {
   low: 'bg-slate-100 text-slate-700 border-slate-200',
 };
 
+const ANNOUNCEMENT_STATUS_STYLES = {
+  unread: 'bg-blue-100 text-blue-700 border-blue-200',
+  pending: 'bg-indigo-100 text-indigo-700 border-indigo-200',
+  undone: 'bg-orange-100 text-orange-700 border-orange-200',
+  overdue: 'bg-red-100 text-red-700 border-red-200',
+  done: 'bg-emerald-100 text-emerald-700 border-emerald-200',
+};
+
+const ANNOUNCEMENT_PRIORITY_STYLES = {
+  urgent: 'bg-rose-100 text-rose-700 border-rose-200',
+  high: 'bg-red-100 text-red-700 border-red-200',
+  normal: 'bg-amber-100 text-amber-700 border-amber-200',
+  low: 'bg-slate-100 text-slate-700 border-slate-200',
+};
+
+const DEMO_ANNOUNCEMENT_TASKS = [
+  {
+    taskId: 'demo-ann-task-1',
+    announcementId: 'demo-announcement-unread',
+    source: 'announcement',
+    title: 'Unread HQ request: weekly tracker check',
+    bodyPreview: 'Please review this week tracker summary and confirm gaps.',
+    priority: 'high',
+    dueDate: '2026-05-06',
+    status: 'unread',
+    isOverdue: false,
+    requiresResponse: true,
+    responseProvided: false,
+    requiresUpload: false,
+    uploadProvided: false,
+    replyCount: 0,
+    attachmentCount: 1,
+    actionUrl: '/announcements',
+    createdAt: '2026-05-01T08:00:00.000Z',
+    updatedAt: '2026-05-01T08:00:00.000Z',
+  },
+  {
+    taskId: 'demo-ann-task-2',
+    announcementId: 'demo-announcement-upload',
+    source: 'announcement',
+    title: 'Upload required: branch monthly evidence',
+    bodyPreview: 'Upload class evidence file to complete this request.',
+    priority: 'normal',
+    dueDate: '2026-05-08',
+    status: 'pending',
+    isOverdue: false,
+    requiresResponse: false,
+    responseProvided: false,
+    requiresUpload: true,
+    uploadProvided: false,
+    replyCount: 0,
+    attachmentCount: 0,
+    actionUrl: '/announcements',
+    createdAt: '2026-05-01T08:30:00.000Z',
+    updatedAt: '2026-05-01T08:30:00.000Z',
+  },
+  {
+    taskId: 'demo-ann-task-3',
+    announcementId: 'demo-announcement-response',
+    source: 'announcement',
+    title: 'Response required: student progress confirmation',
+    bodyPreview: 'Reply with summary notes for assigned students.',
+    priority: 'high',
+    dueDate: '2026-05-09',
+    status: 'undone',
+    isOverdue: false,
+    requiresResponse: true,
+    responseProvided: false,
+    requiresUpload: false,
+    uploadProvided: false,
+    replyCount: 1,
+    attachmentCount: 0,
+    actionUrl: '/announcements',
+    createdAt: '2026-05-01T09:00:00.000Z',
+    updatedAt: '2026-05-01T09:10:00.000Z',
+  },
+  {
+    taskId: 'demo-ann-task-4',
+    announcementId: 'demo-announcement-overdue',
+    source: 'announcement',
+    title: 'Overdue request: missing follow-up evidence',
+    bodyPreview: 'This request is overdue and still missing required upload.',
+    priority: 'urgent',
+    dueDate: '2026-04-28',
+    status: 'overdue',
+    isOverdue: true,
+    requiresResponse: true,
+    responseProvided: true,
+    requiresUpload: true,
+    uploadProvided: false,
+    replyCount: 2,
+    attachmentCount: 1,
+    actionUrl: '/announcements',
+    createdAt: '2026-04-26T10:00:00.000Z',
+    updatedAt: '2026-05-01T08:55:00.000Z',
+  },
+  {
+    taskId: 'demo-ann-task-5',
+    announcementId: 'demo-announcement-done',
+    source: 'announcement',
+    title: 'Completed request: meeting summary submitted',
+    bodyPreview: 'Response and upload were provided; lifecycle marked done.',
+    priority: 'low',
+    dueDate: '2026-05-03',
+    status: 'done',
+    isOverdue: false,
+    requiresResponse: true,
+    responseProvided: true,
+    requiresUpload: true,
+    uploadProvided: true,
+    replyCount: 1,
+    attachmentCount: 2,
+    actionUrl: '/announcements',
+    createdAt: '2026-04-30T14:00:00.000Z',
+    updatedAt: '2026-05-01T07:45:00.000Z',
+  },
+];
+
 export default function MyTasks() {
+  const navigate = useNavigate();
   const { user, role: outletRole } = useOutletContext();
   const demoRole = getSelectedDemoRole();
   const role = demoRole || outletRole || normalizeRole(user?.role);
@@ -33,6 +154,9 @@ export default function MyTasks() {
   const [notifications, setNotifications] = useState(() => getTeacherNotifications(user));
   const [loadingItems, setLoadingItems] = useState({});
   const [feedback, setFeedback] = useState(null);
+  const [announcementTasks, setAnnouncementTasks] = useState([]);
+  const [announcementTasksLoading, setAnnouncementTasksLoading] = useState(false);
+  const [announcementTasksError, setAnnouncementTasksError] = useState('');
   const loadNotifications = useCallback(async () => {
     if (demoRole) {
       setNotifications(getTeacherNotifications(user));
@@ -46,6 +170,38 @@ export default function MyTasks() {
     void loadNotifications();
   }, [loadNotifications]);
 
+  const loadAnnouncementTasks = useCallback(async () => {
+    if (demoRole) {
+      setAnnouncementTasks(DEMO_ANNOUNCEMENT_TASKS);
+      setAnnouncementTasksError('');
+      setAnnouncementTasksLoading(false);
+      return;
+    }
+
+    if (!isSupabaseAuthAvailable || !session?.user || !appUser) {
+      setAnnouncementTasks([]);
+      setAnnouncementTasksError('Announcements require an authenticated staff session.');
+      setAnnouncementTasksLoading(false);
+      return;
+    }
+
+    setAnnouncementTasksLoading(true);
+    setAnnouncementTasksError('');
+    const { data, error } = await listMyAnnouncementTasks({ includeDone: true });
+    if (error) {
+      setAnnouncementTasks([]);
+      setAnnouncementTasksError('Announcement requests are temporarily unavailable.');
+      setAnnouncementTasksLoading(false);
+      return;
+    }
+    setAnnouncementTasks(Array.isArray(data) ? data : []);
+    setAnnouncementTasksLoading(false);
+  }, [appUser, demoRole, isSupabaseAuthAvailable, session]);
+
+  useEffect(() => {
+    void loadAnnouncementTasks();
+  }, [loadAnnouncementTasks]);
+
   const overview = useMemo(() => ({
     pending: notifications.filter((item) => item.status === 'pending').length,
     completed: notifications.filter((item) => item.status === 'completed').length,
@@ -55,6 +211,13 @@ export default function MyTasks() {
     if (filter === 'all') return notifications;
     return notifications.filter((item) => item.status === filter);
   }, [notifications, filter]);
+
+  const announcementOverview = useMemo(() => ({
+    total: announcementTasks.length,
+    pending: announcementTasks.filter((item) => item.status === 'pending' || item.status === 'unread' || item.status === 'undone').length,
+    overdue: announcementTasks.filter((item) => item.status === 'overdue').length,
+    done: announcementTasks.filter((item) => item.status === 'done').length,
+  }), [announcementTasks]);
 
   const handleMarkComplete = useCallback(async (item) => {
     if (demoRole) {
@@ -170,6 +333,102 @@ export default function MyTasks() {
           ))}
         </div>
       )}
+
+      <div className="mt-8">
+        <Card className="p-4 sm:p-5">
+          <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+            <div>
+              <p className="font-semibold">Announcement Requests</p>
+              <p className="text-xs text-muted-foreground">
+                Read-only announcement obligations from staff announcements.
+              </p>
+            </div>
+            <div className="flex flex-wrap gap-2">
+              <Badge variant="outline">Total {announcementOverview.total}</Badge>
+              <Badge variant="outline">Pending {announcementOverview.pending}</Badge>
+              <Badge variant="outline">Overdue {announcementOverview.overdue}</Badge>
+              <Badge variant="outline">Done {announcementOverview.done}</Badge>
+            </div>
+          </div>
+        </Card>
+
+        {announcementTasksLoading ? (
+          <Card className="p-5 mt-3">
+            <p className="text-sm text-muted-foreground">Loading announcement requests...</p>
+          </Card>
+        ) : null}
+
+        {!announcementTasksLoading && announcementTasksError ? (
+          <Card className="p-5 mt-3 border-dashed">
+            <p className="text-sm text-muted-foreground">{announcementTasksError}</p>
+          </Card>
+        ) : null}
+
+        {!announcementTasksLoading && !announcementTasksError && announcementTasks.length === 0 ? (
+          <Card className="p-5 mt-3 border-dashed">
+            <p className="text-sm text-muted-foreground">No announcement requests right now.</p>
+          </Card>
+        ) : null}
+
+        {!announcementTasksLoading && !announcementTasksError && announcementTasks.length > 0 ? (
+          <div className="space-y-3 mt-3">
+            {announcementTasks.map((task) => (
+              <Card key={task.taskId || task.announcementId} className="p-4 sm:p-5">
+                <div className="flex flex-col gap-3">
+                  <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
+                    <div className="min-w-0">
+                      <p className="font-medium">{task.title || 'Announcement request'}</p>
+                      {task.bodyPreview ? (
+                        <p className="text-sm text-muted-foreground mt-1 line-clamp-2">{task.bodyPreview}</p>
+                      ) : null}
+                    </div>
+                    <div className="flex flex-wrap gap-2">
+                      <Badge variant="outline">Announcement</Badge>
+                      <Badge variant="outline" className={ANNOUNCEMENT_PRIORITY_STYLES[task.priority] || ANNOUNCEMENT_PRIORITY_STYLES.normal}>
+                        {task.priority || 'normal'}
+                      </Badge>
+                      <Badge variant="outline" className={ANNOUNCEMENT_STATUS_STYLES[task.status] || ANNOUNCEMENT_STATUS_STYLES.pending}>
+                        {task.status || 'pending'}
+                      </Badge>
+                    </div>
+                  </div>
+
+                  <div className="flex flex-wrap gap-2 text-xs text-muted-foreground">
+                    {task.dueDate ? <Badge variant="outline">Due {task.dueDate}</Badge> : null}
+                    {task.requiresResponse ? (
+                      <Badge variant="outline">{task.responseProvided ? 'Response provided' : 'Response missing'}</Badge>
+                    ) : null}
+                    {task.requiresUpload ? (
+                      <Badge variant="outline">{task.uploadProvided ? 'Upload provided' : 'Upload missing'}</Badge>
+                    ) : null}
+                    <Badge variant="outline">Replies {task.replyCount || 0}</Badge>
+                    <Badge variant="outline">Attachments {task.attachmentCount || 0}</Badge>
+                  </div>
+
+                  <div className="flex flex-wrap items-center gap-2">
+                    {task.requiresResponse ? <span className="text-xs text-muted-foreground">Requires response</span> : null}
+                    {task.requiresUpload ? <span className="text-xs text-muted-foreground">Requires upload</span> : null}
+                    {task.isOverdue ? <span className="text-xs text-red-700">Overdue</span> : null}
+                  </div>
+
+                  <div>
+                    <Button
+                      size="sm"
+                      className="min-h-10"
+                      onClick={() => {
+                        const targetUrl = typeof task.actionUrl === 'string' && task.actionUrl.trim() ? task.actionUrl : '/announcements';
+                        navigate(targetUrl, { state: { announcementId: task.announcementId || null } });
+                      }}
+                    >
+                      Open Announcement
+                    </Button>
+                  </div>
+                </div>
+              </Card>
+            ))}
+          </div>
+        ) : null}
+      </div>
     </div>
   );
 }

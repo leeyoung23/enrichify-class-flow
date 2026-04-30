@@ -53,6 +53,16 @@ Scope note:
 
 - Task cards are mostly mobile-friendly, but status/priority chips + action button can still compress at narrow widths.
 - Filter chip row should be checked for wrap behavior and tap comfort.
+- `Announcement Requests` cards are now wired in `MyTasks` using existing derived read service.
+- Verify on ~390px and ~768px:
+  - source/priority/status/due badges wrap cleanly,
+  - response/upload provided-missing badges remain readable,
+  - reply/attachment count badges do not clip,
+  - `Open Announcement` button remains thumb-friendly.
+- Keep QA boundary:
+  - Announcement Requests in MyTasks are read-only in this phase,
+  - no reply/upload/write actions from MyTasks,
+  - no Company News/parent-facing/live chat behavior added.
 
 ### `Announcements`
 

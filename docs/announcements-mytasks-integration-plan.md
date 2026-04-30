@@ -21,6 +21,15 @@ Scope: planning only for Announcements request visibility in `MyTasks` (no imple
   - `npm run test:supabase:announcements:phase1` PASS (optional CHECK for missing `ANNOUNCEMENTS_TEST_OTHER_BRANCH_ID`)
   - `npm run test:supabase:announcements:attachments` PASS (expected diagnostic CHECK lines)
 
+## Checkpoint update (MyTasks UI Announcement Requests wired)
+
+- `src/pages/MyTasks.jsx` now surfaces `Announcement Requests` read-only cards.
+- Authenticated non-demo staff mode uses existing `listMyAnnouncementTasks({ includeDone: true })`.
+- Demo mode uses local-only fake announcement request cards and does not call Supabase.
+- `Open Announcement` action routes to `/announcements` (with safe route state for future deep-selection).
+- No announcement write/reply/upload actions were added from MyTasks.
+- No SQL/RLS/service additions were made in this UI milestone.
+
 ## 1) Current state
 
 - Announcements request workflow is already real for staff.
