@@ -513,9 +513,12 @@ Reminder: **Frontend filtering is not security. RLS must enforce access at datab
 - Service/smoke checkpoint doc:
   - `docs/announcements-attachments-service-smoke-checkpoint.md`
 - Upload CHECK diagnosis note:
-  - current CHECK originates at metadata insert RLS on `announcement_attachments` before storage object insert.
+  - post-024 diagnostics: raw metadata insert without RETURNING succeeds; service RETURNING path still CHECK-fails.
+  - failure is now isolated to SELECT policy behavior on `INSERT ... RETURNING`.
 - Insert-RLS follow-up patch draft:
   - `supabase/sql/024_fix_announcements_attachments_insert_rls.sql` (manual/dev-only apply).
+- Select-RETURNING follow-up patch draft:
+  - `supabase/sql/025_fix_announcements_attachments_select_returning_rls.sql` (manual/dev-only apply).
 - Post-apply expectation:
   - rerun `npm run test:supabase:announcements:attachments`,
   - upload/list/signed URL checks should move from CHECK to PASS where role/fixture prerequisites are valid.

@@ -31,11 +31,12 @@ No UI/runtime/service/SQL changes in this checkpoint.
 - MyTasks integration remains future.
 - Company News pop-up remains future.
 - Upload CHECK investigation status:
-  - current blocker is metadata insert RLS on `announcement_attachments` (not storage object insert gate),
-  - manual/dev-only fix draft exists at `supabase/sql/024_fix_announcements_attachments_insert_rls.sql`,
-  - `024` applies insert-safe row-predicate helper pattern and recreates only attachment insert policies.
+  - post-024 diagnostics show raw insert without RETURNING succeeds for HQ/supervisor/teacher-response,
+  - current blocker is SELECT policy behavior on `INSERT ... RETURNING` for `announcement_attachments` service insert path,
+  - manual/dev-only follow-up draft exists at `supabase/sql/025_fix_announcements_attachments_select_returning_rls.sql`.
 - Source-of-truth SQL draft `023` has been aligned to the same insert-safe helper pattern.
-- `024` still requires manual dev review/apply before upload PASS proof.
+- Source-of-truth SQL draft `023` is now aligned with row-predicate select helper for safer insert-returning behavior.
+- `025` requires manual dev review/apply before upload PASS proof.
 
 ## 1) Current state
 

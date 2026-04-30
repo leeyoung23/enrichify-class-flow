@@ -426,9 +426,11 @@ Current status note:
   - command: `npm run test:supabase:announcements:attachments`,
   - checkpoint doc: `docs/announcements-attachments-service-smoke-checkpoint.md`.
 - Upload CHECK investigation update:
-  - current upload CHECKs are blocked at metadata insert RLS on `announcement_attachments` (before storage object insert),
+  - post-024 diagnostics show raw metadata insert (without RETURNING) succeeds,
+  - current service CHECKs are isolated to SELECT policy behavior on `INSERT ... RETURNING`,
   - follow-up manual/dev SQL patch draft now exists:
     - `supabase/sql/024_fix_announcements_attachments_insert_rls.sql`,
+    - `supabase/sql/025_fix_announcements_attachments_select_returning_rls.sql`,
   - `024` keeps parent/student blocked, keeps `parent_facing_media` blocked, and avoids storage public-access widening.
 - Attachments UI remains unwired in this checkpoint.
 - Checkpoint doc:

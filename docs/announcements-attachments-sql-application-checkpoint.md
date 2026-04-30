@@ -101,11 +101,13 @@ Storage verification:
 - No UI wiring in this checkpoint.
 - No MyTasks integration, Company News pop-up, parent-facing rollout, notifications/emails, or live chat in this checkpoint.
 - Upload CHECK investigation update:
-  - metadata insert RLS is the current blocker for HQ/supervisor/teacher attachment uploads,
+  - post-024 diagnostics show raw metadata insert (without RETURNING) succeeds,
+  - service path still fails on `.insert(...).select(...).maybeSingle()`, indicating SELECT policy issue on INSERT RETURNING,
   - storage object insert policy is not the first failing gate in current smoke output.
 - Manual/dev-only follow-up patch draft now exists:
   - `supabase/sql/024_fix_announcements_attachments_insert_rls.sql`
-- `024` is not auto-applied; manual dev SQL Editor review/apply is required before expected upload PASS path.
+  - `supabase/sql/025_fix_announcements_attachments_select_returning_rls.sql`
+- `025` is not auto-applied; manual dev SQL Editor review/apply is required before expected upload PASS path.
 
 ## 9) Recommended next milestone
 

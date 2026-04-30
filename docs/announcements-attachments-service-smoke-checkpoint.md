@@ -58,14 +58,20 @@ Coverage intent:
 ## 5) Upload CHECK investigation status
 
 - Current CHECK root cause is in **metadata insert RLS** (`announcement_attachments`), not object upload/storage policy.
-- Evidence:
-  - smoke failure message is `new row violates row-level security policy for table "announcement_attachments"` before any object upload attempt,
-  - parent/student read blocks and teacher blocked-from-`hq_attachment` checks still PASS.
+ - Post-024 diagnostics refined the failing stage:
+  - raw insert **without RETURNING** succeeds for HQ/supervisor/teacher-response rows,
+  - service insert path using `.insert(...).select(...).maybeSingle()` still fails,
+  - this isolates a SELECT policy issue on `INSERT ... RETURNING`, not insert `WITH CHECK`.
 - A manual/dev-only SQL patch draft is now added:
   - `supabase/sql/024_fix_announcements_attachments_insert_rls.sql`
+- A follow-up manual/dev-only SQL patch draft is now added:
+  - `supabase/sql/025_fix_announcements_attachments_select_returning_rls.sql`
 - `024` adds explicit insert-safe row-predicate helpers and recreates only the two insert policies:
   - `announcement_attachments_insert_manage_023`
   - `announcement_attachments_insert_teacher_023`
+- `025` adds row-predicate select helper and recreates:
+  - `announcement_attachments_select_023`
+- `025` addresses the self-row lookup timing/visibility edge for `INSERT ... RETURNING`.
 - `024` keeps strict boundaries:
   - parent/student blocked,
   - `parent_facing_media` blocked,
@@ -77,8 +83,9 @@ Coverage intent:
 ## 6) Manual apply requirement
 
 - `024` is draft-only and is **not auto-applied**.
-- Until manual dev apply of `024`, upload paths can continue to show safe CHECK blocks.
-- After manual apply, rerun:
+- `025` is draft-only and is **not auto-applied**.
+- Until manual dev apply of `025`, upload paths can continue to show safe CHECK blocks in service RETURNING path.
+- After manual dev apply of `025`, rerun:
   - `npm run test:supabase:announcements:attachments`
   - expected: upload/list/signed URL paths move from CHECK to PASS where fixtures are valid.
 

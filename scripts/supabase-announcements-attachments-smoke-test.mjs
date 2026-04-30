@@ -61,6 +61,75 @@ function summarizeProfileContext(profile) {
   return `role=${profile.role || "unknown"} active=${String(Boolean(profile.is_active))} branch=${profile.branch_id || "null"}`;
 }
 
+async function runInsertDiagnostics({
+  supabase,
+  actorLabel,
+  announcementId,
+  fileRole,
+  staffNote,
+  predicateFunctionName,
+}) {
+  const authRead = await supabase.auth.getUser();
+  const profileId = authRead?.data?.user?.id || null;
+  if (!isUuidLike(profileId) || !isUuidLike(announcementId)) {
+    printResult("CHECK", `${actorLabel}: insert diagnostics skipped (missing auth/announcement id)`);
+    return;
+  }
+
+  const id = crypto.randomUUID();
+  const safeName = `${actorLabel.toLowerCase().replace(/[^a-z0-9]/g, "-")}-diag.txt`;
+  const storagePath = `${announcementId}/${id}/${safeName}`;
+  const payload = {
+    id,
+    announcement_id: announcementId,
+    uploaded_by_profile_id: profileId,
+    file_role: fileRole,
+    file_name: safeName,
+    storage_path: storagePath,
+    mime_type: "text/plain",
+    file_size: 16,
+    staff_note: staffNote,
+    released_to_parent: false,
+    released_at: null,
+    released_by_profile_id: null,
+  };
+
+  if (predicateFunctionName) {
+    const rpcResult = await supabase.rpc(predicateFunctionName, {
+      row_announcement_id: payload.announcement_id,
+      row_uploaded_by_profile_id: payload.uploaded_by_profile_id,
+      row_file_role: payload.file_role,
+      row_released_to_parent: payload.released_to_parent,
+      row_released_at: payload.released_at,
+      row_released_by_profile_id: payload.released_by_profile_id,
+    });
+    if (rpcResult.error) {
+      printResult("CHECK", `${actorLabel}: predicate RPC ${predicateFunctionName} unavailable (${rpcResult.error.message || "unknown"})`);
+    } else {
+      printResult("CHECK", `${actorLabel}: predicate ${predicateFunctionName} => ${String(Boolean(rpcResult.data))}`);
+    }
+  }
+
+  const rawInsert = await supabase.from("announcement_attachments").insert(payload);
+  if (rawInsert.error) {
+    printResult("CHECK", `${actorLabel}: raw insert without RETURNING blocked (${rawInsert.error.message || "unknown"})`);
+    return;
+  }
+
+  printResult("CHECK", `${actorLabel}: raw insert without RETURNING succeeded`);
+  const cleanup = await supabase
+    .from("announcement_attachments")
+    .delete()
+    .eq("id", id)
+    .select("id")
+    .maybeSingle();
+  if (cleanup.error) {
+    printResult("CHECK", `${actorLabel}: diagnostic cleanup blocked (${cleanup.error.message || "unknown"})`);
+  } else {
+    printResult("CHECK", `${actorLabel}: diagnostic cleanup succeeded`);
+  }
+}
+
 async function run() {
   const [{ signInWithEmailPassword, signOut }, readService, writeService, uploadService, { supabase }] = await Promise.all([
     import("../src/services/supabaseAuthService.js"),
@@ -145,6 +214,14 @@ async function run() {
         cleanupAnnouncements.push(hqAnnouncementId);
         printResult("PASS", "HQ: created announcement fixture");
         printResult("CHECK", `HQ context: ${summarizeProfileContext(hqCtx.data)}`);
+        await runInsertDiagnostics({
+          supabase,
+          actorLabel: "HQ",
+          announcementId: hqAnnouncementId,
+          fileRole: "hq_attachment",
+          staffNote: "HQ diag",
+          predicateFunctionName: "can_insert_manage_announcement_attachment_row_024",
+        });
 
         const uploadResult = await uploadAnnouncementAttachment({
           announcementId: hqAnnouncementId,
@@ -222,6 +299,14 @@ async function run() {
         cleanupAnnouncements.push(supervisorAnnouncementId);
         printResult("PASS", "Supervisor: created announcement fixture");
         printResult("CHECK", `Supervisor context: ${summarizeProfileContext(supervisorCtx.data)}`);
+        await runInsertDiagnostics({
+          supabase,
+          actorLabel: "Supervisor",
+          announcementId: supervisorAnnouncementId,
+          fileRole: "supervisor_attachment",
+          staffNote: "Supervisor diag",
+          predicateFunctionName: "can_insert_manage_announcement_attachment_row_024",
+        });
 
         const publishResult = await publishAnnouncement({ announcementId: supervisorAnnouncementId });
         if (publishResult.error) {
@@ -308,6 +393,14 @@ async function run() {
           printResult("PASS", "Teacher: listAnnouncementAttachments succeeded");
         }
       }
+      await runInsertDiagnostics({
+        supabase,
+        actorLabel: "Teacher",
+        announcementId: supervisorAnnouncementId,
+        fileRole: "response_upload",
+        staffNote: "Teacher diag",
+        predicateFunctionName: "can_insert_teacher_announcement_attachment_row_024",
+      });
 
       const teacherHqUpload = await uploadAnnouncementAttachment({
         announcementId: supervisorAnnouncementId,

@@ -182,6 +182,38 @@ as $$
   )
 $$;
 
+create or replace function public.can_select_announcement_attachment_row_023(
+  row_announcement_id uuid,
+  row_file_role text,
+  row_released_to_parent boolean
+)
+returns boolean
+language sql
+stable
+security definer
+set search_path = public
+as $$
+  select coalesce(
+    row_file_role <> 'parent_facing_media'
+    and row_released_to_parent = false
+    and exists (
+      select 1
+      from public.announcements a
+      where a.id = row_announcement_id
+        and a.audience_type = 'internal_staff'
+        and (
+          public.is_hq_admin()
+          or public.is_branch_supervisor_for_branch(a.branch_id)
+          or (
+            public.current_user_role() = 'teacher'
+            and public.can_access_announcement(a.id)
+          )
+        )
+    ),
+    false
+  )
+$$;
+
 create or replace function public.can_insert_manage_announcement_attachment_row_023(
   row_announcement_id uuid,
   row_uploaded_by_profile_id uuid,
@@ -258,6 +290,8 @@ comment on function public.can_access_announcement_attachment(uuid) is
   '023 draft helper. Phase 2 internal attachments only. Parent/student blocked. parent_facing_media blocked.';
 comment on function public.can_manage_announcement_attachment(uuid) is
   '023 draft helper. HQ full manage + supervisor own-branch manage for internal attachment rows.';
+comment on function public.can_select_announcement_attachment_row_023(uuid, text, boolean) is
+  '023 select row predicate helper for internal attachment row visibility; avoids self-row lookup during INSERT RETURNING.';
 comment on function public.can_insert_manage_announcement_attachment_row_023(uuid, uuid, text, boolean, timestamptz, uuid) is
   '023 insert-safe row predicate for HQ/supervisor internal attachment metadata insert path. Avoids self-row helper dependency.';
 comment on function public.can_insert_teacher_announcement_attachment_row_023(uuid, uuid, text, boolean, timestamptz, uuid) is
@@ -278,7 +312,11 @@ create policy announcement_attachments_select_023
 on public.announcement_attachments
 for select
 using (
-  public.can_access_announcement_attachment(id)
+  public.can_select_announcement_attachment_row_023(
+    announcement_id,
+    file_role,
+    released_to_parent
+  )
 );
 
 drop policy if exists announcement_attachments_insert_manage_023 on public.announcement_attachments;
