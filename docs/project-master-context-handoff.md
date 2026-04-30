@@ -305,6 +305,18 @@ Current status note:
   - no real provider API wiring in this milestone.
 - Provider integration remains unwired/disabled; no provider keys added; draft-only and teacher-approval gate remain unchanged.
 - AI homework feedback remains a future milestone after full human workflow hardening.
+- Announcements Phase 1 SQL/RLS foundation draft is now added at `supabase/sql/020_announcements_phase1_foundation.sql`:
+  - manual/dev-first draft only,
+  - additive and non-destructive,
+  - fake/dev data only,
+  - not applied automatically in this milestone,
+  - drafted tables: `announcements`, `announcement_targets`, `announcement_statuses`, `announcement_replies`,
+  - conservative internal staff RLS scope for HQ/supervisor/teacher; parent/student access remains blocked in Phase 1.
+- Announcements attachments remain Phase 2+ and are intentionally not included in `020`.
+- Announcements MyTasks integration remains Phase 2+ and is intentionally not included in `020`.
+- Company News pop-up runtime behavior remains Phase 3.
+- Parent-facing announcements/events runtime rollout remains Phase 4.
+- Live chat remains Phase 5+ only if needed.
 - Notification/email workflow remains a future milestone.
 
 ## 12) Next immediate milestone prompt (copy-paste)

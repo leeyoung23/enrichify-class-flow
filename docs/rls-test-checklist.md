@@ -352,6 +352,37 @@ Reminder: **Frontend filtering is not security. RLS must enforce access at datab
   2. run `npm run test:ai:homework-edge:deployed`,
   3. confirm teacher/supervisor/HQ allowed and mismatch checks can move from `CHECK` to `PASS`.
 
+### Announcements Phase 1 foundation draft note
+
+- Draft patch reference: `supabase/sql/020_announcements_phase1_foundation.sql` (manual review/apply only).
+- `020` status:
+  - manual/dev-first SQL draft prepared,
+  - not applied automatically,
+  - review-first before manual apply in Supabase dev,
+  - fake/dev data only.
+- `020` Phase 1 scope:
+  - `announcements`
+  - `announcement_targets`
+  - `announcement_statuses`
+  - `announcement_replies`
+- `020` intentionally excludes:
+  - `announcement_attachments` (Phase 2+),
+  - MyTasks integration (Phase 2+),
+  - Company News pop-up runtime behavior (Phase 3),
+  - parent-facing announcements/events runtime access (Phase 4),
+  - live chat (Phase 5+).
+
+#### Announcements Phase 1 role checks (after manual apply in dev only)
+
+- HQ/admin can select/manage all internal staff announcements in scope.
+- Branch supervisor can create/select/manage own-branch internal staff announcements.
+- Teacher can read only published internal announcements targeted to self/role/branch and cannot create announcements.
+- Teacher can update own `announcement_statuses` row only.
+- Teacher can insert own `announcement_replies` row only.
+- Parent/student must have zero access to Phase 1 internal announcements/tables.
+- Negative test: teacher cannot read unrelated branch announcement targets/replies/status rows.
+- Negative test: parent/student direct SQL/API reads on Phase 1 announcements tables must fail.
+
 ### Homework marked-file role/release draft patch note
 
 - Draft patch reference: `supabase/sql/018_homework_file_roles_release_foundation.sql` (manual review/apply only).

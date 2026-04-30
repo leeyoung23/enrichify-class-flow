@@ -352,3 +352,26 @@ Run:
 Do not run build/lint/smoke suite unless runtime files change.
 ```
 
+## 18) Phase 1 SQL draft checkpoint (020)
+
+Draft status update:
+
+- `supabase/sql/020_announcements_phase1_foundation.sql` is now drafted as **manual/dev-first SQL only**.
+- `020` is **not applied automatically** and has no production apply assumption.
+- `020` includes only Phase 1 tables:
+  - `announcements`
+  - `announcement_targets`
+  - `announcement_statuses`
+  - `announcement_replies`
+- `020` includes additive constraints/indexes/helper functions and conservative internal-staff RLS policy intent for HQ/supervisor/teacher scope.
+- Parent/student access remains blocked for this Phase 1 internal scope.
+- `announcement_attachments` remains out of scope for this patch (Phase 2+).
+- MyTasks integration remains Phase 2+.
+- Company News pop-up behavior remains Phase 3.
+- Parent-facing announcements/events remain Phase 4.
+- Live chat remains Phase 5+ only if needed.
+
+Next manual step:
+
+- Review `supabase/sql/020_announcements_phase1_foundation.sql` line-by-line, then manually apply in Supabase **dev** SQL editor only after review sign-off.
+
