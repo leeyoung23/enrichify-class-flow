@@ -22,6 +22,17 @@ From deployed regression run:
 - `CHECK` HQ allowed case skipped due missing accessible fake homework submission fixture
 - `CHECK` relationship mismatch skipped due missing allowed-role fixture
 
+Fixture-improvement checkpoint update:
+
+- explicit fixture ID support is now available through:
+  - `AI_HOMEWORK_TEST_SUBMISSION_ID`
+  - `AI_HOMEWORK_TEST_TASK_ID`
+  - `AI_HOMEWORK_TEST_STUDENT_ID`
+  - `AI_HOMEWORK_TEST_CLASS_ID`
+- deployed regression validates UUID format + relationship consistency for explicit IDs.
+- if explicit IDs are missing, script falls back to role-accessible fixture discovery.
+- if no safe fixture payload is available, script emits clear `CHECK` skips.
+
 ## 3) Interpretation
 
 - This is progress from the previous unavailable-function `CHECK` skip state.

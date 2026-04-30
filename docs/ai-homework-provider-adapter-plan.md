@@ -242,6 +242,7 @@ Current status note:
 - `generate-homework-feedback-draft` is deployed to Supabase dev and reachable.
 - Deployed regression now reports PASS for missing/invalid auth and blocked parent/student roles.
 - Allowed teacher/branch supervisor/HQ and mismatch checks remain `CHECK` due missing accessible fake fixtures.
+- Deployed regression now supports optional explicit fixture IDs (`AI_HOMEWORK_TEST_SUBMISSION_ID`, `AI_HOMEWORK_TEST_TASK_ID`, `AI_HOMEWORK_TEST_STUDENT_ID`, `AI_HOMEWORK_TEST_CLASS_ID`) with UUID + relationship validation and role-accessible discovery fallback.
 - Provider remains disabled/unwired.
 - No provider keys were added.
 - Teacher approval gate remains mandatory.
