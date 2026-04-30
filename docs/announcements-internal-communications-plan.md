@@ -461,3 +461,22 @@ Why A first:
   - no live chat,
   - no auto notifications/emails.
 
+### Recommended next milestone (checkpoint)
+
+Options:
+
+- A. Announcements attachments SQL/RLS planning
+- B. MyTasks integration planning
+- C. Company News warm pop-up planning
+- D. Parent-facing announcements/events planning
+- E. Live chat feasibility plan
+
+Recommendation: **A. Announcements attachments SQL/RLS planning**.
+
+Why A first:
+
+- Core authenticated request/read/done/reply workflow is now real.
+- Attachments are the next natural document-hub capability.
+- MyTasks can follow once file/request workflow is richer.
+- Company News/pop-up and parent-facing posts should remain later.
+

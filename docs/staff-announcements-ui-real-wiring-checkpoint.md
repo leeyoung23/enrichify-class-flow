@@ -2,7 +2,17 @@
 
 Checkpoint scope: authenticated non-demo Staff Announcements wiring using existing Phase 1 services, while preserving demo local-only behavior.
 
-## 1) Files changed
+## 1) What was implemented
+
+- Authenticated read wiring in non-demo staff mode.
+- Announcement detail loading for selected row.
+- Status actions wiring (`read`, `done`, `undone`).
+- Reply action wiring.
+- HQ/supervisor create request action wiring.
+- Query refresh/invalidation after actions.
+- Demo behavior preservation as local-only fake workflow.
+
+## 2) Files changed
 
 - `src/pages/Announcements.jsx`
 - `docs/staff-announcements-ui-shell-checkpoint.md`
@@ -12,54 +22,66 @@ Checkpoint scope: authenticated non-demo Staff Announcements wiring using existi
 - `docs/project-master-context-handoff.md`
 - `docs/staff-announcements-ui-real-wiring-checkpoint.md`
 
-## 2) Authenticated read behavior
+## 3) Authenticated read behavior
 
 - Authenticated non-demo staff mode now calls:
   - `listAnnouncements({ audienceType: 'internal_staff' })`
+- Filter support remains:
+  - `Requests`
+  - `Done`
+  - `Pending`
+- `Company News` remains placeholder-only (no pop-up wiring in this milestone).
+- Detail data for selected announcement loads via:
   - `listAnnouncementTargets({ announcementId })`
   - `listAnnouncementStatuses({ announcementId })`
   - `listAnnouncementReplies({ announcementId })`
-- Filter support remains:
-  - `Requests`
-  - `Company News` placeholder (no live company news pop-up wiring)
-  - `Done`
-  - `Pending`
-- Loading/empty/error states use safe, non-sensitive UI copy.
+- Loading/empty/error states use safe copy only.
+- No raw SQL/RLS/env values are surfaced in UI messages.
 
-## 3) Authenticated create/status/reply behavior
+## 4) Authenticated create/status/reply behavior
 
 - Mark Read -> `markAnnouncementRead({ announcementId })`
 - Done -> `updateAnnouncementDoneStatus({ announcementId, doneStatus: 'done' })`
 - Undone -> `updateAnnouncementDoneStatus({ announcementId, doneStatus: 'undone', undoneReason })`
 - Reply -> `createAnnouncementReply({ announcementId, body, replyType })`
-- Create Request (HQ/supervisor only) -> `createAnnouncementRequest(...)`
-- After create/status/reply actions, announcements list/detail queries are invalidated/refreshed.
+- HQ/supervisor Create Request -> `createAnnouncementRequest(...)`
+- No direct SQL from UI.
+- After create/status/reply actions, list/detail queries are invalidated/refreshed.
+- Selected announcement is kept stable where possible after refresh.
 
-## 4) demoRole behavior
+## 5) demoRole behavior
 
 - Demo mode remains local fake-data only:
   - local mark read/done/undone
   - local add reply
-  - local create request for HQ/supervisor demo
+  - local create request for HQ/supervisor demo only
 - Teacher demo cannot create.
 - No Supabase calls in demo mode.
-- No files, notifications, or emails.
+- No files/uploads.
+- No notifications/emails.
 
-## 5) Safety boundaries (unchanged)
+## 6) Safety boundaries (unchanged)
 
-- No SQL changes.
-- No RLS changes.
-- No SQL apply from UI/runtime.
-- No attachment upload flow.
+- No SQL/RLS changes.
+- No SQL apply.
+- No attachment upload.
 - No MyTasks integration.
 - No Company News pop-up behavior.
 - No parent-facing announcements.
 - No live chat.
 - No auto emails/notifications.
-- No service-role frontend usage.
-- No real AI API wiring.
+- No service role in frontend.
+- No AI/provider/env changes.
 
-## 6) Remaining future
+## 7) Tests
+
+- `npm run build` PASS
+- `npm run lint` PASS
+- `npm run typecheck` PASS
+- `npm run test:supabase:announcements:phase1` PASS
+- Optional `CHECK` remains when `ANNOUNCEMENTS_TEST_OTHER_BRANCH_ID` is missing.
+
+## 8) What remains future
 
 - Attachments.
 - MyTasks integration.
@@ -67,3 +89,22 @@ Checkpoint scope: authenticated non-demo Staff Announcements wiring using existi
 - Parent-facing announcements/events.
 - Live chat (later and optional).
 - Notification/email automation (future only).
+
+## 9) Recommended next milestone
+
+Choose:
+
+- A. Announcements attachments SQL/RLS planning
+- B. MyTasks integration planning
+- C. Company News warm pop-up planning
+- D. Parent-facing announcements/events planning
+- E. Live chat feasibility plan
+
+Recommendation: **A. Announcements attachments SQL/RLS planning**.
+
+Why A first:
+
+- Core authenticated request/read/done/reply workflow is now real.
+- Attachments are the next natural document-hub capability.
+- MyTasks can follow once file/request workflow is richer.
+- Company News pop-up and parent-facing posts should remain later phases.

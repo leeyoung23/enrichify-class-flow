@@ -21,7 +21,6 @@ Checkpoint scope: Staff Announcements real wiring update on top of UI shell mile
 ## 2) Files changed in this update
 
 - `src/pages/Announcements.jsx`
-- `src/pages/Announcements.jsx`
 - `docs/staff-announcements-ui-shell-checkpoint.md`
 - `docs/announcements-phase1-smoke-pass-checkpoint.md`
 - `docs/announcements-internal-communications-plan.md`
@@ -85,20 +84,20 @@ Checkpoint scope: Staff Announcements real wiring update on top of UI shell mile
 
 Options:
 
-- A. Real authenticated Announcements UI wiring
-- B. Attachments SQL/RLS
-- C. MyTasks integration plan
-- D. Company News pop-up design
-- E. Parent-facing announcements/events plan
+- A. Announcements attachments SQL/RLS planning
+- B. MyTasks integration planning
+- C. Company News warm pop-up planning
+- D. Parent-facing announcements/events planning
+- E. Live chat feasibility plan
 
-Recommendation: **A. Real authenticated Announcements UI wiring**.
+Recommendation: **A. Announcements attachments SQL/RLS planning**.
 
 Why A first:
 
-- Backend/service/RLS is already proven by smoke.
-- UI shell already exists.
-- The next missing step is wiring read/status/reply/create to existing service methods.
-- Attachments/MyTasks/Company News should wait until core authenticated workflow is real.
+- Core authenticated request/read/done/reply workflow is now real.
+- Attachments are the next natural document-hub capability.
+- MyTasks can follow once file/request workflow is richer.
+- Company News/pop-up and parent-facing posts should remain later.
 
 ## 9) Next implementation prompt (copy-paste)
 

@@ -69,6 +69,11 @@ Scope note:
   - action-button wrap for mark read/done/undone/reply,
   - create-request form wrapping including optional branch/target inputs,
   - loading/empty/error states remain clear and non-technical.
+- Keep safety messaging in QA notes:
+  - no attachments/upload actions enabled yet,
+  - no Company News pop-up behavior yet,
+  - no parent-facing announcements/events yet,
+  - no live chat/notification behavior in this phase.
 
 ### `Dashboard`
 

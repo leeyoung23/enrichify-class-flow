@@ -402,6 +402,11 @@ Current status note:
 - Parent-facing announcements/events runtime rollout remains Phase 4.
 - Live chat remains Phase 5+ only if needed.
 - Notification/email workflow remains a future milestone.
+- Recommended next milestone now is:
+  - **Announcements attachments SQL/RLS planning** first,
+  - then MyTasks integration planning,
+  - then Company News warm pop-up planning and parent-facing announcement/event planning,
+  - live chat feasibility remains later/optional.
 
 ## 12) Next immediate milestone prompt (copy-paste)
 

@@ -72,20 +72,20 @@ Checkpoint scope: documentation only for Announcements Phase 1 smoke PASS state.
 
 Options:
 
-- A. Staff Announcements UI shell with demo parity
-- B. Real Announcements UI wiring
-- C. Attachments SQL/RLS
-- D. MyTasks integration plan
-- E. Company News pop-up design
+- A. Announcements attachments SQL/RLS planning
+- B. MyTasks integration planning
+- C. Company News warm pop-up planning
+- D. Parent-facing announcements/events planning
+- E. Live chat feasibility plan
 
-Recommendation: **A. Staff Announcements UI shell with demo parity**.
+Recommendation: **A. Announcements attachments SQL/RLS planning**.
 
 Why A first:
 
-- Backend/service/RLS core path is now proven.
-- UI shell can be shaped safely without real-write wiring first.
-- Demo parity helps validate product flow before real UI wiring.
-- Attachments/MyTasks/Company News should remain later milestones.
+- Core authenticated request/read/done/reply workflow is now real.
+- Attachments are the next natural document-hub capability.
+- MyTasks can follow once file/request workflow is richer.
+- Company News/pop-up and parent-facing posts should remain later.
 
 ## 8) Next implementation prompt (copy-paste)
 
