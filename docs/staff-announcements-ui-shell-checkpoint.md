@@ -1,32 +1,35 @@
 # Staff Announcements UI Shell Checkpoint
 
-Checkpoint scope: documentation only for Staff Announcements UI shell milestone.
+Checkpoint scope: Staff Announcements real wiring update on top of UI shell milestone.
 
-## 1) What was implemented
+## 1) What is implemented now
 
-- Announcements page shell (`src/pages/Announcements.jsx`).
-- Route added: `/announcements`.
-- Staff-only navigation tab added after `Dashboard` (HQ/supervisor/teacher).
-- Demo request/reminder cards.
-- Detail panel with local interaction controls.
-- Filters: `Requests`, `Company News`, `Done`, `Pending`.
-- `Create Request` shell.
-- Company News placeholder (no pop-up behavior).
-- Attachment placeholder only (`Attachments coming in Phase 2`).
+- Announcements page shell remains (`src/pages/Announcements.jsx`).
+- Route remains: `/announcements`.
+- Staff-only navigation tab remains after `Dashboard` (HQ/supervisor/teacher).
+- Demo mode remains local fake-data only.
+- Authenticated non-demo mode now wires:
+  - read list via `listAnnouncements({ audienceType: 'internal_staff' })`
+  - detail reads via `listAnnouncementTargets`, `listAnnouncementStatuses`, `listAnnouncementReplies`
+  - status actions via `markAnnouncementRead`, `updateAnnouncementDoneStatus`
+  - reply action via `createAnnouncementReply`
+  - create-request action (HQ/supervisor) via `createAnnouncementRequest`
+- Filters remain: `Requests`, `Company News` placeholder, `Done`, `Pending`.
+- Company News remains placeholder only (no pop-up behavior).
+- Attachment area remains placeholder only (`Attachments coming in Phase 2`).
 
-## 2) Files changed in the milestone
+## 2) Files changed in this update
 
 - `src/pages/Announcements.jsx`
-- `src/App.jsx`
-- `src/services/permissionService.js`
-- `src/components/layout/Sidebar.jsx`
+- `src/pages/Announcements.jsx`
 - `docs/staff-announcements-ui-shell-checkpoint.md`
 - `docs/announcements-phase1-smoke-pass-checkpoint.md`
 - `docs/announcements-internal-communications-plan.md`
 - `docs/mobile-first-qa-checkpoint.md`
 - `docs/project-master-context-handoff.md`
+- `docs/staff-announcements-ui-real-wiring-checkpoint.md`
 
-## 3) demoRole behavior
+## 3) demoRole behavior (unchanged)
 
 - Local fake data only.
 - Local-only actions:
@@ -36,22 +39,22 @@ Checkpoint scope: documentation only for Staff Announcements UI shell milestone.
   - add reply
   - create request local save (HQ/supervisor demo only)
 - Teacher demo cannot create.
-- No Supabase calls.
+- No Supabase calls in demo mode.
 - No real files.
 - No notifications/emails.
 
 ## 4) Authenticated mode behavior
 
-- Preview-only in this milestone.
-- Safe copy shown: "Announcements wiring is coming next. Backend Phase 1 service/RLS is ready."
-- No:
-  - `listAnnouncements(...)`
-  - `createAnnouncementRequest(...)`
-  - `publishAnnouncement(...)`
-  - `markAnnouncementRead(...)`
-  - `updateAnnouncementDoneStatus(...)`
-  - `createAnnouncementReply(...)`
-- Optional create affordance is disabled/preview-only.
+- Authenticated non-demo staff mode now loads internal staff announcements via existing Phase 1 read services.
+- Authenticated non-demo detail panel now loads targets/statuses/replies for selected announcement.
+- Authenticated non-demo actions now support:
+  - mark read
+  - done
+  - undone (optional reason)
+  - reply
+- Authenticated create request is available for HQ/supervisor only.
+- Teacher cannot create; teacher can read/act only on RLS-accessible rows.
+- Parent/student remain blocked from staff announcements.
 
 ## 5) Safety boundaries
 
@@ -63,20 +66,14 @@ Checkpoint scope: documentation only for Staff Announcements UI shell milestone.
 - No live chat.
 - No auto emails/notifications.
 - No service-role frontend usage.
-- Fake/dev data only in demo mode.
+- Fake/dev data only in demo mode; no real file upload flow added.
 
 ## 6) Validation result
 
-- `npm run build` PASS
-- `npm run lint` PASS
-- `npm run typecheck` PASS
-- `npm run test:supabase:announcements:phase1` PASS with optional CHECK:
-  - cross-branch negative check skipped when `ANNOUNCEMENTS_TEST_OTHER_BRANCH_ID` is missing.
-- Cross-branch CHECK remains optional fixture coverage only.
+- See latest real wiring checkpoint for this milestone's validation commands and outcomes.
 
 ## 7) What remains future
 
-- Real authenticated Announcements service wiring.
 - Attachments.
 - MyTasks integration.
 - Company News warm pop-up.

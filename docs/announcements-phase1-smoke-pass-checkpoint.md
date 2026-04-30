@@ -176,3 +176,15 @@ Why A first:
 - Staff Announcements UI shell already exists.
 - Next missing step is wiring real authenticated read/status/reply/create to existing service methods.
 - Attachments/MyTasks/Company News should wait until core authenticated workflow is real.
+
+## 12) Real wiring status update
+
+- Real authenticated Staff Announcements UI wiring is now implemented on `src/pages/Announcements.jsx`.
+- Authenticated non-demo staff flow now uses existing Phase 1 services for:
+  - read list + detail
+  - create request (HQ/supervisor only)
+  - mark read/done/undone
+  - reply creation
+- Demo mode remains local-only and does not call Supabase.
+- SQL/RLS boundaries remain unchanged.
+- Attachments/MyTasks/Company News pop-up/parent-facing/live chat/notifications remain future scope.

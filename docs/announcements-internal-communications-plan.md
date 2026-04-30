@@ -439,3 +439,25 @@ Why A first:
 - Next practical gap is authenticated read/status/reply/create wiring to existing service methods.
 - Attachments/MyTasks/Company News/parent-facing rollout should remain later.
 
+### Real authenticated UI wiring update
+
+- Staff `Announcements` authenticated non-demo UI wiring is now active in `src/pages/Announcements.jsx`.
+- Existing Phase 1 services are now used in UI for:
+  - `listAnnouncements({ audienceType: 'internal_staff' })`
+  - `listAnnouncementTargets({ announcementId })`
+  - `listAnnouncementStatuses({ announcementId })`
+  - `listAnnouncementReplies({ announcementId })`
+  - `createAnnouncementRequest(...)` (HQ/supervisor only)
+  - `markAnnouncementRead({ announcementId })`
+  - `updateAnnouncementDoneStatus({ announcementId, doneStatus, undoneReason })`
+  - `createAnnouncementReply({ announcementId, body, replyType })`
+- Demo mode remains local fake-data only; no Supabase calls in demo paths.
+- Boundaries remain unchanged:
+  - no SQL/RLS edits,
+  - no attachment upload,
+  - no MyTasks integration,
+  - no Company News pop-up behavior,
+  - no parent-facing announcements,
+  - no live chat,
+  - no auto notifications/emails.
+

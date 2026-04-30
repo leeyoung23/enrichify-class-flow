@@ -391,6 +391,11 @@ Current status note:
 - Announcements next milestone priority is now:
   - real authenticated Announcements UI wiring first (read/status/reply/create using existing services),
   - then attachments, MyTasks integration, Company News pop-up behavior, and parent-facing rollout.
+- Real authenticated Staff Announcements UI wiring is now implemented in `src/pages/Announcements.jsx`:
+  - authenticated non-demo read list/detail wiring now uses existing Phase 1 services,
+  - authenticated non-demo create request wiring is enabled for HQ/supervisor only,
+  - authenticated non-demo status/reply wiring is enabled (mark read, done/undone, reply),
+  - demo mode remains local-only fake data with no Supabase calls.
 - Announcements attachments remain Phase 2+ and are intentionally not included in `020`.
 - Announcements MyTasks integration remains Phase 2+ and is intentionally not included in `020`.
 - Company News pop-up runtime behavior remains Phase 3.

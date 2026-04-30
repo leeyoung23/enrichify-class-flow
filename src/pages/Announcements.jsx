@@ -1,5 +1,6 @@
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { useOutletContext } from 'react-router-dom';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
@@ -10,8 +11,23 @@ import { Textarea } from '@/components/ui/textarea';
 import PageHeader from '@/components/shared/PageHeader';
 import EmptyState from '@/components/shared/EmptyState';
 import { BellRing, MessageSquare, Megaphone } from 'lucide-react';
+import { toast } from 'sonner';
 import { getSelectedDemoRole } from '@/services/authService';
 import { ROLES, getRole } from '@/services/permissionService';
+import { isSupabaseConfigured } from '@/services/supabaseClient';
+import { useSupabaseAuthState } from '@/hooks/useSupabaseAuthState';
+import {
+  listAnnouncements,
+  listAnnouncementReplies,
+  listAnnouncementStatuses,
+  listAnnouncementTargets,
+} from '@/services/supabaseReadService';
+import {
+  createAnnouncementReply,
+  createAnnouncementRequest,
+  markAnnouncementRead,
+  updateAnnouncementDoneStatus,
+} from '@/services/supabaseWriteService';
 
 const FILTERS = ['Requests', 'Company News', 'Done', 'Pending'];
 
@@ -84,16 +100,21 @@ function priorityTone(priority) {
 
 export default function Announcements() {
   const { user } = useOutletContext();
+  const { appUser: supabaseAppUser } = useSupabaseAuthState();
+  const queryClient = useQueryClient();
   const selectedDemoRole = getSelectedDemoRole();
   const role = selectedDemoRole || getRole(user);
   const isDemoMode = Boolean(selectedDemoRole);
   const isStaff = role === ROLES.HQ_ADMIN || role === ROLES.BRANCH_SUPERVISOR || role === ROLES.TEACHER;
   const canCreateInDemo = role === ROLES.HQ_ADMIN || role === ROLES.BRANCH_SUPERVISOR;
+  const canCreateInAuth = role === ROLES.HQ_ADMIN || role === ROLES.BRANCH_SUPERVISOR;
+  const canUseSupabaseAnnouncements = isStaff && !isDemoMode && isSupabaseConfigured() && Boolean(supabaseAppUser?.id);
 
   const [activeFilter, setActiveFilter] = useState('Requests');
   const [rows, setRows] = useState(() => DEMO_ANNOUNCEMENTS);
   const [selectedId, setSelectedId] = useState(DEMO_ANNOUNCEMENTS[0]?.id || '');
   const [draftReply, setDraftReply] = useState('');
+  const [undoneReason, setUndoneReason] = useState('');
   const [createOpen, setCreateOpen] = useState(false);
   const [createForm, setCreateForm] = useState({
     title: '',
@@ -105,21 +126,95 @@ export default function Announcements() {
     requiresUpload: false,
     targetType: 'branch',
     targetLabel: '',
+    branchId: '',
+    targetBranchId: '',
+    targetRole: '',
+    targetProfileId: '',
   });
 
+  const announcementsQuery = useQuery({
+    queryKey: ['announcements-internal-staff', supabaseAppUser?.id, role],
+    enabled: canUseSupabaseAnnouncements,
+    queryFn: async () => {
+      const result = await listAnnouncements({ audienceType: 'internal_staff' });
+      if (result.error) throw new Error('Unable to load announcements right now.');
+      return Array.isArray(result.data) ? result.data : [];
+    },
+  });
+
+  const authenticatedRows = useMemo(() => {
+    if (!canUseSupabaseAnnouncements) return [];
+    return (announcementsQuery.data || []).map((row) => {
+      const ownStatus = Array.isArray(row.announcement_statuses) ? row.announcement_statuses[0] : null;
+      const doneStatus = ownStatus?.done_status || 'pending';
+      const status = doneStatus === 'done' ? 'done' : doneStatus === 'undone' ? 'undone' : (ownStatus?.read_at ? 'read' : 'pending');
+      return {
+        id: row.id,
+        type: row.announcement_type || 'request',
+        title: row.title || 'Untitled announcement',
+        subtitle: row.subtitle || '',
+        body: row.body || '',
+        priority: row.priority || 'normal',
+        dueDate: row.due_date || null,
+        status,
+        branchLabel: row.branch_id ? `Branch ${row.branch_id.slice(0, 8)}` : 'Global',
+        requiresResponse: Boolean(row.requires_response),
+        requiresUpload: Boolean(row.requires_upload),
+        targetLabel: row.audience_type || 'internal_staff',
+        visibleTo: [ROLES.HQ_ADMIN, ROLES.BRANCH_SUPERVISOR, ROLES.TEACHER],
+        replies: [],
+      };
+    });
+  }, [canUseSupabaseAnnouncements, announcementsQuery.data]);
+
   const visibleRows = useMemo(() => {
-    const scoped = rows.filter((row) => row.visibleTo.includes(role));
+    const sourceRows = isDemoMode ? rows : authenticatedRows;
+    const scoped = sourceRows.filter((row) => row.visibleTo.includes(role));
     if (activeFilter === 'Requests') return scoped.filter((row) => row.type === 'request');
-    if (activeFilter === 'Company News') return scoped.filter((row) => row.type === 'company_news');
+    if (activeFilter === 'Company News') return [];
     if (activeFilter === 'Done') return scoped.filter((row) => row.status === 'done');
     if (activeFilter === 'Pending') return scoped.filter((row) => row.status === 'pending' || row.status === 'undone');
     return scoped;
-  }, [activeFilter, rows, role]);
+  }, [activeFilter, rows, role, isDemoMode, authenticatedRows]);
 
   const selected = useMemo(
     () => visibleRows.find((row) => row.id === selectedId) || visibleRows[0] || null,
     [visibleRows, selectedId]
   );
+
+  useEffect(() => {
+    if (!selected && visibleRows.length > 0) {
+      setSelectedId(visibleRows[0].id);
+    }
+  }, [selected, visibleRows]);
+
+  const detailQuery = useQuery({
+    queryKey: ['announcement-detail', selected?.id, supabaseAppUser?.id],
+    enabled: canUseSupabaseAnnouncements && Boolean(selected?.id),
+    queryFn: async () => {
+      const announcementId = selected.id;
+      const [targetsResult, statusesResult, repliesResult] = await Promise.all([
+        listAnnouncementTargets({ announcementId }),
+        listAnnouncementStatuses({ announcementId }),
+        listAnnouncementReplies({ announcementId }),
+      ]);
+      if (targetsResult.error || statusesResult.error || repliesResult.error) {
+        throw new Error('Unable to load announcement detail right now.');
+      }
+      return {
+        targets: Array.isArray(targetsResult.data) ? targetsResult.data : [],
+        statuses: Array.isArray(statusesResult.data) ? statusesResult.data : [],
+        replies: Array.isArray(repliesResult.data) ? repliesResult.data : [],
+      };
+    },
+  });
+
+  const refreshAnnouncements = async () => {
+    await Promise.all([
+      queryClient.invalidateQueries({ queryKey: ['announcements-internal-staff'] }),
+      queryClient.invalidateQueries({ queryKey: ['announcement-detail'] }),
+    ]);
+  };
 
   const onDemoStatus = (nextStatus) => {
     if (!selected) return;
@@ -139,6 +234,128 @@ export default function Announcements() {
     )));
     setDraftReply('');
   };
+
+  const markReadMutation = useMutation({
+    mutationFn: async () => {
+      const result = await markAnnouncementRead({ announcementId: selected.id });
+      if (result.error) throw new Error('Unable to mark as read right now.');
+      return result.data;
+    },
+    onSuccess: async () => {
+      toast.success('Marked as read.');
+      await refreshAnnouncements();
+    },
+    onError: () => toast.error('Unable to mark as read right now.'),
+  });
+
+  const doneMutation = useMutation({
+    mutationFn: async () => {
+      const result = await updateAnnouncementDoneStatus({ announcementId: selected.id, doneStatus: 'done' });
+      if (result.error) throw new Error('Unable to mark done right now.');
+      return result.data;
+    },
+    onSuccess: async () => {
+      toast.success('Marked done.');
+      await refreshAnnouncements();
+    },
+    onError: () => toast.error('Unable to mark done right now.'),
+  });
+
+  const undoneMutation = useMutation({
+    mutationFn: async () => {
+      const result = await updateAnnouncementDoneStatus({
+        announcementId: selected.id,
+        doneStatus: 'undone',
+        undoneReason: undoneReason.trim() || undefined,
+      });
+      if (result.error) throw new Error('Unable to mark undone right now.');
+      return result.data;
+    },
+    onSuccess: async () => {
+      toast.success('Marked undone.');
+      await refreshAnnouncements();
+    },
+    onError: () => toast.error('Unable to mark undone right now.'),
+  });
+
+  const replyMutation = useMutation({
+    mutationFn: async () => {
+      const body = draftReply.trim();
+      if (!body) throw new Error('Reply is required.');
+      const replyType = body.includes('?') ? 'question' : 'update';
+      const result = await createAnnouncementReply({ announcementId: selected.id, body, replyType });
+      if (result.error) throw new Error('Unable to add reply right now.');
+      return result.data;
+    },
+    onSuccess: async () => {
+      setDraftReply('');
+      toast.success('Reply added.');
+      await refreshAnnouncements();
+    },
+    onError: (error) => toast.error(error?.message || 'Unable to add reply right now.'),
+  });
+
+  function toTargetPayload(form) {
+    if (form.targetType === 'role' && form.targetRole.trim()) {
+      return [{ targetType: 'role', targetRole: form.targetRole.trim() }];
+    }
+    if (form.targetType === 'profile' && form.targetProfileId.trim()) {
+      return [{ targetType: 'profile', targetProfileId: form.targetProfileId.trim() }];
+    }
+    if (form.targetType === 'branch' && form.targetBranchId.trim()) {
+      return [{ targetType: 'branch', branchId: form.targetBranchId.trim() }];
+    }
+    return [];
+  }
+
+  const createMutation = useMutation({
+    mutationFn: async () => {
+      if (!createForm.title.trim()) throw new Error('Title is required.');
+      if (
+        !createForm.branchId.trim()
+        && !createForm.targetBranchId.trim()
+        && !createForm.targetRole.trim()
+        && !createForm.targetProfileId.trim()
+        && !createForm.targetLabel.trim()
+      ) {
+        throw new Error('Provide branch or target information.');
+      }
+      const result = await createAnnouncementRequest({
+        branchId: createForm.branchId.trim() || undefined,
+        title: createForm.title.trim(),
+        subtitle: createForm.subtitle.trim() || undefined,
+        body: createForm.body.trim() || undefined,
+        priority: createForm.priority,
+        dueDate: createForm.dueDate || undefined,
+        requiresResponse: createForm.requiresResponse,
+        requiresUpload: createForm.requiresUpload,
+        targets: toTargetPayload(createForm),
+      });
+      if (result.error) throw new Error('Unable to create request right now.');
+      return result.data;
+    },
+    onSuccess: async () => {
+      toast.success('Request created.');
+      setCreateOpen(false);
+      setCreateForm({
+        title: '',
+        subtitle: '',
+        body: '',
+        priority: 'normal',
+        dueDate: '',
+        requiresResponse: true,
+        requiresUpload: false,
+        targetType: 'branch',
+        targetLabel: '',
+        branchId: '',
+        targetBranchId: '',
+        targetRole: '',
+        targetProfileId: '',
+      });
+      await refreshAnnouncements();
+    },
+    onError: (error) => toast.error(error?.message || 'Unable to create request right now.'),
+  });
 
   const onDemoCreate = () => {
     if (!createForm.title.trim()) return;
@@ -171,6 +388,10 @@ export default function Announcements() {
       requiresUpload: false,
       targetType: 'branch',
       targetLabel: '',
+      branchId: '',
+      targetBranchId: '',
+      targetRole: '',
+      targetProfileId: '',
     });
   };
 
@@ -189,29 +410,22 @@ export default function Announcements() {
       <PageHeader
         title="Announcements"
         description="Internal requests, reminders, and company updates"
-        action={isDemoMode && canCreateInDemo ? (
+        action={(isDemoMode && canCreateInDemo) || (!isDemoMode && canCreateInAuth) ? (
           <Button className="min-h-10" onClick={() => setCreateOpen((prev) => !prev)}>
             Create Request
           </Button>
         ) : null}
       />
 
-      {!isDemoMode ? (
+      {!isDemoMode && !canUseSupabaseAnnouncements ? (
         <Card className="p-5 border-dashed">
-          <p className="text-sm text-muted-foreground">
-            Announcements wiring is coming next. Backend Phase 1 service/RLS is ready.
-          </p>
-          {(role === ROLES.HQ_ADMIN || role === ROLES.BRANCH_SUPERVISOR) ? (
-            <Button variant="outline" className="mt-3 min-h-10" disabled>
-              Create Request (preview only)
-            </Button>
-          ) : null}
+          <p className="text-sm text-muted-foreground">Supabase authenticated staff session is required for announcements.</p>
         </Card>
       ) : (
         <div className="space-y-4">
-          {createOpen && canCreateInDemo ? (
+          {createOpen && (isDemoMode ? canCreateInDemo : canCreateInAuth) ? (
             <Card className="p-4 sm:p-5 space-y-3">
-              <p className="font-medium">Create Request (demo-only local shell)</p>
+              <p className="font-medium">{isDemoMode ? 'Create Request (demo-only local shell)' : 'Create Request'}</p>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div className="space-y-1">
                   <Label>Title</Label>
@@ -256,6 +470,22 @@ export default function Announcements() {
                   <Label>Target label</Label>
                   <Input value={createForm.targetLabel} onChange={(e) => setCreateForm((p) => ({ ...p, targetLabel: e.target.value }))} placeholder="Demo North Branch Teachers" />
                 </div>
+                <div className="space-y-1">
+                  <Label>Branch ID (optional UUID)</Label>
+                  <Input value={createForm.branchId} onChange={(e) => setCreateForm((p) => ({ ...p, branchId: e.target.value }))} placeholder="Branch UUID if known" />
+                </div>
+                <div className="space-y-1">
+                  <Label>Target Branch ID (optional UUID)</Label>
+                  <Input value={createForm.targetBranchId} onChange={(e) => setCreateForm((p) => ({ ...p, targetBranchId: e.target.value }))} placeholder="Target branch UUID" />
+                </div>
+                <div className="space-y-1">
+                  <Label>Target Role (optional)</Label>
+                  <Input value={createForm.targetRole} onChange={(e) => setCreateForm((p) => ({ ...p, targetRole: e.target.value }))} placeholder="teacher / branch_supervisor" />
+                </div>
+                <div className="space-y-1">
+                  <Label>Target Profile ID (optional UUID)</Label>
+                  <Input value={createForm.targetProfileId} onChange={(e) => setCreateForm((p) => ({ ...p, targetProfileId: e.target.value }))} placeholder="Staff profile UUID" />
+                </div>
               </div>
               <div className="flex flex-wrap gap-2">
                 <Button
@@ -276,7 +506,13 @@ export default function Announcements() {
                 </Button>
               </div>
               <div className="flex flex-wrap gap-2">
-                <Button className="min-h-10" onClick={onDemoCreate}>Save locally</Button>
+                <Button
+                  className="min-h-10"
+                  onClick={() => (isDemoMode ? onDemoCreate() : createMutation.mutate())}
+                  disabled={!isDemoMode && createMutation.isPending}
+                >
+                  {isDemoMode ? 'Save locally' : (createMutation.isPending ? 'Saving...' : 'Save request')}
+                </Button>
                 <Button variant="outline" className="min-h-10" onClick={() => setCreateOpen(false)}>Cancel</Button>
               </div>
             </Card>
@@ -340,7 +576,9 @@ export default function Announcements() {
             <div className="xl:col-span-3">
               {!selected ? (
                 <Card className="p-5">
-                  <p className="text-sm text-muted-foreground">No announcements in this filter.</p>
+                  <p className="text-sm text-muted-foreground">
+                    {(!isDemoMode && announcementsQuery.isLoading) ? 'Loading announcements...' : 'No announcements in this filter.'}
+                  </p>
                 </Card>
               ) : (
                 <Card className="p-4 sm:p-5 space-y-4">
@@ -350,24 +588,64 @@ export default function Announcements() {
                   </div>
                   <p className="text-sm text-muted-foreground">{selected.subtitle}</p>
                   <p className="text-sm">{selected.body}</p>
-                  <p className="text-xs text-muted-foreground">Target: {selected.targetLabel}</p>
+                  <p className="text-xs text-muted-foreground">
+                    Target: {isDemoMode ? selected.targetLabel : `${detailQuery.data?.targets?.length || 0} target row(s)`}
+                  </p>
+                  {!isDemoMode ? (
+                    <p className="text-xs text-muted-foreground">
+                      Status rows: {detailQuery.data?.statuses?.length || 0}
+                    </p>
+                  ) : null}
+                  {!isDemoMode && detailQuery.isError ? (
+                    <p className="text-xs text-amber-700">Announcement detail is temporarily unavailable.</p>
+                  ) : null}
 
                   <div className="flex flex-wrap gap-2">
-                    <Button size="sm" className="min-h-10" onClick={() => onDemoStatus('read')}>Mark Read</Button>
-                    <Button size="sm" variant="outline" className="min-h-10" onClick={() => onDemoStatus('done')}>Done</Button>
-                    <Button size="sm" variant="outline" className="min-h-10" onClick={() => onDemoStatus('undone')}>Undone</Button>
+                    <Button
+                      size="sm"
+                      className="min-h-10"
+                      onClick={() => (isDemoMode ? onDemoStatus('read') : markReadMutation.mutate())}
+                      disabled={!isDemoMode && markReadMutation.isPending}
+                    >
+                      Mark Read
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="min-h-10"
+                      onClick={() => (isDemoMode ? onDemoStatus('done') : doneMutation.mutate())}
+                      disabled={!isDemoMode && doneMutation.isPending}
+                    >
+                      Done
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="min-h-10"
+                      onClick={() => (isDemoMode ? onDemoStatus('undone') : undoneMutation.mutate())}
+                      disabled={!isDemoMode && undoneMutation.isPending}
+                    >
+                      Undone
+                    </Button>
                   </div>
+                  {!isDemoMode ? (
+                    <Input
+                      value={undoneReason}
+                      onChange={(e) => setUndoneReason(e.target.value)}
+                      placeholder="Optional undone reason"
+                    />
+                  ) : null}
 
                   <div className="space-y-2">
                     <p className="text-sm font-medium">Replies / Questions</p>
-                    {selected.replies.length === 0 ? (
+                    {(isDemoMode ? selected.replies.length : (detailQuery.data?.replies?.length || 0)) === 0 ? (
                       <p className="text-xs text-muted-foreground">No replies yet.</p>
                     ) : (
                       <div className="space-y-2">
-                        {selected.replies.map((reply) => (
+                        {(isDemoMode ? selected.replies : (detailQuery.data?.replies || [])).map((reply) => (
                           <div key={reply.id} className="rounded-lg border p-2">
-                            <p className="text-xs font-medium">{reply.author}</p>
-                            <p className="text-xs text-muted-foreground">{reply.message}</p>
+                            <p className="text-xs font-medium">{reply.author || reply.profile_id || 'Staff'}</p>
+                            <p className="text-xs text-muted-foreground">{reply.message || reply.body}</p>
                           </div>
                         ))}
                       </div>
@@ -376,9 +654,9 @@ export default function Announcements() {
                       <Input
                         value={draftReply}
                         onChange={(e) => setDraftReply(e.target.value)}
-                        placeholder="Add local reply in demo mode"
+                        placeholder={isDemoMode ? 'Add local reply in demo mode' : 'Add reply'}
                       />
-                      <Button className="min-h-10" onClick={onDemoReply}>
+                      <Button className="min-h-10" onClick={() => (isDemoMode ? onDemoReply() : replyMutation.mutate())}>
                         <MessageSquare className="h-4 w-4 mr-1" />
                         Add Reply
                       </Button>
