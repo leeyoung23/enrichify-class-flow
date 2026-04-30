@@ -2,6 +2,20 @@
 
 Scope: planning only for Announcements/Internal Communications and Document Hub rollout (no UI/runtime/service/SQL changes in this milestone).
 
+## Checkpoint update (attachments service smoke PASS)
+
+- Announcements attachments service smoke now passes after `025` manual dev apply.
+- Proven PASS paths include HQ upload/list/signed URL, supervisor own-branch upload/signed URL, and teacher targeted `response_upload` upload/list.
+- Teacher `hq_attachment` remains blocked; parent/student internal attachment read/list remains blocked-or-empty.
+- No public URL behavior observed; private bucket + signed URL model remains enforced.
+- Core Phase 1 announcement smoke still passes.
+
+Roadmap implication:
+
+- Recommend next milestone **A. Staff Announcements attachments UI wiring**.
+- Rationale: backend/service/RLS/storage path is now proven, so safe next step is internal staff upload/list/view UI wiring.
+- Keep MyTasks integration, Company News warm pop-up, parent-facing announcements/events, and report/PDF/AI OCR for later milestones.
+
 ## 1) Product purpose
 
 This module should reduce operational reliance on ad-hoc WhatsApp and Google Drive flows by providing a structured communication layer inside the portal.

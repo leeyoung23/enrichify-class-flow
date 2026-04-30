@@ -432,12 +432,29 @@ Current status note:
     - `supabase/sql/024_fix_announcements_attachments_insert_rls.sql`,
     - `supabase/sql/025_fix_announcements_attachments_select_returning_rls.sql`,
   - `024` keeps parent/student blocked, keeps `parent_facing_media` blocked, and avoids storage public-access widening.
+- Announcements attachments smoke PASS checkpoint is now reached after manual `025` apply:
+  - PASS HQ create fixture + upload/list/signed URL + no public URL pattern,
+  - PASS supervisor own-branch create/publish + upload/signed URL,
+  - PASS teacher targeted visibility + `response_upload` upload/list,
+  - PASS teacher blocked for `hq_attachment`,
+  - PASS parent/student internal attachment list/read blocked-or-empty,
+  - PASS cleanup for attachment rows and announcement fixtures.
+- CHECK lines in attachment smoke output are now treated as diagnostic evidence only:
+  - actor context and insert predicate behavior checks,
+  - raw insert without RETURNING confirmation,
+  - not failing skips.
+- Interpretation now locked:
+  - metadata insert-RLS issue addressed by `024` + follow-up,
+  - `INSERT ... RETURNING` select-RLS issue addressed by `025`,
+  - internal attachment boundary (service + RLS + storage) is proven for main paths.
 - Attachments UI remains unwired in this checkpoint.
 - Checkpoint doc:
   - `docs/announcements-attachments-sql-application-checkpoint.md`.
+- PASS checkpoint doc:
+  - `docs/announcements-attachments-service-smoke-pass-checkpoint.md`.
 - Attachments runtime service/UI wiring remains future.
 - Recommended next milestone now is:
-  - **Announcements attachments UI shell** first,
+  - **Staff Announcements attachments UI wiring** first,
   - then MyTasks integration planning,
   - then Company News warm pop-up planning and parent-facing announcement/event planning,
   - live chat feasibility remains later/optional.

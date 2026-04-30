@@ -4,6 +4,14 @@ Date: 2026-05-01
 Environment: Supabase dev project only  
 Patch: `supabase/sql/023_announcements_attachments_foundation.sql`
 
+## 0) Follow-up PASS checkpoint (024/025 sequence)
+
+- `024` + `025` follow-up sequence is now complete in dev (with `025` manually applied).
+- Interpretation: metadata insert-RLS and `INSERT ... RETURNING` select-RLS path are resolved for main attachment service flows.
+- `npm run test:supabase:announcements:attachments` now passes upload/list/signed URL main paths.
+- `npm run test:supabase:announcements:phase1` still passes.
+- This confirms private bucket + signed URL + RLS boundaries are behaving as intended for internal attachments.
+
 ## 1) What was applied
 
 - `023` Announcements attachments foundation SQL was manually applied in Supabase dev SQL Editor.

@@ -3,6 +3,29 @@
 Date: 2026-05-01  
 Environment: Supabase dev only (fake/dev identities + tiny fake files only)
 
+## 0) PASS checkpoint update (post-025 manual apply)
+
+- `025` (`supabase/sql/025_fix_announcements_attachments_select_returning_rls.sql`) was manually applied in Supabase dev.
+- `npm run test:supabase:announcements:attachments` now passes upload/list/signed URL for HQ, supervisor, and teacher `response_upload` paths.
+- `npm run test:supabase:announcements:phase1` still passes core Phase 1 workflow.
+- Phase 2 main backend/service/RLS/storage boundary is now proven.
+
+PASS highlights:
+
+- HQ upload/list/signed URL PASS, with no public URL pattern.
+- Supervisor own-branch upload/signed URL PASS.
+- Teacher targeted `response_upload` upload/list PASS.
+- Teacher `hq_attachment` upload is blocked PASS.
+- Parent/student internal attachment list/read blocked-or-empty PASS.
+- Cleanup PASS for fake attachment rows and fixtures.
+
+CHECK interpretation:
+
+- Context/predicate/raw-insert `CHECK` lines are diagnostic evidence only, not failing skips.
+- They validate actor context and insert predicate behavior around the service flow.
+- Only remaining optional `CHECK` remains outside this script: Phase 1 cross-branch negative fixture when `ANNOUNCEMENTS_TEST_OTHER_BRANCH_ID` is not configured.
+- No unsafe access was observed.
+
 ## 1) Scope completed
 
 - Added Announcements attachments service methods in `src/services/supabaseUploadService.js`.

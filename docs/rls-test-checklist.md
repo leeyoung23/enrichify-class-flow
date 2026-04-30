@@ -6,6 +6,25 @@ Reminder: **Frontend filtering is not security. RLS must enforce access at datab
 
 ---
 
+## Announcements attachments PASS checkpoint note (2026-05-01)
+
+- `025` (`supabase/sql/025_fix_announcements_attachments_select_returning_rls.sql`) is manually applied in Supabase dev.
+- `npm run test:supabase:announcements:attachments` now passes internal attachment upload/list/signed URL paths for HQ/supervisor/teacher-response scope.
+- CHECK context/predicate/raw-insert lines in smoke output are diagnostic evidence only (not failing skips) and confirm actor context/predicate behavior.
+- `npm run test:supabase:announcements:phase1` remains PASS; only optional cross-branch negative fixture CHECK may appear when `ANNOUNCEMENTS_TEST_OTHER_BRANCH_ID` is missing.
+- No unsafe internal attachment access observed; parent/student remain blocked-or-empty on internal attachment list/read.
+
+### Announcements attachments role checks (current proven state)
+
+- HQ can upload/list/open signed URL for internal attachments.
+- Branch supervisor can upload/open signed URL for own-branch internal attachments.
+- Teacher can upload/list `response_upload` for targeted announcement.
+- Teacher cannot upload `hq_attachment`.
+- Parent/student cannot read internal attachment metadata or objects.
+- No public URL access pattern is allowed; signed URLs only from private bucket.
+
+---
+
 ## HQ Admin
 
 - Dashboard access works.

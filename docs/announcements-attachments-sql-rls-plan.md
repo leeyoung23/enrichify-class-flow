@@ -38,6 +38,21 @@ No UI/runtime/service/SQL changes in this checkpoint.
 - Source-of-truth SQL draft `023` is now aligned with row-predicate select helper for safer insert-returning behavior.
 - `025` requires manual dev review/apply before upload PASS proof.
 
+PASS checkpoint update:
+
+- `025` has now been manually applied in Supabase dev.
+- Attachment smoke now passes upload/list/signed URL main paths (HQ, supervisor own-branch, teacher targeted `response_upload`).
+- Teacher `hq_attachment` remains blocked as expected.
+- Parent/student internal attachment read/list remains blocked-or-empty as expected.
+- No public URL pattern was observed; private signed URL model remains intact.
+- Cleanup of fake metadata/object fixtures passes.
+
+Checkpoint interpretation:
+
+- `024` addressed metadata insert path predicate shape.
+- `025` addressed `INSERT ... RETURNING` select visibility behavior.
+- Combined result proves backend/service/RLS/storage boundary for Phase 2 attachment core paths.
+
 ## 1) Current state
 
 - Phase 1 real Staff Announcements workflow exists and is checkpointed.
