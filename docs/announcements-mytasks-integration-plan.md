@@ -13,6 +13,13 @@ Scope: planning only for Announcements request visibility in `MyTasks` (no imple
 - MyTasks UI wiring remains future.
 - No SQL/RLS changes were introduced in this checkpoint.
 - No notification/email automation was added in this checkpoint.
+- Validation checkpoint:
+  - `npm run build` PASS
+  - `npm run lint` PASS
+  - `npm run typecheck` PASS
+  - `npm run test:supabase:announcements:mytasks` PASS
+  - `npm run test:supabase:announcements:phase1` PASS (optional CHECK for missing `ANNOUNCEMENTS_TEST_OTHER_BRANCH_ID`)
+  - `npm run test:supabase:announcements:attachments` PASS (expected diagnostic CHECK lines)
 
 ## 1) Current state
 
@@ -204,18 +211,20 @@ Planned smoke/UI checks:
 
 Options:
 
-- A. MyTasks derived read service planning / SQL view review
-- B. MyTasks UI shell first
-- C. Company News pop-up planning
-- D. Parent-facing announcements/events planning
+- A. MyTasks UI integration for Announcement Requests
+- B. Completion overview helper for HQ/supervisor
+- C. SQL view/RPC optimization
+- D. Company News pop-up planning
+- E. Parent-facing announcements/events planning
 
-Recommendation: **A. MyTasks derived read service planning / SQL view review**.
+Recommendation: **A. MyTasks UI integration for Announcement Requests**.
 
 Why A first:
 
-- Task visibility depends on reliable derived data rules.
-- RLS/privacy behavior should be reviewed before UI wiring.
-- Avoids duplicating task state too early.
+- Derived read service and smoke checks are already proven.
+- MyTasks can now safely surface announcement-derived staff tasks.
+- Completion overview can follow after staff task list visibility is live.
+- Company News and parent-facing features should remain later phases.
 
 ## 15) Next implementation prompt (copy-paste)
 
@@ -237,13 +246,9 @@ Before doing anything, verify:
 - git status --short
 
 Task:
-Announcements MyTasks derived read service / SQL view review only.
+MyTasks UI integration for Announcement Requests only.
 
 Hard constraints:
-- Planning/docs/review only.
-- Do not change app UI.
-- Do not change runtime logic.
-- Do not add services.
 - Do not change Supabase SQL.
 - Do not change RLS policies.
 - Do not apply SQL.
@@ -262,20 +267,16 @@ Hard constraints:
 - Do not enable parent_facing_media.
 
 Deliverables:
-1) Derived read-model specification for announcement tasks:
-   - actor scope resolution,
-   - pending/done/undone/unread/overdue computation,
-   - requires_response/requires_upload badge rules,
-   - upload missing/provided rule.
-2) SQL view candidate review (or equivalent query shape) with RLS/privacy guardrails.
-3) Service API proposal for:
-   - listMyAnnouncementTasks(...)
-   - listAnnouncementCompletionOverview(...)
-4) Risks, non-goals, and phased rollout recommendation.
+1) Add `Announcement Requests` section in MyTasks.
+2) Consume `listMyAnnouncementTasks(...)` in MyTasks UI layer.
+3) Show status/requirement badges and due/overdue indicators.
+4) Add `Open Announcement` action routing to `/announcements`.
+5) Keep upload interactions in Announcements page only.
+6) Preserve safe generic error copy.
 
-Validation efficiency rule:
-Docs/planning only.
-Run:
-- git diff --name-only
-Do not run build/lint/typecheck/smoke suite unless runtime files change.
+Validation:
+- Runtime/UI changes expected:
+  - npm run build
+  - npm run lint
+  - npm run typecheck
 ```

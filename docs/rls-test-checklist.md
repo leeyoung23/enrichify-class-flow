@@ -31,8 +31,16 @@ Reminder: **Frontend filtering is not security. RLS must enforce access at datab
 - Expected smoke behavior:
   - teacher sees targeted derived tasks for published internal staff requests,
   - responseProvided transitions after teacher reply,
-  - uploadProvided transition is checked when response_upload path is available, otherwise CHECK-skipped,
+  - uploadProvided transition is checked using tiny fake `response_upload`,
   - parent/student internal task visibility is blocked-or-empty.
+- Latest command checkpoint:
+  - `npm run build` PASS
+  - `npm run lint` PASS
+  - `npm run typecheck` PASS
+  - `npm run test:supabase:announcements:mytasks` PASS
+  - `npm run test:supabase:announcements:phase1` PASS (optional CHECK for missing `ANNOUNCEMENTS_TEST_OTHER_BRANCH_ID`)
+  - `npm run test:supabase:announcements:attachments` PASS (expected diagnostic CHECK lines)
+  - npm warning about unknown env config `devdir` is non-blocking in this context.
 
 ### Announcements attachments role checks (current proven state)
 

@@ -1,73 +1,168 @@
 # Announcements MyTasks Read Service Checkpoint
 
 Date: 2026-05-01  
-Scope: service + smoke only for Announcements-derived MyTasks read behavior
+Scope: documentation checkpoint for Announcements-derived MyTasks read service and smoke validation (no UI/SQL/RLS changes in this milestone)
 
 ## 1) What was implemented
 
-- Added `listMyAnnouncementTasks({ includeDone, statusFilter })` in `src/services/supabaseReadService.js`.
-- Added focused smoke script:
+- `listMyAnnouncementTasks({ includeDone, statusFilter } = {})` is implemented in `src/services/supabaseReadService.js`.
+- Derived announcement-task rows now come from visible RLS-governed announcement data.
+- New smoke test is added:
   - `scripts/supabase-announcements-mytasks-smoke-test.mjs`
   - `npm run test:supabase:announcements:mytasks`
-- Added package script entry in `package.json`:
-  - `test:supabase:announcements:mytasks`
+- No MyTasks UI wiring is included in this milestone.
+- No Supabase SQL/RLS changes were introduced.
+- No notification/email side effects were added.
 
-## 2) Derived read behavior
+## 2) Read service behavior
 
-- Uses Supabase anon client + current JWT + existing RLS only.
-- Reads published `internal_staff` announcements visible to current actor.
-- Derives per-announcement task posture from:
-  - own status row (`announcement_statuses`)
-  - visible replies (`announcement_replies`)
-  - visible attachments (`announcement_attachments`)
-- No `storage_path` is exposed in task output.
+- Uses anon client + current JWT + RLS only.
+- Reads visible published `internal_staff` announcements.
+- Derives task rows using:
+  - `announcements`
+  - own `announcement_statuses`
+  - visible `announcement_replies`
+  - visible `announcement_attachments`
 - Returns stable `{ data, error }` shape.
+- Uses generic safe error behavior for read failures.
+- Does not expose `storage_path`.
+- Does not leak raw SQL/RLS/env details.
 
 ## 3) Derived task semantics
 
-- Candidate triggers:
+- Task candidate if one or more applies:
   - unread
-  - done_status pending/undone
-  - requires response + no actor reply
-  - requires upload + no actor `response_upload`
-  - overdue due_date while unresolved
+  - pending
+  - undone
+  - missing required response
+  - missing required upload
+  - overdue
 - Status set:
   - `unread`
   - `pending`
   - `undone`
   - `overdue`
   - `done`
-- Priority rule:
-  - `overdue` overrides pending/undone when due_date has passed and task is not fully complete.
-- `done` is explicit lifecycle state only; reply/upload do not auto-mark done.
-- `includeDone=false` hides fully done tasks unless unresolved requirements or overdue still apply.
-- `includeDone=true` includes done tasks with status `done`.
+- `overdue` overrides unresolved active states for display.
+- `done` is explicit lifecycle state only.
+- Reply/upload do not auto-mark done.
+- `includeDone=false` hides fully done tasks unless unresolved requirements remain.
+- `includeDone=true` includes done tasks.
+- `statusFilter` supports allowed status set only.
 
-## 4) Smoke coverage
+## 4) Smoke test coverage
 
-- Supervisor create/publish targeted request fixture (fake/dev).
-- Teacher reads derived tasks and validates required response/upload flags.
-- Teacher reply transition updates `responseProvided`.
-- Optional teacher `response_upload` transition checks `uploadProvided` when available.
-- Teacher done transition checks includeDone true/false behavior.
-- Parent/student internal task access remains blocked-or-empty.
-- Cleanup attempts for fake/dev fixture announcement + attachments.
-- Explicit note: no notification/email side effects in this milestone.
+- Creates/publishes targeted announcement requiring response/upload.
+- Verifies teacher can see derived announcement task.
+- Verifies teacher task includes `requiresResponse` and `requiresUpload`.
+- Verifies `responseProvided` flips after teacher reply.
+- Verifies `uploadProvided` transition using tiny fake `response_upload`.
+- Verifies done transition with `includeDone=false` and `includeDone=true`.
+- Verifies parent/student internal task access is blocked-or-empty.
+- Performs fake fixture cleanup for announcements/attachments.
+- Confirms no notification/email side effects.
 
-## 5) Safety boundaries preserved
+## 5) Test results
 
-- No app UI changes.
-- No runtime page behavior wiring changes.
-- No Supabase SQL/RLS changes.
-- No SQL apply.
-- No service role usage in frontend.
+- `npm run build` PASS
+- `npm run lint` PASS
+- `npm run typecheck` PASS
+- `npm run test:supabase:announcements:mytasks` PASS
+- `npm run test:supabase:announcements:phase1` PASS with optional CHECK for missing `ANNOUNCEMENTS_TEST_OTHER_BRANCH_ID`
+- `npm run test:supabase:announcements:attachments` PASS with expected diagnostic CHECK lines
+- npm warning about unknown env config `devdir` observed and treated as non-blocking
+
+## 6) Safety boundaries
+
+- No MyTasks UI integration yet.
+- No SQL/RLS changes.
+- No service-role usage in frontend.
+- No parent/student internal task access.
 - No Company News pop-up behavior.
 - No parent-facing announcements/events.
-- No `parent_facing_media` enablement.
+- No notifications/emails.
+- No live chat.
 
-## 6) What remains future
+## 7) What remains future
 
-- MyTasks UI integration for Announcements section/cards/badges.
-- Completion overview read helper (HQ/supervisor monitoring view).
-- Optional SQL view/RPC derivation if performance/complexity later requires it.
-- Notification/reminder workflow remains future and out of scope here.
+- MyTasks UI integration.
+- Completion overview helper for HQ/supervisor.
+- SQL view/RPC optimization only if performance/complexity demands it.
+- Materialized task records only later for reminders/SLA/escalation.
+- Company News warm pop-up.
+- Parent-facing announcements/events.
+- Reports/PDF/AI OCR later.
+
+## 8) Recommended next milestone
+
+Choose:
+
+- A. MyTasks UI integration for Announcement Requests
+- B. Completion overview helper for HQ/supervisor
+- C. SQL view/RPC optimization
+- D. Company News pop-up planning
+- E. Parent-facing announcements/events planning
+
+Recommendation: **A. MyTasks UI integration for Announcement Requests**.
+
+Why A first:
+
+- Read service + smoke coverage are now proven.
+- MyTasks can safely display announcement-derived tasks with existing derived semantics.
+- Completion overview can follow once staff task list visibility is live.
+- Company News and parent-facing features remain later phases.
+
+## 9) Next implementation prompt (copy-paste)
+
+```text
+Continue this same project only.
+
+Project folder:
+~/Desktop/enrichify-class-flow
+
+Branch:
+cursor/safe-lint-typecheck-486d
+
+Latest expected commit:
+Document Announcements MyTasks read service
+
+Before doing anything, verify:
+- git branch --show-current
+- git log --oneline -12
+- git status --short
+
+Task:
+MyTasks UI integration for Announcement Requests only.
+
+Hard constraints:
+- Do not change Supabase SQL.
+- Do not change RLS policies.
+- Do not apply SQL.
+- Do not add service role in frontend.
+- Do not expose env values or passwords.
+- Do not call real AI APIs.
+- Do not add provider keys.
+- Do not auto-send emails or notifications.
+- Do not add Company News pop-up.
+- Do not add parent-facing announcements/events.
+- Do not enable parent_facing_media.
+- Preserve demoRole and demo/local fallback behavior.
+
+Deliverables:
+1) Add `Announcement Requests` section in `src/pages/MyTasks.jsx`.
+2) Read data via existing `listMyAnnouncementTasks(...)` service.
+3) Show badges/fields:
+   - status (unread/pending/undone/overdue/done)
+   - due date and overdue indicator
+   - requiresResponse/responseProvided
+   - requiresUpload/uploadProvided
+4) Add `Open Announcement` action to route to `/announcements` with announcement context.
+5) Keep file upload action out of MyTasks (route back to Announcements detail).
+6) Keep safe generic error copy (no SQL/RLS/env leakage).
+
+Validation:
+- Runtime/UI changed, run:
+  - npm run build
+  - npm run lint
+  - npm run typecheck
+```

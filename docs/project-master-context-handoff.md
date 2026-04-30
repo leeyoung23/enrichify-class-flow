@@ -480,6 +480,19 @@ Current status note:
   - no notification/email automation,
   - no Company News pop-up behavior,
   - no parent-facing announcements/events.
+- Announcements MyTasks read-service checkpoint is now documented in:
+  - `docs/announcements-mytasks-read-service-checkpoint.md`
+- Latest validation checkpoint:
+  - `npm run build` PASS,
+  - `npm run lint` PASS,
+  - `npm run typecheck` PASS,
+  - `npm run test:supabase:announcements:mytasks` PASS,
+  - `npm run test:supabase:announcements:phase1` PASS with optional cross-branch CHECK when fixture var is missing,
+  - `npm run test:supabase:announcements:attachments` PASS with expected diagnostic CHECK lines.
+- Recommended immediate next milestone is now:
+  - MyTasks UI integration for `Announcement Requests` first,
+  - then completion overview helper for HQ/supervisor,
+  - SQL view/RPC optimization only if runtime complexity/performance demands it later.
 
 ## 12) Next immediate milestone prompt (copy-paste)
 

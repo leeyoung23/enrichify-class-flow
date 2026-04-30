@@ -13,6 +13,10 @@ Scope: review only for safest Announcements -> MyTasks derived-read strategy (no
 - No SQL/RLS changes are included in this checkpoint.
 - No notification/email automation is added in this checkpoint.
 - Parent-facing announcements/events remain out of scope.
+- Build/lint/typecheck and related announcement smoke commands are now passing in this checkpoint.
+- Expected optional CHECK behavior remains:
+  - phase1 smoke optional cross-branch CHECK when `ANNOUNCEMENTS_TEST_OTHER_BRANCH_ID` is not configured,
+  - attachment smoke diagnostic CHECK lines for predicate/context evidence.
 
 ## 1) Current state
 
@@ -200,13 +204,22 @@ Future targeted tests:
 
 ## 11) Recommended next milestone
 
-Recommendation: **A. Implement `listMyAnnouncementTasks(...)` read service + smoke test**.
+Choose:
+
+- A. MyTasks UI integration for Announcement Requests
+- B. Completion overview helper for HQ/supervisor
+- C. SQL view/RPC optimization
+- D. Company News pop-up planning
+- E. Parent-facing announcements/events planning
+
+Recommendation: **A. MyTasks UI integration for Announcement Requests**.
 
 Why A first:
 
-- It delivers user-visible task derivation without UI rewrite or SQL changes.
-- It validates real-world derivation complexity quickly using existing RLS-protected sources.
-- It keeps the path open to B if performance/complexity evidence warrants server-side derivation.
+- Read service and smoke behavior are now proven.
+- MyTasks can safely render announcement-derived tasks from existing data.
+- Completion overview can follow after staff task list visibility is live.
+- Company News and parent-facing features remain later milestones.
 
 ## 12) Next implementation prompt
 
@@ -228,11 +241,9 @@ Before doing anything, verify:
 - git status --short
 
 Task:
-Implement Announcements MyTasks derived read service only (no UI changes).
+MyTasks UI integration for Announcement Requests only.
 
 Hard constraints:
-- Do not change app UI.
-- Do not change runtime page behavior.
 - Do not change Supabase SQL/RLS.
 - Do not apply SQL.
 - Do not add service-role usage in frontend.
@@ -246,24 +257,18 @@ Hard constraints:
 - Preserve demoRole and local/demo fallbacks.
 
 Deliverables:
-1) Add `listMyAnnouncementTasks(...)` in `src/services/supabaseReadService.js`.
-2) Derive per-user task rows from:
-   - announcements (published internal_staff)
-   - statuses (done/read)
-   - replies (responseProvided/replyCount)
-   - attachments (response_upload for uploadProvided)
-3) Return stable `{ data, error }` contract and safe field shape:
-   - announcementId/taskId, source, title, subtitle/bodyPreview, priority, dueDate,
-   - status, requiresResponse, responseProvided, requiresUpload, uploadProvided,
-   - replyCount, attachmentCount, createdAt, updatedAt.
-4) Add a focused smoke script for derived read behavior with fake/dev fixtures only.
-5) Keep all errors safe/generic (no raw SQL/RLS internals leaked to UI strings).
+1) Add `Announcement Requests` section in `MyTasks`.
+2) Use `listMyAnnouncementTasks(...)` as read source.
+3) Render badges and due indicators for status/response/upload posture.
+4) Add `Open Announcement` action routing to `/announcements`.
+5) Keep upload action out of MyTasks (route to Announcements detail).
+6) Keep safe generic error copy (no SQL/RLS/env detail leakage).
 
 Validation rule:
-- Runtime/service files changed, so run:
+- Runtime/UI files changed, so run:
   - npm run build
   - npm run lint
   - npm run typecheck
-  - relevant announcement smoke test(s) + new derived-read smoke test
+  - related task/announcement smoke checks as needed
 ```
 
