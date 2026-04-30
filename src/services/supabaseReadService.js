@@ -37,6 +37,7 @@ const ANNOUNCEMENT_STATUS_VALUES = new Set(["draft", "published", "closed", "arc
 const ANNOUNCEMENT_AUDIENCE_VALUES = new Set(["internal_staff", "parent_facing"]);
 const ANNOUNCEMENT_TYPE_VALUES = new Set(["request", "company_news", "parent_event"]);
 const ANNOUNCEMENT_DONE_STATUS_VALUES = new Set(["pending", "done", "undone"]);
+const ANNOUNCEMENT_TASK_STATUS_VALUES = new Set(["unread", "pending", "undone", "overdue", "done"]);
 
 function isUuidLike(value) {
   if (typeof value !== "string") return false;
@@ -804,6 +805,184 @@ export async function listHomeworkTrackerByStudent({ studentId, status } = {}) {
     };
   } catch (error) {
     return { data: null, error };
+  }
+}
+
+function toIsoDateString(value) {
+  if (typeof value !== "string") return null;
+  const trimmed = value.trim();
+  if (!trimmed) return null;
+  if (/^\d{4}-\d{2}-\d{2}$/.test(trimmed)) return trimmed;
+  const parsed = new Date(trimmed);
+  if (Number.isNaN(parsed.getTime())) return null;
+  return parsed.toISOString().slice(0, 10);
+}
+
+function isPastDate(isoDate) {
+  if (typeof isoDate !== "string" || !isoDate) return false;
+  const todayIso = new Date().toISOString().slice(0, 10);
+  return isoDate < todayIso;
+}
+
+export async function listMyAnnouncementTasks({ includeDone = false, statusFilter } = {}) {
+  if (!isSupabaseConfigured() || !supabase) {
+    return { data: [], error: { message: "Supabase is not configured" } };
+  }
+
+  if (
+    statusFilter != null
+    && statusFilter !== ""
+    && !ANNOUNCEMENT_TASK_STATUS_VALUES.has(trimString(statusFilter))
+  ) {
+    return {
+      data: [],
+      error: { message: "statusFilter must be unread, pending, undone, overdue, or done" },
+    };
+  }
+
+  try {
+    const authRead = await supabase.auth.getUser();
+    const profileId = authRead?.data?.user?.id || null;
+    if (!isUuidLike(profileId)) {
+      return { data: [], error: { message: "Authenticated user is required" } };
+    }
+
+    const announcementsRead = await supabase
+      .from("announcements")
+      .select(ANNOUNCEMENT_FIELDS)
+      .eq("audience_type", "internal_staff")
+      .eq("status", "published")
+      .order("created_at", { ascending: false });
+
+    if (announcementsRead.error) {
+      return { data: [], error: { message: "Unable to load announcement tasks right now." } };
+    }
+
+    const announcements = Array.isArray(announcementsRead.data) ? announcementsRead.data : [];
+    const announcementIds = announcements
+      .map((row) => row?.id)
+      .filter((id) => isUuidLike(id));
+
+    if (announcementIds.length === 0) return { data: [], error: null };
+
+    const [statusRead, repliesRead, attachmentsRead] = await Promise.all([
+      supabase
+        .from("announcement_statuses")
+        .select("announcement_id,profile_id,read_at,done_status,updated_at")
+        .eq("profile_id", profileId)
+        .in("announcement_id", announcementIds),
+      supabase
+        .from("announcement_replies")
+        .select("id,announcement_id,profile_id")
+        .in("announcement_id", announcementIds),
+      supabase
+        .from("announcement_attachments")
+        .select("id,announcement_id,uploaded_by_profile_id,file_role")
+        .in("announcement_id", announcementIds),
+    ]);
+
+    if (statusRead.error || repliesRead.error || attachmentsRead.error) {
+      return { data: [], error: { message: "Unable to load announcement tasks right now." } };
+    }
+
+    const statusByAnnouncementId = new Map();
+    for (const row of (Array.isArray(statusRead.data) ? statusRead.data : [])) {
+      if (!isUuidLike(row?.announcement_id)) continue;
+      statusByAnnouncementId.set(row.announcement_id, row);
+    }
+
+    const replyCountByAnnouncementId = new Map();
+    const actorReplyCountByAnnouncementId = new Map();
+    for (const row of (Array.isArray(repliesRead.data) ? repliesRead.data : [])) {
+      if (!isUuidLike(row?.announcement_id)) continue;
+      const key = row.announcement_id;
+      replyCountByAnnouncementId.set(key, (replyCountByAnnouncementId.get(key) || 0) + 1);
+      if (row?.profile_id === profileId) {
+        actorReplyCountByAnnouncementId.set(key, (actorReplyCountByAnnouncementId.get(key) || 0) + 1);
+      }
+    }
+
+    const attachmentCountByAnnouncementId = new Map();
+    const actorResponseUploadCountByAnnouncementId = new Map();
+    for (const row of (Array.isArray(attachmentsRead.data) ? attachmentsRead.data : [])) {
+      if (!isUuidLike(row?.announcement_id)) continue;
+      const key = row.announcement_id;
+      attachmentCountByAnnouncementId.set(key, (attachmentCountByAnnouncementId.get(key) || 0) + 1);
+      if (row?.uploaded_by_profile_id === profileId && row?.file_role === "response_upload") {
+        actorResponseUploadCountByAnnouncementId.set(
+          key,
+          (actorResponseUploadCountByAnnouncementId.get(key) || 0) + 1
+        );
+      }
+    }
+
+    const normalizedStatusFilter = trimString(statusFilter);
+    const rows = [];
+
+    for (const announcement of announcements) {
+      const announcementId = announcement?.id;
+      if (!isUuidLike(announcementId)) continue;
+
+      const ownStatus = statusByAnnouncementId.get(announcementId) || null;
+      const doneStatus = ANNOUNCEMENT_DONE_STATUS_VALUES.has(trimString(ownStatus?.done_status))
+        ? trimString(ownStatus?.done_status)
+        : "pending";
+      const isUnread = !ownStatus?.read_at;
+      const requiresResponse = Boolean(announcement?.requires_response);
+      const requiresUpload = Boolean(announcement?.requires_upload);
+      const responseProvided = (actorReplyCountByAnnouncementId.get(announcementId) || 0) > 0;
+      const uploadProvided = (actorResponseUploadCountByAnnouncementId.get(announcementId) || 0) > 0;
+      const missingResponse = requiresResponse && !responseProvided;
+      const missingUpload = requiresUpload && !uploadProvided;
+      const dueDate = toIsoDateString(announcement?.due_date);
+      const isOverdue = Boolean(dueDate) && isPastDate(dueDate) && (doneStatus !== "done" || missingResponse || missingUpload);
+
+      const candidate =
+        isUnread
+        || doneStatus === "pending"
+        || doneStatus === "undone"
+        || missingResponse
+        || missingUpload
+        || isOverdue
+        || (Boolean(includeDone) && doneStatus === "done");
+
+      if (!candidate) continue;
+      if (!includeDone && doneStatus === "done" && !missingResponse && !missingUpload && !isOverdue) continue;
+
+      let status = "pending";
+      if (isOverdue) status = "overdue";
+      else if (doneStatus === "undone") status = "undone";
+      else if (doneStatus === "done") status = "done";
+      else if (isUnread) status = "unread";
+
+      if (normalizedStatusFilter && status !== normalizedStatusFilter) continue;
+
+      const bodyPreview = trimString(announcement?.body).slice(0, 200);
+      rows.push({
+        taskId: `announcement:${announcementId}`,
+        announcementId,
+        source: "announcement",
+        title: trimString(announcement?.title) || "Untitled announcement",
+        bodyPreview,
+        priority: trimString(announcement?.priority) || "normal",
+        dueDate,
+        status,
+        isOverdue,
+        requiresResponse,
+        responseProvided,
+        requiresUpload,
+        uploadProvided,
+        replyCount: replyCountByAnnouncementId.get(announcementId) || 0,
+        attachmentCount: attachmentCountByAnnouncementId.get(announcementId) || 0,
+        actionUrl: `/announcements?announcementId=${announcementId}`,
+        createdAt: announcement?.created_at || null,
+        updatedAt: ownStatus?.updated_at || announcement?.updated_at || announcement?.created_at || null,
+      });
+    }
+
+    return { data: rows, error: null };
+  } catch (_error) {
+    return { data: [], error: { message: "Unable to load announcement tasks right now." } };
   }
 }
 

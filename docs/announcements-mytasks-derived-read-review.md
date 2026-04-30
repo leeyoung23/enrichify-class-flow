@@ -3,6 +3,17 @@
 Date: 2026-05-01  
 Scope: review only for safest Announcements -> MyTasks derived-read strategy (no UI/service/SQL implementation in this milestone)
 
+## Checkpoint update (read service + smoke added)
+
+- `listMyAnnouncementTasks({ includeDone, statusFilter })` is now added in `src/services/supabaseReadService.js`.
+- New smoke script is now added:
+  - `scripts/supabase-announcements-mytasks-smoke-test.mjs`
+  - command: `npm run test:supabase:announcements:mytasks`
+- No MyTasks UI integration is included in this checkpoint.
+- No SQL/RLS changes are included in this checkpoint.
+- No notification/email automation is added in this checkpoint.
+- Parent-facing announcements/events remain out of scope.
+
 ## 1) Current state
 
 - Announcements request workflow is real for staff (create/read/reply/read-status/done-status).

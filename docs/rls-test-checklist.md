@@ -14,6 +14,26 @@ Reminder: **Frontend filtering is not security. RLS must enforce access at datab
 - `npm run test:supabase:announcements:phase1` remains PASS; only optional cross-branch negative fixture CHECK may appear when `ANNOUNCEMENTS_TEST_OTHER_BRANCH_ID` is missing.
 - No unsafe internal attachment access observed; parent/student remain blocked-or-empty on internal attachment list/read.
 
+## Announcements MyTasks read-service checkpoint note (2026-05-01)
+
+- `listMyAnnouncementTasks({ includeDone, statusFilter })` is now added in `src/services/supabaseReadService.js`.
+- Derived read scope uses only existing RLS-governed internal staff data:
+  - `announcements`
+  - `announcement_statuses` (self row for actor state)
+  - `announcement_replies`
+  - `announcement_attachments`
+- No SQL/RLS changes were made for this checkpoint.
+- No MyTasks UI wiring in this checkpoint.
+- No notification/email automation in this checkpoint.
+- Smoke script now exists:
+  - `scripts/supabase-announcements-mytasks-smoke-test.mjs`
+  - `npm run test:supabase:announcements:mytasks`
+- Expected smoke behavior:
+  - teacher sees targeted derived tasks for published internal staff requests,
+  - responseProvided transitions after teacher reply,
+  - uploadProvided transition is checked when response_upload path is available, otherwise CHECK-skipped,
+  - parent/student internal task visibility is blocked-or-empty.
+
 ### Announcements attachments role checks (current proven state)
 
 - HQ can upload/list/open signed URL for internal attachments.
@@ -448,6 +468,21 @@ Reminder: **Frontend filtering is not security. RLS must enforce access at datab
   - smoke exits successfully,
   - HQ/supervisor create and teacher-targeted flows currently show CHECK skips in fixture context and need focused follow-up validation.
   - current diagnosis: HQ/supervisor fixture profiles are inactive (`is_active=false`), so role helper checks intentionally return non-staff scope for those sessions.
+
+##### Announcements MyTasks derived-read service smoke reference
+
+- Smoke script: `scripts/supabase-announcements-mytasks-smoke-test.mjs`
+- Command: `npm run test:supabase:announcements:mytasks`
+- Service coverage reference:
+  - `src/services/supabaseReadService.js` (`listMyAnnouncementTasks`)
+  - `src/services/supabaseWriteService.js` (fixture create/publish/reply/done)
+  - `src/services/supabaseUploadService.js` (optional uploadProvided transition)
+- Current checkpoint guardrails:
+  - fake/dev fixtures only,
+  - no SQL apply,
+  - no service-role usage,
+  - no notifications/emails,
+  - parent-facing announcement scope remains disabled.
 
 ### Homework marked-file role/release draft patch note
 

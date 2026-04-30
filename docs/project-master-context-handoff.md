@@ -465,6 +465,21 @@ Current status note:
   - **MyTasks integration planning** next,
   - then Company News warm pop-up planning and parent-facing announcement/event planning,
   - live chat feasibility remains later/optional.
+- Announcements MyTasks derived-read service milestone is now started:
+  - `src/services/supabaseReadService.js` now includes `listMyAnnouncementTasks({ includeDone, statusFilter })`,
+  - derived read uses existing RLS-governed announcements/statuses/replies/attachments only,
+  - no `storage_path` is exposed in derived task rows,
+  - no MyTasks UI integration is included in this checkpoint.
+- Announcements MyTasks read smoke script is now added:
+  - `scripts/supabase-announcements-mytasks-smoke-test.mjs`,
+  - package command: `npm run test:supabase:announcements:mytasks`,
+  - fake/dev fixtures only,
+  - parent/student internal task visibility remains blocked-or-empty.
+- Boundaries unchanged in this checkpoint:
+  - no SQL/RLS changes,
+  - no notification/email automation,
+  - no Company News pop-up behavior,
+  - no parent-facing announcements/events.
 
 ## 12) Next immediate milestone prompt (copy-paste)
 
