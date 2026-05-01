@@ -9,8 +9,7 @@ Scope: planning only for Announcements request visibility in `MyTasks` (no imple
 - Focused smoke test is now added:
   - `scripts/supabase-announcements-mytasks-smoke-test.mjs`
   - command: `npm run test:supabase:announcements:mytasks`
-- Current implementation remains read-only service + smoke.
-- MyTasks UI wiring remains future.
+- Current implementation remains read-only service + smoke (this bullet predates UI wiring; UI is covered in the checkpoint below).
 - No SQL/RLS changes were introduced in this checkpoint.
 - No notification/email automation was added in this checkpoint.
 - Validation checkpoint:
@@ -35,7 +34,7 @@ Scope: planning only for Announcements request visibility in `MyTasks` (no imple
 - Announcements request workflow is already real for staff.
 - Staff can read announcements, mark done/undone, reply, and upload attachments.
 - Staff attachment list/upload/view is already wired in Announcements detail panel.
-- MyTasks does not yet surface announcement-derived requests.
+- MyTasks surfaces announcement-derived requests in a read-only **Announcement Requests** section (`listMyAnnouncementTasks({ includeDone: true })` in staff mode; demo local fakes). See `docs/announcements-mytasks-ui-checkpoint.md`.
 - No notification/email automation exists for this workflow yet.
 
 ## 2) Product purpose

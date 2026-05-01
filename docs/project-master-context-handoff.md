@@ -490,14 +490,14 @@ Current status note:
   - `npm run test:supabase:announcements:phase1` PASS with optional cross-branch CHECK when fixture var is missing,
   - `npm run test:supabase:announcements:attachments` PASS with expected diagnostic CHECK lines.
 - Recommended immediate next milestone is now:
-  - MyTasks UI integration for `Announcement Requests` first,
-  - then completion overview helper for HQ/supervisor,
-  - SQL view/RPC optimization only if runtime complexity/performance demands it later.
-- MyTasks UI integration checkpoint is now completed for Announcements:
-  - `src/pages/MyTasks.jsx` now renders read-only `Announcement Requests` cards from `listMyAnnouncementTasks(...)`,
-  - demo mode remains local-only with fake announcement task cards and no Supabase calls,
-  - authenticated non-demo staff mode now shows loading/empty/safe-error states for announcement request reads,
-  - `Open Announcement` navigates to `/announcements` with safe context state.
+  - **Completion overview helper** for HQ/supervisor (cross-target monitoring; planning first),
+  - optional SQL view/RPC optimization only if runtime complexity/performance demands it later,
+  - Company News / parent-facing / notifications only after operational visibility is clear.
+- MyTasks UI integration checkpoint is **completed** for Announcements (see `docs/announcements-mytasks-ui-checkpoint.md`):
+  - `src/pages/MyTasks.jsx` renders read-only `Announcement Requests` cards from `listMyAnnouncementTasks({ includeDone: true })` in authenticated staff mode,
+  - demo mode remains local-only with fake announcement task cards and no Supabase calls for that block,
+  - loading/empty/safe-error states for announcement request reads,
+  - `Open Announcement` navigates to `/announcements` (or `task.actionUrl` when set) with route `state` carrying `announcementId` for future deep selection.
 - Boundaries preserved in MyTasks UI checkpoint:
   - no SQL/RLS changes,
   - no new services,
@@ -518,42 +518,40 @@ Project folder:
 Branch:
 cursor/safe-lint-typecheck-486d
 
-Task:
-MyTasks integration planning for Announcements requests only.
+Latest expected commit:
+Document MyTasks Announcement Requests UI
 
-Scope rules:
-- Planning/docs only.
-- Do not implement runtime code.
-- Do not change app UI.
-- Do not change runtime logic.
-- Do not add services.
-- Do not change Supabase SQL in this step.
-- Do not change storage policies.
-- Do not upload files.
-- Do not call AI APIs.
+Before doing anything, verify:
+- git branch --show-current
+- git log --oneline -12
+- git status --short
+
+Task:
+Announcements completion overview helper — planning/review only.
+
+Hard constraints:
+- Planning/docs/review only (unless a later milestone explicitly approves runtime).
+- Do not change app UI unless a separate milestone approves it.
+- Do not change Supabase SQL or RLS; do not apply SQL.
+- Do not add new services without explicit scope approval.
+- Do not use service role in frontend.
 - Do not expose env values or passwords.
-- Do not commit .env.local.
-- Do not use service role key in frontend.
-- Do not remove demoRole.
-- Do not remove demo/local fallback.
-- Do not add Company News pop-up behavior.
-- Do not add parent-facing announcements/events.
+- Do not call real AI APIs; do not add provider keys.
+- Do not auto-send emails or notifications.
+- Do not add Company News pop-up or parent-facing announcements/events.
 - Do not enable parent_facing_media.
+- Preserve demoRole and local/demo fallback.
+- Use fake/dev data only in examples and tests.
 
 Deliverables:
-1) A planning document for Announcements -> MyTasks integration:
-   - request/reply/upload to task mapping model
-   - pending/done/undone lifecycle and ownership rules
-   - role visibility matrix (HQ/supervisor/teacher)
-   - constraints and non-goals in this milestone
-   - phased rollout plan (planning first, runtime later)
-2) Clear recommendation of first implementation slice after planning.
+1) Product shape for HQ vs branch supervisor “completion overview” (what rows mean, what is drill-down vs summary).
+2) Read-model options: extend listMyAnnouncementTasks vs new listAnnouncementCompletionOverview(...) vs SQL view/RPC — with RLS/privacy notes.
+3) Role matrix: who sees which overview rows (teacher self vs supervisor branch vs HQ global).
+4) Non-goals: no notification fan-out, no parent/student internal visibility, no storage_path leakage.
+5) Phased rollout: planning first, then smallest read-only implementation slice.
 
 Validation efficiency rule:
-- Docs-only change.
-- Run only:
-  - git diff --name-only
-- Do not run build/lint/typecheck/smoke unless runtime files changed.
+- Docs-only: run git diff --name-only only unless runtime files change.
 ```
 
 ---

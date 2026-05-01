@@ -53,7 +53,7 @@ Scope note:
 
 - Task cards are mostly mobile-friendly, but status/priority chips + action button can still compress at narrow widths.
 - Filter chip row should be checked for wrap behavior and tap comfort.
-- `Announcement Requests` cards are now wired in `MyTasks` using existing derived read service.
+- `Announcement Requests` cards are now wired in `MyTasks` using existing derived read service; full UI checkpoint (badges, demo vs auth, navigation, validation) is in `docs/announcements-mytasks-ui-checkpoint.md`.
 - Verify on ~390px and ~768px:
   - source/priority/status/due badges wrap cleanly,
   - response/upload provided-missing badges remain readable,

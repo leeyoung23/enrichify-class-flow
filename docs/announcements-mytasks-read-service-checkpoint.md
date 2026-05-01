@@ -18,7 +18,7 @@ Scope: documentation checkpoint for Announcements-derived MyTasks read service a
 - New smoke test is added:
   - `scripts/supabase-announcements-mytasks-smoke-test.mjs`
   - `npm run test:supabase:announcements:mytasks`
-- No MyTasks UI wiring is included in this milestone.
+- MyTasks UI for Announcement Requests is documented in `docs/announcements-mytasks-ui-checkpoint.md` (separate milestone from the original read-service-only slice).
 - No Supabase SQL/RLS changes were introduced.
 - No notification/email side effects were added.
 
