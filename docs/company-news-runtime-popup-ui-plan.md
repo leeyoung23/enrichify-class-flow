@@ -3,6 +3,28 @@
 Date: 2026-05-01  
 Scope: docs/planning only for safe runtime warm popup UI wiring (no runtime implementation in this milestone)
 
+## Checkpoint update (runtime popup shell/wiring implemented)
+
+- Runtime warm Company News popup shell is now wired at **layout/app-shell level** in `src/components/layout/AppLayout.jsx`.
+- Placement choice is **C (`AppLayout`-adjacent)** because auth/profile/demo role readiness is already resolved in that shell before route content rendering.
+- Demo behavior:
+  - staff demo roles show a local fake popup candidate only,
+  - parent/student demo roles do not receive staff popup,
+  - no Supabase popup service calls in demo.
+- Authenticated behavior:
+  - staff-only popup read via `listEligibleCompanyNewsPopups({ limit: 1 })`,
+  - one fetch attempt per app-shell session to avoid route-change spam,
+  - fail-silent behavior when popup service read/write fails.
+- Seen/dismiss behavior:
+  - popup shown triggers delayed `markCompanyNewsPopupSeen(...)` once per session/item,
+  - Dismiss triggers `dismissCompanyNewsPopup(...)` and local hide,
+  - View marks seen, navigates to `/announcements`, and hides popup for session.
+- Session guard behavior:
+  - max one popup at a time,
+  - session shown/hidden IDs prevent repeated same-item popup storms even when seen/dismiss write fails.
+- Safety boundaries preserved:
+  - no SQL/RLS changes, no service-role frontend usage, no notifications/emails, no live chat, no parent-facing announcements/events, no `parent_facing_media`.
+
 ## 1) Current state
 
 - Company News UI shell exists in `src/pages/Announcements.jsx` (cards/detail/demo create shell + non-runtime popup preview panel).

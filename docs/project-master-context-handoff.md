@@ -568,6 +568,19 @@ Current status note:
   - no SQL/RLS changes in this milestone,
   - no notifications/emails/live-chat behavior,
   - no parent-facing announcements/events and no `parent_facing_media`.
+- Company News runtime warm popup UI shell is now implemented:
+  - app-shell placement: `src/components/layout/AppLayout.jsx`,
+  - staff-only popup read uses existing `listEligibleCompanyNewsPopups({ limit: 1 })`,
+  - popup seen/dismiss use existing `markCompanyNewsPopupSeen(...)` and `dismissCompanyNewsPopup(...)`,
+  - demo role uses local fake popup only (no Supabase popup calls in demo),
+  - session guard prevents same-item repeat storms in one session,
+  - popup `View` routes to `Announcements` with Company News context.
+- Runtime popup wiring preserves boundaries:
+  - no SQL/RLS changes,
+  - no new services,
+  - no notification/email/live chat behavior,
+  - no parent-facing announcements/events and no `parent_facing_media`,
+  - no real HQ Company News create path in this slice.
 - Service checkpoint validation notes:
   - `build`/`lint`/`typecheck` PASS,
   - popup smoke PASS with expected CHECK for direct HQ `company_news` create block under request-first create-path policy,

@@ -85,13 +85,16 @@ Scope note:
   - completion overview loading/empty/error states remain clear and non-technical,
   - per-person status chips (`done/pending/undone/overdue`) stay readable.
   - Company News Create shell (HQ demo only) fields and buttons remain thumb-friendly and readable.
+  - runtime warm popup card placement in app shell remains non-blocking on ~390px and does not hide core page controls.
+  - popup `View` / `Dismiss` buttons remain thumb-friendly and keyboard-focusable.
 - Keep safety messaging in QA notes:
   - attachments are internal staff-only,
   - completion overview is HQ/supervisor-only read visibility (teacher hidden),
   - no parent-facing media enabled,
-  - no Company News pop-up behavior yet,
-  - Company News warm pop-up panel is preview-only in detail (no runtime/app-shell trigger),
-  - no popup persistence/dismissal backend behavior in this phase,
+  - runtime Company News warm popup is staff-only and app-shell scoped,
+  - demo popup is local-only (no Supabase popup service calls),
+  - parent/student roles do not receive internal staff Company News runtime popup,
+  - no popup repeat storm in same session (session guard enabled),
   - no parent-facing announcements/events yet,
   - no live chat/notification behavior in this phase.
 - Environment validation note:

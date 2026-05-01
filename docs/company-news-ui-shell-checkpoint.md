@@ -3,6 +3,19 @@
 Date: 2026-05-01  
 Scope: documentation checkpoint for Company News UI shell with demo parity only
 
+## Checkpoint update (runtime popup shell/wiring follow-up)
+
+- Runtime warm popup shell is now implemented in app layout shell:
+  - file: `src/components/layout/AppLayout.jsx`
+- Company News detail preview panel remains as in-page preview, while runtime popup now appears app-shell-wide for eligible staff.
+- `Announcements` deep-link behavior now accepts popup routing context (`preferredFilter`) so popup `View` routes can land in Company News context.
+- Runtime boundaries preserved in this follow-up:
+  - no SQL/RLS changes,
+  - no new popup services,
+  - no parent-facing announcements/events,
+  - no notifications/emails/live chat,
+  - no real HQ Company News create path.
+
 ## Documentation-only note
 
 - This milestone updates documentation only.

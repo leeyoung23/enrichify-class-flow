@@ -3,6 +3,16 @@
 Date: 2026-05-01  
 Scope: service + smoke only for internal Company News popup eligibility/seen/dismiss path
 
+## Checkpoint update (runtime shell now consuming popup services)
+
+- Runtime app-shell warm popup UI now consumes these popup methods in `AppLayout`:
+  - `listEligibleCompanyNewsPopups({ limit: 1 })`
+  - `markCompanyNewsPopupSeen({ announcementId })`
+  - `dismissCompanyNewsPopup({ announcementId })`
+- Wiring keeps service usage staff-only and non-blocking.
+- Demo popup path remains local-only and intentionally does not call popup services.
+- No service API changes were required for runtime shell wiring.
+
 ## Checkpoint note
 
 - This checkpoint adds service methods and a focused smoke test only.

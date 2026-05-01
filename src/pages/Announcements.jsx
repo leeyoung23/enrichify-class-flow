@@ -475,8 +475,12 @@ export default function Announcements() {
 
   useEffect(() => {
     const stateAnnouncementId = location.state?.announcementId;
+    const statePreferredFilter = location.state?.preferredFilter;
     const queryAnnouncementId = new URLSearchParams(location.search).get('announcementId');
     const preferredId = stateAnnouncementId || queryAnnouncementId;
+    if (typeof statePreferredFilter === 'string' && FILTERS.includes(statePreferredFilter)) {
+      setActiveFilter(statePreferredFilter);
+    }
     if (typeof preferredId === 'string' && preferredId.trim()) {
       setSelectedId(preferredId.trim());
     }
