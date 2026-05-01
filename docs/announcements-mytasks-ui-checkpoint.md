@@ -85,32 +85,32 @@ Recorded from the UI wiring milestone run:
 
 ## 9) What remains future
 
-- **Completion overview UI** for HQ/supervisor (service + smoke now exist; manager UI remains future).
+- **Completion overview UI** for HQ/supervisor (`listAnnouncementCompletionOverview` + smoke exist; manager **UI** remains future).
 - **Optional SQL view/RPC** optimization only if read patterns outgrow client/service derivation.
 - **Materialized task records** later for reminder / SLA / escalation durability.
 - **Company News** warm pop-up.
 - **Parent-facing** announcements/events.
-- **Notification/email** automation (after task/completion posture is reliable in product).
+- **Notification/email** automation (after overview state is visible and trusted in product).
 - **Reports/PDF/AI OCR** later.
 
 ## 10) Recommended next milestone
 
 Choose:
 
-- **A.** Completion overview helper for HQ/supervisor  
-- **B.** Company News warm pop-up planning  
-- **C.** Parent-facing announcements/events planning  
-- **D.** Notification/email automation planning  
-- **E.** Reports/PDF/AI OCR plan  
+- **A.** Completion overview UI integration for HQ/supervisor  
+- **B.** SQL view/RPC optimization  
+- **C.** Company News warm pop-up planning  
+- **D.** Notification/email planning  
+- **E.** Parent-facing announcements/events planning  
 
-**Recommendation: A (Completion overview helper for HQ/supervisor).**
+**Recommendation: A (Completion overview UI integration for HQ/supervisor).**
 
 Why **A** first:
 
-- Staff can already see **their own** announcement tasks in MyTasks.
-- HQ and branch supervisors need **completion visibility across targets** (operational monitoring layer).
-- That layer should be solid before **Company News** or **parent-facing** surfaces expand scope.
-- **Notifications/emails** should wait until task and completion semantics are trustworthy end-to-end.
+- Read service + smoke are **proven** under RLS.
+- HQ and branch supervisors need **completion visibility across targets** surfaced in-product (operational monitoring layer).
+- **Notifications/emails** should wait until overview state is **visible and trusted** in UI.
+- **Company News** and **parent-facing** surfaces remain later phases.
 
 ## 11) Next implementation prompt (copy-paste)
 
@@ -124,7 +124,7 @@ Branch:
 cursor/safe-lint-typecheck-486d
 
 Latest expected commit:
-Document MyTasks Announcement Requests UI
+Document Announcements completion overview read service
 
 Before doing anything, verify:
 - git branch --show-current
@@ -132,13 +132,13 @@ Before doing anything, verify:
 - git status --short
 
 Task:
-Announcements completion overview helper — planning/review only.
+Announcements completion overview UI integration for HQ/supervisor only.
 
 Hard constraints:
-- Planning/docs/review only (unless you explicitly add a read helper in a later milestone after sign-off).
-- Do not change app UI unless a separate milestone approves it.
+- UI wiring only for HQ/supervisor; no teacher/parent/student manager overview surfaces.
+- Consume existing listAnnouncementCompletionOverview({ announcementId, branchId, includeCompleted }) from supabaseReadService.js only.
 - Do not change Supabase SQL or RLS; do not apply SQL.
-- Do not add new services without explicit scope approval.
+- Do not add new backend services beyond existing read patterns unless explicitly approved.
 - Do not use service role in frontend.
 - Do not expose env values or passwords.
 - Do not call real AI APIs; do not add provider keys.
@@ -146,15 +146,16 @@ Hard constraints:
 - Do not add Company News pop-up or parent-facing announcements/events.
 - Do not enable parent_facing_media.
 - Preserve demoRole and local/demo fallback.
-- Use fake/dev data only in examples and tests.
+- Use fake/dev data only in demo paths and smoke fixtures.
+- No storage_path, staff_note, or raw SQL/RLS/env strings in UI.
 
 Deliverables:
-1) Product shape for HQ vs branch supervisor “completion overview” (what rows mean, what is drill-down vs summary).
-2) Read-model options: extend listMyAnnouncementTasks vs new listAnnouncementCompletionOverview(...) vs SQL view/RPC — with RLS/privacy notes.
-3) Role matrix: who sees which overview rows (teacher self vs supervisor branch vs HQ global).
-4) Non-goals: no notification fan-out, no parent/student internal visibility, no storage_path leakage.
-5) Phased rollout: planning first, then smallest read-only implementation slice.
+1) HQ/supervisor-only "Completion" section or tab inside Announcements detail (mobile-friendly).
+2) Summary cards for key metrics + per-person table/stacked rows.
+3) Read-only first: no reminder/email actions.
+4) Safe empty/loading/error copy.
+5) Update relevant docs/checkpoints after UI wiring.
 
 Validation:
-- Docs-only: run git diff --name-only only unless runtime files change.
+- Runtime/UI changed: run npm run build, npm run lint, npm run typecheck, and npm run test:supabase:announcements:completion (plus related announcement smokes if touched).
 ```

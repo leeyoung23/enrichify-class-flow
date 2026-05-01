@@ -1,116 +1,210 @@
 # Announcements Completion Overview Read Service Checkpoint
 
 Date: 2026-05-01  
-Scope: read-service + smoke-test checkpoint for manager completion overview (no UI/SQL/RLS changes in this milestone)
+Scope: **documentation checkpoint** for manager completion overview read service + smoke (runtime was implemented in commit `6798f6b`; this doc milestone does not change code)
 
-## 1) What was added
+## Documentation-only note
 
-- New read method in `src/services/supabaseReadService.js`:
-  - `listAnnouncementCompletionOverview({ announcementId, branchId, includeCompleted } = {})`
-- New smoke script:
-  - `scripts/supabase-announcements-completion-overview-smoke-test.mjs`
-  - package command: `npm run test:supabase:announcements:completion`
+- This milestone **updates documentation only**.
+- Validation for this doc checkpoint: `git diff --name-only` only (no build/lint/smoke unless runtime files change).
 
-## 2) Service behavior
+## 1) What was implemented (runtime milestone reference)
 
-- Uses Supabase anon client + current JWT + RLS only.
-- Reads and derives from existing RLS-governed tables:
+Implemented in **`6798f6b`** (not re-implemented in this doc-only pass):
+
+- **`listAnnouncementCompletionOverview({ announcementId, branchId, includeCompleted } = {})`** in `src/services/supabaseReadService.js`.
+- **Completion overview smoke script:** `scripts/supabase-announcements-completion-overview-smoke-test.mjs`.
+- **Package command:** `npm run test:supabase:announcements:completion`.
+- **No completion overview UI** integration in `Announcements` or elsewhere.
+- **No Supabase SQL/RLS** changes.
+- **No notification/email** side effects from this read path.
+
+## 2) Read service behavior
+
+- Uses **anon client + current JWT + RLS-visible** data only (no service role in frontend).
+- Derives overview from:
   - `announcements`
   - `announcement_targets`
   - `announcement_statuses`
   - `announcement_replies`
   - `announcement_attachments`
-- Returns stable `{ data, error }`.
-- Uses safe generic service error for unexpected read failures.
-- Does not expose `storage_path`, raw SQL errors, raw RLS internals, or env values.
+- Returns stable **`{ data, error }`**.
+- On unexpected read failures, returns a **safe generic** message (e.g. completion overview temporarily unavailable) — **no raw SQL/RLS/env** strings.
+- **No `storage_path` exposure** in the returned payload.
+- **No `staff_note` exposure** in the returned payload.
+- **No attachment signed URLs** or object content in the overview payload.
 
-## 3) Role scope behavior
+### Role scope (summary)
 
-- HQ (`hq_admin`): can derive overview across accessible internal announcements.
-- Branch supervisor (`branch_supervisor`): scoped to own-branch announcements in derived overview reads.
-- Teacher/parent/student: no manager overview rows (safe empty response path).
-- Backend RLS remains authoritative.
+- **HQ (`hq_admin`):** can derive overview for accessible internal published announcements (optionally filtered by `announcementId` / `branchId`).
+- **Branch supervisor (`branch_supervisor`):** overview reads are constrained to **own-branch** announcements; optional `branchId` must match supervisor branch when used.
+- **Teacher / parent / student:** manager overview returns **empty `data`** (no rows) — not a separate “error UI” contract; aligns with conservative “no manager surface” posture.
 
-## 4) Derived summary metrics (per announcement)
+## 3) Summary metrics (per announcement)
+
+Each overview row includes:
 
 - `totalTargeted`
 - `readCount` / `unreadCount`
 - `doneCount` / `pendingCount` / `undoneCount`
-- `responseRequiredCount`
-- `responseProvidedCount`
-- `responseMissingCount`
-- `uploadRequiredCount`
-- `uploadProvidedCount`
-- `uploadMissingCount`
+- `responseRequiredCount` / `responseProvidedCount` / `responseMissingCount`
+- `uploadRequiredCount` / `uploadProvidedCount` / `uploadMissingCount`
 - `overdueCount`
 - `latestReplyAt`
 - `latestUploadAt`
 
-## 5) Derived per-person row model
+(Plus contextual fields on the parent object such as `announcementId`, title, priority, branch, due date, and requirement flags — see implementation in `src/services/supabaseReadService.js`.)
+
+## 4) Per-person row semantics
+
+Per targeted staff profile, rows include:
 
 - `profileId`
-- `staffName` (safe nullable; no risky joins required)
+- `staffName` (nullable; safe placeholder when display name is not joined)
 - `role`
 - `branchId`
-- `branchName` (if branch row is safely visible)
-- `targetSource`
+- `branchName` (when a `branches` row is safely readable)
+- `targetSource` (e.g. how the profile entered the targeted set: profile / branch / role expansion)
 - `readAt`
-- `doneStatus`
-- `undoneReason`
+- `doneStatus` (`pending` | `done` | `undone`)
+- `undoneReason` (when present on status row)
 - `replyCount`
-- `responseProvided`
-- `attachmentCount`
-- `uploadProvided`
+- `responseProvided` (evidence: at least one reply by that profile)
+- `attachmentCount` (all attachment rows attributed to that profile for the announcement in the derivation)
+- `uploadProvided` (evidence: at least one `response_upload` by that profile)
 - `isOverdue`
-- `lastActivityAt`
+- `lastActivityAt` (derived max of relevant timestamps: read, status update, latest reply, latest upload)
 
-Never returned:
+## 5) Completion semantics
 
-- `storage_path`
-- attachment object URLs
-- `staff_note`
+- **`done` is explicit lifecycle status** on `announcement_statuses` (`done_status`).
+- **Reply** and **upload** are **evidence indicators only**; they **do not auto-mark** `done`.
+- **`responseMissing` / `uploadMissing`** remain visible separately from `done` when requirements apply.
+- **`overdue`** is derived from **`due_date` + unresolved obligations** (including missing required response/upload even if `done` were incorrectly marked done in data — derivation matches service logic in `listAnnouncementCompletionOverview`).
+- **`undone`** remains a **visible blocker state** (explicit undone + optional `undoneReason`).
 
-## 6) Completion semantics preserved
+## 6) Smoke test coverage
 
-- `done` is explicit lifecycle status.
-- Reply/upload are evidence indicators only.
-- Reply/upload do not auto-mark done.
-- `overdue` is derived from `due_date` + unresolved obligations.
-- `undone` remains visible as blocker state.
+Script: `scripts/supabase-announcements-completion-overview-smoke-test.mjs`  
+Command: `npm run test:supabase:announcements:completion`
 
-## 7) Smoke test coverage
+Covers (fake/dev fixtures only):
 
-- Creates + publishes fake/dev targeted internal request requiring response/upload.
-- Teacher runs read/reply/upload/done transitions.
-- HQ loads completion overview and verifies summary/row updates.
-- Supervisor loads own-branch completion overview.
-- Teacher manager-overview path returns blocked-or-empty.
-- Parent/student manager-overview paths blocked-or-empty.
-- Confirms no notification/email side effects.
-- Cleans up fake/dev announcement + attachment fixture rows.
+- Creates/publishes a **fake targeted** internal request requiring **response** and **upload**.
+- **Teacher** performs **read / reply / upload / done** transitions via existing write/upload services.
+- **HQ** loads completion overview and validates **summary + per-person row** structure and evidence counts.
+- **Supervisor** loads **own-branch** scoped overview and expects the fixture row when branch scope matches.
+- **Teacher** manager-overview call: **blocked/empty** (no manager rows).
+- **Parent/student** manager-overview calls: **blocked/empty**.
+- Asserts **no notification/email** side effects (smoke path is read/write fixture only; no notification hooks).
+- **Cleanup** removes fake **announcement + attachment** rows where RLS allows.
 
-## 8) Validation result
+## 7) Tests (recorded from runtime milestone `6798f6b`)
 
-- `npm run build` PASS
-- `npm run lint` PASS
-- `npm run typecheck` PASS
-- `npm run test:supabase:announcements:completion` PASS
-- `npm run test:supabase:announcements:mytasks` PASS
-- `npm run test:supabase:announcements:phase1` PASS (optional CHECK if `ANNOUNCEMENTS_TEST_OTHER_BRANCH_ID` missing)
-- `npm run test:supabase:announcements:attachments` PASS (expected diagnostic CHECK lines)
-- npm warning `Unknown env config "devdir"` observed and treated as non-blocking
+- `npm run build` PASS  
+- `npm run lint` PASS  
+- `npm run typecheck` PASS  
+- `npm run test:supabase:announcements:completion` PASS  
+- `npm run test:supabase:announcements:mytasks` PASS  
+- `npm run test:supabase:announcements:phase1` PASS with **optional CHECK** when `ANNOUNCEMENTS_TEST_OTHER_BRANCH_ID` is missing  
+- `npm run test:supabase:announcements:attachments` PASS with **expected diagnostic CHECK** lines  
+- npm warning **`Unknown env config "devdir"`** is **non-blocking** if observed  
 
-## 9) Boundaries unchanged
+*This documentation-only checkpoint does not re-run the suite.*
 
-- No UI integration for completion overview yet.
-- No Supabase SQL/RLS changes.
-- No new notification/email flows.
-- No Company News pop-up behavior.
-- No parent-facing announcements/events.
-- `parent_facing_media` remains disabled.
+## 8) Safety boundaries
 
-## 10) What remains next
+- **No completion overview UI** yet.
+- **No SQL/RLS** changes for this capability.
+- **No service-role** frontend usage.
+- **No parent/student manager overview** rows.
+- **No Company News** pop-up.
+- **No parent-facing** announcements/events.
+- **`parent_facing_media`** not enabled.
+- **No notifications/emails** and **no live chat** introduced by this work.
 
-- Completion overview UI shell in `Announcements` (HQ/supervisor only), read-only first.
-- Optional SQL view/RPC optimization only if service derivation complexity/performance warrants it.
-- Notification/email automation remains later after completion-state reliability is proven.
+## 9) What remains future
+
+- **Completion overview UI** integration for HQ/supervisor (read-only first; `Announcements` detail panel).
+- **SQL view/RPC** only if service-layer aggregation becomes too heavy or inconsistent at scale.
+- **Materialized** completion/task rows later for **reminders / SLA / escalation** durability.
+- **Company News** warm pop-up.
+- **Parent-facing** announcements/events.
+- **Reports/PDF/AI OCR** later.
+- **Attendance email notification** (and broader notification product) remains separate/out of scope here.
+
+## 10) Recommended next milestone
+
+Choose:
+
+- **A.** Completion overview UI integration for HQ/supervisor  
+- **B.** SQL view/RPC optimization  
+- **C.** Company News warm pop-up planning  
+- **D.** Notification/email planning  
+- **E.** Parent-facing announcements/events planning  
+
+**Recommendation: A (Completion overview UI integration for HQ/supervisor).**
+
+Why **A** first:
+
+- Read service + smoke are **proven** under RLS.
+- **Manager visibility** can now be surfaced safely **without** widening write surfaces.
+- **Notifications/emails** should wait until overview state is **visible and trusted** in UI.
+- **Company News** and **parent-facing** flows remain later phases.
+
+## 11) Next implementation prompt (copy-paste)
+
+```text
+Continue this same project only.
+
+Project folder:
+~/Desktop/enrichify-class-flow
+
+Branch:
+cursor/safe-lint-typecheck-486d
+
+Latest expected commit:
+Document Announcements completion overview read service
+
+Before doing anything, verify:
+- git branch --show-current
+- git log --oneline -12
+- git status --short
+
+Task:
+Announcements completion overview UI integration for HQ/supervisor only.
+
+Hard constraints:
+- UI wiring only for HQ/supervisor; no teacher/parent/student manager overview surfaces.
+- Consume existing listAnnouncementCompletionOverview({ announcementId, branchId, includeCompleted }) from supabaseReadService.js only.
+- Do not change Supabase SQL or RLS; do not apply SQL.
+- Do not add new backend services beyond existing read patterns unless explicitly approved.
+- Do not use service role in frontend.
+- Do not expose env values or passwords.
+- Do not call real AI APIs; do not add provider keys.
+- Do not auto-send emails or notifications.
+- Do not add Company News pop-up or parent-facing announcements/events.
+- Do not enable parent_facing_media.
+- Preserve demoRole and local/demo fallback.
+- Use fake/dev data only in demo paths and smoke fixtures.
+- No storage_path, staff_note, or raw SQL/RLS/env strings in UI.
+
+Deliverables:
+1) HQ/supervisor-only "Completion" section or tab inside Announcements detail (mobile-friendly).
+2) Summary cards for key metrics + per-person table/stacked rows.
+3) Read-only first: no reminder/email actions.
+4) Safe empty/loading/error copy.
+5) Update relevant docs/checkpoints after UI wiring.
+
+Validation:
+- Runtime/UI changed: run npm run build, npm run lint, npm run typecheck, and npm run test:supabase:announcements:completion (plus related announcement smokes if touched).
+```
+
+## Files changed (this documentation milestone)
+
+- `docs/announcements-completion-overview-read-service-checkpoint.md` (this file)
+- `docs/announcements-completion-overview-plan.md`
+- `docs/announcements-mytasks-ui-checkpoint.md`
+- `docs/announcements-internal-communications-plan.md`
+- `docs/project-master-context-handoff.md`
+- `docs/rls-test-checklist.md`

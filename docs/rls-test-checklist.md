@@ -8,6 +8,10 @@ Reminder: **Frontend filtering is not security. RLS must enforce access at datab
 
 ## Announcements completion overview read-service checkpoint note (2026-05-01)
 
+- Full checkpoint (implementation summary, read behavior, metrics, per-person fields, semantics, smoke, tests, boundaries, future, recommended next milestone, copy-paste UI prompt):
+  - `docs/announcements-completion-overview-read-service-checkpoint.md`
+- Doc-only validation for checkpoint alignment: `git diff --name-only` only (no build/lint/smoke unless runtime files change).
+
 - `listAnnouncementCompletionOverview({ announcementId, branchId, includeCompleted })` is now added in `src/services/supabaseReadService.js`.
 - Derived manager overview uses only existing RLS-governed internal staff data:
   - `announcements`

@@ -2,6 +2,12 @@
 
 Scope: planning only for Announcements/Internal Communications and Document Hub rollout (no UI/runtime/service/SQL changes in this milestone).
 
+## Checkpoint update (completion overview read service checkpoint doc formalized)
+
+- Canonical checkpoint (sections 1–11: implementation, behavior, metrics, semantics, smoke, tests, boundaries, future, next milestone, copy-paste prompt):
+  - `docs/announcements-completion-overview-read-service-checkpoint.md`
+- This documentation-only alignment does not change runtime; validation is `git diff --name-only` unless code changes.
+
 ## Checkpoint update (completion overview read service + smoke)
 
 - Manager completion overview read service is now added:
@@ -27,9 +33,9 @@ Scope: planning only for Announcements/Internal Communications and Document Hub 
 
 Roadmap implication:
 
-- Staff attachment UI wiring is now completed.
-- Recommend next milestone **A. MyTasks integration planning**.
-- Rationale: internal request/reply/upload loop now works; next layer is pending/done/undone task visibility planning.
+- Staff attachment UI wiring is now completed; **MyTasks Announcement Requests** UI is also completed.
+- Recommend next milestone **A. Completion overview UI for HQ/supervisor** (read service + smoke already exist; see `docs/announcements-completion-overview-read-service-checkpoint.md`).
+- Rationale: operational visibility should be surfaced in-product before notifications/emails, Company News, or parent-facing expansion.
 - Keep Company News warm pop-up, parent-facing announcements/events, and report/PDF/AI OCR for later milestones.
 
 ## Checkpoint update (staff attachments UI wired)

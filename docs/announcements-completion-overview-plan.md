@@ -1,7 +1,13 @@
 # Announcements Completion Overview Plan
 
 Date: 2026-05-01  
-Scope: completion overview strategy + read-service checkpoint (no UI/SQL/RLS changes in this milestone)
+Scope: completion overview strategy + read-service checkpoint + **formalized checkpoint documentation** (no UI/SQL/RLS changes in this milestone)
+
+## Checkpoint update (documentation-only, read service checkpoint formalized)
+
+- Canonical narrative for metrics, per-person semantics, smoke coverage, safety boundaries, and next milestone lives in:
+  - `docs/announcements-completion-overview-read-service-checkpoint.md`
+- This doc-only pass does not re-run build/lint/smoke unless runtime files change (`git diff --name-only` only).
 
 ## Checkpoint update (read service + smoke added)
 
@@ -17,7 +23,7 @@ Scope: completion overview strategy + read-service checkpoint (no UI/SQL/RLS cha
 
 - Staff own-task visibility is live in `MyTasks` via read-only `Announcement Requests` cards.
 - Announcement request workflow is live for staff: read/status/reply/upload in `Announcements`.
-- Manager completion overview does not exist yet.
+- **Manager completion overview read path exists:** `listAnnouncementCompletionOverview(...)` + `npm run test:supabase:announcements:completion` (no HQ/supervisor **UI** for overview yet).
 - Notification/email automation does not exist yet.
 
 ## 2) Product purpose
