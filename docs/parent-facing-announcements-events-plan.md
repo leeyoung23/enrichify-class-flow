@@ -1,0 +1,337 @@
+# Parent-facing Announcements and Events Plan
+
+Date: 2026-05-01  
+Scope: planning-only checkpoint for parent-facing announcements/events next layer (no implementation in this milestone)
+
+## 1) Current state
+
+- Staff `Announcements` is now a strong internal prototype:
+  - request/reminder workflow
+  - replies/read/done/undone
+  - attachments
+  - MyTasks visibility
+  - completion overview
+  - Company News shell + runtime warm popup + HQ create/publish UI
+- Parent portal surface already exists via `ParentView`.
+- Parent-facing announcements/events are not implemented yet.
+- `parent_facing_media` remains disabled/reserved.
+- Notification/email automations are not implemented.
+
+## 2) Product purpose
+
+Parent-facing announcements/events should give parents a trusted, clear, official place to see:
+
+- centre events,
+- class or branch notices,
+- activities and celebrations,
+- holiday/closure updates,
+- reminders relevant to families.
+
+Product intent:
+
+- place this near Memories / parent communication area,
+- reduce dependence on WhatsApp broadcast chains,
+- provide parent-friendly polished communication,
+- increase trust, transparency, and parent understanding of centre learning life.
+
+## 3) Parent-facing vs staff/internal announcements
+
+### Staff internal (current)
+
+- HQ/supervisor/teacher operational workflow.
+- Request/task patterns (reply/upload/done/undone).
+- Completion monitoring and internal documents.
+- Company News for internal culture/updates.
+
+### Parent-facing (future)
+
+- Centre events and activity announcements.
+- Class/branch notices and holiday/closure messages.
+- Parent reminders and programme communication.
+- Public-facing/polished copy only.
+- No internal staff notes/documents or staff-only operational details.
+
+## 4) Content types
+
+Recommended parent-facing content types:
+
+- `event`
+- `activity`
+- `centre_notice`
+- `holiday_closure`
+- `reminder`
+- `celebration`
+- `programme_update`
+- `parent_workshop`
+- `graduation_concert_notice`
+
+## 5) Audience / targeting
+
+Targeting plan:
+
+- all parents in a branch,
+- class parents,
+- selected student/guardian families,
+- programme/cohort targeting later (not required in first release).
+
+Safety requirements:
+
+- no unrelated family visibility leakage,
+- no staff-only content shown to parents,
+- strict linked-child / branch / class scoping for reads.
+
+## 6) Data model options
+
+### Option A: extend existing `announcements`
+
+Approach:
+
+- reuse `announcements` with strict `audience_type = 'parent_facing'`,
+- add parent-facing fields as needed,
+- tighten RLS and policy predicates around parent visibility.
+
+Pros:
+
+- faster reuse path for MVP.
+
+Risks:
+
+- policy complexity in mixed internal + parent table,
+- higher accidental leakage risk if policy predicates are incomplete.
+
+### Option B: separate `parent_announcements` table
+
+Approach:
+
+- separate parent-facing table + targets + statuses/media boundaries.
+
+Pros:
+
+- clearest hard boundary between internal and parent content,
+- easier to reason about privacy and audits.
+
+Risks:
+
+- more schema/service work.
+
+### Option C: hybrid
+
+Approach:
+
+- MVP reuse on existing `announcements` under strict audience/RLS rules,
+- split to separate table later if complexity rises.
+
+Pros:
+
+- balanced speed + migration path.
+
+Risks:
+
+- still carries mixed-table policy complexity during MVP.
+
+### Recommendation
+
+Recommend **A-first milestone as a planning/review step**, with **B as safest long-term target**:
+
+- For next milestone, do SQL/RLS data model review before any UI/service work.
+- If team prioritizes strongest safety boundary over speed, prefer B.
+- If MVP speed is required, C is acceptable only with strict audited `audience_type='parent_facing'` policy hardening and explicit migration criteria.
+
+## 7) Parent-facing media / files
+
+Planning direction:
+
+- Parent-facing images/media are likely needed.
+- Use private storage + signed URLs only.
+- Do not reuse internal staff attachment rows/files for parent release.
+- Keep parent-facing media as optional.
+- Keep `parent_facing_media` behind separate release boundary.
+- No public URLs by default.
+- Never expose `staff_note` or internal documents in parent path.
+
+## 8) Parent portal UI placement
+
+Proposed placement:
+
+- add a parent section near Memories/Updates in `ParentView`,
+- probable label: `Announcements & Events`.
+
+Suggested structure:
+
+- featured/latest card,
+- event list feed,
+- detail view route/panel,
+- event date/time/location fields,
+- mobile-first card layout,
+- no staff controls visible in parent views.
+
+## 9) Staff/HQ creation workflow
+
+Planned creation flow:
+
+- HQ/supervisor creates parent-facing post (teacher creator optional later, only if approved),
+- parent-friendly template options,
+- optional media upload,
+- preview before publish,
+- publish/release to parent portal,
+- edit/archive governance in later phase.
+
+MVP role stance:
+
+- HQ + supervisor creators,
+- teacher likely view/non-creator unless product decision approves teacher authoring.
+
+## 10) RLS/privacy boundaries
+
+Must-hold boundaries:
+
+- parent reads only linked-child / branch / class scoped parent-facing records,
+- parent cannot read internal staff announcements,
+- parent cannot read staff attachments or staff notes,
+- internal docs never leak to parent surfaces,
+- service role key is never used in frontend,
+- child/family boundary checks must be strict,
+- parent-facing media boundary remains separate from internal attachment model.
+
+## 11) Notification/email boundary
+
+This planning milestone adds no automatic email/notification behavior.
+
+Future direction only:
+
+- optional email notice when parent-facing post is published,
+- optional reminder email for date-based events,
+- anti-spam defaults and template safety required,
+- audit trail required for sends and templates.
+
+Related boundary:
+
+- attendance arrival email remains separate attendance module track.
+
+## 12) Testing plan (future)
+
+Future smoke/UI tests should cover:
+
+- HQ creates parent-facing draft.
+- Supervisor own-branch create if role scope allows.
+- Parent linked to class/branch sees eligible post.
+- Unrelated parent/family is blocked.
+- Parent cannot see `internal_staff` posts.
+- Parent cannot see internal attachments/staff notes.
+- Parent media signed URL works only for eligible parent.
+- No notification/email side effects in base rollout.
+
+## 13) Risks and safeguards
+
+Key risks:
+
+- cross-family leakage,
+- internal content accidentally published to parents,
+- media/privacy exposure risk,
+- stale/outdated posts causing confusion,
+- over-notification fatigue,
+- inconsistent parent-facing tone quality,
+- weak mobile readability,
+- unclear audit/edit governance.
+
+Safeguards:
+
+- RLS-first design and review gate,
+- explicit publish boundary internal vs parent-facing,
+- private storage + signed URL only,
+- content lifecycle (draft/review/published/archived),
+- parent-friendly copy/template guardrails,
+- mobile-first QA before release,
+- audit trail for create/edit/publish actions.
+
+## 14) Recommended next milestone
+
+Options:
+
+- A. Parent-facing announcements/events SQL/RLS data model review
+- B. ParentView UI shell with demo parity
+- C. Parent-facing media/storage planning
+- D. Notification/email planning
+- E. Reports/PDF/AI OCR plan
+
+Recommendation: **A first**.
+
+Why A first:
+
+- parent-facing communication has high privacy risk,
+- audience and family boundary design must be correct before UI/service,
+- media/email should follow after parent-facing data boundary is clear,
+- this keeps rollout sequence safety-first and aligns with existing backend-first hardening approach.
+
+## 15) Next implementation prompt (copy-paste)
+
+```text
+Continue this same project only.
+
+Project folder:
+~/Desktop/enrichify-class-flow
+
+Branch:
+cursor/safe-lint-typecheck-486d
+
+Latest expected commit:
+Add parent-facing announcements events plan
+
+Before doing anything, verify:
+- git branch --show-current
+- git log --oneline -12
+- git status --short
+
+Task:
+Parent-facing announcements/events SQL/RLS data model review only.
+
+Hard constraints:
+- Planning/docs only in this milestone.
+- Do not change app UI.
+- Do not change runtime logic.
+- Do not add services.
+- Do not change Supabase SQL in this milestone.
+- Do not apply SQL.
+- Do not call real AI APIs.
+- Do not add provider keys.
+- Do not expose env values or passwords.
+- Do not commit .env.local.
+- Do not upload files.
+- Do not use real student, parent, teacher, school, curriculum, homework, photo, payment, announcement, or attendance data.
+- Use fake/dev data only.
+- Do not use service role key in frontend.
+- Do not remove demoRole.
+- Do not remove demo/local fallback.
+- Do not auto-send emails or notifications.
+- Do not start live chat in this milestone.
+- Do not enable parent_facing_media yet.
+- Do not implement parent-facing announcements/events yet.
+
+Please inspect:
+- docs/company-news-create-ui-checkpoint.md
+- docs/company-news-warm-popup-plan.md
+- docs/announcements-internal-communications-plan.md
+- docs/mobile-first-qa-checkpoint.md
+- docs/project-master-context-handoff.md
+- src/pages/ParentView.jsx
+- src/pages/Announcements.jsx
+- src/services/supabaseReadService.js
+- src/services/supabaseWriteService.js
+- supabase/sql/020_announcements_phase1_foundation.sql
+- supabase/sql/023_announcements_attachments_foundation.sql
+- package.json
+
+Deliverables:
+1) Compare model options for parent-facing announcement/event data boundaries (extend existing vs separate table vs hybrid).
+2) Propose RLS privacy matrix for HQ/supervisor/teacher/parent with strict family scoping.
+3) Define parent-facing target model and non-leakage constraints.
+4) Define publish/release lifecycle and governance boundaries.
+5) Define parent-facing media boundary assumptions (private storage + signed URL + no internal attachment reuse).
+6) Document risks, safeguards, and phased recommendation.
+
+Validation efficiency rule:
+Docs/planning only.
+Run:
+- git diff --name-only
+Do not run build/lint/typecheck/smoke suite unless runtime files change.
+```
