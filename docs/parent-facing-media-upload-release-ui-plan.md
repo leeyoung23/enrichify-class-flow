@@ -1,5 +1,26 @@
 # Parent-facing Media Upload/Release UI Plan
 
+## Checkpoint update (staff Parent Notices media UI wired)
+
+- Staff-side media upload/list/preview/release wiring is now added inside `Announcements` Parent Notices detail.
+- ParentView remains read-only with released-media-only display and signed URL open behavior.
+- Role and demo behavior in this checkpoint:
+  - HQ/admin and branch supervisor can upload/release/delete in staff Parent Notices detail.
+  - Teacher remains view-only for parent-facing media controls in MVP.
+  - Demo HQ/supervisor uses local fake media simulation only (no Supabase media calls in demo mode).
+  - Demo teacher remains view-only.
+- Upload guidance and controls now include:
+  - roles: `parent_media`, `cover_image`, `attachment`
+  - allowed types: `image/jpeg`, `image/png`, `image/webp`, `application/pdf`
+  - max size: 25MB
+  - upload defaults unreleased.
+- Release boundary is preserved:
+  - `released_to_parent=false` on upload by default,
+  - explicit `Release to Parents` action required,
+  - no automatic email/notification side effects.
+- Cautious delete action is added for manager scope with confirmation + safe cleanup warning handling.
+- No Supabase SQL changes, no RLS changes, no SQL apply in this checkpoint.
+
 Date: 2026-05-02  
 Scope: planning-only checkpoint for safe parent-facing media upload/release UI before implementation
 

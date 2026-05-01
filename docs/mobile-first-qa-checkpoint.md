@@ -1,5 +1,21 @@
 # Mobile-first QA checkpoint
 
+## Checkpoint update (Parent Notices media controls in staff detail)
+
+- `Announcements` Parent Notices detail now includes staff-side parent-facing media controls (upload/list/preview/release/delete confirmation).
+- Add mobile QA checks for this section at ~390px and ~768px:
+  - media role selector and file input stack cleanly,
+  - allowed-type/size helper text remains readable,
+  - unreleased/released badge readability,
+  - action row wrapping for `View / Preview`, `Release to Parents`, and `Delete media`,
+  - teacher view-only copy clarity.
+- Boundaries to preserve during QA:
+  - no ParentView staff controls,
+  - no `storage_path` display,
+  - signed URL preview only,
+  - no notifications/emails/live chat side effects,
+  - no SQL/RLS changes.
+
 ## Checkpoint update (Parent Notices creation shell)
 
 - `Announcements` now includes a distinct staff-side `Parent Notices` mode for text-only parent-facing creation.

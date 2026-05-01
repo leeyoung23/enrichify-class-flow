@@ -1,5 +1,15 @@
 # ParentView Announcements and Events UI Checkpoint
 
+## Checkpoint update (staff Parent Notices media UI wired without ParentView changes)
+
+- Staff-side parent-facing media upload/release controls are now wired in `Announcements` Parent Notices detail.
+- ParentView boundary remains unchanged:
+  - read-only announcements/events surface,
+  - released-media-only listing,
+  - signed URL open path only,
+  - no upload/release/delete staff controls.
+- No SQL/RLS changes and no notification/email side effects were introduced by this staff-side media UI milestone.
+
 ## Checkpoint update (staff-side parent notice creation wired)
 
 - Parent-facing text-only creation UI is now wired in staff `Announcements` under `Parent Notices`.

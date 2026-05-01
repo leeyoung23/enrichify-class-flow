@@ -1,5 +1,27 @@
 # Project Master Context Handoff
 
+## Checkpoint update (staff Parent Notices media UI wired)
+
+- Staff `Announcements` now includes parent-facing media upload/list/preview/release/delete-confirmation controls inside Parent Notices detail.
+- Existing media service methods are now wired in staff UI (no new backend services):
+  - `uploadParentAnnouncementMedia(...)`
+  - `listParentAnnouncementMedia(...)`
+  - `getParentAnnouncementMediaSignedUrl(...)`
+  - `releaseParentAnnouncementMedia(...)`
+  - `deleteParentAnnouncementMedia(...)`.
+- Role behavior in this milestone:
+  - HQ/admin + branch supervisor: manager-scope media controls.
+  - Teacher: view-only media section in Parent Notices detail.
+  - Parent/student: no access to staff `Announcements` route.
+- Demo behavior in this milestone:
+  - HQ/supervisor demo media actions are local simulation only.
+  - No Supabase media calls in demo mode.
+- Boundaries preserved:
+  - ParentView remains read-only and released-media-only.
+  - Upload defaults unreleased; explicit release action required.
+  - Signed URL preview only; no public URL and no `storage_path` display.
+  - No SQL/RLS changes, no SQL apply, no notification/email side effects.
+
 ## Checkpoint update (parent-facing text-only creation UI wired)
 
 - Staff-side parent-facing creation shell is now wired in `src/pages/Announcements.jsx` as `Parent Notices`.

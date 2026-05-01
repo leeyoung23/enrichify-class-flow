@@ -1,5 +1,25 @@
 # Parent-facing Creation UI Checkpoint
 
+## Checkpoint update (staff media upload/release controls wired)
+
+- Parent Notices detail in staff `Announcements` now includes parent-facing media controls:
+  - upload
+  - list
+  - signed-URL preview
+  - explicit release
+  - cautious delete (manager scope).
+- Placement remains staff-side only; no media controls are added to `ParentView`.
+- Role/demo behavior update:
+  - HQ/admin + branch supervisor can manage media where RLS allows.
+  - Teacher remains view-only for parent-facing media controls in MVP.
+  - Demo HQ/supervisor runs local fake media simulation with no Supabase media calls.
+  - Demo teacher remains view-only.
+- Safety boundaries remain preserved:
+  - upload defaults unreleased (`released_to_parent=false`),
+  - explicit release action required for parent visibility,
+  - no notifications/emails/live chat side effects,
+  - no SQL/RLS changes in this checkpoint.
+
 Date: 2026-05-02  
 Scope: text-only parent-facing creation UI shell/wiring inside staff `Announcements`
 

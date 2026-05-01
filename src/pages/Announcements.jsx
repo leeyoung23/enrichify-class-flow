@@ -26,8 +26,13 @@ import {
 } from '@/services/supabaseReadService';
 import {
   getAnnouncementAttachmentSignedUrl,
+  getParentAnnouncementMediaSignedUrl,
   listAnnouncementAttachments,
+  listParentAnnouncementMedia,
+  releaseParentAnnouncementMedia,
+  deleteParentAnnouncementMedia,
   uploadAnnouncementAttachment,
+  uploadParentAnnouncementMedia,
 } from '@/services/supabaseUploadService';
 import {
   archiveParentAnnouncement,
@@ -58,6 +63,13 @@ const ANNOUNCEMENT_ATTACHMENT_ROLE_OPTIONS = [
   { value: 'supervisor_attachment', label: 'Supervisor Attachment' },
   { value: 'response_upload', label: 'Response Upload' },
 ];
+const PARENT_NOTICE_MEDIA_ROLE_OPTIONS = [
+  { value: 'parent_media', label: 'Parent media' },
+  { value: 'cover_image', label: 'Cover image' },
+  { value: 'attachment', label: 'Attachment' },
+];
+const PARENT_NOTICE_MEDIA_ALLOWED_TYPES = ['image/jpeg', 'image/png', 'image/webp', 'application/pdf'];
+const PARENT_NOTICE_MEDIA_MAX_BYTES = 25 * 1024 * 1024;
 
 const DEMO_ANNOUNCEMENTS = [
   {
@@ -271,6 +283,28 @@ const DEMO_ANNOUNCEMENT_ATTACHMENTS = {
     },
   ],
 };
+const DEMO_PARENT_NOTICE_MEDIA = {
+  'demo-parent-notice-1': [
+    {
+      id: 'demo-parent-media-1',
+      file_name: 'family-workshop-cover.webp',
+      media_role: 'cover_image',
+      mime_type: 'image/webp',
+      file_size: 194210,
+      released_to_parent: true,
+      created_at: '2026-05-01T14:30:00.000Z',
+    },
+    {
+      id: 'demo-parent-media-2',
+      file_name: 'reading-workshop-guide.pdf',
+      media_role: 'attachment',
+      mime_type: 'application/pdf',
+      file_size: 442100,
+      released_to_parent: false,
+      created_at: '2026-05-01T14:40:00.000Z',
+    },
+  ],
+};
 
 const DEMO_COMPLETION_OVERVIEW = {
   'demo-ann-1': {
@@ -462,6 +496,21 @@ function formatParentNoticeType(type) {
   return normalized.replace(/_/g, ' ');
 }
 
+function formatParentMediaRole(value) {
+  const normalized = String(value || '').trim();
+  if (!normalized) return 'parent_media';
+  return normalized.replace(/_/g, ' ');
+}
+
+function normalizeDemoMediaMimeType(fileName) {
+  const lower = String(fileName || '').toLowerCase();
+  if (lower.endsWith('.jpg') || lower.endsWith('.jpeg')) return 'image/jpeg';
+  if (lower.endsWith('.png')) return 'image/png';
+  if (lower.endsWith('.webp')) return 'image/webp';
+  if (lower.endsWith('.pdf')) return 'application/pdf';
+  return 'application/pdf';
+}
+
 function roleLabel(value) {
   if (!value) return 'Staff';
   if (value === 'hq_admin') return 'HQ Admin';
@@ -495,6 +544,7 @@ export default function Announcements() {
   const canCreateCompanyNewsInDemo = role === ROLES.HQ_ADMIN;
   const canCreateCompanyNewsInAuth = role === ROLES.HQ_ADMIN;
   const canViewManagerOverview = role === ROLES.HQ_ADMIN || role === ROLES.BRANCH_SUPERVISOR;
+  const canManageParentNoticeMedia = role === ROLES.HQ_ADMIN || role === ROLES.BRANCH_SUPERVISOR;
   const canUploadAttachments = roleCanUploadAttachment(role);
   const allowedAttachmentRoles = getAllowedAttachmentRoles(role);
   const canUseSupabaseAnnouncements = isStaff && !isDemoMode && isSupabaseConfigured() && Boolean(supabaseAppUser?.id);
@@ -521,10 +571,14 @@ export default function Announcements() {
     targetProfileId: '',
   });
   const [demoAttachmentsByAnnouncementId, setDemoAttachmentsByAnnouncementId] = useState(DEMO_ANNOUNCEMENT_ATTACHMENTS);
+  const [demoParentMediaByNoticeId, setDemoParentMediaByNoticeId] = useState(DEMO_PARENT_NOTICE_MEDIA);
   const [uploadRole, setUploadRole] = useState(allowedAttachmentRoles[0] || 'response_upload');
   const [uploadNote, setUploadNote] = useState('');
   const [uploadFile, setUploadFile] = useState(null);
   const [demoUploadName, setDemoUploadName] = useState('');
+  const [parentMediaUploadRole, setParentMediaUploadRole] = useState('parent_media');
+  const [parentMediaUploadFile, setParentMediaUploadFile] = useState(null);
+  const [demoParentMediaName, setDemoParentMediaName] = useState('');
   const [companyNewsCreateOpen, setCompanyNewsCreateOpen] = useState(false);
   const [parentNoticeCreateOpen, setParentNoticeCreateOpen] = useState(false);
   const [parentNoticeRows, setParentNoticeRows] = useState(() => DEMO_PARENT_NOTICES);
@@ -715,6 +769,16 @@ export default function Announcements() {
     },
   });
 
+  const parentNoticeMediaQuery = useQuery({
+    queryKey: ['parent-notice-media', selected?.id, supabaseAppUser?.id, role],
+    enabled: canUseSupabaseAnnouncements && selected?.type === 'parent_notice' && Boolean(selected?.id),
+    queryFn: async () => {
+      const result = await listParentAnnouncementMedia({ parentAnnouncementId: selected.id });
+      if (result.error) throw new Error('Unable to load parent media right now.');
+      return Array.isArray(result.data) ? result.data : [];
+    },
+  });
+
   const refreshAnnouncements = async () => {
     await Promise.all([
       queryClient.invalidateQueries({ queryKey: ['announcements-internal-staff'] }),
@@ -844,6 +908,79 @@ export default function Announcements() {
       }
     },
     onError: () => toast.error('Attachment is unavailable right now.'),
+  });
+
+  const uploadParentMediaMutation = useMutation({
+    mutationFn: async () => {
+      if (!canManageParentNoticeMedia) throw new Error('Only HQ and branch supervisor can upload media.');
+      if (!selected?.id || selected?.type !== 'parent_notice') throw new Error('Select a parent notice first.');
+      if (!parentMediaUploadFile) throw new Error('Select a file before uploading.');
+      if (!PARENT_NOTICE_MEDIA_ROLE_OPTIONS.some((option) => option.value === parentMediaUploadRole)) {
+        throw new Error('Media role is required.');
+      }
+      const result = await uploadParentAnnouncementMedia({
+        parentAnnouncementId: selected.id,
+        file: parentMediaUploadFile,
+        mediaRole: parentMediaUploadRole,
+        fileName: parentMediaUploadFile.name,
+        contentType: parentMediaUploadFile.type,
+      });
+      if (result.error) throw new Error('Parent media upload is unavailable right now.');
+      return result.data;
+    },
+    onSuccess: async () => {
+      setParentMediaUploadFile(null);
+      toast.success('Parent media uploaded as unreleased.');
+      await queryClient.invalidateQueries({ queryKey: ['parent-notice-media'] });
+    },
+    onError: (error) => toast.error(error?.message || 'Parent media upload is unavailable right now.'),
+  });
+
+  const viewParentMediaMutation = useMutation({
+    mutationFn: async (mediaId) => {
+      const result = await getParentAnnouncementMediaSignedUrl({ mediaId, expiresIn: 300 });
+      if (result.error || !result.data?.signed_url) throw new Error('Media preview is unavailable right now.');
+      return result.data.signed_url;
+    },
+    onSuccess: (signedUrl) => {
+      const opened = window.open(signedUrl, '_blank', 'noopener,noreferrer');
+      if (!opened) {
+        toast.error('Allow pop-ups to preview media.');
+      }
+    },
+    onError: () => toast.error('Media preview is unavailable right now.'),
+  });
+
+  const releaseParentMediaMutation = useMutation({
+    mutationFn: async (mediaId) => {
+      if (!canManageParentNoticeMedia) throw new Error('Only HQ and branch supervisor can release media.');
+      const result = await releaseParentAnnouncementMedia({ mediaId });
+      if (result.error) throw new Error('Unable to release media to parents right now.');
+      return result.data;
+    },
+    onSuccess: async () => {
+      toast.success('Media released to parents.');
+      await queryClient.invalidateQueries({ queryKey: ['parent-notice-media'] });
+    },
+    onError: (error) => toast.error(error?.message || 'Unable to release media to parents right now.'),
+  });
+
+  const deleteParentMediaMutation = useMutation({
+    mutationFn: async (mediaId) => {
+      if (!canManageParentNoticeMedia) throw new Error('Only HQ and branch supervisor can delete media.');
+      const result = await deleteParentAnnouncementMedia({ mediaId });
+      if (result.error) throw new Error('Unable to delete media right now.');
+      return result.data;
+    },
+    onSuccess: async (result) => {
+      if (result?.cleanup_warning) {
+        toast.warning('Media metadata deleted. Object cleanup may need review.');
+      } else {
+        toast.success('Media deleted.');
+      }
+      await queryClient.invalidateQueries({ queryKey: ['parent-notice-media'] });
+    },
+    onError: (error) => toast.error(error?.message || 'Unable to delete media right now.'),
   });
 
   function toTargetPayload(form) {
@@ -1271,6 +1408,47 @@ export default function Announcements() {
     toast.success('Demo parent notice archived locally.');
   };
 
+  const onDemoUploadParentMedia = () => {
+    if (!canManageParentNoticeMedia) return;
+    if (!selected?.id || selected?.type !== 'parent_notice') return;
+    const fileName = demoParentMediaName.trim() || `demo-parent-media-${Date.now()}.pdf`;
+    const nextMedia = {
+      id: `demo-parent-media-${Date.now()}`,
+      file_name: fileName,
+      media_role: parentMediaUploadRole,
+      mime_type: normalizeDemoMediaMimeType(fileName),
+      file_size: 180 * 1024,
+      released_to_parent: false,
+      created_at: new Date().toISOString(),
+    };
+    setDemoParentMediaByNoticeId((prev) => ({
+      ...prev,
+      [selected.id]: [nextMedia, ...(prev[selected.id] || [])],
+    }));
+    setDemoParentMediaName('');
+    toast.success('Demo parent media saved locally as unreleased.');
+  };
+
+  const onDemoReleaseParentMedia = (mediaId) => {
+    if (!canManageParentNoticeMedia || !selected?.id) return;
+    setDemoParentMediaByNoticeId((prev) => ({
+      ...prev,
+      [selected.id]: (prev[selected.id] || []).map((item) => (
+        item.id === mediaId ? { ...item, released_to_parent: true } : item
+      )),
+    }));
+    toast.success('Demo media released locally.');
+  };
+
+  const onDemoDeleteParentMedia = (mediaId) => {
+    if (!canManageParentNoticeMedia || !selected?.id) return;
+    setDemoParentMediaByNoticeId((prev) => ({
+      ...prev,
+      [selected.id]: (prev[selected.id] || []).filter((item) => item.id !== mediaId),
+    }));
+    toast.success('Demo media removed locally.');
+  };
+
   const onDemoUploadAttachment = () => {
     if (!selected?.id) return;
     if (!allowedAttachmentRoles.includes(uploadRole)) return;
@@ -1299,6 +1477,11 @@ export default function Announcements() {
   const demoAttachments = selected ? (demoAttachmentsByAnnouncementId[selected.id] || []) : [];
   const authAttachments = Array.isArray(attachmentsQuery.data) ? attachmentsQuery.data : [];
   const attachmentRows = isDemoMode ? demoAttachments : authAttachments;
+  const parentNoticeMediaRows = selected?.type !== 'parent_notice'
+    ? []
+    : (isDemoMode
+      ? (demoParentMediaByNoticeId[selected.id] || [])
+      : (Array.isArray(parentNoticeMediaQuery.data) ? parentNoticeMediaQuery.data : []));
   const demoCompletionOverview = selected ? (DEMO_COMPLETION_OVERVIEW[selected.id] || null) : null;
   const authCompletionOverview = completionOverviewQuery.data || null;
   const completionOverview = isDemoMode ? demoCompletionOverview : authCompletionOverview;
@@ -1904,7 +2087,7 @@ export default function Announcements() {
                 <p className="font-medium">Parent notices creation shell</p>
               </div>
               <p className="text-sm text-muted-foreground">
-                Text-only parent-facing draft/publish/archive flow is enabled here for allowed staff roles. Media upload, media release, and notifications remain out of scope.
+                Parent notice draft/publish/archive flow is enabled here for allowed staff roles. Media controls are staff-side only in this detail panel, with explicit release required before parent visibility.
               </p>
             </Card>
           ) : null}
@@ -2012,6 +2195,142 @@ export default function Announcements() {
                       </Button>
                     </div>
                   ) : null}
+
+                  <div className="rounded-lg border border-dashed p-3 space-y-3">
+                    <div>
+                      <p className="text-sm font-medium">Parent-facing media</p>
+                      <p className="text-xs text-muted-foreground mt-1">
+                        Upload defaults to unreleased. Use "Release to Parents" only when approved. Signed URL preview only; no public URL.
+                      </p>
+                    </div>
+
+                    {canManageParentNoticeMedia ? (
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                        <div className="space-y-1">
+                          <Label>Media role</Label>
+                          <Select value={parentMediaUploadRole} onValueChange={setParentMediaUploadRole}>
+                            <SelectTrigger><SelectValue /></SelectTrigger>
+                            <SelectContent>
+                              {PARENT_NOTICE_MEDIA_ROLE_OPTIONS.map((option) => (
+                                <SelectItem key={option.value} value={option.value}>{option.label}</SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </div>
+                        <div className="space-y-1 sm:col-span-2">
+                          <Label>{isDemoMode ? 'Demo file name (optional)' : 'Select file'}</Label>
+                          {isDemoMode ? (
+                            <Input
+                              value={demoParentMediaName}
+                              onChange={(e) => setDemoParentMediaName(e.target.value)}
+                              placeholder="demo-parent-guide.pdf"
+                            />
+                          ) : (
+                            <Input
+                              type="file"
+                              onChange={(e) => setParentMediaUploadFile(e.target.files?.[0] || null)}
+                              disabled={uploadParentMediaMutation.isPending}
+                            />
+                          )}
+                        </div>
+                        <div className="sm:col-span-2">
+                          <p className="text-xs text-muted-foreground">
+                            Allowed types: {PARENT_NOTICE_MEDIA_ALLOWED_TYPES.join(', ')}. Max file size: {formatFileSize(PARENT_NOTICE_MEDIA_MAX_BYTES)}.
+                          </p>
+                        </div>
+                        <div className="sm:col-span-2">
+                          <Button
+                            size="sm"
+                            className="min-h-10"
+                            onClick={() => (isDemoMode ? onDemoUploadParentMedia() : uploadParentMediaMutation.mutate())}
+                            disabled={!isDemoMode && uploadParentMediaMutation.isPending}
+                          >
+                            {isDemoMode
+                              ? 'Save demo media'
+                              : (uploadParentMediaMutation.isPending ? 'Uploading...' : 'Upload media')}
+                          </Button>
+                        </div>
+                      </div>
+                    ) : (
+                      <p className="text-xs text-muted-foreground">
+                        Teacher role is view-only for parent-facing media in this milestone.
+                      </p>
+                    )}
+
+                    <div className="space-y-2">
+                      {!isDemoMode && parentNoticeMediaQuery.isLoading ? (
+                        <p className="text-xs text-muted-foreground">Loading media...</p>
+                      ) : null}
+                      {!isDemoMode && parentNoticeMediaQuery.isError ? (
+                        <p className="text-xs text-amber-700">Media list is temporarily unavailable.</p>
+                      ) : null}
+                      {parentNoticeMediaRows.length === 0 ? (
+                        <p className="text-xs text-muted-foreground">No media uploaded for this notice yet.</p>
+                      ) : (
+                        parentNoticeMediaRows.map((mediaItem) => (
+                          <div key={mediaItem.id} className="rounded-lg border p-2 space-y-2">
+                            <p className="text-xs font-medium">{mediaItem.file_name || 'Untitled media'}</p>
+                            <p className="text-xs text-muted-foreground">
+                              {formatParentMediaRole(mediaItem.media_role)} · {formatFileType(mediaItem.mime_type)} · {formatFileSize(mediaItem.file_size)} · {formatAttachmentDate(mediaItem.created_at)}
+                            </p>
+                            <div className="flex flex-wrap gap-2">
+                              <Badge variant={mediaItem.released_to_parent ? 'default' : 'outline'}>
+                                {mediaItem.released_to_parent ? 'Released' : 'Unreleased'}
+                              </Badge>
+                            </div>
+                            <div className="flex flex-wrap gap-2">
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                className="min-h-9"
+                                onClick={() => (
+                                  isDemoMode
+                                    ? toast.success('Demo media preview only (local simulation).')
+                                    : viewParentMediaMutation.mutate(mediaItem.id)
+                                )}
+                                disabled={!isDemoMode && viewParentMediaMutation.isPending}
+                              >
+                                View / Preview
+                              </Button>
+                              {canManageParentNoticeMedia && !mediaItem.released_to_parent ? (
+                                <Button
+                                  size="sm"
+                                  className="min-h-9"
+                                  onClick={() => (
+                                    isDemoMode
+                                      ? onDemoReleaseParentMedia(mediaItem.id)
+                                      : releaseParentMediaMutation.mutate(mediaItem.id)
+                                  )}
+                                  disabled={!isDemoMode && releaseParentMediaMutation.isPending}
+                                >
+                                  Release to Parents
+                                </Button>
+                              ) : null}
+                              {canManageParentNoticeMedia ? (
+                                <Button
+                                  size="sm"
+                                  variant="destructive"
+                                  className="min-h-9"
+                                  onClick={() => {
+                                    const confirmed = window.confirm('Delete this media file? This action cannot be undone.');
+                                    if (!confirmed) return;
+                                    if (isDemoMode) {
+                                      onDemoDeleteParentMedia(mediaItem.id);
+                                      return;
+                                    }
+                                    deleteParentMediaMutation.mutate(mediaItem.id);
+                                  }}
+                                  disabled={!isDemoMode && deleteParentMediaMutation.isPending}
+                                >
+                                  Delete media
+                                </Button>
+                              ) : null}
+                            </div>
+                          </div>
+                        ))
+                      )}
+                    </div>
+                  </div>
                 </Card>
               ) : selected.type === 'company_news' ? (
                 <Card className="p-4 sm:p-5 space-y-4">

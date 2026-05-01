@@ -1,5 +1,22 @@
 # Parent-facing Announcements Media Service + Smoke Checkpoint
 
+## Checkpoint update (staff Parent Notices media UI wiring)
+
+- Staff `Announcements` Parent Notices detail now uses existing parent-facing media service methods for runtime UI actions:
+  - `uploadParentAnnouncementMedia(...)`
+  - `listParentAnnouncementMedia(...)`
+  - `getParentAnnouncementMediaSignedUrl(...)`
+  - `releaseParentAnnouncementMedia(...)`
+  - `deleteParentAnnouncementMedia(...)`.
+- UI behavior now reflects service boundary guarantees:
+  - uploads default unreleased,
+  - explicit release action toggles parent visibility boundary,
+  - preview uses signed URL only,
+  - no `storage_path` shown in UI.
+- Demo path remains local-only simulation and does not call Supabase media methods.
+- ParentView remains read-only/released-only; no staff controls were added there.
+- No SQL/RLS changes, no SQL apply, and no notification/email side effects in this checkpoint.
+
 ## Checkpoint update (ParentView announcements/events UI checkpoint documented)
 
 - ParentView `Announcements & Events` UI shell milestone is now documented as complete.
