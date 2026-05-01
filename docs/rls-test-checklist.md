@@ -1,5 +1,39 @@
 # RLS Test Checklist
 
+## Checkpoint update (AI parent reports 030 manual DEV apply confirmed)
+
+- Manual apply target:
+  - `supabase/sql/030_ai_parent_reports_foundation.sql`
+- Supabase DEV SQL Editor result:
+  - Success. No rows returned.
+- No production apply in this checkpoint.
+- Confirmed in DEV:
+  - tables exist:
+    - `ai_parent_reports`
+    - `ai_parent_report_versions`
+    - `ai_parent_report_evidence_links`
+    - `ai_parent_report_release_events`
+  - RLS enabled on all four tables,
+  - policies present on all four tables,
+  - helper functions present:
+    - `ai_parent_report_branch_id`
+    - `can_manage_ai_parent_report`
+    - `can_access_ai_parent_report`
+    - `can_insert_ai_parent_report_row_030`
+    - `can_manage_ai_parent_report_version`
+    - `can_access_ai_parent_report_version`
+  - FK safety present:
+    - `current_version_id` FK,
+    - same-report pair FK `(id, current_version_id) -> ai_parent_report_versions(report_id, id)`.
+- MVP append-first confirmation:
+  - `ai_parent_report_versions` and `ai_parent_report_release_events` remain insert/select policy posture,
+  - no broad update/delete policy surface for these two audit/history tables.
+- Boundary reminders:
+  - parent read remains released-only linked-child scoped,
+  - parent cannot directly read evidence links in MVP,
+  - student blocked by omission/current MVP posture,
+  - no provider wiring and no PDF/export in this checkpoint.
+
 ## Checkpoint update (AI parent report SQL/RLS draft added - 030)
 
 - Draft patch reference:

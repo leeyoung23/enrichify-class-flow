@@ -3,6 +3,26 @@
 Date: 2026-05-02  
 Scope: planning-only blueprint for AI-assisted parent progress reports before provider integration
 
+## Checkpoint update (030 manually applied in Supabase DEV)
+
+- `supabase/sql/030_ai_parent_reports_foundation.sql` is now manually applied in Supabase DEV.
+- SQL Editor result:
+  - Success. No rows returned.
+- No production apply in this checkpoint.
+- No runtime/UI/service changes in this checkpoint.
+- Confirmed in DEV:
+  - tables exist (`ai_parent_reports`, `ai_parent_report_versions`, `ai_parent_report_evidence_links`, `ai_parent_report_release_events`),
+  - RLS enabled and policies present on all four tables,
+  - helper functions present for manage/access/insert/version access paths,
+  - `current_version_id` FK + same-report pair FK safety confirmed,
+  - versions/release-events remain append-first in MVP policy shape (insert/select posture, no broad update/delete policies).
+- Boundaries unchanged:
+  - AI drafts staff-only,
+  - parent visibility remains released-only + linked-child scoped by helper design,
+  - no mock/real provider implementation,
+  - no PDF/export implementation,
+  - no parent-visible report UI/release flow yet.
+
 ## Checkpoint update (AI parent report SQL/RLS foundation drafted)
 
 - Manual/dev-first SQL draft is now added:

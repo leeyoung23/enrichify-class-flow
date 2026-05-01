@@ -1,5 +1,27 @@
 # Project Master Context Handoff
 
+## Checkpoint update (AI parent reports 030 manual DEV apply completed)
+
+- Manual apply target:
+  - `supabase/sql/030_ai_parent_reports_foundation.sql`
+- Supabase DEV SQL Editor result:
+  - Success. No rows returned.
+- No production apply in this checkpoint.
+- No runtime/UI/service changes in this checkpoint.
+- DEV verification confirms:
+  - tables exist: `ai_parent_reports`, `ai_parent_report_versions`, `ai_parent_report_evidence_links`, `ai_parent_report_release_events`,
+  - RLS enabled and policies present on all 4 tables,
+  - helper functions present for branch/manage/access/insert/version access checks,
+  - `ai_parent_reports.current_version_id` FK exists,
+  - same-report pair FK exists: `(id, current_version_id) -> ai_parent_report_versions(report_id, id)`,
+  - versions/release-events are append-first in MVP policy posture.
+- Boundary reminder:
+  - parent visibility remains released-only linked-child scoped,
+  - student remains blocked in MVP,
+  - no provider wiring, no PDF/export, no notifications/emails, no parent-visible report UI yet.
+- Recommended next milestone:
+  - AI parent report service + smoke with manual/mock source (before UI/provider).
+
 ## Checkpoint update (AI parent report SQL/RLS foundation draft added)
 
 - New manual/dev-first SQL draft now exists:

@@ -3,6 +3,30 @@
 Date: 2026-05-02  
 Scope: planning/review only for safest SQL/RLS data model before implementation
 
+## Checkpoint update (030 manual DEV application confirmed)
+
+- `supabase/sql/030_ai_parent_reports_foundation.sql` is manually applied in Supabase DEV.
+- SQL Editor result:
+  - Success. No rows returned.
+- No production apply in this checkpoint.
+- Verified objects/safety posture:
+  - all four AI parent report tables exist,
+  - RLS enabled on all four,
+  - policies present on all four,
+  - helper functions exist:
+    - `ai_parent_report_branch_id`
+    - `can_manage_ai_parent_report`
+    - `can_access_ai_parent_report`
+    - `can_insert_ai_parent_report_row_030`
+    - `can_manage_ai_parent_report_version`
+    - `can_access_ai_parent_report_version`
+  - `current_version_id` FK exists and same-report pair FK exists:
+    - `(id, current_version_id) -> ai_parent_report_versions(report_id, id)`.
+- Append-first posture confirmed in MVP:
+  - versions and release-events use insert/select policy posture,
+  - no broad update/delete policy surface for those two tables.
+- No UI/runtime/service/provider/PDF changes in this checkpoint.
+
 ## Checkpoint update (030 SQL/RLS foundation drafted)
 
 - Manual/dev-first SQL draft is now added:
