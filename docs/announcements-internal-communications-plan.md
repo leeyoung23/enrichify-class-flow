@@ -43,6 +43,19 @@ Scope: planning only for Announcements/Internal Communications and Document Hub 
 - Parent-facing announcements/events remain a later phase, and `parent_facing_media` remains out of scope.
 - Runtime popup service/UI behavior remains future; notifications/emails remain future.
 
+## Checkpoint update (026 manual DEV SQL application)
+
+- `026` is now manually applied in Supabase DEV (`Success. No rows returned.`).
+- No production apply in this checkpoint.
+- Verified DEV checkpoint:
+  - popup status columns exist on `announcement_statuses`,
+  - popup indexes exist (`announcement_statuses_popup_seen_at_idx`, `announcement_statuses_popup_dismissed_at_idx`, `announcement_statuses_popup_last_shown_at_idx`, `announcement_statuses_profile_popup_idx`),
+  - popup self-update guard trigger/function exist.
+- `announcement_statuses` policy shape remains unchanged at 4 policies (`select/insert/update/delete` from `020`).
+- No runtime/UI/service changes in this checkpoint.
+- Checkpoint doc:
+  - `docs/company-news-popup-status-sql-application-checkpoint.md`
+
 ## Checkpoint update (completion overview read service + smoke)
 
 - Manager completion overview read service is now added:

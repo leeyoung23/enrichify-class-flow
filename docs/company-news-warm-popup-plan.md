@@ -22,6 +22,20 @@ Scope: planning-only checkpoint for Company News / Big News mode and warm portal
   - `display_until`
 - Runtime app-shell popup behavior, popup service methods, notifications/emails, and parent-facing announcements/events remain future milestones.
 
+## Checkpoint update (026 manual DEV apply confirmed)
+
+- `supabase/sql/026_company_news_popup_status_foundation.sql` is now manually applied in Supabase DEV.
+- SQL Editor result: **Success. No rows returned.**
+- Verified DEV artifacts:
+  - popup columns on `announcement_statuses`,
+  - popup indexes (`announcement_statuses_popup_seen_at_idx`, `announcement_statuses_popup_dismissed_at_idx`, `announcement_statuses_popup_last_shown_at_idx`, `announcement_statuses_profile_popup_idx`),
+  - popup self-update guard trigger/function (`trg_guard_announcement_statuses_popup_self_update_026`, `guard_announcement_statuses_popup_self_update_026`).
+- Verified `announcement_statuses` policy shape remains unchanged (4 existing `020` policies).
+- No production apply in this checkpoint.
+- No runtime/UI/service changes in this checkpoint.
+- Companion checkpoint:
+  - `docs/company-news-popup-status-sql-application-checkpoint.md`
+
 ## Checkpoint update (Company News UI shell now added)
 
 - Company News UI shell is now present in `src/pages/Announcements.jsx`:

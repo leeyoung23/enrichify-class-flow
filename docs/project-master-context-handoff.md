@@ -541,6 +541,17 @@ Current status note:
   - parent-facing announcements/events and `parent_facing_media` remain out of scope,
   - runtime popup service/UI behavior remains future,
   - notifications/emails remain future.
+- Company News popup status SQL application checkpoint is now documented:
+  - `docs/company-news-popup-status-sql-application-checkpoint.md`
+- `026` is now manually applied in Supabase DEV SQL Editor (`Success. No rows returned.`):
+  - no production apply in this checkpoint,
+  - verified `announcement_statuses` popup columns exist (`popup_seen_at`, `popup_dismissed_at`, `popup_last_shown_at`),
+  - verified popup indexes exist (`announcement_statuses_popup_seen_at_idx`, `announcement_statuses_popup_dismissed_at_idx`, `announcement_statuses_popup_last_shown_at_idx`, `announcement_statuses_profile_popup_idx`),
+  - verified popup self-update guard exists:
+    - trigger `trg_guard_announcement_statuses_popup_self_update_026`,
+    - function `guard_announcement_statuses_popup_self_update_026`,
+  - verified `announcement_statuses` policy shape remains unchanged at 4 policies from `020`,
+  - no runtime/UI/service changes in this checkpoint.
 
 ## 12) Next immediate milestone prompt (copy-paste)
 

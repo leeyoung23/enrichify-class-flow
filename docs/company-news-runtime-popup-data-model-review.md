@@ -21,6 +21,24 @@ Scope: planning/review only for safest runtime warm pop-up strategy and data mod
 - Optional announcement-level popup config fields (`popup_style`, `popup_duration_seconds`, `display_until`) are intentionally deferred in `026`.
 - Runtime popup service/UI behavior remains future, along with notification/email automation and parent-facing announcements/events.
 
+## Checkpoint update (026 manual DEV application documented)
+
+- `026` is now manually applied in Supabase DEV SQL Editor.
+- SQL Editor result: **Success. No rows returned.**
+- No production apply in this checkpoint.
+- Verified in DEV:
+  - columns on `public.announcement_statuses`: `popup_seen_at`, `popup_dismissed_at`, `popup_last_shown_at` (all nullable timestamptz),
+  - indexes: `announcement_statuses_popup_seen_at_idx`, `announcement_statuses_popup_dismissed_at_idx`, `announcement_statuses_popup_last_shown_at_idx`, `announcement_statuses_profile_popup_idx`,
+  - trigger/function: `trg_guard_announcement_statuses_popup_self_update_026`, `guard_announcement_statuses_popup_self_update_026`.
+- Verified policy posture remains unchanged for `announcement_statuses` (4 policies):
+  - `announcement_statuses_select_020`
+  - `announcement_statuses_insert_020`
+  - `announcement_statuses_update_020`
+  - `announcement_statuses_delete_020`
+- No runtime/UI/service changes in this checkpoint.
+- Manual application checkpoint doc:
+  - `docs/company-news-popup-status-sql-application-checkpoint.md`
+
 ## Documentation-only note
 
 - This is a docs/review checkpoint only.

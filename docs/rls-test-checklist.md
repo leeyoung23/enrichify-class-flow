@@ -95,6 +95,31 @@ Reminder: **Frontend filtering is not security. RLS must enforce access at datab
 - Runtime popup service/UI behavior remains future; notifications/emails remain future.
 - Parent-facing announcements/events remain future and `parent_facing_media` remains out of scope.
 
+## Company News popup status SQL manual DEV apply note (2026-05-01)
+
+- Manual apply target: `supabase/sql/026_company_news_popup_status_foundation.sql`.
+- Supabase DEV SQL Editor result: **Success. No rows returned.**
+- Verified columns on `public.announcement_statuses`:
+  - `popup_seen_at timestamptz null`
+  - `popup_dismissed_at timestamptz null`
+  - `popup_last_shown_at timestamptz null`
+- Verified indexes:
+  - `announcement_statuses_popup_seen_at_idx`
+  - `announcement_statuses_popup_dismissed_at_idx`
+  - `announcement_statuses_popup_last_shown_at_idx`
+  - `announcement_statuses_profile_popup_idx`
+- Verified trigger/function:
+  - trigger `trg_guard_announcement_statuses_popup_self_update_026`
+  - function `guard_announcement_statuses_popup_self_update_026`
+  - intent: popup_* fields are self-row update only; block cross-user popup dismissal writes.
+- Verified policy posture:
+  - `announcement_statuses` policy shape remains unchanged at 4 policies (`select/insert/update/delete` from `020`),
+  - no parent/student access opening,
+  - no cross-branch widening,
+  - no RLS weakening.
+- No production apply in this checkpoint.
+- No runtime/UI/service changes in this checkpoint.
+
 ### Announcements attachments role checks (current proven state)
 
 - HQ can upload/list/open signed URL for internal attachments.
