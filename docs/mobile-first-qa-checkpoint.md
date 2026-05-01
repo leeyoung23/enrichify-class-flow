@@ -1,5 +1,28 @@
 # Mobile-first QA checkpoint
 
+## Checkpoint update (final communication-module QA baseline)
+
+- Communication module scope is now broad enough to require a dedicated final phone-first pass across:
+  - staff `Announcements` internal request/reminder flow,
+  - attachments panel,
+  - completion overview,
+  - Company News create + runtime popup surfaces,
+  - Parent Notices creation + parent-facing media controls,
+  - ParentView read-only `Announcements & Events`.
+- Final manual QA emphasis at ~390px:
+  - thumb-friendly action spacing for `View / Preview`, `Release to Parents`, and `Delete media`,
+  - no cramped admin control density in ParentView,
+  - safe card wrapping for badges, counts, and state chips,
+  - no overlap between runtime popup and core staff controls.
+- Preserve final boundaries during mobile QA:
+  - ParentView remains read-only (no staff controls),
+  - no `storage_path` exposure,
+  - signed URL preview only,
+  - no notification/email/live chat side effects,
+  - no SQL/RLS changes in this documentation milestone.
+- Canonical final QA checkpoint:
+  - `docs/announcements-parent-communication-final-qa-checkpoint.md`
+
 ## Checkpoint update (Parent Notices media controls in staff detail)
 
 - `Announcements` Parent Notices detail now includes staff-side parent-facing media controls (upload/list/preview/release/delete confirmation).

@@ -1,5 +1,26 @@
 # Project Master Context Handoff
 
+## Checkpoint update (final announcements/parent communication QA documented)
+
+- Final communication-module QA checkpoint is now documented:
+  - `docs/announcements-parent-communication-final-qa-checkpoint.md`
+- Consolidated module status now includes:
+  - staff internal Announcements (requests/reminders, read/done/undone/reply),
+  - internal attachments,
+  - MyTasks Announcement Requests visibility,
+  - completion overview (HQ/supervisor),
+  - Company News shell + runtime popup + HQ create/publish UI,
+  - parent-facing announcements/events model + services + ParentView read-only UI,
+  - staff Parent Notices creation + parent-facing media upload/release controls.
+- Final boundary reminder:
+  - no notifications/emails/live chat in this module milestone,
+  - no SQL/RLS changes in this docs checkpoint,
+  - no service-role frontend usage,
+  - internal and parent-facing models remain separated.
+- Recommended next major track after communication module consolidation:
+  - **AI parent report blueprint / data-source planning first**,
+  - do not jump straight to real AI provider wiring before blueprint/approval-flow definition.
+
 ## Checkpoint update (staff Parent Notices media UI wired)
 
 - Staff `Announcements` now includes parent-facing media upload/list/preview/release/delete-confirmation controls inside Parent Notices detail.

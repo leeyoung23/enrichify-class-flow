@@ -1,5 +1,30 @@
 # RLS Test Checklist
 
+## Checkpoint update (final communication-module QA consolidation)
+
+- Final communication-module QA checkpoint now exists:
+  - `docs/announcements-parent-communication-final-qa-checkpoint.md`
+- Communication-module RLS/security posture to preserve:
+  - internal staff announcements path and parent-facing announcements path remain separated,
+  - parent-facing media remains release-gated via `released_to_parent`,
+  - ParentView remains read-only + released-media-only,
+  - no service-role frontend usage,
+  - no notification/email/live chat side effects in current module.
+- Latest validation summary references for communication module:
+  - `build/lint/typecheck` PASS,
+  - `test:supabase:parent-announcements` PASS,
+  - `test:supabase:parent-announcements:media` PASS,
+  - `test:supabase:announcements:phase1` PASS,
+  - `test:supabase:company-news:create` PASS,
+  - `test:supabase:company-news:popup` PASS (recorded),
+  - `test:supabase:announcements:mytasks` PASS,
+  - `test:supabase:announcements:attachments` PASS (recorded),
+  - `test:supabase:announcements:completion` PASS/recorded with environment caveat notes where documented.
+- Expected CHECK/WARNING notes remain:
+  - unrelated parent credential fixture missing/invalid,
+  - optional `ANNOUNCEMENTS_TEST_OTHER_BRANCH_ID` missing,
+  - npm `devdir` warning non-blocking.
+
 ## Checkpoint update (parent-facing creation UI documented)
 
 - Parent-facing text-only creation UI checkpoint is documented at:
