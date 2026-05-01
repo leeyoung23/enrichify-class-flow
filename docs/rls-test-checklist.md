@@ -1193,3 +1193,20 @@ When `supabase/sql/007_school_curriculum_ai_foundation.sql` is manually applied,
 - `homework_marking_results` parent/student read only when `teacher_approved = true`.
 - `ai_generation_requests` and `ai_feedback_tags` staff-only access.
 - `ai_generation_outputs` parent/student access only for approved/released rows linked to own child/self.
+
+## AI parent reports service smoke checks (manual/mock milestone)
+
+Use:
+- `npm run test:supabase:ai-parent-reports`
+
+Expected outcomes for this milestone:
+- staff can create draft/report version in scope (PASS),
+- parent cannot read draft report detail (PASS),
+- submit/approve/release lifecycle is exercised under existing RLS (PASS/CHECK by fixture role scope),
+- released linked-child report visibility path for parent is exercised (PASS/CHECK by fixture),
+- unrelated parent is blocked (PASS/CHECK if unrelated parent credentials/fixture are missing),
+- student blocked/empty for AI parent report reads (PASS),
+- `generation_source='real_ai'` is blocked in service layer (PASS),
+- release/version audit event inserts are PASS or CHECK with explicit reason (no privilege widening),
+- no service-role frontend usage,
+- no real provider/PDF/export flows exercised.

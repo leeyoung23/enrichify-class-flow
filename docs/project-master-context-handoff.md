@@ -1103,3 +1103,27 @@ Validation efficiency rule:
 ---
 
 Handoff status: complete for continuity. Use this file as the primary context anchor before starting the next milestone.
+
+### AI parent report service + smoke checkpoint note
+
+- Added AI parent report service methods (read/write) for draft/review/release lifecycle:
+  - `src/services/supabaseReadService.js`
+  - `src/services/supabaseWriteService.js`
+- Added focused smoke:
+  - `scripts/supabase-ai-parent-reports-smoke-test.mjs`
+  - `npm run test:supabase:ai-parent-reports`
+- Scope/safety for this checkpoint:
+  - manual/mock source only (`manual`, `mock_ai`),
+  - `real_ai` source blocked in service layer,
+  - no UI/report page additions,
+  - no SQL/RLS changes,
+  - no PDF/export/provider wiring,
+  - no service-role frontend usage.
+- Boundary goals covered in smoke:
+  - staff draft/review/release path,
+  - parent draft block,
+  - released linked-child read path,
+  - unrelated parent blocked or CHECK when fixture credentials are unavailable,
+  - release/version event insert PASS or CHECK without privilege widening.
+- Checkpoint doc:
+  - `docs/ai-parent-report-service-smoke-checkpoint.md`.

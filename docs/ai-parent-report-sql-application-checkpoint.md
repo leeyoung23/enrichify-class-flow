@@ -157,3 +157,15 @@ Run only what matches changed files.
 - If docs-only: `git diff --name-only`
 - If runtime/service files change: run relevant build/lint/typecheck + focused smoke only
 ```
+
+## 11) Follow-up checkpoint (service + smoke completed)
+
+- Follow-up milestone A is now implemented:
+  - AI parent report service read/write path,
+  - focused smoke script for draft/review/release boundaries.
+- This follow-up does **not** change SQL/RLS from `030`.
+- This follow-up does **not** add UI, PDF/export, or real AI provider wiring.
+- Manual/mock-only source posture is enforced in service logic.
+- Parent draft visibility remains blocked; released linked-child visibility path is tested.
+- Checkpoint reference:
+  - `docs/ai-parent-report-service-smoke-checkpoint.md`.

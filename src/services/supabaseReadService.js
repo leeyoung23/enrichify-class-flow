@@ -52,6 +52,27 @@ const PARENT_ANNOUNCEMENT_TYPE_VALUES = new Set([
   "parent_workshop",
   "graduation_concert",
 ]);
+const AI_PARENT_REPORT_FIELDS =
+  "id,student_id,class_id,branch_id,report_type,report_period_start,report_period_end,status,current_version_id,created_by_profile_id,assigned_teacher_profile_id,approved_by_profile_id,released_by_profile_id,released_at,created_at,updated_at";
+const AI_PARENT_REPORT_VERSION_FIELDS =
+  "id,report_id,version_number,generation_source,structured_sections,teacher_edits,final_text,ai_model_label,ai_generated_at,created_by_profile_id,created_at";
+const AI_PARENT_REPORT_STATUS_VALUES = new Set([
+  "draft",
+  "teacher_review",
+  "supervisor_review",
+  "approved",
+  "released",
+  "archived",
+]);
+const AI_PARENT_REPORT_TYPE_VALUES = new Set([
+  "weekly_brief",
+  "monthly_progress",
+  "parent_requested",
+  "graduation",
+  "end_of_term",
+  "homework_feedback",
+  "participation_note",
+]);
 
 function isUuidLike(value) {
   if (typeof value !== "string") return false;
@@ -115,6 +136,49 @@ function mapParentAnnouncementRow(row, { includeBodyDetail = false } = {}) {
     location: trimString(row?.location) || null,
     createdAt: row?.created_at || null,
     updatedAt: row?.updated_at || null,
+  };
+}
+
+function mapAiParentReportRow(row) {
+  return {
+    id: isUuidLike(row?.id) ? trimString(row.id) : null,
+    studentId: isUuidLike(row?.student_id) ? trimString(row.student_id) : null,
+    classId: isUuidLike(row?.class_id) ? trimString(row.class_id) : null,
+    branchId: isUuidLike(row?.branch_id) ? trimString(row.branch_id) : null,
+    reportType: trimString(row?.report_type) || "",
+    reportPeriodStart: row?.report_period_start || null,
+    reportPeriodEnd: row?.report_period_end || null,
+    status: trimString(row?.status) || "",
+    currentVersionId: isUuidLike(row?.current_version_id) ? trimString(row.current_version_id) : null,
+    createdByProfileId: isUuidLike(row?.created_by_profile_id) ? trimString(row.created_by_profile_id) : null,
+    assignedTeacherProfileId: isUuidLike(row?.assigned_teacher_profile_id)
+      ? trimString(row.assigned_teacher_profile_id)
+      : null,
+    approvedByProfileId: isUuidLike(row?.approved_by_profile_id) ? trimString(row.approved_by_profile_id) : null,
+    releasedByProfileId: isUuidLike(row?.released_by_profile_id) ? trimString(row.released_by_profile_id) : null,
+    releasedAt: row?.released_at || null,
+    createdAt: row?.created_at || null,
+    updatedAt: row?.updated_at || null,
+  };
+}
+
+function mapAiParentReportVersionRow(row) {
+  return {
+    id: isUuidLike(row?.id) ? trimString(row.id) : null,
+    reportId: isUuidLike(row?.report_id) ? trimString(row.report_id) : null,
+    versionNumber: Number.isInteger(row?.version_number) ? row.version_number : null,
+    generationSource: trimString(row?.generation_source) || "",
+    structuredSections:
+      row?.structured_sections && typeof row.structured_sections === "object"
+        ? row.structured_sections
+        : {},
+    teacherEdits:
+      row?.teacher_edits && typeof row.teacher_edits === "object" ? row.teacher_edits : null,
+    finalText: row?.final_text && typeof row.final_text === "object" ? row.final_text : null,
+    aiModelLabel: trimString(row?.ai_model_label) || null,
+    aiGeneratedAt: row?.ai_generated_at || null,
+    createdByProfileId: isUuidLike(row?.created_by_profile_id) ? trimString(row.created_by_profile_id) : null,
+    createdAt: row?.created_at || null,
   };
 }
 
@@ -1627,6 +1691,165 @@ export async function getParentAnnouncementDetail({ parentAnnouncementId } = {})
     };
   } catch (_error) {
     return { data: null, error: { message: "Unable to load parent announcement detail right now." } };
+  }
+}
+
+export async function listAiParentReports({
+  studentId,
+  classId,
+  branchId,
+  status,
+  reportType,
+  includeArchived = false,
+} = {}) {
+  if (!isSupabaseConfigured() || !supabase) {
+    return { data: [], error: { message: "Supabase is not configured" } };
+  }
+  if (studentId != null && studentId !== "" && !isUuidLike(studentId)) {
+    return { data: [], error: { message: "studentId must be a UUID when provided" } };
+  }
+  if (classId != null && classId !== "" && !isUuidLike(classId)) {
+    return { data: [], error: { message: "classId must be a UUID when provided" } };
+  }
+  if (branchId != null && branchId !== "" && !isUuidLike(branchId)) {
+    return { data: [], error: { message: "branchId must be a UUID when provided" } };
+  }
+  if (status != null && status !== "" && !AI_PARENT_REPORT_STATUS_VALUES.has(trimString(status))) {
+    return { data: [], error: { message: "status is invalid" } };
+  }
+  if (reportType != null && reportType !== "" && !AI_PARENT_REPORT_TYPE_VALUES.has(trimString(reportType))) {
+    return { data: [], error: { message: "reportType is invalid" } };
+  }
+  if (includeArchived != null && typeof includeArchived !== "boolean") {
+    return { data: [], error: { message: "includeArchived must be a boolean when provided" } };
+  }
+
+  try {
+    let query = supabase
+      .from("ai_parent_reports")
+      .select(AI_PARENT_REPORT_FIELDS)
+      .order("report_period_start", { ascending: false })
+      .order("created_at", { ascending: false });
+
+    if (isUuidLike(studentId)) query = query.eq("student_id", trimString(studentId));
+    if (isUuidLike(classId)) query = query.eq("class_id", trimString(classId));
+    if (isUuidLike(branchId)) query = query.eq("branch_id", trimString(branchId));
+    if (status != null && status !== "") query = query.eq("status", trimString(status));
+    else if (!includeArchived) query = query.neq("status", "archived");
+    if (reportType != null && reportType !== "") query = query.eq("report_type", trimString(reportType));
+
+    const { data, error } = await query;
+    if (error) {
+      return {
+        data: [],
+        error: sanitizeReadError(error, "Unable to load AI parent reports right now."),
+      };
+    }
+    return {
+      data: (Array.isArray(data) ? data : []).map((row) => mapAiParentReportRow(row)),
+      error: null,
+    };
+  } catch (_error) {
+    return { data: [], error: { message: "Unable to load AI parent reports right now." } };
+  }
+}
+
+export async function getAiParentReportDetail({ reportId } = {}) {
+  if (!isSupabaseConfigured() || !supabase) {
+    return { data: null, error: { message: "Supabase is not configured" } };
+  }
+  if (!isUuidLike(reportId)) {
+    return { data: null, error: { message: "reportId must be a UUID" } };
+  }
+
+  try {
+    const { data, error } = await supabase
+      .from("ai_parent_reports")
+      .select(AI_PARENT_REPORT_FIELDS)
+      .eq("id", trimString(reportId))
+      .maybeSingle();
+    if (error || !data?.id) {
+      return {
+        data: null,
+        error: sanitizeReadError(error, "Unable to load AI parent report detail right now."),
+      };
+    }
+    return { data: mapAiParentReportRow(data), error: null };
+  } catch (_error) {
+    return { data: null, error: { message: "Unable to load AI parent report detail right now." } };
+  }
+}
+
+export async function listAiParentReportVersions({ reportId } = {}) {
+  if (!isSupabaseConfigured() || !supabase) {
+    return { data: [], error: { message: "Supabase is not configured" } };
+  }
+  if (!isUuidLike(reportId)) {
+    return { data: [], error: { message: "reportId must be a UUID" } };
+  }
+
+  try {
+    const { data, error } = await supabase
+      .from("ai_parent_report_versions")
+      .select(AI_PARENT_REPORT_VERSION_FIELDS)
+      .eq("report_id", trimString(reportId))
+      .order("version_number", { ascending: false });
+    if (error) {
+      return {
+        data: [],
+        error: sanitizeReadError(error, "Unable to load AI parent report versions right now."),
+      };
+    }
+    return {
+      data: (Array.isArray(data) ? data : []).map((row) => mapAiParentReportVersionRow(row)),
+      error: null,
+    };
+  } catch (_error) {
+    return { data: [], error: { message: "Unable to load AI parent report versions right now." } };
+  }
+}
+
+export async function getAiParentReportCurrentVersion({ reportId } = {}) {
+  if (!isSupabaseConfigured() || !supabase) {
+    return { data: null, error: { message: "Supabase is not configured" } };
+  }
+  if (!isUuidLike(reportId)) {
+    return { data: null, error: { message: "reportId must be a UUID" } };
+  }
+
+  try {
+    const reportRead = await supabase
+      .from("ai_parent_reports")
+      .select("id,current_version_id,status")
+      .eq("id", trimString(reportId))
+      .maybeSingle();
+    if (reportRead.error || !reportRead.data?.id) {
+      return {
+        data: null,
+        error: sanitizeReadError(reportRead.error, "Unable to load AI parent report current version right now."),
+      };
+    }
+
+    if (!isUuidLike(reportRead.data.current_version_id)) {
+      return { data: null, error: null };
+    }
+
+    const versionRead = await supabase
+      .from("ai_parent_report_versions")
+      .select(AI_PARENT_REPORT_VERSION_FIELDS)
+      .eq("id", trimString(reportRead.data.current_version_id))
+      .eq("report_id", trimString(reportId))
+      .maybeSingle();
+    if (versionRead.error || !versionRead.data?.id) {
+      return {
+        data: null,
+        error: sanitizeReadError(versionRead.error, "Unable to load AI parent report current version right now."),
+      };
+    }
+
+    return { data: mapAiParentReportVersionRow(versionRead.data), error: null };
+  } catch (_error) {
+    return { data: null, error: { message: "Unable to load AI parent report current version right now." } };
   }
 }
 

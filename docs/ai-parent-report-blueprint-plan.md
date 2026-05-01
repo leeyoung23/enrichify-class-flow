@@ -359,3 +359,19 @@ Run:
 - git diff --name-only
 Do not run build/lint/typecheck/smoke suite unless runtime files change.
 ```
+
+## Checkpoint update (AI parent report service + smoke completed)
+
+- Service-layer read/write foundation is now implemented for AI parent reports using anon+JWT+RLS only.
+- Scope remains manual/mock source only:
+  - `generation_source` service guard allows `manual` and `mock_ai`,
+  - `real_ai` is explicitly blocked in this milestone.
+- No UI/report page implementation in this checkpoint.
+- No Supabase SQL/RLS changes in this checkpoint.
+- No real provider wiring and no PDF/export implementation.
+- Smoke checkpoint confirms expected boundary path:
+  - staff draft/review/release flow is testable,
+  - parent draft block remains in place,
+  - released linked-child visibility path is covered,
+  - append-first version/release-event posture remains intact.
+- Checkpoint doc: `docs/ai-parent-report-service-smoke-checkpoint.md`.

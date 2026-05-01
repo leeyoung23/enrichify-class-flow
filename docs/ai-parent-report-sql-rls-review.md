@@ -413,3 +413,21 @@ Run:
 - git diff --name-only
 Do not run build/lint/typecheck/smoke suite unless runtime files change.
 ```
+
+## Checkpoint update (service + smoke on 030 foundation)
+
+- SQL/RLS recommendation remains unchanged:
+  - `ai_parent_reports` + `ai_parent_report_versions` + evidence + release-events.
+- Service layer is now implemented against the already-applied DEV SQL foundation.
+- Runtime guardrails added in service flow:
+  - manual/mock source only (`manual`, `mock_ai`),
+  - explicit `real_ai` block in this milestone,
+  - no provider keys/service-role usage in frontend path.
+- Parent visibility model remains strict:
+  - draft/raw staff-only path,
+  - parent linked-child access for released path only.
+- Append-first posture remains intact:
+  - versions/release-events are inserted as audit records,
+  - no update/delete behavior introduced for those audit tables in this milestone.
+- Service/smoke checkpoint reference:
+  - `docs/ai-parent-report-service-smoke-checkpoint.md`.

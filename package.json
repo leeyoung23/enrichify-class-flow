@@ -37,6 +37,7 @@
     "test:supabase:parent-announcements:media": "node scripts/supabase-parent-announcements-media-smoke-test.mjs",
     "test:supabase:company-news:create": "node scripts/supabase-company-news-create-smoke-test.mjs",
     "test:supabase:company-news:popup": "node scripts/supabase-company-news-popup-smoke-test.mjs",
+    "test:supabase:ai-parent-reports": "node scripts/supabase-ai-parent-reports-smoke-test.mjs",
     "test:supabase:staff-time-clock": "node scripts/supabase-staff-time-clock-smoke-test.mjs",
     "test:supabase:staff-time-clock:review": "node scripts/supabase-staff-time-clock-review-smoke-test.mjs",
     "test:staff-time-clock:helpers": "node scripts/staff-time-clock-browser-helper-smoke-test.mjs",

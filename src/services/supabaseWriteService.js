@@ -57,6 +57,35 @@ const PARENT_ANNOUNCEMENT_TYPE_VALUES = new Set([
   "graduation_concert",
 ]);
 const PARENT_ANNOUNCEMENT_TARGET_TYPE_VALUES = new Set(["branch", "class", "student"]);
+const AI_PARENT_REPORT_TYPE_VALUES = new Set([
+  "weekly_brief",
+  "monthly_progress",
+  "parent_requested",
+  "graduation",
+  "end_of_term",
+  "homework_feedback",
+  "participation_note",
+]);
+const AI_PARENT_REPORT_STATUS_VALUES = new Set([
+  "draft",
+  "teacher_review",
+  "supervisor_review",
+  "approved",
+  "released",
+  "archived",
+]);
+const AI_PARENT_REPORT_GENERATION_SOURCE_VALUES = new Set(["manual", "mock_ai", "real_ai"]);
+const AI_PARENT_REPORT_EVIDENCE_TYPE_VALUES = new Set([
+  "attendance",
+  "homework",
+  "homework_feedback",
+  "teacher_note",
+  "weekly_report",
+  "memory_media",
+  "parent_announcement",
+  "assessment",
+  "manual",
+]);
 
 function isUuidLike(value) {
   if (typeof value !== "string") return false;
@@ -84,6 +113,34 @@ function normalizeNullableDate(value) {
   const parsed = new Date(`${trimmed}T00:00:00.000Z`);
   if (Number.isNaN(parsed.getTime())) return null;
   return parsed.toISOString().slice(0, 10);
+}
+
+function normalizeJsonObject(value, { fieldName = "value", allowNull = true } = {}) {
+  if (value == null) return allowNull ? null : {};
+  if (typeof value !== "object" || Array.isArray(value)) {
+    return { __error: `${fieldName} must be an object` };
+  }
+  return value;
+}
+
+function containsUnsafePathLikeValue(input) {
+  if (input == null) return false;
+  if (typeof input === "string") {
+    const value = input.toLowerCase();
+    return value.includes("/") || value.includes("\\") || value.includes("storage_path");
+  }
+  if (Array.isArray(input)) return input.some((item) => containsUnsafePathLikeValue(item));
+  if (typeof input === "object") {
+    return Object.entries(input).some(([key, value]) => {
+      if (String(key).toLowerCase().includes("storage_path")) return true;
+      return containsUnsafePathLikeValue(value);
+    });
+  }
+  return false;
+}
+
+function sanitizeAiParentReportError(error, fallbackMessage) {
+  return sanitizeServiceError(error, fallbackMessage);
 }
 
 function normalizeStudentIds(studentIds) {
@@ -2371,6 +2428,587 @@ export async function createAnnouncementReply({ announcementId, body, replyType 
       .select("id,announcement_id,profile_id,body,reply_type,parent_reply_id,created_at")
       .maybeSingle();
     return { data: data ?? null, error: error ?? null };
+  } catch (err) {
+    return { data: null, error: { message: err?.message || String(err) } };
+  }
+}
+
+async function loadAiParentReportRow(reportId) {
+  const read = await supabase
+    .from("ai_parent_reports")
+    .select(
+      "id,student_id,class_id,branch_id,report_type,report_period_start,report_period_end,status,current_version_id,created_by_profile_id,assigned_teacher_profile_id,approved_by_profile_id,released_by_profile_id,released_at,created_at,updated_at"
+    )
+    .eq("id", trimString(reportId))
+    .maybeSingle();
+  if (read.error || !read.data?.id) {
+    return {
+      data: null,
+      error: sanitizeAiParentReportError(read.error, "Unable to load AI parent report right now."),
+    };
+  }
+  return { data: read.data, error: null };
+}
+
+async function insertAiParentReportReleaseEvent({
+  reportId,
+  versionId,
+  eventType,
+  actorProfileId,
+  eventNote,
+} = {}) {
+  const payload = {
+    report_id: trimString(reportId),
+    version_id: isUuidLike(versionId) ? trimString(versionId) : null,
+    event_type: trimString(eventType),
+    actor_profile_id: trimString(actorProfileId),
+    event_note: normalizeNullableText(eventNote, { maxLength: 2000 }),
+    created_at: new Date().toISOString(),
+  };
+  const insertResult = await supabase
+    .from("ai_parent_report_release_events")
+    .insert(payload)
+    .select("id,report_id,version_id,event_type,actor_profile_id,event_note,created_at")
+    .maybeSingle();
+  if (insertResult.error || !insertResult.data?.id) {
+    return {
+      data: null,
+      error: sanitizeAiParentReportError(
+        insertResult.error,
+        "Unable to record AI parent report lifecycle event right now."
+      ),
+    };
+  }
+  return { data: insertResult.data, error: null };
+}
+
+export async function createAiParentReportDraft({
+  studentId,
+  classId,
+  branchId,
+  reportType,
+  reportPeriodStart,
+  reportPeriodEnd,
+  assignedTeacherProfileId,
+} = {}) {
+  if (!isSupabaseConfigured() || !supabase) {
+    return { data: null, error: { message: "Supabase is not configured" } };
+  }
+  if (!isUuidLike(studentId)) return { data: null, error: { message: "studentId must be a UUID" } };
+  if (classId != null && classId !== "" && !isUuidLike(classId)) {
+    return { data: null, error: { message: "classId must be a UUID when provided" } };
+  }
+  if (!isUuidLike(branchId)) return { data: null, error: { message: "branchId must be a UUID" } };
+  const normalizedType = trimString(reportType);
+  if (!AI_PARENT_REPORT_TYPE_VALUES.has(normalizedType)) {
+    return { data: null, error: { message: "reportType is invalid" } };
+  }
+  const normalizedStart = normalizeNullableDate(reportPeriodStart);
+  const normalizedEnd = normalizeNullableDate(reportPeriodEnd);
+  if (!normalizedStart || !normalizedEnd) {
+    return { data: null, error: { message: "reportPeriodStart/reportPeriodEnd must be YYYY-MM-DD" } };
+  }
+  if (normalizedEnd < normalizedStart) {
+    return { data: null, error: { message: "reportPeriodEnd must be on or after reportPeriodStart" } };
+  }
+  if (
+    assignedTeacherProfileId != null &&
+    assignedTeacherProfileId !== "" &&
+    !isUuidLike(assignedTeacherProfileId)
+  ) {
+    return { data: null, error: { message: "assignedTeacherProfileId must be a UUID when provided" } };
+  }
+
+  try {
+    const { profileId, error: authError } = await getAuthenticatedProfileId();
+    if (authError || !profileId) {
+      return { data: null, error: authError || { message: "Authenticated user is required" } };
+    }
+    const nowIso = new Date().toISOString();
+    const insertResult = await supabase
+      .from("ai_parent_reports")
+      .insert({
+        student_id: trimString(studentId),
+        class_id: isUuidLike(classId) ? trimString(classId) : null,
+        branch_id: trimString(branchId),
+        report_type: normalizedType,
+        report_period_start: normalizedStart,
+        report_period_end: normalizedEnd,
+        status: "draft",
+        current_version_id: null,
+        created_by_profile_id: profileId,
+        assigned_teacher_profile_id: isUuidLike(assignedTeacherProfileId)
+          ? trimString(assignedTeacherProfileId)
+          : null,
+        approved_by_profile_id: null,
+        released_by_profile_id: null,
+        released_at: null,
+        created_at: nowIso,
+        updated_at: nowIso,
+      })
+      .select(
+        "id,student_id,class_id,branch_id,report_type,report_period_start,report_period_end,status,current_version_id,created_by_profile_id,assigned_teacher_profile_id,approved_by_profile_id,released_by_profile_id,released_at,created_at,updated_at"
+      )
+      .maybeSingle();
+    if (insertResult.error || !insertResult.data?.id) {
+      return {
+        data: null,
+        error: sanitizeAiParentReportError(insertResult.error, "Unable to create AI parent report draft right now."),
+      };
+    }
+    return { data: insertResult.data, error: null };
+  } catch (err) {
+    return { data: null, error: { message: err?.message || String(err) } };
+  }
+}
+
+export async function createAiParentReportVersion({
+  reportId,
+  generationSource = "manual",
+  structuredSections,
+  teacherEdits,
+  finalText,
+  aiModelLabel,
+} = {}) {
+  if (!isSupabaseConfigured() || !supabase) {
+    return { data: null, error: { message: "Supabase is not configured" } };
+  }
+  if (!isUuidLike(reportId)) return { data: null, error: { message: "reportId must be a UUID" } };
+  const normalizedSource = trimString(generationSource) || "manual";
+  if (!AI_PARENT_REPORT_GENERATION_SOURCE_VALUES.has(normalizedSource)) {
+    return { data: null, error: { message: "generationSource is invalid" } };
+  }
+  if (normalizedSource === "real_ai") {
+    return { data: null, error: { message: "generationSource real_ai is blocked in this milestone" } };
+  }
+
+  const normalizedStructured = normalizeJsonObject(structuredSections, {
+    fieldName: "structuredSections",
+    allowNull: false,
+  });
+  if (normalizedStructured?.__error) {
+    return { data: null, error: { message: normalizedStructured.__error } };
+  }
+  const normalizedTeacherEdits = normalizeJsonObject(teacherEdits, {
+    fieldName: "teacherEdits",
+    allowNull: true,
+  });
+  if (normalizedTeacherEdits?.__error) {
+    return { data: null, error: { message: normalizedTeacherEdits.__error } };
+  }
+  const normalizedFinalText = normalizeJsonObject(finalText, {
+    fieldName: "finalText",
+    allowNull: true,
+  });
+  if (normalizedFinalText?.__error) {
+    return { data: null, error: { message: normalizedFinalText.__error } };
+  }
+
+  try {
+    const { profileId, error: authError } = await getAuthenticatedProfileId();
+    if (authError || !profileId) {
+      return { data: null, error: authError || { message: "Authenticated user is required" } };
+    }
+
+    const reportRead = await loadAiParentReportRow(reportId);
+    if (reportRead.error || !reportRead.data?.id) return { data: null, error: reportRead.error };
+
+    const countRead = await supabase
+      .from("ai_parent_report_versions")
+      .select("id,version_number")
+      .eq("report_id", trimString(reportId))
+      .order("version_number", { ascending: false })
+      .limit(1);
+    if (countRead.error) {
+      return {
+        data: null,
+        error: sanitizeAiParentReportError(countRead.error, "Unable to prepare AI parent report version right now."),
+      };
+    }
+    const latestVersion = Array.isArray(countRead.data) && countRead.data.length > 0 ? countRead.data[0] : null;
+    const versionNumber = Number.isInteger(latestVersion?.version_number)
+      ? latestVersion.version_number + 1
+      : 1;
+
+    const nowIso = new Date().toISOString();
+    const insertResult = await supabase
+      .from("ai_parent_report_versions")
+      .insert({
+        report_id: trimString(reportId),
+        version_number: versionNumber,
+        generation_source: normalizedSource,
+        structured_sections: normalizedStructured,
+        teacher_edits: normalizedTeacherEdits,
+        final_text: normalizedFinalText,
+        ai_model_label: normalizeNullableText(aiModelLabel, { maxLength: 120 }),
+        ai_generated_at: normalizedSource === "mock_ai" ? nowIso : null,
+        created_by_profile_id: profileId,
+        created_at: nowIso,
+      })
+      .select(
+        "id,report_id,version_number,generation_source,structured_sections,teacher_edits,final_text,ai_model_label,ai_generated_at,created_by_profile_id,created_at"
+      )
+      .maybeSingle();
+    if (insertResult.error || !insertResult.data?.id) {
+      return {
+        data: null,
+        error: sanitizeAiParentReportError(insertResult.error, "Unable to create AI parent report version right now."),
+      };
+    }
+
+    const eventType = versionNumber === 1 ? "generated" : "edited";
+    const eventResult = await insertAiParentReportReleaseEvent({
+      reportId: trimString(reportId),
+      versionId: insertResult.data.id,
+      eventType,
+      actorProfileId: profileId,
+      eventNote: `${eventType} via ${normalizedSource}`,
+    });
+
+    return {
+      data: {
+        version: insertResult.data,
+        lifecycleEvent: eventResult.data || null,
+      },
+      error: null,
+      warning: eventResult.error
+        ? {
+            check: true,
+            stage: "release_event_insert",
+            message: eventResult.error.message,
+          }
+        : null,
+    };
+  } catch (err) {
+    return { data: null, error: { message: err?.message || String(err) } };
+  }
+}
+
+export async function addAiParentReportEvidenceLink({
+  reportId,
+  evidenceType,
+  sourceTable,
+  sourceId,
+  summarySnapshot,
+  includeInParentReport = false,
+} = {}) {
+  if (!isSupabaseConfigured() || !supabase) {
+    return { data: null, error: { message: "Supabase is not configured" } };
+  }
+  if (!isUuidLike(reportId)) return { data: null, error: { message: "reportId must be a UUID" } };
+  const normalizedEvidenceType = trimString(evidenceType);
+  if (!AI_PARENT_REPORT_EVIDENCE_TYPE_VALUES.has(normalizedEvidenceType)) {
+    return { data: null, error: { message: "evidenceType is invalid" } };
+  }
+  if (sourceId != null && sourceId !== "" && !isUuidLike(sourceId)) {
+    return { data: null, error: { message: "sourceId must be a UUID when provided" } };
+  }
+  const normalizedSnapshot = normalizeJsonObject(summarySnapshot, {
+    fieldName: "summarySnapshot",
+    allowNull: true,
+  });
+  if (normalizedSnapshot?.__error) {
+    return { data: null, error: { message: normalizedSnapshot.__error } };
+  }
+  if (containsUnsafePathLikeValue(normalizedSnapshot)) {
+    return { data: null, error: { message: "summarySnapshot must not include raw private file paths" } };
+  }
+  if (includeInParentReport != null && typeof includeInParentReport !== "boolean") {
+    return { data: null, error: { message: "includeInParentReport must be a boolean when provided" } };
+  }
+
+  try {
+    const nowIso = new Date().toISOString();
+    const insertResult = await supabase
+      .from("ai_parent_report_evidence_links")
+      .insert({
+        report_id: trimString(reportId),
+        evidence_type: normalizedEvidenceType,
+        source_table: normalizeNullableText(sourceTable, { maxLength: 120 }),
+        source_id: isUuidLike(sourceId) ? trimString(sourceId) : null,
+        summary_snapshot: normalizedSnapshot,
+        include_in_parent_report: Boolean(includeInParentReport),
+        created_at: nowIso,
+      })
+      .select(
+        "id,report_id,evidence_type,source_table,source_id,summary_snapshot,include_in_parent_report,created_at"
+      )
+      .maybeSingle();
+    if (insertResult.error || !insertResult.data?.id) {
+      return {
+        data: null,
+        error: sanitizeAiParentReportError(
+          insertResult.error,
+          "Unable to add AI parent report evidence link right now."
+        ),
+      };
+    }
+    return { data: insertResult.data, error: null };
+  } catch (err) {
+    return { data: null, error: { message: err?.message || String(err) } };
+  }
+}
+
+export async function submitAiParentReportForReview({ reportId } = {}) {
+  if (!isSupabaseConfigured() || !supabase) {
+    return { data: null, error: { message: "Supabase is not configured" } };
+  }
+  if (!isUuidLike(reportId)) return { data: null, error: { message: "reportId must be a UUID" } };
+
+  try {
+    const { profileId, error: authError } = await getAuthenticatedProfileId();
+    if (authError || !profileId) {
+      return { data: null, error: authError || { message: "Authenticated user is required" } };
+    }
+    const reportRead = await loadAiParentReportRow(reportId);
+    if (reportRead.error || !reportRead.data?.id) return { data: null, error: reportRead.error };
+    const currentStatus = trimString(reportRead.data.status);
+    if (!AI_PARENT_REPORT_STATUS_VALUES.has(currentStatus)) {
+      return { data: null, error: { message: "Current report status is invalid" } };
+    }
+    if (!(currentStatus === "draft" || currentStatus === "teacher_review")) {
+      return { data: null, error: { message: "Only draft/teacher_review reports can be submitted for review" } };
+    }
+
+    const nowIso = new Date().toISOString();
+    const updateResult = await supabase
+      .from("ai_parent_reports")
+      .update({
+        status: "supervisor_review",
+        updated_at: nowIso,
+      })
+      .eq("id", trimString(reportId))
+      .select(
+        "id,student_id,class_id,branch_id,report_type,report_period_start,report_period_end,status,current_version_id,created_by_profile_id,assigned_teacher_profile_id,approved_by_profile_id,released_by_profile_id,released_at,created_at,updated_at"
+      )
+      .maybeSingle();
+    if (updateResult.error || !updateResult.data?.id) {
+      return {
+        data: null,
+        error: sanitizeAiParentReportError(
+          updateResult.error,
+          "Unable to submit AI parent report for review right now."
+        ),
+      };
+    }
+
+    const eventResult = await insertAiParentReportReleaseEvent({
+      reportId: trimString(reportId),
+      versionId: isUuidLike(updateResult.data.current_version_id) ? updateResult.data.current_version_id : null,
+      eventType: "submitted_for_review",
+      actorProfileId: profileId,
+      eventNote: "submitted_for_review",
+    });
+    return {
+      data: {
+        report: updateResult.data,
+        lifecycleEvent: eventResult.data || null,
+      },
+      error: null,
+      warning: eventResult.error
+        ? { check: true, stage: "release_event_insert", message: eventResult.error.message }
+        : null,
+    };
+  } catch (err) {
+    return { data: null, error: { message: err?.message || String(err) } };
+  }
+}
+
+export async function approveAiParentReport({ reportId } = {}) {
+  if (!isSupabaseConfigured() || !supabase) {
+    return { data: null, error: { message: "Supabase is not configured" } };
+  }
+  if (!isUuidLike(reportId)) return { data: null, error: { message: "reportId must be a UUID" } };
+
+  try {
+    const { profileId, error: authError } = await getAuthenticatedProfileId();
+    if (authError || !profileId) {
+      return { data: null, error: authError || { message: "Authenticated user is required" } };
+    }
+    const reportRead = await loadAiParentReportRow(reportId);
+    if (reportRead.error || !reportRead.data?.id) return { data: null, error: reportRead.error };
+    const currentStatus = trimString(reportRead.data.status);
+    if (!(currentStatus === "teacher_review" || currentStatus === "supervisor_review")) {
+      return { data: null, error: { message: "Only review-state reports can be approved" } };
+    }
+
+    const nowIso = new Date().toISOString();
+    const updateResult = await supabase
+      .from("ai_parent_reports")
+      .update({
+        status: "approved",
+        approved_by_profile_id: profileId,
+        updated_at: nowIso,
+      })
+      .eq("id", trimString(reportId))
+      .select(
+        "id,student_id,class_id,branch_id,report_type,report_period_start,report_period_end,status,current_version_id,created_by_profile_id,assigned_teacher_profile_id,approved_by_profile_id,released_by_profile_id,released_at,created_at,updated_at"
+      )
+      .maybeSingle();
+    if (updateResult.error || !updateResult.data?.id) {
+      return {
+        data: null,
+        error: sanitizeAiParentReportError(updateResult.error, "Unable to approve AI parent report right now."),
+      };
+    }
+
+    const eventResult = await insertAiParentReportReleaseEvent({
+      reportId: trimString(reportId),
+      versionId: isUuidLike(updateResult.data.current_version_id) ? updateResult.data.current_version_id : null,
+      eventType: "approved",
+      actorProfileId: profileId,
+      eventNote: "approved",
+    });
+    return {
+      data: {
+        report: updateResult.data,
+        lifecycleEvent: eventResult.data || null,
+      },
+      error: null,
+      warning: eventResult.error
+        ? { check: true, stage: "release_event_insert", message: eventResult.error.message }
+        : null,
+    };
+  } catch (err) {
+    return { data: null, error: { message: err?.message || String(err) } };
+  }
+}
+
+export async function releaseAiParentReport({ reportId, versionId } = {}) {
+  if (!isSupabaseConfigured() || !supabase) {
+    return { data: null, error: { message: "Supabase is not configured" } };
+  }
+  if (!isUuidLike(reportId)) return { data: null, error: { message: "reportId must be a UUID" } };
+  if (!isUuidLike(versionId)) return { data: null, error: { message: "versionId is required and must be a UUID" } };
+
+  try {
+    const { profileId, error: authError } = await getAuthenticatedProfileId();
+    if (authError || !profileId) {
+      return { data: null, error: authError || { message: "Authenticated user is required" } };
+    }
+
+    const reportRead = await loadAiParentReportRow(reportId);
+    if (reportRead.error || !reportRead.data?.id) return { data: null, error: reportRead.error };
+
+    const versionRead = await supabase
+      .from("ai_parent_report_versions")
+      .select("id,report_id,version_number")
+      .eq("id", trimString(versionId))
+      .eq("report_id", trimString(reportId))
+      .maybeSingle();
+    if (versionRead.error || !versionRead.data?.id) {
+      return {
+        data: null,
+        error: sanitizeAiParentReportError(
+          versionRead.error,
+          "versionId must belong to the provided reportId and be visible under current scope"
+        ),
+      };
+    }
+
+    const currentStatus = trimString(reportRead.data.status);
+    if (!(currentStatus === "approved" || currentStatus === "released")) {
+      return { data: null, error: { message: "Only approved/released reports can be released" } };
+    }
+
+    const nowIso = new Date().toISOString();
+    const updateResult = await supabase
+      .from("ai_parent_reports")
+      .update({
+        status: "released",
+        current_version_id: trimString(versionId),
+        released_at: nowIso,
+        released_by_profile_id: profileId,
+        updated_at: nowIso,
+      })
+      .eq("id", trimString(reportId))
+      .select(
+        "id,student_id,class_id,branch_id,report_type,report_period_start,report_period_end,status,current_version_id,created_by_profile_id,assigned_teacher_profile_id,approved_by_profile_id,released_by_profile_id,released_at,created_at,updated_at"
+      )
+      .maybeSingle();
+    if (updateResult.error || !updateResult.data?.id) {
+      return {
+        data: null,
+        error: sanitizeAiParentReportError(updateResult.error, "Unable to release AI parent report right now."),
+      };
+    }
+
+    const eventResult = await insertAiParentReportReleaseEvent({
+      reportId: trimString(reportId),
+      versionId: trimString(versionId),
+      eventType: "released",
+      actorProfileId: profileId,
+      eventNote: "released",
+    });
+    return {
+      data: {
+        report: updateResult.data,
+        lifecycleEvent: eventResult.data || null,
+      },
+      error: null,
+      warning: eventResult.error
+        ? { check: true, stage: "release_event_insert", message: eventResult.error.message }
+        : null,
+    };
+  } catch (err) {
+    return { data: null, error: { message: err?.message || String(err) } };
+  }
+}
+
+export async function archiveAiParentReport({ reportId } = {}) {
+  if (!isSupabaseConfigured() || !supabase) {
+    return { data: null, error: { message: "Supabase is not configured" } };
+  }
+  if (!isUuidLike(reportId)) return { data: null, error: { message: "reportId must be a UUID" } };
+
+  try {
+    const { profileId, error: authError } = await getAuthenticatedProfileId();
+    if (authError || !profileId) {
+      return { data: null, error: authError || { message: "Authenticated user is required" } };
+    }
+    const reportRead = await loadAiParentReportRow(reportId);
+    if (reportRead.error || !reportRead.data?.id) return { data: null, error: reportRead.error };
+    const currentStatus = trimString(reportRead.data.status);
+    if (currentStatus === "archived") {
+      return { data: reportRead.data, error: null };
+    }
+
+    const nowIso = new Date().toISOString();
+    const updateResult = await supabase
+      .from("ai_parent_reports")
+      .update({
+        status: "archived",
+        updated_at: nowIso,
+      })
+      .eq("id", trimString(reportId))
+      .select(
+        "id,student_id,class_id,branch_id,report_type,report_period_start,report_period_end,status,current_version_id,created_by_profile_id,assigned_teacher_profile_id,approved_by_profile_id,released_by_profile_id,released_at,created_at,updated_at"
+      )
+      .maybeSingle();
+    if (updateResult.error || !updateResult.data?.id) {
+      return {
+        data: null,
+        error: sanitizeAiParentReportError(updateResult.error, "Unable to archive AI parent report right now."),
+      };
+    }
+
+    const eventResult = await insertAiParentReportReleaseEvent({
+      reportId: trimString(reportId),
+      versionId: isUuidLike(updateResult.data.current_version_id) ? updateResult.data.current_version_id : null,
+      eventType: "archived",
+      actorProfileId: profileId,
+      eventNote: "archived",
+    });
+    return {
+      data: {
+        report: updateResult.data,
+        lifecycleEvent: eventResult.data || null,
+      },
+      error: null,
+      warning: eventResult.error
+        ? { check: true, stage: "release_event_insert", message: eventResult.error.message }
+        : null,
+    };
   } catch (err) {
     return { data: null, error: { message: err?.message || String(err) } };
   }
