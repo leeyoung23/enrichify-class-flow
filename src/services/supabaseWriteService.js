@@ -45,6 +45,18 @@ const ANNOUNCEMENT_REPLY_TYPE_VALUES = new Set(["question", "update", "completio
 const ANNOUNCEMENT_TARGET_TYPE_VALUES = new Set(["branch", "role", "profile", "class"]);
 const COMPANY_NEWS_TARGET_TYPE_VALUES = new Set(["branch", "role", "profile"]);
 const COMPANY_NEWS_MAX_POPUP_EMOJI_LENGTH = 16;
+const PARENT_ANNOUNCEMENT_TYPE_VALUES = new Set([
+  "event",
+  "activity",
+  "centre_notice",
+  "holiday_closure",
+  "reminder",
+  "celebration",
+  "programme_update",
+  "parent_workshop",
+  "graduation_concert",
+]);
+const PARENT_ANNOUNCEMENT_TARGET_TYPE_VALUES = new Set(["branch", "class", "student"]);
 
 function isUuidLike(value) {
   if (typeof value !== "string") return false;
@@ -145,6 +157,44 @@ function normalizeCompanyNewsTargets(targets) {
   return { rows, error: null };
 }
 
+function normalizeParentAnnouncementTargets(targets) {
+  if (targets == null) return { rows: [], error: null };
+  if (!Array.isArray(targets)) {
+    return { rows: [], error: { message: "targets must be an array when provided" } };
+  }
+
+  const rows = [];
+  for (const target of targets) {
+    const targetType = trimString(target?.targetType || target?.target_type);
+    if (!PARENT_ANNOUNCEMENT_TARGET_TYPE_VALUES.has(targetType)) {
+      return { rows: [], error: { message: "Each targetType must be branch, class, or student" } };
+    }
+
+    const branchId = trimString(target?.branchId || target?.branch_id);
+    const classId = trimString(target?.classId || target?.class_id);
+    const studentId = trimString(target?.studentId || target?.student_id);
+
+    if (targetType === "branch" && !isUuidLike(branchId)) {
+      return { rows: [], error: { message: "targetType branch requires branchId UUID" } };
+    }
+    if (targetType === "class" && !isUuidLike(classId)) {
+      return { rows: [], error: { message: "targetType class requires classId UUID" } };
+    }
+    if (targetType === "student" && !isUuidLike(studentId)) {
+      return { rows: [], error: { message: "targetType student requires studentId UUID" } };
+    }
+
+    rows.push({
+      target_type: targetType,
+      branch_id: targetType === "branch" ? branchId : null,
+      class_id: targetType === "class" ? classId : null,
+      student_id: targetType === "student" ? studentId : null,
+    });
+  }
+
+  return { rows, error: null };
+}
+
 function sanitizeServiceError(error, fallbackMessage) {
   if (!error) return { message: fallbackMessage };
   const message = trimString(error?.message);
@@ -219,6 +269,93 @@ function validateCompanyNewsInput({
       normalizedTargets: normalizedTargets.rows,
     },
   };
+}
+
+function validateParentAnnouncementInput({
+  title,
+  subtitle,
+  body,
+  announcementType,
+  branchId,
+  classId,
+  eventStartAt,
+  eventEndAt,
+  location,
+  targets,
+} = {}) {
+  const normalizedTitle = trimString(title).slice(0, 240);
+  if (!normalizedTitle) {
+    return { ok: false, error: { message: "title is required" } };
+  }
+
+  const normalizedBody = normalizeNullableText(body, { maxLength: 12000 });
+  if (!normalizedBody) {
+    return { ok: false, error: { message: "body is required" } };
+  }
+
+  const normalizedType = trimString(announcementType);
+  if (!PARENT_ANNOUNCEMENT_TYPE_VALUES.has(normalizedType)) {
+    return {
+      ok: false,
+      error: {
+        message:
+          "announcementType must be event, activity, centre_notice, holiday_closure, reminder, celebration, programme_update, parent_workshop, or graduation_concert",
+      },
+    };
+  }
+
+  if (branchId != null && branchId !== "" && !isUuidLike(branchId)) {
+    return { ok: false, error: { message: "branchId must be a UUID when provided" } };
+  }
+  if (classId != null && classId !== "" && !isUuidLike(classId)) {
+    return { ok: false, error: { message: "classId must be a UUID when provided" } };
+  }
+
+  const normalizedEventStartAt = normalizeNullableTimestamp(eventStartAt);
+  if (eventStartAt != null && eventStartAt !== "" && !normalizedEventStartAt) {
+    return { ok: false, error: { message: "eventStartAt must be a valid ISO datetime when provided" } };
+  }
+  const normalizedEventEndAt = normalizeNullableTimestamp(eventEndAt);
+  if (eventEndAt != null && eventEndAt !== "" && !normalizedEventEndAt) {
+    return { ok: false, error: { message: "eventEndAt must be a valid ISO datetime when provided" } };
+  }
+  if (
+    normalizedEventStartAt &&
+    normalizedEventEndAt &&
+    Date.parse(normalizedEventEndAt) < Date.parse(normalizedEventStartAt)
+  ) {
+    return { ok: false, error: { message: "eventEndAt must be after or equal to eventStartAt" } };
+  }
+
+  const normalizedTargets = normalizeParentAnnouncementTargets(targets);
+  if (normalizedTargets.error) {
+    return { ok: false, error: normalizedTargets.error };
+  }
+
+  return {
+    ok: true,
+    data: {
+      normalizedTitle,
+      normalizedSubtitle: normalizeNullableText(subtitle, { maxLength: 240 }),
+      normalizedBody,
+      normalizedType,
+      normalizedBranchId: isUuidLike(branchId) ? trimString(branchId) : null,
+      normalizedClassId: isUuidLike(classId) ? trimString(classId) : null,
+      normalizedEventStartAt,
+      normalizedEventEndAt,
+      normalizedLocation: normalizeNullableText(location, { maxLength: 240 }),
+      normalizedTargets: normalizedTargets.rows,
+    },
+  };
+}
+
+function normalizeNullableTimestamp(value) {
+  if (value == null) return null;
+  const text = trimString(value);
+  if (!text) return null;
+  const parsed = Date.parse(text);
+  if (Number.isNaN(parsed)) return null;
+  return new Date(parsed).toISOString();
 }
 
 function buildClassCurriculumWritableFields({ learningFocus, termLabel, startDate, endDate } = {}) {
@@ -1624,6 +1761,301 @@ export async function publishCompanyNews({ announcementId } = {}) {
     return { data: published.data ?? null, error: null };
   } catch (_err) {
     return { data: null, error: { message: "Unable to publish Company News right now." } };
+  }
+}
+
+export async function createParentAnnouncement({
+  title,
+  subtitle,
+  body,
+  announcementType,
+  branchId,
+  classId,
+  eventStartAt,
+  eventEndAt,
+  location,
+  targets,
+} = {}) {
+  if (!isSupabaseConfigured() || !supabase) {
+    return { data: null, error: { message: "Supabase is not configured" } };
+  }
+
+  const validation = validateParentAnnouncementInput({
+    title,
+    subtitle,
+    body,
+    announcementType,
+    branchId,
+    classId,
+    eventStartAt,
+    eventEndAt,
+    location,
+    targets,
+  });
+  if (!validation.ok) return { data: null, error: validation.error };
+
+  try {
+    const { profileId, error: authError } = await getAuthenticatedProfileId();
+    if (authError || !profileId) {
+      return { data: null, error: authError || { message: "Authenticated user is required" } };
+    }
+
+    const nowIso = new Date().toISOString();
+    const {
+      normalizedTitle,
+      normalizedSubtitle,
+      normalizedBody,
+      normalizedType,
+      normalizedBranchId,
+      normalizedClassId,
+      normalizedEventStartAt,
+      normalizedEventEndAt,
+      normalizedLocation,
+      normalizedTargets,
+    } = validation.data;
+
+    const announcementInsert = await supabase
+      .from("parent_announcements")
+      .insert({
+        title: normalizedTitle,
+        subtitle: normalizedSubtitle,
+        body: normalizedBody,
+        announcement_type: normalizedType,
+        branch_id: normalizedBranchId,
+        class_id: normalizedClassId,
+        status: "draft",
+        publish_at: null,
+        published_at: null,
+        event_start_at: normalizedEventStartAt,
+        event_end_at: normalizedEventEndAt,
+        location: normalizedLocation,
+        created_by_profile_id: profileId,
+        updated_by_profile_id: profileId,
+        created_at: nowIso,
+        updated_at: nowIso,
+      })
+      .select(
+        "id,title,subtitle,body,announcement_type,status,branch_id,class_id,publish_at,published_at,event_start_at,event_end_at,location,created_by_profile_id,updated_by_profile_id,created_at,updated_at"
+      )
+      .maybeSingle();
+
+    if (announcementInsert.error || !announcementInsert.data?.id) {
+      return {
+        data: null,
+        error: sanitizeServiceError(announcementInsert.error, "Unable to create parent announcement draft right now."),
+      };
+    }
+
+    if (normalizedTargets.length === 0) {
+      return {
+        data: {
+          announcement: announcementInsert.data,
+          targets: [],
+          requires_targeting_before_publish: true,
+        },
+        error: null,
+      };
+    }
+
+    const targetRows = normalizedTargets.map((row) => ({
+      parent_announcement_id: announcementInsert.data.id,
+      ...row,
+      created_at: nowIso,
+    }));
+    const targetsInsert = await supabase
+      .from("parent_announcement_targets")
+      .insert(targetRows)
+      .select("id,parent_announcement_id,target_type,branch_id,class_id,student_id,created_at");
+
+    if (targetsInsert.error) {
+      const cleanupResult = await supabase
+        .from("parent_announcements")
+        .delete()
+        .eq("id", announcementInsert.data.id)
+        .select("id")
+        .maybeSingle();
+
+      return {
+        data: { announcement: announcementInsert.data, targets: [] },
+        error: {
+          message: "Parent announcement draft was created but targets failed to save.",
+          cleanup_warning: cleanupResult.error
+            ? "Automatic cleanup was blocked by RLS; manual cleanup may be required."
+            : null,
+        },
+      };
+    }
+
+    return {
+      data: {
+        announcement: announcementInsert.data,
+        targets: Array.isArray(targetsInsert.data) ? targetsInsert.data : [],
+        requires_targeting_before_publish: false,
+      },
+      error: null,
+    };
+  } catch (_err) {
+    return { data: null, error: { message: "Unable to create parent announcement draft right now." } };
+  }
+}
+
+export async function publishParentAnnouncement({ parentAnnouncementId } = {}) {
+  if (!isSupabaseConfigured() || !supabase) {
+    return { data: null, error: { message: "Supabase is not configured" } };
+  }
+  if (!isUuidLike(parentAnnouncementId)) {
+    return { data: null, error: { message: "parentAnnouncementId must be a UUID" } };
+  }
+
+  try {
+    const { profileId, error: authError } = await getAuthenticatedProfileId();
+    if (authError || !profileId) {
+      return { data: null, error: authError || { message: "Authenticated user is required" } };
+    }
+
+    const rowRead = await supabase
+      .from("parent_announcements")
+      .select("id,status")
+      .eq("id", trimString(parentAnnouncementId))
+      .maybeSingle();
+    if (rowRead.error || !rowRead.data?.id) {
+      return { data: null, error: { message: "Unable to publish parent announcement right now." } };
+    }
+    if (rowRead.data.status !== "draft" && rowRead.data.status !== "published") {
+      return { data: null, error: { message: "Parent announcement must be draft or published to continue." } };
+    }
+
+    const targetRead = await supabase
+      .from("parent_announcement_targets")
+      .select("id")
+      .eq("parent_announcement_id", trimString(parentAnnouncementId))
+      .limit(1);
+    if (targetRead.error) {
+      return { data: null, error: { message: "Unable to validate parent announcement targets right now." } };
+    }
+    if (!Array.isArray(targetRead.data) || targetRead.data.length === 0) {
+      return { data: null, error: { message: "At least one target is required before publish." } };
+    }
+
+    const nowIso = new Date().toISOString();
+    const publishResult = await supabase
+      .from("parent_announcements")
+      .update({
+        status: "published",
+        published_at: nowIso,
+        updated_at: nowIso,
+        updated_by_profile_id: profileId,
+      })
+      .eq("id", trimString(parentAnnouncementId))
+      .select(
+        "id,title,announcement_type,status,branch_id,class_id,published_at,event_start_at,event_end_at,location,updated_by_profile_id,updated_at"
+      )
+      .maybeSingle();
+
+    if (publishResult.error || !publishResult.data?.id) {
+      return {
+        data: null,
+        error: sanitizeServiceError(publishResult.error, "Unable to publish parent announcement right now."),
+      };
+    }
+    return { data: publishResult.data, error: null };
+  } catch (_err) {
+    return { data: null, error: { message: "Unable to publish parent announcement right now." } };
+  }
+}
+
+export async function archiveParentAnnouncement({ parentAnnouncementId } = {}) {
+  if (!isSupabaseConfigured() || !supabase) {
+    return { data: null, error: { message: "Supabase is not configured" } };
+  }
+  if (!isUuidLike(parentAnnouncementId)) {
+    return { data: null, error: { message: "parentAnnouncementId must be a UUID" } };
+  }
+
+  try {
+    const { profileId, error: authError } = await getAuthenticatedProfileId();
+    if (authError || !profileId) {
+      return { data: null, error: authError || { message: "Authenticated user is required" } };
+    }
+
+    const nowIso = new Date().toISOString();
+    const archiveResult = await supabase
+      .from("parent_announcements")
+      .update({
+        status: "archived",
+        updated_at: nowIso,
+        updated_by_profile_id: profileId,
+      })
+      .eq("id", trimString(parentAnnouncementId))
+      .select("id,status,updated_by_profile_id,updated_at")
+      .maybeSingle();
+
+    if (archiveResult.error || !archiveResult.data?.id) {
+      return {
+        data: null,
+        error: sanitizeServiceError(archiveResult.error, "Unable to archive parent announcement right now."),
+      };
+    }
+    return { data: archiveResult.data, error: null };
+  } catch (_err) {
+    return { data: null, error: { message: "Unable to archive parent announcement right now." } };
+  }
+}
+
+export async function markParentAnnouncementRead({ parentAnnouncementId } = {}) {
+  if (!isSupabaseConfigured() || !supabase) {
+    return { data: null, error: { message: "Supabase is not configured" } };
+  }
+  if (!isUuidLike(parentAnnouncementId)) {
+    return { data: null, error: { message: "parentAnnouncementId must be a UUID" } };
+  }
+
+  try {
+    const { profileId, error: authError } = await getAuthenticatedProfileId();
+    if (authError || !profileId) {
+      return { data: null, error: authError || { message: "Authenticated user is required" } };
+    }
+
+    // Touch visibility path first; relies fully on RLS for published/targeted access.
+    const accessRead = await supabase
+      .from("parent_announcements")
+      .select("id")
+      .eq("id", trimString(parentAnnouncementId))
+      .maybeSingle();
+    if (accessRead.error || !accessRead.data?.id) {
+      return { data: null, error: { message: "Unable to mark parent announcement read right now." } };
+    }
+
+    const nowIso = new Date().toISOString();
+    const upsertResult = await supabase
+      .from("parent_announcement_read_receipts")
+      .upsert(
+        {
+          parent_announcement_id: trimString(parentAnnouncementId),
+          guardian_profile_id: profileId,
+          read_at: nowIso,
+          last_seen_at: nowIso,
+          updated_at: nowIso,
+        },
+        {
+          onConflict: "parent_announcement_id,guardian_profile_id",
+        }
+      )
+      .select(
+        "id,parent_announcement_id,guardian_profile_id,read_at,last_seen_at,created_at,updated_at"
+      )
+      .maybeSingle();
+
+    if (upsertResult.error || !upsertResult.data?.id) {
+      return {
+        data: null,
+        error: sanitizeServiceError(upsertResult.error, "Unable to mark parent announcement read right now."),
+      };
+    }
+
+    return { data: upsertResult.data, error: null };
+  } catch (_err) {
+    return { data: null, error: { message: "Unable to mark parent announcement read right now." } };
   }
 }
 

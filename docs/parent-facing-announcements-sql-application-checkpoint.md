@@ -3,6 +3,23 @@
 Date: 2026-05-01  
 Scope: manual Supabase DEV SQL application checkpoint for `028` (docs-only update; no runtime/UI/service implementation)
 
+## Checkpoint update (parent-facing service + smoke)
+
+- Parent-facing announcement service methods are now added:
+  - read: `listParentAnnouncements(...)`, `getParentAnnouncementDetail(...)`
+  - write: `createParentAnnouncement(...)`, `publishParentAnnouncement(...)`, `archiveParentAnnouncement(...)`, `markParentAnnouncementRead(...)`
+- Focused smoke is now added:
+  - `scripts/supabase-parent-announcements-smoke-test.mjs`
+  - `npm run test:supabase:parent-announcements`
+- Boundaries preserved in this service checkpoint:
+  - no app UI wiring yet,
+  - no ParentView shell yet,
+  - no parent-facing media upload/service path in this milestone,
+  - no SQL/RLS changes,
+  - no notifications/emails.
+- Service/smoke checkpoint doc:
+  - `docs/parent-facing-announcements-service-smoke-checkpoint.md`
+
 ## 1) Application status
 
 - Manual apply target:

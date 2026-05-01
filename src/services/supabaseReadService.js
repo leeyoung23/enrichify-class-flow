@@ -38,6 +38,20 @@ const ANNOUNCEMENT_AUDIENCE_VALUES = new Set(["internal_staff", "parent_facing"]
 const ANNOUNCEMENT_TYPE_VALUES = new Set(["request", "company_news", "parent_event"]);
 const ANNOUNCEMENT_DONE_STATUS_VALUES = new Set(["pending", "done", "undone"]);
 const ANNOUNCEMENT_TASK_STATUS_VALUES = new Set(["unread", "pending", "undone", "overdue", "done"]);
+const PARENT_ANNOUNCEMENT_FIELDS =
+  "id,title,subtitle,body,announcement_type,status,branch_id,class_id,published_at,event_start_at,event_end_at,location,created_at,updated_at";
+const PARENT_ANNOUNCEMENT_STATUS_VALUES = new Set(["draft", "published", "archived"]);
+const PARENT_ANNOUNCEMENT_TYPE_VALUES = new Set([
+  "event",
+  "activity",
+  "centre_notice",
+  "holiday_closure",
+  "reminder",
+  "celebration",
+  "programme_update",
+  "parent_workshop",
+  "graduation_concert",
+]);
 
 function isUuidLike(value) {
   if (typeof value !== "string") return false;
@@ -69,6 +83,39 @@ function buildAnnouncementBodyPreview(subtitle, body) {
   if (subtitleText) return subtitleText.slice(0, 200);
   if (bodyText) return bodyText.slice(0, 200);
   return "";
+}
+
+function sanitizeReadError(error, fallbackMessage) {
+  const message = trimString(error?.message);
+  if (!message) return { message: fallbackMessage };
+  const lower = message.toLowerCase();
+  if (lower.includes("row-level security") || lower.includes("permission denied")) {
+    return { message: fallbackMessage };
+  }
+  return { message };
+}
+
+function mapParentAnnouncementRow(row, { includeBodyDetail = false } = {}) {
+  const bodyText = trimString(row?.body);
+  const subtitleText = trimString(row?.subtitle);
+  const preview = subtitleText || bodyText.slice(0, 200);
+  return {
+    id: trimString(row?.id),
+    title: trimString(row?.title) || "Untitled announcement",
+    subtitle: subtitleText || null,
+    bodyPreview: preview || "",
+    body: includeBodyDetail ? (bodyText || null) : undefined,
+    announcementType: trimString(row?.announcement_type) || "",
+    status: trimString(row?.status) || "",
+    branchId: isUuidLike(row?.branch_id) ? trimString(row?.branch_id) : null,
+    classId: isUuidLike(row?.class_id) ? trimString(row?.class_id) : null,
+    publishedAt: row?.published_at || null,
+    eventStartAt: row?.event_start_at || null,
+    eventEndAt: row?.event_end_at || null,
+    location: trimString(row?.location) || null,
+    createdAt: row?.created_at || null,
+    updatedAt: row?.updated_at || null,
+  };
 }
 
 async function getAuthenticatedProfileId() {
@@ -1484,6 +1531,102 @@ export async function listAnnouncements({
     return { data: Array.isArray(data) ? data : [], error: null };
   } catch (error) {
     return { data: [], error };
+  }
+}
+
+export async function listParentAnnouncements({
+  status,
+  announcementType,
+  branchId,
+  classId,
+  includeArchived = false,
+} = {}) {
+  if (!isSupabaseConfigured() || !supabase) {
+    return { data: [], error: { message: "Supabase is not configured" } };
+  }
+  if (status != null && status !== "" && !PARENT_ANNOUNCEMENT_STATUS_VALUES.has(trimString(status))) {
+    return { data: [], error: { message: "status must be draft, published, or archived" } };
+  }
+  if (
+    announcementType != null &&
+    announcementType !== "" &&
+    !PARENT_ANNOUNCEMENT_TYPE_VALUES.has(trimString(announcementType))
+  ) {
+    return {
+      data: [],
+      error: {
+        message:
+          "announcementType must be event, activity, centre_notice, holiday_closure, reminder, celebration, programme_update, parent_workshop, or graduation_concert",
+      },
+    };
+  }
+  if (branchId != null && branchId !== "" && !isUuidLike(branchId)) {
+    return { data: [], error: { message: "branchId must be a UUID when provided" } };
+  }
+  if (classId != null && classId !== "" && !isUuidLike(classId)) {
+    return { data: [], error: { message: "classId must be a UUID when provided" } };
+  }
+  if (includeArchived != null && typeof includeArchived !== "boolean") {
+    return { data: [], error: { message: "includeArchived must be a boolean when provided" } };
+  }
+
+  try {
+    let query = supabase
+      .from("parent_announcements")
+      .select(PARENT_ANNOUNCEMENT_FIELDS)
+      .order("published_at", { ascending: false, nullsFirst: false })
+      .order("created_at", { ascending: false });
+
+    if (status != null && status !== "") {
+      query = query.eq("status", trimString(status));
+    } else if (!includeArchived) {
+      query = query.neq("status", "archived");
+    }
+    if (announcementType != null && announcementType !== "") {
+      query = query.eq("announcement_type", trimString(announcementType));
+    }
+    if (isUuidLike(branchId)) query = query.eq("branch_id", trimString(branchId));
+    if (isUuidLike(classId)) query = query.eq("class_id", trimString(classId));
+
+    const { data, error } = await query;
+    if (error) {
+      return { data: [], error: sanitizeReadError(error, "Unable to load parent announcements right now.") };
+    }
+    const rows = Array.isArray(data) ? data : [];
+    return { data: rows.map((row) => mapParentAnnouncementRow(row)), error: null };
+  } catch (_error) {
+    return { data: [], error: { message: "Unable to load parent announcements right now." } };
+  }
+}
+
+export async function getParentAnnouncementDetail({ parentAnnouncementId } = {}) {
+  if (!isSupabaseConfigured() || !supabase) {
+    return { data: null, error: { message: "Supabase is not configured" } };
+  }
+  if (!isUuidLike(parentAnnouncementId)) {
+    return { data: null, error: { message: "parentAnnouncementId must be a UUID" } };
+  }
+
+  try {
+    const { data, error } = await supabase
+      .from("parent_announcements")
+      .select(PARENT_ANNOUNCEMENT_FIELDS)
+      .eq("id", trimString(parentAnnouncementId))
+      .maybeSingle();
+
+    if (error || !data?.id) {
+      return {
+        data: null,
+        error: sanitizeReadError(error, "Unable to load parent announcement detail right now."),
+      };
+    }
+
+    return {
+      data: mapParentAnnouncementRow(data, { includeBodyDetail: true }),
+      error: null,
+    };
+  } catch (_error) {
+    return { data: null, error: { message: "Unable to load parent announcement detail right now." } };
   }
 }
 

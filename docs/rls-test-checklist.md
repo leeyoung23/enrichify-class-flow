@@ -59,6 +59,35 @@ Reminder: **Frontend filtering is not security. RLS must enforce access at datab
   - teacher/student blocked in MVP where intended,
   - parent read-receipt own-row write path only.
 
+## Parent-facing announcements service + smoke note (2026-05-01)
+
+- New service methods added:
+  - read (`src/services/supabaseReadService.js`):
+    - `listParentAnnouncements(...)`
+    - `getParentAnnouncementDetail(...)`
+  - write (`src/services/supabaseWriteService.js`):
+    - `createParentAnnouncement(...)`
+    - `publishParentAnnouncement(...)`
+    - `archiveParentAnnouncement(...)`
+    - `markParentAnnouncementRead(...)`
+- New focused smoke script/command:
+  - `scripts/supabase-parent-announcements-smoke-test.mjs`
+  - `npm run test:supabase:parent-announcements`
+- Smoke intent:
+  - HQ create/publish PASS,
+  - supervisor own-branch create/publish PASS (or CHECK when fixture-constrained),
+  - supervisor mixed-target cross-branch write blocked when testable,
+  - parent linked published visibility and own read-receipt write path,
+  - unrelated parent blocked/empty (fixture dependent),
+  - parent create/manage blocked,
+  - teacher create/manage blocked,
+  - student blocked/empty.
+- Explicit non-goals preserved in this service checkpoint:
+  - no ParentView UI wiring,
+  - no parent-facing media upload/service path,
+  - no SQL/RLS changes,
+  - no notifications/emails.
+
 ## Announcements completion overview read-service checkpoint note (2026-05-01)
 
 - Full checkpoint (implementation summary, read behavior, metrics, per-person fields, semantics, smoke, tests, boundaries, future, recommended next milestone, copy-paste UI prompt):

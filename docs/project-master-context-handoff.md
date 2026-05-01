@@ -53,6 +53,22 @@ This master handoff preserves product direction, implemented milestones, archite
 - Canonical SQL application checkpoint doc:
   - `docs/parent-facing-announcements-sql-application-checkpoint.md`
 
+## Checkpoint update (parent-facing announcements service + smoke)
+
+- Parent-facing announcements service methods are now added:
+  - read: `listParentAnnouncements(...)`, `getParentAnnouncementDetail(...)`
+  - write: `createParentAnnouncement(...)`, `publishParentAnnouncement(...)`, `archiveParentAnnouncement(...)`, `markParentAnnouncementRead(...)`
+- Focused smoke command now exists:
+  - `npm run test:supabase:parent-announcements`
+- This service checkpoint keeps boundaries:
+  - no app UI wiring and no ParentView shell in this milestone,
+  - no parent-facing media upload/service in this milestone,
+  - no SQL/RLS changes,
+  - no notifications/emails.
+- Parent visibility remains RLS-bound with anon client + JWT only.
+- Service checkpoint doc:
+  - `docs/parent-facing-announcements-service-smoke-checkpoint.md`
+
 ## Checkpoint update (authenticated HQ Company News create UI wired)
 
 - `Announcements` now wires authenticated HQ-only Company News create/publish UI using existing services:

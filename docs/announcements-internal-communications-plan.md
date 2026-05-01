@@ -44,6 +44,25 @@ Scope: planning only for Announcements/Internal Communications and Document Hub 
 - Canonical application checkpoint:
   - `docs/parent-facing-announcements-sql-application-checkpoint.md`
 
+## Checkpoint update (parent-facing announcements service + smoke)
+
+- Parent-facing announcement service methods are now added (service-only milestone):
+  - read methods in `src/services/supabaseReadService.js`
+  - write methods in `src/services/supabaseWriteService.js`
+- Focused smoke script and package command are now added:
+  - `scripts/supabase-parent-announcements-smoke-test.mjs`
+  - `npm run test:supabase:parent-announcements`
+- Internal boundaries remain unchanged:
+  - no internal `announcement_attachments` exposure through parent-facing service methods,
+  - no internal `parent_facing_media` enabling,
+  - no SQL/RLS changes.
+- Product boundaries remain unchanged:
+  - no ParentView UI shell in this checkpoint,
+  - no parent-facing media upload/service in this checkpoint,
+  - no notifications/emails/live chat behavior.
+- Service checkpoint doc:
+  - `docs/parent-facing-announcements-service-smoke-checkpoint.md`
+
 ## Checkpoint update (authenticated HQ Company News create UI)
 
 - Authenticated HQ Company News create UI is now wired in `src/pages/Announcements.jsx`.

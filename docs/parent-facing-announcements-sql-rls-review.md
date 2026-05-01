@@ -46,6 +46,24 @@ Scope: planning/review only for safest SQL/RLS direction before implementation (
 - Canonical application checkpoint:
   - `docs/parent-facing-announcements-sql-application-checkpoint.md`
 
+## Checkpoint update (parent-facing announcements service + smoke)
+
+- Parent-facing service layer is now added on top of applied `028` foundation:
+  - read methods in `src/services/supabaseReadService.js`
+  - write methods in `src/services/supabaseWriteService.js`
+- Focused smoke script is now added:
+  - `scripts/supabase-parent-announcements-smoke-test.mjs`
+- Service smoke intent:
+  - prove HQ/supervisor create/publish boundaries,
+  - prove parent linked visibility + own read-receipt write path,
+  - prove parent/teacher/student management blocks,
+  - prove cross-branch supervisor guard where fixture allows.
+- No SQL/RLS changes in this checkpoint.
+- No UI wiring and no parent-facing media service/upload in this checkpoint.
+- No notification/email behavior.
+- Service checkpoint doc:
+  - `docs/parent-facing-announcements-service-smoke-checkpoint.md`
+
 ## 1) Current state
 
 - Staff-facing `Announcements` internal module exists and is a strong internal prototype.

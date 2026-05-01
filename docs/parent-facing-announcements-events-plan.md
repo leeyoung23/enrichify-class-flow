@@ -43,6 +43,22 @@ Scope: planning-only checkpoint for parent-facing announcements/events next laye
 - Application checkpoint doc:
   - `docs/parent-facing-announcements-sql-application-checkpoint.md`
 
+## Checkpoint update (parent-facing announcements service + smoke)
+
+- Service methods are now added for parent-facing announcements:
+  - read: `listParentAnnouncements(...)`, `getParentAnnouncementDetail(...)`
+  - write: `createParentAnnouncement(...)`, `publishParentAnnouncement(...)`, `archiveParentAnnouncement(...)`, `markParentAnnouncementRead(...)`
+- Focused smoke command now exists:
+  - `npm run test:supabase:parent-announcements`
+- Service scope remains backend-only:
+  - no ParentView UI shell wiring yet,
+  - no parent-facing media upload/service in this milestone,
+  - no SQL/RLS changes,
+  - no notification/email behavior,
+  - parent visibility remains RLS-bound.
+- Service checkpoint doc:
+  - `docs/parent-facing-announcements-service-smoke-checkpoint.md`
+
 ## 1) Current state
 
 - Staff `Announcements` is now a strong internal prototype:
