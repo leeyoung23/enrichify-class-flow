@@ -1143,3 +1143,25 @@ Handoff status: complete for continuity. Use this file as the primary context an
   - `supabase/sql/031_fix_ai_parent_reports_insert_rls.sql`
 - Next manual step if approved:
   - apply `031` in Supabase DEV SQL editor, then rerun `npm run test:supabase:ai-parent-reports`.
+
+### AI parent report 031 apply + smoke pass note
+
+- `supabase/sql/031_fix_ai_parent_reports_insert_rls.sql` is now manually applied in Supabase DEV.
+- SQL Editor result: `Success. No rows returned.`
+- Post-apply focused smoke now passes core path:
+  - HQ draft create,
+  - submit_for_review,
+  - approve,
+  - release selected version,
+  - `current_version_id` assignment,
+  - parent released linked-child/current-version visibility,
+  - parent draft block,
+  - student block.
+- Remaining checks are expected and safe:
+  - unsafe evidence snapshot blocked by guard,
+  - unrelated parent fixture credentials unavailable.
+- Regression safety remains green:
+  - `test:supabase:parent-announcements` PASS,
+  - `test:supabase:announcements:phase1` PASS (optional fixture CHECK only).
+- Checkpoint doc:
+  - `docs/ai-parent-report-031-application-service-pass-checkpoint.md`.

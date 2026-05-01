@@ -101,3 +101,20 @@ Coverage goals in smoke:
 - Manual/dev-first patch drafted (not applied automatically):
   - `supabase/sql/031_fix_ai_parent_reports_insert_rls.sql`
   - introduces row-predicate select helper and recreates `ai_parent_reports_select_030` using row columns instead of self-lookup pattern.
+
+## 9) Post-031 application + smoke pass update
+
+- `031` has now been manually applied in Supabase DEV.
+- SQL Editor result: **Success. No rows returned.**
+- Post-apply smoke (`npm run test:supabase:ai-parent-reports`) now confirms:
+  - HQ draft create PASS,
+  - review/approve/release path PASS,
+  - `current_version_id` assignment PASS,
+  - parent released linked-child visibility PASS,
+  - parent draft block PASS,
+  - student blocked PASS.
+- Remaining CHECKs are expected/safe:
+  - evidence-link insert CHECK for unsafe raw private file-path input (guard working),
+  - unrelated parent credential fixture CHECK.
+- Checkpoint reference:
+  - `docs/ai-parent-report-031-application-service-pass-checkpoint.md`.

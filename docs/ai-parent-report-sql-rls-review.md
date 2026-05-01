@@ -445,3 +445,17 @@ Do not run build/lint/typecheck/smoke suite unless runtime files change.
   - keep insert predicate unchanged,
   - keep parent released-only linked-child rule unchanged,
   - switch select policy to row-predicate helper for safer RETURNING visibility.
+
+## Checkpoint update (031 manually applied + service smoke pass)
+
+- `031` is manually applied in Supabase DEV (SQL Editor success; no rows returned).
+- Insert-returning mismatch is resolved:
+  - pre-031 raw insert pass + RETURNING fail,
+  - post-031 service draft create PASS.
+- Parent/staff boundaries remain preserved:
+  - draft remains staff-only,
+  - parent released linked-child path only,
+  - student blocked.
+- No widening was introduced to version/evidence/release-event policy posture.
+- Additional details are tracked in:
+  - `docs/ai-parent-report-031-application-service-pass-checkpoint.md`.

@@ -375,3 +375,20 @@ Do not run build/lint/typecheck/smoke suite unless runtime files change.
   - released linked-child visibility path is covered,
   - append-first version/release-event posture remains intact.
 - Checkpoint doc: `docs/ai-parent-report-service-smoke-checkpoint.md`.
+
+## Checkpoint update (031 application + service smoke pass)
+
+- `031` select-policy RETURNING fix is manually applied in Supabase DEV.
+- SQL Editor result: **Success. No rows returned.**
+- Post-031 AI parent report smoke confirms:
+  - HQ draft create PASS,
+  - review/approve/release/current-version path PASS,
+  - parent draft block PASS,
+  - parent released linked-child/current-version visibility PASS,
+  - student blocked PASS.
+- Safe CHECKs remain expected only for:
+  - unsafe evidence snapshot guard case,
+  - missing unrelated-parent credential fixture.
+- No real AI provider wiring and no PDF/export implementation in this checkpoint.
+- Detailed checkpoint:
+  - `docs/ai-parent-report-031-application-service-pass-checkpoint.md`.

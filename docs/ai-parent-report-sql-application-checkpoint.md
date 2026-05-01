@@ -170,7 +170,7 @@ Run only what matches changed files.
 - Checkpoint reference:
   - `docs/ai-parent-report-service-smoke-checkpoint.md`.
 
-## 12) Follow-up diagnostic patch (not applied yet)
+## 12) Follow-up diagnostic patch (031) and apply result
 
 - A focused diagnostic run found an insert-returning mismatch on `ai_parent_reports`:
   - helper predicate allows insert,
@@ -179,9 +179,12 @@ Run only what matches changed files.
 - A manual/dev-first patch draft was added:
   - `supabase/sql/031_fix_ai_parent_reports_insert_rls.sql`
 - Status:
-  - draft only,
-  - not applied automatically,
+  - manually applied in Supabase DEV,
+  - SQL Editor result: **Success. No rows returned.**
   - no production apply assumption.
-- Manual next DEV step (if approved):
-  - run `031_fix_ai_parent_reports_insert_rls.sql` in Supabase DEV SQL editor,
-  - rerun `npm run test:supabase:ai-parent-reports` to confirm draft create path moves from CHECK to PASS.
+- Post-apply outcome:
+  - `npm run test:supabase:ai-parent-reports` moved draft create path from CHECK to PASS.
+  - service flow now passes draft/create/review/approve/release/current-version checks under anon+JWT+RLS.
+  - expected safe CHECKs remain only for fixture/guard scenarios (unsafe evidence snapshot input and unrelated-parent credential fixture).
+- Reference checkpoint:
+  - `docs/ai-parent-report-031-application-service-pass-checkpoint.md`.

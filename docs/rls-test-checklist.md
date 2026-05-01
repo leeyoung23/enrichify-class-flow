@@ -1224,3 +1224,24 @@ Expected outcomes for this milestone:
 - If helper is `true` and raw insert passes but RETURNING fails, classify as select-policy/RETURNING visibility issue.
 - Patch draft reference (manual/dev-first only, not auto-applied):
   - `supabase/sql/031_fix_ai_parent_reports_insert_rls.sql`
+
+### AI parent reports post-031 apply expectations
+
+- `031` applied in Supabase DEV should move:
+  - `service_create` from CHECK to PASS for HQ draft creation.
+- Expected PASS path after apply:
+  - HQ draft create,
+  - `real_ai` source blocked,
+  - first version number = 1,
+  - submit/review/approve/release lifecycle,
+  - `current_version_id` set to selected release version,
+  - parent draft blocked,
+  - parent released linked-child visibility,
+  - parent current released version visibility only,
+  - student blocked,
+  - no provider/PDF path exercised,
+  - anon+JWT+RLS-only posture.
+- Expected safe CHECKs may remain:
+  - evidence-link unsafe raw path guard case,
+  - unrelated-parent credential fixture missing,
+  - optional announcements phase1 cross-branch fixture CHECK.
