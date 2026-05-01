@@ -589,6 +589,15 @@ Current status note:
 - Recommended next milestone after runtime popup:
   - **A. Real HQ Company News create path planning** first,
   - rationale: runtime popup display is ready, but safe production Company News creation/publish path is still constrained by request-first create-path behavior.
+- Company News create-path SQL draft is now added:
+  - `supabase/sql/027_company_news_create_foundation.sql`,
+  - manual/dev-first and review-first only (not auto-applied),
+  - preserves existing request insert behavior from `022`,
+  - adds HQ-only internal staff `company_news` draft insert allowance for MVP,
+  - keeps branch supervisor `company_news` create blocked for MVP,
+  - keeps teacher/parent/student create blocked,
+  - does not widen parent-facing announcements/events scope,
+  - does not add notifications/emails or service/UI create wiring in this slice.
 
 ## 12) Next immediate milestone prompt (copy-paste)
 

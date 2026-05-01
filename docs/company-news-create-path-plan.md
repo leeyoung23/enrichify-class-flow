@@ -3,6 +3,24 @@
 Date: 2026-05-01  
 Scope: planning/review only for safe real HQ Company News create/publish path (no runtime/UI/service/SQL changes in this milestone)
 
+## Checkpoint update (027 SQL draft for HQ Company News create path)
+
+- Added manual/dev-first SQL draft: `supabase/sql/027_company_news_create_foundation.sql`.
+- `027` is review-first only and is not auto-applied.
+- `027` keeps existing request-first insert behavior intact.
+- `027` adds a narrow insert allowance for HQ-only `company_news` rows when:
+  - `audience_type = 'internal_staff'`
+  - `announcement_type = 'company_news'`
+  - `status = 'draft'`
+  - `created_by_profile_id = auth.uid()`
+  - `requires_response = false`
+  - `requires_upload = false`
+- Branch supervisor `company_news` create remains blocked for MVP.
+- Teacher/parent/student create remains blocked.
+- No select/update/delete policy broadening in this draft.
+- Service/UI implementation remains future (`createCompanyNews(...)` and authenticated create form are not added in this milestone).
+- No notifications/emails, no parent-facing announcements/events, and no `parent_facing_media` enabling in this patch.
+
 ## 1) Current state
 
 - Company News UI shell exists in `src/pages/Announcements.jsx`.

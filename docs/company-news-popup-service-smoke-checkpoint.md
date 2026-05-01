@@ -3,6 +3,17 @@
 Date: 2026-05-01  
 Scope: service + smoke only for internal Company News popup eligibility/seen/dismiss path
 
+## Checkpoint update (027 create-path SQL draft prepared)
+
+- New manual/dev-first SQL draft added: `supabase/sql/027_company_news_create_foundation.sql` (review-first, not auto-applied).
+- Draft intent: permit HQ-only internal staff `company_news` draft inserts while preserving request insert behavior.
+- Existing popup service methods and runtime popup wiring are unchanged in this checkpoint.
+- Existing expected smoke CHECK context remains relevant until manual DEV apply + create-path smoke follow-up:
+  - direct HQ `company_news` create is currently blocked in environments still on request-only insert policy.
+- Branch supervisor `company_news` create remains blocked for MVP in the `027` draft.
+- Teacher/parent/student create remains blocked.
+- No notifications/emails and no parent-facing announcements/events are introduced by this SQL draft.
+
 ## Checkpoint update (runtime shell now consuming popup services)
 
 - Runtime app-shell warm popup UI now consumes these popup methods in `AppLayout`:

@@ -149,6 +149,32 @@ Reminder: **Frontend filtering is not security. RLS must enforce access at datab
   - no parent-facing announcements/events,
   - `parent_facing_media` remains out of scope.
 
+## Company News create-path SQL draft note (027)
+
+- Draft patch reference: `supabase/sql/027_company_news_create_foundation.sql` (manual/dev-first, review-first only).
+- `027` is not auto-applied and assumes fake/dev data only.
+- `027` policy strategy:
+  - replaces insert helper usage for `announcements_insert_020` with `can_insert_announcement_row_027(...)`,
+  - preserves existing request insert branch from `022` unchanged,
+  - adds HQ-only `company_news` draft insert branch for `internal_staff`.
+- `027` create allowance requires:
+  - `created_by_profile_id = auth.uid()`,
+  - `announcement_type = 'company_news'`,
+  - `audience_type = 'internal_staff'`,
+  - `status = 'draft'`,
+  - `requires_response = false`,
+  - `requires_upload = false`.
+- `027` still blocks:
+  - branch supervisor `company_news` create (MVP),
+  - teacher create,
+  - parent create,
+  - student create,
+  - parent-facing insert scope expansion.
+- `027` does not modify select/update/delete policies in this draft.
+- Manual next step after review:
+  - apply `027` in Supabase DEV SQL editor,
+  - rerun focused Company News create/publish smoke checks with fake/dev fixtures.
+
 ### Announcements attachments role checks (current proven state)
 
 - HQ can upload/list/open signed URL for internal attachments.

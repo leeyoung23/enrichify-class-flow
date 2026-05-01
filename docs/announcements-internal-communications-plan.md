@@ -8,6 +8,20 @@ Scope: planning only for Announcements/Internal Communications and Document Hub 
   - `docs/announcements-completion-overview-read-service-checkpoint.md`
 - This documentation-only alignment does not change runtime; validation is `git diff --name-only` unless code changes.
 
+## Checkpoint update (027 Company News create-path SQL draft)
+
+- New SQL draft added: `supabase/sql/027_company_news_create_foundation.sql`.
+- `027` is manual/dev-first and review-first only (not auto-applied).
+- Draft scope is intentionally narrow:
+  - preserves existing request/reminder insert behavior,
+  - adds HQ-only insert allowance for `announcement_type='company_news'`, `audience_type='internal_staff'`, `status='draft'`,
+  - requires `created_by_profile_id = auth.uid()`,
+  - keeps `requires_response` and `requires_upload` false for this MVP create path.
+- Branch supervisor `company_news` create remains blocked for MVP.
+- Teacher/parent/student create remains blocked.
+- Parent-facing announcements/events remain future; `parent_facing_media` remains out of scope.
+- Service/UI create wiring remains future (this checkpoint is SQL draft + documentation only).
+
 ## Checkpoint update (Company News UI shell with demo parity)
 
 - Company News tab in `Announcements` now renders a shell experience (not placeholder-only):
