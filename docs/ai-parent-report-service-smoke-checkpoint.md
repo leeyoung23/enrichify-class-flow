@@ -7,6 +7,7 @@
 - Authenticated non-demo mode uses current read/write service methods with JWT + RLS.
 - Parent-side report display remains deferred in this milestone.
 - No SQL/RLS/provider/PDF/export changes were added as part of UI shell.
+- Recommended next milestone is now parent-side released-report display planning before mock AI draft-assist UX.
 
 ## 1) Scope and status
 

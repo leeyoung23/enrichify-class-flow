@@ -23,7 +23,7 @@ Scope: planning-only blueprint for AI-assisted parent progress reports before pr
   - no auto-release,
   - no notification/email side effects.
 - Recommended next milestone:
-  - optional mock draft-assist UX polish inside staff UI shell before parent-side report display.
+  - ParentView released-report display planning (parent-safe released/current-version-only boundary first).
 
 ## Checkpoint update (030 manually applied in Supabase DEV)
 

@@ -14,6 +14,8 @@
   - no ParentView staff controls,
   - no real AI/provider controls,
   - no PDF/export controls.
+- Follow-up mobile QA target (after planning/implementation):
+  - ParentView released-report display card/list readability for released-current-version-only scope.
 
 ## Checkpoint update (final communication-module QA baseline)
 

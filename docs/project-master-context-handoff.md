@@ -24,6 +24,10 @@
   - ParentView remains parent-facing only.
 - Checkpoint doc:
   - `docs/ai-parent-report-ui-shell-checkpoint.md`
+- Final checkpoint doc:
+  - `docs/ai-parent-report-ui-shell-final-checkpoint.md`
+- Next recommended milestone:
+  - ParentView released-report display planning first (no implementation in this docs checkpoint).
 
 ## Checkpoint update (AI parent reports 030 manual DEV apply completed)
 

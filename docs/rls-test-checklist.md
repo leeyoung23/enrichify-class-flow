@@ -14,6 +14,8 @@
   - no SQL/RLS policy changes in this milestone,
   - no widening of parent/student report visibility,
   - no service-role frontend usage.
+- Follow-up planning target:
+  - Parent-side released/current-version-only report visibility checks (no evidence-link/raw-draft exposure) before UI implementation.
 
 ## Checkpoint update (AI parent reports 030 manual DEV apply confirmed)
 
