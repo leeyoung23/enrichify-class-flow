@@ -21,8 +21,11 @@ Scope: manual Supabase DEV SQL application checkpoint for `028` (docs-only updat
   - `docs/parent-facing-announcements-service-smoke-checkpoint.md`
 - CHECK investigation note:
   - smoke now prints role/is_active/branch and fixture discovery diagnostics,
-  - current create-path CHECKs show direct insert `42501` (`row violates row-level security policy`),
+  - current create-path CHECKs show RLS insert denial diagnostics (`42501`) while service payload shape remains valid,
   - remaining unrelated-parent CHECK is credential/auth-fixture dependent.
+- Follow-up patch draft note:
+  - `supabase/sql/029_fix_parent_announcements_insert_rls.sql` is now drafted for manual DEV review,
+  - patch is not auto-applied in this checkpoint.
 
 ## 1) Application status
 

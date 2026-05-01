@@ -42,10 +42,15 @@ This plan captures safe baseline options without weakening RLS or using real dat
 
 ## SQL draft posture
 
-- No `029` fixture SQL draft is added in this checkpoint.
-- Reason:
-  - main blocker is current RLS insert denial (`42501`) on create path, not branch/class/student fixture absence.
-  - unrelated-parent CHECK requires fake auth credential readiness, which table-only SQL cannot fully solve.
+- A focused insert-RLS patch draft now exists:
+  - `supabase/sql/029_fix_parent_announcements_insert_rls.sql`
+- `029` is manual/dev-first and review-first only (not auto-applied).
+- `029` purpose:
+  - tighten/clarify draft insert predicate for HQ/supervisor only,
+  - preserve teacher/parent/student create block,
+  - provide RETURNING-safe select row predicate for manager visibility without widening parent draft access.
+- Remaining fixture note:
+  - unrelated-parent CHECK still depends on optional fake unrelated auth user + credentials readiness.
 
 ## Boundaries
 

@@ -91,6 +91,9 @@ Reminder: **Frontend filtering is not security. RLS must enforce access at datab
   - smoke now logs non-secret actor/fixture context and direct insert diagnostics,
   - current HQ/supervisor create CHECKs show `42501` insert RLS denial on `parent_announcements`,
   - unrelated parent CHECK remains auth-fixture credential dependent.
+- Follow-up draft patch note:
+  - `supabase/sql/029_fix_parent_announcements_insert_rls.sql` is prepared for manual DEV review,
+  - draft keeps teacher/parent/student create blocked and preserves supervisor mixed-target safety hardening from `028`.
 
 ## Announcements completion overview read-service checkpoint note (2026-05-01)
 

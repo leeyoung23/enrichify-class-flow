@@ -72,6 +72,10 @@ This master handoff preserves product direction, implemented milestones, archite
   - includes actor role/is_active/branch and fixture found/missing states without secret logging.
 - Current blocker note:
   - parent-announcements create-path CHECKs are currently RLS insert denials (`42501`) in DEV for HQ/supervisor create probes.
+- Service payload note:
+  - create payload shape is aligned to parent-announcements draft expectations (`draft` status, self creator, allowed announcement type).
+- Follow-up draft patch note:
+  - `supabase/sql/029_fix_parent_announcements_insert_rls.sql` added as manual/dev-first review patch (not auto-applied).
 - Fixture status note:
   - branch/class/student discovery now has env override + deterministic fake fallback,
   - unrelated-parent proof remains dependent on optional fake unrelated-parent auth credentials.

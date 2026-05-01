@@ -65,8 +65,12 @@ Scope: planning/review only for safest SQL/RLS direction before implementation (
   - `docs/parent-facing-announcements-service-smoke-checkpoint.md`
 - CHECK investigation result:
   - direct insert diagnostics now confirm current create-path blocker is RLS insert denial (`42501`) on `parent_announcements`,
+  - service create payload matches draft expectations (`status='draft'`, creator self-id, valid parent announcement type),
   - fixture discovery now resolves branch/class/student IDs via env override + deterministic fake fallback where possible,
   - unrelated parent negative check remains auth-fixture dependent when unrelated fake credentials are unavailable.
+- Insert RLS patch draft now added:
+  - `supabase/sql/029_fix_parent_announcements_insert_rls.sql`
+  - manual/dev-first only; no auto-apply.
 
 ## 1) Current state
 

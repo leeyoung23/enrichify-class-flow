@@ -104,15 +104,16 @@ Covered:
 
 Latest diagnostic run confirms:
 
-- HQ create failure is **not** a missing branch fixture issue.
-- Branch supervisor create failure is **not** a missing own-branch fixture issue.
-- Direct insert diagnostics for both roles return:
-  - `code=42501`
-  - `new row violates row-level security policy for table "parent_announcements"`
+- HQ create failure is **not** primarily a branch/class/student fixture issue.
+- Branch supervisor create failure is **not** primarily a missing own-branch fixture issue.
+- Direct insert diagnostics now compare both forms:
+  - insert without RETURNING
+  - insert with RETURNING (`.insert(...).select(...)`)
+- Current failing shape is observed as RLS insert denial on `parent_announcements` (`42501`), and service payload fields are valid for draft create path.
 
 Interpretation:
 
-- Current remaining create/publish CHECKs are primarily due active DEV RLS/policy enforcement state, not missing branch/class/student IDs in smoke script.
+- Current remaining create/publish CHECKs are primarily due active DEV insert/select policy posture, not missing branch/class/student IDs in smoke script.
 - Fixture discovery is now improved and reports non-secret context:
   - actor role / is_active / branch-id shape,
   - fixture ID found/missing status,
@@ -123,9 +124,10 @@ Interpretation:
 ## 6.2) Safe fixture-path decision
 
 - Discovery-first path is implemented in script (env override + deterministic fake fallback IDs from `005`).
-- A new SQL fixture patch (`029`) is **not drafted in this checkpoint** because:
-  - the dominant blocker is RLS insert denial (`42501`) rather than branch/class/student fixture absence,
-  - unrelated parent credential failure requires fake auth-user readiness, not table-only fixture rows.
+- A focused RLS patch draft is now prepared:
+  - `supabase/sql/029_fix_parent_announcements_insert_rls.sql`
+- `029` is manual/dev-first only and is **not auto-applied**.
+- `029` introduces row-predicate insert/select helpers to keep strict role boundaries while addressing create-path insert/returning behavior.
 
 ## 7) Boundaries preserved
 

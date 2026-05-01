@@ -62,6 +62,8 @@ Scope: planning-only checkpoint for parent-facing announcements/events next laye
   - fixture discovery and diagnostics were strengthened in smoke script,
   - current HQ/supervisor create CHECKs trace to active DEV insert RLS denial (`42501`) rather than missing branch/class/student IDs,
   - unrelated parent check remains dependent on fake unrelated-parent auth fixture credentials.
+- Follow-up insert-RLS patch draft:
+  - `supabase/sql/029_fix_parent_announcements_insert_rls.sql` (manual/dev-first, review-first, not auto-applied).
 
 ## 1) Current state
 

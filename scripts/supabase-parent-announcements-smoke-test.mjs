@@ -69,6 +69,39 @@ async function diagnoseDirectCreateInsert({
   label,
 }) {
   const nowIso = new Date().toISOString();
+  const noReturningTitle = `DiagNoReturn ${label} ${nowIso}`;
+  const noReturningProbe = await supabase
+    .from("parent_announcements")
+    .insert({
+      title: noReturningTitle,
+      subtitle: "diag",
+      body: "diag",
+      announcement_type: "reminder",
+      branch_id: isUuidLike(branchId) ? branchId : null,
+      class_id: null,
+      status: "draft",
+      publish_at: null,
+      published_at: null,
+      event_start_at: null,
+      event_end_at: null,
+      location: null,
+      created_by_profile_id: profileId,
+      updated_by_profile_id: profileId,
+    });
+
+  if (noReturningProbe.error) {
+    printResult("CHECK", `${label} direct insert(no RETURNING) diagnostic: ${formatDbError(noReturningProbe.error)}`);
+  } else {
+    printResult("CHECK", `${label} direct insert(no RETURNING) diagnostic: insert succeeded`);
+    const noReturnCleanup = await supabase
+      .from("parent_announcements")
+      .delete()
+      .eq("title", noReturningTitle);
+    if (noReturnCleanup.error) {
+      printResult("CHECK", `${label} direct insert(no RETURNING) cleanup: ${formatDbError(noReturnCleanup.error)}`);
+    }
+  }
+
   const probe = await supabase
     .from("parent_announcements")
     .insert({
@@ -91,11 +124,11 @@ async function diagnoseDirectCreateInsert({
     .maybeSingle();
 
   if (probe.error || !probe.data?.id) {
-    printResult("CHECK", `${label} direct insert diagnostic: ${formatDbError(probe.error)}`);
+    printResult("CHECK", `${label} direct insert(with RETURNING) diagnostic: ${formatDbError(probe.error)}`);
     return;
   }
 
-  printResult("CHECK", `${label} direct insert diagnostic: insert succeeded`);
+  printResult("CHECK", `${label} direct insert(with RETURNING) diagnostic: insert succeeded`);
   const cleanup = await supabase
     .from("parent_announcements")
     .delete()
