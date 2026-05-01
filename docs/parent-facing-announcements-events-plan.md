@@ -20,6 +20,9 @@ Scope: planning-only checkpoint for parent-facing announcements/events next laye
   - no internal `announcement_attachments` reuse,
   - no enabling of internal `parent_facing_media`,
   - no notifications/emails automation.
+- Pre-apply security review update:
+  - branch supervisor manage scope was hardened so supervisors can manage only announcements whose row and targets stay fully inside a single managed branch,
+  - this closes cross-branch manage risk from mixed-target announcements before manual DEV apply.
 
 ## 1) Current state
 

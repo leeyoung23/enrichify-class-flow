@@ -28,6 +28,9 @@ This master handoff preserves product direction, implemented milestones, archite
   - teacher blocked from parent-facing management in MVP,
   - parent published targeted linked-child read path,
   - student blocked in MVP.
+- `028` pre-apply security hardening now added:
+  - helper `is_parent_announcement_supervisor_scope_safe_028(...)` enforces supervisor manage only when announcement row and all targets stay in one managed branch,
+  - `can_manage_parent_announcement(...)` now uses this guard to block mixed-target cross-branch manage escalation.
 
 ## Checkpoint update (authenticated HQ Company News create UI wired)
 

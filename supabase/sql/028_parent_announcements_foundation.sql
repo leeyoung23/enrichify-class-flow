@@ -304,6 +304,51 @@ as $$
   )
 $$;
 
+create or replace function public.is_parent_announcement_supervisor_scope_safe_028(parent_announcement_uuid uuid)
+returns boolean
+language sql
+stable
+security definer
+set search_path = public
+as $$
+  select coalesce(
+    exists (
+      select 1
+      from public.parent_announcements pa
+      where pa.id = parent_announcement_uuid
+        and pa.branch_id is not null
+        and public.is_branch_supervisor_for_branch(pa.branch_id)
+        and not exists (
+          select 1
+          from public.parent_announcement_targets pat
+          where pat.parent_announcement_id = pa.id
+            and (
+              (pat.target_type = 'branch' and pat.branch_id is distinct from pa.branch_id)
+              or (
+                pat.target_type = 'class'
+                and exists (
+                  select 1
+                  from public.classes c
+                  where c.id = pat.class_id
+                    and c.branch_id is distinct from pa.branch_id
+                )
+              )
+              or (
+                pat.target_type = 'student'
+                and exists (
+                  select 1
+                  from public.students s
+                  where s.id = pat.student_id
+                    and s.branch_id is distinct from pa.branch_id
+                )
+              )
+            )
+        )
+    ),
+    false
+  )
+$$;
+
 create or replace function public.can_manage_parent_announcement(parent_announcement_uuid uuid)
 returns boolean
 language sql
@@ -320,35 +365,7 @@ as $$
           public.is_hq_admin()
           or (
             public.current_user_role() = 'branch_supervisor'
-            and (
-              (pa.branch_id is not null and public.is_branch_supervisor_for_branch(pa.branch_id))
-              or exists (
-                select 1
-                from public.parent_announcement_targets pat
-                where pat.parent_announcement_id = pa.id
-                  and (
-                    (pat.target_type = 'branch' and public.is_branch_supervisor_for_branch(pat.branch_id))
-                    or (
-                      pat.target_type = 'class'
-                      and exists (
-                        select 1
-                        from public.classes c
-                        where c.id = pat.class_id
-                          and public.is_branch_supervisor_for_branch(c.branch_id)
-                      )
-                    )
-                    or (
-                      pat.target_type = 'student'
-                      and exists (
-                        select 1
-                        from public.students s
-                        where s.id = pat.student_id
-                          and public.is_branch_supervisor_for_branch(s.branch_id)
-                      )
-                    )
-                  )
-              )
-            )
+            and public.is_parent_announcement_supervisor_scope_safe_028(pa.id)
           )
         )
     ),
@@ -491,7 +508,7 @@ as $$
 $$;
 
 comment on function public.can_manage_parent_announcement(uuid) is
-  '028 draft helper. HQ manages all parent announcements; branch supervisor manages only own-branch scoped rows/targets.';
+  '028 draft helper. HQ manages all parent announcements; branch supervisor manages only announcements whose row+targets are fully within one managed branch.';
 comment on function public.can_access_parent_announcement(uuid) is
   '028 draft helper. Parent access is published-only and target-scoped to linked child branch/class/student; student role blocked in MVP.';
 comment on function public.can_access_parent_announcement_media(uuid) is

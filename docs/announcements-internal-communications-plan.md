@@ -21,6 +21,9 @@ Scope: planning only for Announcements/Internal Communications and Document Hub 
   - internal `announcement_attachments.parent_facing_media` remains disabled/reserved,
   - no parent-facing UI/service implementation in this checkpoint,
   - no notification/email/live chat behavior.
+- Security review hardening update before manual apply:
+  - branch supervisor parent-announcement manage scope in `028` is now constrained to fully own-branch announcement row+target scope,
+  - mixed-target cross-branch manage escalation path is closed in draft SQL.
 
 ## Checkpoint update (authenticated HQ Company News create UI)
 

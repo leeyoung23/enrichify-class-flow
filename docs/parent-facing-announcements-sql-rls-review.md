@@ -24,6 +24,10 @@ Scope: planning/review only for safest SQL/RLS direction before implementation (
   - teacher blocked from parent-facing management in MVP,
   - parent read scoped to published targeted rows for linked child context,
   - student blocked in MVP.
+- Focused pre-apply fix now included in `028`:
+  - added `is_parent_announcement_supervisor_scope_safe_028(...)`,
+  - tightened `can_manage_parent_announcement(...)` so branch supervisors cannot manage announcements that include any out-of-branch targets,
+  - protects against cross-branch edit/delete/media/target side effects from mixed-target announcements.
 
 ## 1) Current state
 

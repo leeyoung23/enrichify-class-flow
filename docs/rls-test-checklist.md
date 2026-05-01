@@ -27,6 +27,9 @@ Reminder: **Frontend filtering is not security. RLS must enforce access at datab
   - teacher: blocked from parent-facing management in MVP,
   - parent: published + targeted + linked-child scoped read; own read-receipt write only,
   - student: blocked in MVP.
+- `028` review hardening intent (must validate after manual DEV apply):
+  - branch supervisor manage is allowed only when `parent_announcements.branch_id` is in supervisor scope **and** all target rows resolve to that same branch,
+  - mixed-target cross-branch announcements must not be manageable by branch supervisors.
 - No parent-facing UI/services or notification/email automation are added in this checkpoint.
 
 ## Announcements completion overview read-service checkpoint note (2026-05-01)
