@@ -72,6 +72,25 @@ Reminder: **Frontend filtering is not security. RLS must enforce access at datab
   - `npm run test:supabase:announcements:attachments` PASS (expected diagnostic CHECK lines)
   - npm warning about unknown env config `devdir` is non-blocking in this context.
 
+## Company News popup status SQL draft note (2026-05-01)
+
+- Draft patch reference: `supabase/sql/026_company_news_popup_status_foundation.sql` (manual/dev-first review-only).
+- `026` is not auto-applied and assumes fake/dev data only.
+- `026` adds additive per-user popup status columns on `announcement_statuses`:
+  - `popup_seen_at`
+  - `popup_dismissed_at`
+  - `popup_last_shown_at`
+- `026` adds popup status indexes:
+  - `announcement_statuses_popup_seen_at_idx`
+  - `announcement_statuses_popup_dismissed_at_idx`
+  - `announcement_statuses_popup_last_shown_at_idx`
+  - `announcement_statuses_profile_popup_idx`
+- `026` does not modify or weaken existing `announcement_statuses` RLS policies.
+- `026` does not open parent/student access and does not widen cross-branch access.
+- Existing `read_at`, `last_seen_at`, and `done_status` behavior remains unchanged.
+- Runtime popup service/UI behavior remains future; notifications/emails remain future.
+- Parent-facing announcements/events remain future and `parent_facing_media` remains out of scope.
+
 ### Announcements attachments role checks (current proven state)
 
 - HQ can upload/list/open signed URL for internal attachments.

@@ -29,6 +29,19 @@ Scope: planning only for Announcements/Internal Communications and Document Hub 
   - **Runtime warm pop-up planning/data model review** (docs-only),
   - define dismissal/frequency/persistence rules before runtime trigger work.
 
+## Checkpoint update (026 Company News popup status SQL draft)
+
+- New draft SQL exists at `supabase/sql/026_company_news_popup_status_foundation.sql`.
+- `026` is manual/dev-first and review-first only (not auto-applied).
+- `026` scope is additive and limited to per-user popup state fields on `announcement_statuses`:
+  - `popup_seen_at`
+  - `popup_dismissed_at`
+  - `popup_last_shown_at`
+- `026` keeps existing `announcement_statuses` read/done semantics unchanged.
+- `026` adds popup-focused indexes only and does not weaken existing RLS policies.
+- Parent-facing announcements/events remain a later phase, and `parent_facing_media` remains out of scope.
+- Runtime popup service/UI behavior remains future; notifications/emails remain future.
+
 ## Checkpoint update (completion overview read service + smoke)
 
 - Manager completion overview read service is now added:

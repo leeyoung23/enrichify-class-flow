@@ -3,6 +3,20 @@
 Date: 2026-05-01  
 Scope: planning/review only for safest runtime warm pop-up strategy and data model requirements
 
+## Checkpoint update (026 popup status SQL draft only)
+
+- New manual/dev-first SQL draft is added at `supabase/sql/026_company_news_popup_status_foundation.sql`.
+- `026` is draft-only and is **not applied automatically**.
+- `026` drafts additive per-user popup status fields on `announcement_statuses`:
+  - `popup_seen_at`
+  - `popup_dismissed_at`
+  - `popup_last_shown_at`
+- `026` adds popup-status indexes only; no destructive operations and no data deletes.
+- Existing `read_at`, `last_seen_at`, and `done_status` behavior remains unchanged.
+- RLS posture remains conservative: no policy weakening, no parent/student access opening, no cross-branch widening.
+- Optional announcement-level popup config fields (`popup_style`, `popup_duration_seconds`, `display_until`) are intentionally deferred in `026`.
+- Runtime popup service/UI behavior remains future, along with notification/email automation and parent-facing announcements/events.
+
 ## Documentation-only note
 
 - This is a docs/review checkpoint only.

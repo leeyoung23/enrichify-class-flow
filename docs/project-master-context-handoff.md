@@ -528,6 +528,18 @@ Current status note:
   - no Company News pop-up behavior,
   - no parent-facing announcements/events,
   - no live chat.
+- Company News popup status SQL/RLS foundation draft is now added at `supabase/sql/026_company_news_popup_status_foundation.sql`:
+  - manual/dev-first SQL draft only (not auto-applied),
+  - additive-only `announcement_statuses` popup state fields:
+    - `popup_seen_at`
+    - `popup_dismissed_at`
+    - `popup_last_shown_at`,
+  - popup-focused indexes added for future runtime lookup/update paths,
+  - existing `read_at`/`last_seen_at`/`done_status` behavior is unchanged,
+  - no RLS policy weakening and no parent/student access widening,
+  - parent-facing announcements/events and `parent_facing_media` remain out of scope,
+  - runtime popup service/UI behavior remains future,
+  - notifications/emails remain future.
 
 ## 12) Next immediate milestone prompt (copy-paste)
 

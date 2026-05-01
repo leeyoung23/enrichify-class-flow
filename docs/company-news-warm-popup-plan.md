@@ -3,6 +3,21 @@
 Date: 2026-05-01  
 Scope: planning-only checkpoint for Company News / Big News mode and warm portal pop-up behavior
 
+## Checkpoint update (026 popup status SQL draft only)
+
+- Manual/dev-first SQL draft is now added at `supabase/sql/026_company_news_popup_status_foundation.sql`.
+- `026` is SQL draft only and is not auto-applied.
+- Drafted additive fields on `announcement_statuses`:
+  - `popup_seen_at`
+  - `popup_dismissed_at`
+  - `popup_last_shown_at`
+- `read_at` / `last_seen_at` / `done_status` behavior remains unchanged.
+- Optional announcement popup config fields are deferred for now:
+  - `popup_style`
+  - `popup_duration_seconds`
+  - `display_until`
+- Runtime app-shell popup behavior, popup service methods, notifications/emails, and parent-facing announcements/events remain future milestones.
+
 ## Checkpoint update (Company News UI shell now added)
 
 - Company News UI shell is now present in `src/pages/Announcements.jsx`:
