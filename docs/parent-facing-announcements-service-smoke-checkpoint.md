@@ -17,6 +17,20 @@
 - Canonical creation UI checkpoint:
   - `docs/parent-facing-creation-ui-checkpoint.md`
 
+## Checkpoint update (creation UI validation documented)
+
+- Creation UI checkpoint now records full validation outcomes for this milestone:
+  - `build/lint/typecheck` PASS,
+  - `test:supabase:parent-announcements` PASS (safe unrelated-parent CHECK),
+  - `test:supabase:parent-announcements:media` PASS (safe unrelated-parent CHECK),
+  - `test:supabase:announcements:phase1` PASS (safe optional cross-branch CHECK),
+  - `test:supabase:company-news:create` PASS,
+  - `test:supabase:announcements:mytasks` PASS.
+- Service boundaries remain unchanged:
+  - no SQL/RLS changes,
+  - no media upload/release UI in this milestone,
+  - no notifications/emails/live chat.
+
 ## Checkpoint update (ParentView announcements/events UI checkpoint documented)
 
 - ParentView `Announcements & Events` UI shell milestone is now documented as complete.

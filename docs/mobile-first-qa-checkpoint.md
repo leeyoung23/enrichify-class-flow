@@ -13,6 +13,8 @@
   - no parent media upload/release UI,
   - no notifications/emails/live chat,
   - no ParentView admin controls.
+- Validation state for parent notices milestone is now documented in:
+  - `docs/parent-facing-creation-ui-checkpoint.md`
 
 ## Checkpoint update (ParentView announcements/events UI checkpoint documented)
 

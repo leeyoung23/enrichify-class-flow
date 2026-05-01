@@ -1,5 +1,20 @@
 # RLS Test Checklist
 
+## Checkpoint update (parent-facing creation UI documented)
+
+- Parent-facing text-only creation UI checkpoint is documented at:
+  - `docs/parent-facing-creation-ui-checkpoint.md`
+- Documentation confirms current parent-facing create-path boundaries:
+  - create/publish/archive uses existing parent-facing services,
+  - branch/class targets supported in UI,
+  - student target selector deferred,
+  - no parent media upload/release UI in current milestone.
+- Validation snapshot reference (from creation checkpoint):
+  - build/lint/typecheck PASS,
+  - parent-facing announcement/media smokes PASS with safe CHECK notes,
+  - phase1/company-news-create/mytasks smokes PASS,
+  - npm `devdir` warning non-blocking.
+
 ## Checkpoint update (ParentView announcements/events UI checkpoint documented)
 
 - ParentView `Announcements & Events` UI shell milestone is now documented as complete.

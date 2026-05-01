@@ -20,6 +20,17 @@
 - Canonical checkpoint:
   - `docs/parent-facing-creation-ui-checkpoint.md`
 
+## Checkpoint update (post-implementation planning direction)
+
+- After text-only creation wiring, recommended next step is now:
+  - **A. Parent-facing media upload/release UI planning**.
+- Rationale:
+  - text-only creation value is delivered,
+  - media service boundary is already proven,
+  - media UI introduces file-governance and accidental-release risk that should be planned before wiring,
+  - notifications/emails remain deferred until media/creation governance is stabilized,
+  - real AI provider integration remains later after communication module checkpoints are complete.
+
 ## Checkpoint update (ParentView announcements/events UI checkpoint documented)
 
 - ParentView `Announcements & Events` UI shell milestone is now documented as complete.

@@ -20,6 +20,13 @@
 - Canonical checkpoint:
   - `docs/parent-facing-creation-ui-checkpoint.md`
 
+## Checkpoint update (creation documentation milestone complete)
+
+- Parent-facing creation UI documentation milestone is complete (docs-only checkpoint).
+- No runtime/UI/service/SQL/RLS changes were introduced in this documentation-only pass.
+- Recommended next milestone:
+  - **A. Parent-facing media upload/release UI planning** before any media UI wiring.
+
 ## Checkpoint update (ParentView announcements/events UI checkpoint documented)
 
 - ParentView `Announcements & Events` UI shell milestone is now documented as complete.

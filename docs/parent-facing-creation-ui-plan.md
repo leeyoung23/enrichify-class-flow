@@ -20,6 +20,22 @@
 - Canonical implementation checkpoint:
   - `docs/parent-facing-creation-ui-checkpoint.md`
 
+## Checkpoint update (creation UI documentation finalized)
+
+- Parent-facing creation UI checkpoint docs are now finalized for this milestone.
+- Validation summary captured:
+  - build/lint/typecheck PASS,
+  - parent-facing announcements + media smokes PASS with expected safe CHECK notes,
+  - announcements phase1/company-news create/mytasks smokes PASS,
+  - npm `devdir` warning remains non-blocking.
+- Safety summary reaffirmed:
+  - no SQL/RLS changes,
+  - no media upload/release UI in this milestone,
+  - no notifications/emails/live chat,
+  - no service-role frontend usage.
+- Recommended next milestone now:
+  - **A. Parent-facing media upload/release UI planning** first.
+
 Date: 2026-05-02  
 Scope: planning-only checkpoint for safe staff/HQ/supervisor creation workflow before implementation
 

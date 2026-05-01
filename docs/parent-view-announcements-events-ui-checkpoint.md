@@ -12,6 +12,16 @@
 - Canonical creation checkpoint:
   - `docs/parent-facing-creation-ui-checkpoint.md`
 
+## Checkpoint update (creation UI checkpoint finalized)
+
+- Parent-facing creation checkpoint documentation is now finalized.
+- ParentView boundary remains unchanged:
+  - read-only parent surface,
+  - no parent-facing create/publish/archive controls,
+  - no parent media upload/release controls.
+- Validation notes for related creation milestone are recorded in:
+  - `docs/parent-facing-creation-ui-checkpoint.md`
+
 Date: 2026-05-02  
 Scope: ParentView `Announcements & Events` UI shell with demo parity only
 
