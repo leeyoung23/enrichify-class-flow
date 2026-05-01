@@ -501,6 +501,14 @@ Current status note:
   - demo mode keeps local-only fake overview rows for HQ/supervisor and no Supabase reads for that block,
   - teacher manager overview remains hidden in demo and authenticated paths,
   - no SQL/RLS changes, no new services, no reminder/email manager actions, and no notification side effects in this slice.
+- Company News UI shell checkpoint is now added:
+  - `src/pages/Announcements.jsx` now renders Company News shell cards/detail inside the existing `Company News` filter,
+  - demo mode includes local fake Company News rows and HQ demo-only local create shell,
+  - warm pop-up panel is preview-only in Company News detail (no app-shell runtime pop-up),
+  - authenticated mode does not add real Company News write wiring in this slice,
+  - no SQL/RLS changes, no MyTasks side effects, no parent-facing announcements/events, and no notifications/emails.
+- Company News UI shell checkpoint doc:
+  - `docs/company-news-ui-shell-checkpoint.md`
 - UI milestone validation note:
   - build/lint/typecheck PASS,
   - announcement smoke scripts completed with DNS `ENOTFOUND` CHECK skips in this environment,
@@ -539,14 +547,13 @@ Before doing anything, verify:
 - git status --short
 
 Task:
-Company News warm pop-up planning only.
+Company News real service wiring review only (no runtime warm pop-up).
 
 Hard constraints:
-- Docs/planning only.
-- Do not change app UI in this milestone.
-- Keep existing HQ/supervisor read-only completion overview unchanged.
+- Planning/review only unless runtime wiring is explicitly approved in that milestone.
+- Keep existing Company News UI shell and request workflow behavior unchanged unless explicitly scoped.
 - Do not change Supabase SQL or RLS; do not apply SQL.
-- Do not add new backend services beyond existing read patterns unless explicitly approved.
+- Do not add new backend services unless explicitly approved.
 - Do not use service role in frontend.
 - Do not expose env values or passwords.
 - Do not call real AI APIs; do not add provider keys.
@@ -558,10 +565,10 @@ Hard constraints:
 - No storage_path, staff_note, or raw SQL/RLS/env strings in UI.
 
 Deliverables:
-1) Company News warm pop-up product shape (timing, dismiss, role scope, non-goals).
-2) Safety/non-goal boundaries: no auto-send, no parent/student manager visibility.
-3) Phased rollout recommendation after read-only completion overview UI.
-4) Update relevant docs/checkpoints only.
+1) Confirm whether existing `listAnnouncements(...)`/`createAnnouncementRequest(...)` scope safely supports Company News read/write paths.
+2) Define smallest safe runtime wiring slice for Company News without pop-up runtime.
+3) Keep strict non-goals: no pop-up runtime, no notifications/emails, no MyTasks side effects.
+4) Update docs/checkpoints only for planning milestone.
 
 Validation efficiency rule:
 - Docs-only: run git diff --name-only only unless runtime files change.

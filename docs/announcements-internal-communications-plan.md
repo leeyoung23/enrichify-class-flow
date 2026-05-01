@@ -8,6 +8,24 @@ Scope: planning only for Announcements/Internal Communications and Document Hub 
   - `docs/announcements-completion-overview-read-service-checkpoint.md`
 - This documentation-only alignment does not change runtime; validation is `git diff --name-only` unless code changes.
 
+## Checkpoint update (Company News UI shell with demo parity)
+
+- Company News tab in `Announcements` now renders a shell experience (not placeholder-only):
+  - news-style list cards,
+  - detail shell,
+  - warm pop-up preview panel (non-runtime).
+- Demo mode now includes local fake Company News cards and HQ demo-only local create shell.
+- Authenticated mode remains read-safe only in this slice (no real Company News write wiring added).
+- Boundaries preserved:
+  - no SQL/RLS changes,
+  - no runtime app-shell pop-up behavior,
+  - no popup persistence backend,
+  - no MyTasks side effects,
+  - no parent-facing announcements/events,
+  - no notifications/emails.
+- Checkpoint doc:
+  - `docs/company-news-ui-shell-checkpoint.md`.
+
 ## Checkpoint update (completion overview read service + smoke)
 
 - Manager completion overview read service is now added:

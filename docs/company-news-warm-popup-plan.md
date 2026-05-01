@@ -3,6 +3,17 @@
 Date: 2026-05-01  
 Scope: planning-only checkpoint for Company News / Big News mode and warm portal pop-up behavior
 
+## Checkpoint update (Company News UI shell now added)
+
+- Company News UI shell is now present in `src/pages/Announcements.jsx`:
+  - Company News cards/detail shell,
+  - HQ demo-only local create shell,
+  - warm pop-up preview panel (non-runtime).
+- No runtime app-shell pop-up behavior is implemented yet.
+- No real Company News write wiring was added in this milestone.
+- No MyTasks side effects, no parent-facing announcements/events, and no notifications/emails were added.
+- Companion checkpoint: `docs/company-news-ui-shell-checkpoint.md`.
+
 ## Documentation-only note
 
 - Planning/docs only in this milestone.

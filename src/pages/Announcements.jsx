@@ -80,16 +80,110 @@ const DEMO_ANNOUNCEMENTS = [
   {
     id: 'demo-ann-3',
     type: 'company_news',
-    title: 'Company News placeholder',
-    subtitle: 'Warm update mode arrives in Phase 3',
-    body: 'Company News and warm portal pop-up behavior are planned for Phase 3. This is a placeholder card only.',
+    title: 'Congratulations: North Branch reading milestone',
+    subtitle: 'Team recognition update',
+    body: 'Congratulations to the North Branch team for reaching this month reading target with excellent consistency.',
     priority: 'low',
     dueDate: null,
-    status: 'done',
+    status: 'read',
     branchLabel: 'Global',
     requiresResponse: false,
     requiresUpload: false,
     targetLabel: 'All staff',
+    templateLabel: 'Congratulations',
+    emoji: '🎉',
+    publishDate: '2026-05-01',
+    popupEnabled: true,
+    toneLabel: 'celebratory',
+    audienceLabel: 'Internal staff',
+    visibleTo: [ROLES.HQ_ADMIN, ROLES.BRANCH_SUPERVISOR, ROLES.TEACHER],
+    replies: [],
+  },
+  {
+    id: 'demo-ann-4',
+    type: 'company_news',
+    title: 'Important update: schedule adjustment this Friday',
+    subtitle: 'Operations notice',
+    body: 'Friday class support rota has been adjusted. Please check the final block assignment in the branch roster.',
+    priority: 'high',
+    dueDate: null,
+    status: 'read',
+    branchLabel: 'Demo North Branch',
+    requiresResponse: false,
+    requiresUpload: false,
+    targetLabel: 'North Branch staff',
+    templateLabel: 'Important update',
+    emoji: '📌',
+    publishDate: '2026-05-02',
+    popupEnabled: true,
+    toneLabel: 'important',
+    audienceLabel: 'Internal staff',
+    visibleTo: [ROLES.HQ_ADMIN, ROLES.BRANCH_SUPERVISOR, ROLES.TEACHER],
+    replies: [],
+  },
+  {
+    id: 'demo-ann-5',
+    type: 'company_news',
+    title: 'Training reminder: phonics workshop Monday',
+    subtitle: 'Staff development',
+    body: 'Reminder: phonics workshop starts Monday 9:00 AM. Bring current class notes for discussion.',
+    priority: 'normal',
+    dueDate: null,
+    status: 'pending',
+    branchLabel: 'Global',
+    requiresResponse: false,
+    requiresUpload: false,
+    targetLabel: 'All teachers',
+    templateLabel: 'Training reminder',
+    emoji: '📚',
+    publishDate: '2026-05-03',
+    popupEnabled: false,
+    toneLabel: 'supportive',
+    audienceLabel: 'Internal staff',
+    visibleTo: [ROLES.HQ_ADMIN, ROLES.BRANCH_SUPERVISOR, ROLES.TEACHER],
+    replies: [],
+  },
+  {
+    id: 'demo-ann-6',
+    type: 'company_news',
+    title: 'Holiday / centre closure notice',
+    subtitle: 'Public holiday schedule',
+    body: 'Centre is closed next Monday for public holiday. Normal operations resume Tuesday morning.',
+    priority: 'normal',
+    dueDate: null,
+    status: 'pending',
+    branchLabel: 'Global',
+    requiresResponse: false,
+    requiresUpload: false,
+    targetLabel: 'All staff',
+    templateLabel: 'Holiday / closure',
+    emoji: '🏫',
+    publishDate: '2026-05-04',
+    popupEnabled: true,
+    toneLabel: 'informative',
+    audienceLabel: 'Internal staff',
+    visibleTo: [ROLES.HQ_ADMIN, ROLES.BRANCH_SUPERVISOR, ROLES.TEACHER],
+    replies: [],
+  },
+  {
+    id: 'demo-ann-7',
+    type: 'company_news',
+    title: 'Event reminder: Family Day booth preparation',
+    subtitle: 'Event reminder',
+    body: 'Family Day booth setup starts 7:30 AM Saturday. Branch teams please review assignment board.',
+    priority: 'high',
+    dueDate: null,
+    status: 'pending',
+    branchLabel: 'Demo North Branch',
+    requiresResponse: false,
+    requiresUpload: false,
+    targetLabel: 'North Branch staff',
+    templateLabel: 'Event reminder',
+    emoji: '📣',
+    publishDate: '2026-05-05',
+    popupEnabled: true,
+    toneLabel: 'warm reminder',
+    audienceLabel: 'Internal staff',
     visibleTo: [ROLES.HQ_ADMIN, ROLES.BRANCH_SUPERVISOR, ROLES.TEACHER],
     replies: [],
   },
@@ -334,6 +428,7 @@ export default function Announcements() {
   const isStaff = role === ROLES.HQ_ADMIN || role === ROLES.BRANCH_SUPERVISOR || role === ROLES.TEACHER;
   const canCreateInDemo = role === ROLES.HQ_ADMIN || role === ROLES.BRANCH_SUPERVISOR;
   const canCreateInAuth = role === ROLES.HQ_ADMIN || role === ROLES.BRANCH_SUPERVISOR;
+  const canCreateCompanyNewsInDemo = role === ROLES.HQ_ADMIN;
   const canViewManagerOverview = role === ROLES.HQ_ADMIN || role === ROLES.BRANCH_SUPERVISOR;
   const canUploadAttachments = roleCanUploadAttachment(role);
   const allowedAttachmentRoles = getAllowedAttachmentRoles(role);
@@ -365,6 +460,18 @@ export default function Announcements() {
   const [uploadNote, setUploadNote] = useState('');
   const [uploadFile, setUploadFile] = useState(null);
   const [demoUploadName, setDemoUploadName] = useState('');
+  const [companyNewsCreateOpen, setCompanyNewsCreateOpen] = useState(false);
+  const [companyNewsForm, setCompanyNewsForm] = useState({
+    title: '',
+    subtitle: '',
+    body: '',
+    templateLabel: 'General news',
+    emoji: '📣',
+    popupEnabled: true,
+    toneLabel: 'warm',
+    priority: 'normal',
+    audienceLabel: 'Internal staff',
+  });
 
   useEffect(() => {
     const stateAnnouncementId = location.state?.announcementId;
@@ -410,6 +517,12 @@ export default function Announcements() {
         requiresResponse: Boolean(row.requires_response),
         requiresUpload: Boolean(row.requires_upload),
         targetLabel: row.audience_type || 'internal_staff',
+        templateLabel: row.announcement_type === 'company_news' ? 'General news' : 'Request',
+        emoji: row.popup_emoji || null,
+        publishDate: row.published_at ? String(row.published_at).slice(0, 10) : null,
+        popupEnabled: Boolean(row.popup_enabled),
+        toneLabel: row.announcement_type === 'company_news' ? 'warm' : 'operational',
+        audienceLabel: row.audience_type || 'internal_staff',
         visibleTo: [ROLES.HQ_ADMIN, ROLES.BRANCH_SUPERVISOR, ROLES.TEACHER],
         replies: [],
       };
@@ -420,7 +533,7 @@ export default function Announcements() {
     const sourceRows = isDemoMode ? rows : authenticatedRows;
     const scoped = sourceRows.filter((row) => row.visibleTo.includes(role));
     if (activeFilter === 'Requests') return scoped.filter((row) => row.type === 'request');
-    if (activeFilter === 'Company News') return [];
+    if (activeFilter === 'Company News') return scoped.filter((row) => row.type === 'company_news');
     if (activeFilter === 'Done') return scoped.filter((row) => row.status === 'done');
     if (activeFilter === 'Pending') return scoped.filter((row) => row.status === 'pending' || row.status === 'undone');
     return scoped;
@@ -439,7 +552,7 @@ export default function Announcements() {
 
   const detailQuery = useQuery({
     queryKey: ['announcement-detail', selected?.id, supabaseAppUser?.id],
-    enabled: canUseSupabaseAnnouncements && Boolean(selected?.id),
+    enabled: canUseSupabaseAnnouncements && selected?.type === 'request' && Boolean(selected?.id),
     queryFn: async () => {
       const announcementId = selected.id;
       const [targetsResult, statusesResult, repliesResult] = await Promise.all([
@@ -460,7 +573,7 @@ export default function Announcements() {
 
   const attachmentsQuery = useQuery({
     queryKey: ['announcement-attachments', selected?.id, supabaseAppUser?.id, role],
-    enabled: canUseSupabaseAnnouncements && Boolean(selected?.id),
+    enabled: canUseSupabaseAnnouncements && selected?.type === 'request' && Boolean(selected?.id),
     queryFn: async () => {
       const result = await listAnnouncementAttachments({ announcementId: selected.id });
       if (result.error) throw new Error('Unable to load attachments right now.');
@@ -470,7 +583,7 @@ export default function Announcements() {
 
   const completionOverviewQuery = useQuery({
     queryKey: ['announcement-completion-overview', selected?.id, supabaseAppUser?.id, role],
-    enabled: canUseSupabaseAnnouncements && canViewManagerOverview && Boolean(selected?.id),
+    enabled: canUseSupabaseAnnouncements && canViewManagerOverview && selected?.type === 'request' && Boolean(selected?.id),
     queryFn: async () => {
       const result = await listAnnouncementCompletionOverview({ announcementId: selected.id });
       if (result.error) throw new Error('Completion overview is temporarily unavailable.');
@@ -710,6 +823,49 @@ export default function Announcements() {
     });
   };
 
+  const onDemoCreateCompanyNews = () => {
+    if (!canCreateCompanyNewsInDemo) return;
+    if (!companyNewsForm.title.trim()) return;
+    const created = {
+      id: `demo-company-news-${Date.now()}`,
+      type: 'company_news',
+      title: companyNewsForm.title.trim(),
+      subtitle: companyNewsForm.subtitle.trim() || 'Company News update',
+      body: companyNewsForm.body.trim() || 'Company News detail preview.',
+      priority: companyNewsForm.priority,
+      dueDate: null,
+      status: 'pending',
+      branchLabel: 'Global',
+      requiresResponse: false,
+      requiresUpload: false,
+      targetLabel: 'All staff',
+      templateLabel: companyNewsForm.templateLabel,
+      emoji: companyNewsForm.emoji.trim() || null,
+      publishDate: new Date().toISOString().slice(0, 10),
+      popupEnabled: Boolean(companyNewsForm.popupEnabled),
+      toneLabel: companyNewsForm.toneLabel,
+      audienceLabel: companyNewsForm.audienceLabel,
+      visibleTo: [ROLES.HQ_ADMIN, ROLES.BRANCH_SUPERVISOR, ROLES.TEACHER],
+      replies: [],
+    };
+    setRows((prev) => [created, ...prev]);
+    setSelectedId(created.id);
+    setCompanyNewsCreateOpen(false);
+    setCompanyNewsForm({
+      title: '',
+      subtitle: '',
+      body: '',
+      templateLabel: 'General news',
+      emoji: '📣',
+      popupEnabled: true,
+      toneLabel: 'warm',
+      priority: 'normal',
+      audienceLabel: 'Internal staff',
+    });
+    setActiveFilter('Company News');
+    toast.success('Demo Company News saved locally.');
+  };
+
   const onDemoUploadAttachment = () => {
     if (!selected?.id) return;
     if (!allowedAttachmentRoles.includes(uploadRole)) return;
@@ -757,11 +913,29 @@ export default function Announcements() {
       <PageHeader
         title="Announcements"
         description="Internal requests, reminders, and company updates"
-        action={(isDemoMode && canCreateInDemo) || (!isDemoMode && canCreateInAuth) ? (
-          <Button className="min-h-10" onClick={() => setCreateOpen((prev) => !prev)}>
-            Create Request
-          </Button>
-        ) : null}
+        action={activeFilter === 'Company News'
+          ? (
+            isDemoMode
+              ? (
+                canCreateCompanyNewsInDemo ? (
+                  <Button className="min-h-10" onClick={() => setCompanyNewsCreateOpen((prev) => !prev)}>
+                    Create Company News
+                  </Button>
+                ) : null
+              )
+              : (
+                canCreateInAuth ? (
+                  <Button className="min-h-10" variant="outline" disabled>
+                    Create Company News (preview only)
+                  </Button>
+                ) : null
+              )
+          )
+          : (((isDemoMode && canCreateInDemo) || (!isDemoMode && canCreateInAuth)) ? (
+            <Button className="min-h-10" onClick={() => setCreateOpen((prev) => !prev)}>
+              Create Request
+            </Button>
+          ) : null)}
       />
 
       {!isDemoMode && !canUseSupabaseAnnouncements ? (
@@ -770,7 +944,7 @@ export default function Announcements() {
         </Card>
       ) : (
         <div className="space-y-4">
-          {createOpen && (isDemoMode ? canCreateInDemo : canCreateInAuth) ? (
+          {activeFilter !== 'Company News' && createOpen && (isDemoMode ? canCreateInDemo : canCreateInAuth) ? (
             <Card className="p-4 sm:p-5 space-y-3">
               <p className="font-medium">{isDemoMode ? 'Create Request (demo-only local shell)' : 'Create Request'}</p>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -865,6 +1039,96 @@ export default function Announcements() {
             </Card>
           ) : null}
 
+          {activeFilter === 'Company News' && companyNewsCreateOpen && isDemoMode && canCreateCompanyNewsInDemo ? (
+            <Card className="p-4 sm:p-5 space-y-3">
+              <p className="font-medium">Create Company News (demo-only local shell)</p>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div className="space-y-1">
+                  <Label>Title</Label>
+                  <Input value={companyNewsForm.title} onChange={(e) => setCompanyNewsForm((p) => ({ ...p, title: e.target.value }))} />
+                </div>
+                <div className="space-y-1">
+                  <Label>Subtitle</Label>
+                  <Input value={companyNewsForm.subtitle} onChange={(e) => setCompanyNewsForm((p) => ({ ...p, subtitle: e.target.value }))} />
+                </div>
+                <div className="space-y-1 sm:col-span-2">
+                  <Label>Body</Label>
+                  <Textarea value={companyNewsForm.body} onChange={(e) => setCompanyNewsForm((p) => ({ ...p, body: e.target.value }))} className="min-h-[100px]" />
+                </div>
+                <div className="space-y-1">
+                  <Label>Category / template</Label>
+                  <Select value={companyNewsForm.templateLabel} onValueChange={(value) => setCompanyNewsForm((p) => ({ ...p, templateLabel: value }))}>
+                    <SelectTrigger><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="Congratulations">Congratulations</SelectItem>
+                      <SelectItem value="Important update">Important update</SelectItem>
+                      <SelectItem value="Training reminder">Training reminder</SelectItem>
+                      <SelectItem value="Holiday / closure">Holiday / closure</SelectItem>
+                      <SelectItem value="Event reminder">Event reminder</SelectItem>
+                      <SelectItem value="General news">General news</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-1">
+                  <Label>Emoji</Label>
+                  <Input value={companyNewsForm.emoji} onChange={(e) => setCompanyNewsForm((p) => ({ ...p, emoji: e.target.value }))} placeholder="📣" />
+                </div>
+                <div className="space-y-1">
+                  <Label>Tone / style</Label>
+                  <Select value={companyNewsForm.toneLabel} onValueChange={(value) => setCompanyNewsForm((p) => ({ ...p, toneLabel: value }))}>
+                    <SelectTrigger><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="celebratory">Celebratory</SelectItem>
+                      <SelectItem value="important">Important</SelectItem>
+                      <SelectItem value="warm reminder">Warm reminder</SelectItem>
+                      <SelectItem value="supportive">Supportive</SelectItem>
+                      <SelectItem value="informative">Informative</SelectItem>
+                      <SelectItem value="warm">Warm</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-1">
+                  <Label>Priority</Label>
+                  <Select value={companyNewsForm.priority} onValueChange={(value) => setCompanyNewsForm((p) => ({ ...p, priority: value }))}>
+                    <SelectTrigger><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="low">Low</SelectItem>
+                      <SelectItem value="normal">Normal</SelectItem>
+                      <SelectItem value="high">High</SelectItem>
+                      <SelectItem value="urgent">Urgent</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+              <div className="flex flex-wrap gap-2">
+                <Button
+                  type="button"
+                  variant={companyNewsForm.popupEnabled ? 'default' : 'outline'}
+                  className="min-h-10"
+                  onClick={() => setCompanyNewsForm((p) => ({ ...p, popupEnabled: !p.popupEnabled }))}
+                >
+                  Pop-up enabled preview
+                </Button>
+                <Badge variant="outline">{companyNewsForm.audienceLabel}</Badge>
+              </div>
+              <div className="flex flex-wrap gap-2">
+                <Button className="min-h-10" onClick={onDemoCreateCompanyNews}>
+                  Save locally
+                </Button>
+                <Button variant="outline" className="min-h-10" onClick={() => setCompanyNewsCreateOpen(false)}>Cancel</Button>
+              </div>
+            </Card>
+          ) : null}
+
+          {activeFilter === 'Company News' && !isDemoMode && canCreateInAuth ? (
+            <Card className="p-4 sm:p-5 border-dashed">
+              <p className="text-sm font-medium">Create Company News (preview-only in this milestone)</p>
+              <p className="text-xs text-muted-foreground mt-1">
+                Real Company News write wiring is intentionally deferred. This milestone delivers UI shell and demo parity only.
+              </p>
+            </Card>
+          ) : null}
+
           <Card className="p-3">
             <div className="flex gap-2 overflow-x-auto">
               {FILTERS.map((filter) => (
@@ -873,7 +1137,11 @@ export default function Announcements() {
                   size="sm"
                   variant={activeFilter === filter ? 'default' : 'outline'}
                   className="min-h-10 whitespace-nowrap"
-                  onClick={() => setActiveFilter(filter)}
+                  onClick={() => {
+                    setActiveFilter(filter);
+                    setCreateOpen(false);
+                    setCompanyNewsCreateOpen(false);
+                  }}
                 >
                   {filter}
                 </Button>
@@ -885,10 +1153,10 @@ export default function Announcements() {
             <Card className="p-4 sm:p-5 border-dashed">
               <div className="flex items-center gap-2 mb-2">
                 <Megaphone className="h-4 w-4 text-muted-foreground" />
-                <p className="font-medium">Company News placeholder</p>
+                <p className="font-medium">Company News shell</p>
               </div>
               <p className="text-sm text-muted-foreground">
-                Company News warm presentation and portal pop-up behavior are planned for Phase 3. No pop-up or animation behavior is included in this shell.
+                News-style Company News cards/details are enabled in this shell milestone. Runtime warm pop-up behavior remains future and is not implemented here.
               </p>
             </Card>
           ) : null}
@@ -910,12 +1178,32 @@ export default function Announcements() {
                   <div className="flex flex-wrap gap-2 mt-3">
                     <Badge variant="outline" className={statusTone(row.status)}>{row.status}</Badge>
                     <Badge variant="outline">{row.branchLabel}</Badge>
-                    {row.dueDate ? <Badge variant="outline">Due {row.dueDate}</Badge> : null}
+                    {row.type === 'company_news'
+                      ? <Badge variant="outline">Published {row.publishDate || 'TBD'}</Badge>
+                      : (row.dueDate ? <Badge variant="outline">Due {row.dueDate}</Badge> : null)}
+                    {row.type === 'company_news' && row.popupEnabled ? <Badge variant="outline">Pop-up enabled</Badge> : null}
                   </div>
                   <div className="flex flex-wrap gap-2 mt-2 text-xs text-muted-foreground">
-                    {row.requiresResponse ? <span>Requires response</span> : null}
-                    {row.requiresUpload ? <span>Requires upload</span> : null}
+                    {row.type === 'company_news' ? (
+                      <>
+                        <span>{row.templateLabel || 'General news'}</span>
+                        {row.emoji ? <span>{row.emoji}</span> : null}
+                        <span>{row.toneLabel || 'warm'}</span>
+                      </>
+                    ) : (
+                      <>
+                        {row.requiresResponse ? <span>Requires response</span> : null}
+                        {row.requiresUpload ? <span>Requires upload</span> : null}
+                      </>
+                    )}
                   </div>
+                  {row.type === 'company_news' ? (
+                    <div className="mt-2">
+                      <Button size="sm" variant="outline" className="min-h-9">
+                        View detail
+                      </Button>
+                    </div>
+                  ) : null}
                 </Card>
               ))}
             </div>
@@ -926,6 +1214,42 @@ export default function Announcements() {
                   <p className="text-sm text-muted-foreground">
                     {(!isDemoMode && announcementsQuery.isLoading) ? 'Loading announcements...' : 'No announcements in this filter.'}
                   </p>
+                </Card>
+              ) : selected.type === 'company_news' ? (
+                <Card className="p-4 sm:p-5 space-y-4">
+                  <div className="flex flex-wrap items-center justify-between gap-2">
+                    <div className="flex items-center gap-2">
+                      <p className="font-semibold">{selected.title}</p>
+                      {selected.emoji ? <span className="text-lg">{selected.emoji}</span> : null}
+                    </div>
+                    <Badge variant="outline" className={priorityTone(selected.priority)}>{selected.priority}</Badge>
+                  </div>
+                  <p className="text-sm text-muted-foreground">{selected.subtitle}</p>
+                  <p className="text-sm">{selected.body}</p>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                    <Badge variant="outline">Category {selected.templateLabel || 'General news'}</Badge>
+                    <Badge variant="outline">Audience {selected.audienceLabel || selected.targetLabel || 'Internal staff'}</Badge>
+                    <Badge variant="outline">Published {selected.publishDate || 'TBD'}</Badge>
+                    <Badge variant="outline">Tone {selected.toneLabel || 'warm'}</Badge>
+                    {selected.popupEnabled ? <Badge variant="outline">Pop-up enabled</Badge> : <Badge variant="outline">Pop-up disabled</Badge>}
+                  </div>
+
+                  <div className="rounded-lg border border-dashed p-3 space-y-2">
+                    <p className="text-sm font-medium">Warm pop-up preview (non-runtime)</p>
+                    <p className="text-xs text-muted-foreground">
+                      5-10 second style preview only. Runtime app-shell pop-up behavior, dismissal persistence, and frequency logic are future milestones.
+                    </p>
+                    <div className="rounded-lg border bg-muted/30 p-3 space-y-2">
+                      <p className="text-xs text-muted-foreground">Preview headline</p>
+                      <p className="text-sm font-medium">{selected.emoji ? `${selected.emoji} ` : ''}{selected.title}</p>
+                      <p className="text-xs text-muted-foreground line-clamp-2">{selected.subtitle || selected.body}</p>
+                      <div className="flex flex-wrap gap-2">
+                        <Button size="sm" className="min-h-9" variant="outline">View</Button>
+                        <Button size="sm" className="min-h-9" variant="outline">Dismiss</Button>
+                      </div>
+                    </div>
+                  </div>
                 </Card>
               ) : (
                 <Card className="p-4 sm:p-5 space-y-4">
