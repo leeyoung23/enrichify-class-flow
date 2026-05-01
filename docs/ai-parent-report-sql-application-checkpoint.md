@@ -188,3 +188,12 @@ Run only what matches changed files.
   - expected safe CHECKs remain only for fixture/guard scenarios (unsafe evidence snapshot input and unrelated-parent credential fixture).
 - Reference checkpoint:
   - `docs/ai-parent-report-031-application-service-pass-checkpoint.md`.
+
+## 13) Evidence-link smoke hardening follow-up
+
+- Post-031 smoke hardening now confirms:
+  - safe positive evidence-link insert PASS,
+  - unsafe raw private path-style snapshot blocked by guard (expected),
+  - staff read-back evidence visibility PASS where RLS permits,
+  - parent direct evidence-link read blocked/empty.
+- This follow-up does not change SQL/RLS; behavior is validated at service/smoke layer only.

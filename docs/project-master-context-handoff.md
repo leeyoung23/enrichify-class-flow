@@ -1165,3 +1165,13 @@ Handoff status: complete for continuity. Use this file as the primary context an
   - `test:supabase:announcements:phase1` PASS (optional fixture CHECK only).
 - Checkpoint doc:
   - `docs/ai-parent-report-031-application-service-pass-checkpoint.md`.
+
+### AI parent report evidence-link smoke hardening note
+
+- Focused smoke now includes both evidence-link directions:
+  - safe evidence-link insert PASS with fake/dev-safe summary payload,
+  - unsafe raw private-path style summary payload blocked by service guard.
+- Evidence visibility checks now include:
+  - staff read-back PASS when RLS permits,
+  - parent direct evidence-link read blocked/empty.
+- No SQL/RLS/UI/provider/PDF changes in this hardening step.

@@ -114,7 +114,18 @@ Coverage goals in smoke:
   - parent draft block PASS,
   - student blocked PASS.
 - Remaining CHECKs are expected/safe:
-  - evidence-link insert CHECK for unsafe raw private file-path input (guard working),
+  - unsafe evidence-link insert is intentionally blocked when raw private file-path style data is present (guard working),
   - unrelated parent credential fixture CHECK.
 - Checkpoint reference:
   - `docs/ai-parent-report-031-application-service-pass-checkpoint.md`.
+
+## 10) Evidence-link smoke hardening update
+
+- Positive safe evidence-link insert path is now covered in smoke:
+  - fake/dev-safe `summarySnapshot` payload inserts PASS.
+- Staff evidence read-back is now checked:
+  - inserted evidence row is visible to staff scope under RLS.
+- Negative unsafe-path guard is preserved:
+  - raw/private path-style snapshot values are blocked as expected.
+- Parent evidence visibility safety is now checked directly:
+  - parent direct evidence-link read remains blocked/empty.

@@ -267,6 +267,7 @@ async function run() {
     getAiParentReportDetail,
     listAiParentReportVersions,
     getAiParentReportCurrentVersion,
+    listAiParentReportEvidenceLinks,
   } = readService;
   const {
     createAiParentReportDraft,
@@ -419,18 +420,50 @@ async function run() {
           }
         }
 
-        const evidenceResult = await addAiParentReportEvidenceLink({
+        const safeEvidenceResult = await addAiParentReportEvidenceLink({
           reportId: draftReportId,
           evidenceType: "manual",
           sourceTable: null,
           sourceId: null,
-          summarySnapshot: { note: "Fake/dev evidence summary only" },
-          includeInParentReport: true,
+          summarySnapshot: {
+            summary: "Fake dev evidence summary for smoke test only.",
+            source: "manual_smoke",
+            included_fields: ["attendance_summary", "homework_summary"],
+            contains_private_paths: false,
+          },
+          includeInParentReport: false,
         });
-        if (evidenceResult.error) {
-          printResult("CHECK", `Evidence link insert CHECK (${evidenceResult.error.message || "unknown"})`);
+        if (safeEvidenceResult.error || !safeEvidenceResult.data?.id) {
+          printResult("CHECK", `Evidence link safe insert CHECK (${safeEvidenceResult.error?.message || "unknown"})`);
         } else {
-          printResult("PASS", "Evidence link insert succeeded");
+          printResult("PASS", "Evidence link safe insert succeeded");
+          const staffEvidenceRead = await listAiParentReportEvidenceLinks({ reportId: draftReportId });
+          if (staffEvidenceRead.error) {
+            printResult("CHECK", `Evidence link staff read-back CHECK (${staffEvidenceRead.error.message || "unknown"})`);
+          } else if ((staffEvidenceRead.data || []).some((row) => row?.id === safeEvidenceResult.data.id)) {
+            printResult("PASS", "Evidence link staff read-back shows inserted evidence");
+          } else {
+            printResult("CHECK", "Evidence link staff read-back CHECK (inserted row not visible)");
+          }
+        }
+
+        const unsafeEvidenceResult = await addAiParentReportEvidenceLink({
+          reportId: draftReportId,
+          evidenceType: "manual",
+          sourceTable: "manual",
+          sourceId: null,
+          summarySnapshot: {
+            summary: "Unsafe evidence probe",
+            storage_path: "private/reports/student-001/raw-note.txt",
+            contains_private_paths: true,
+          },
+          includeInParentReport: false,
+        });
+        if (unsafeEvidenceResult.error) {
+          printResult("PASS", "Evidence link unsafe raw-path guard blocked insert as expected");
+        } else {
+          printResult("WARNING", "Evidence link unsafe raw-path guard unexpectedly allowed insert");
+          failureCount += 1;
         }
       }
     }
@@ -543,6 +576,14 @@ async function run() {
         printResult("CHECK", `Parent version-list CHECK (${versionListResult.error.message || "unknown"})`);
       } else {
         printResult("WARNING", "Parent: version history exposed beyond current released version");
+        failureCount += 1;
+      }
+
+      const parentEvidenceRead = await listAiParentReportEvidenceLinks({ reportId: draftReportId });
+      if (parentEvidenceRead.error || (Array.isArray(parentEvidenceRead.data) && parentEvidenceRead.data.length === 0)) {
+        printResult("PASS", "Parent: direct evidence-link read blocked/empty as expected");
+      } else {
+        printResult("WARNING", "Parent: direct evidence-link read unexpectedly visible");
         failureCount += 1;
       }
     }

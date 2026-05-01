@@ -48,9 +48,10 @@ From `npm run test:supabase:ai-parent-reports` (post-031):
 
 ## 4) CHECK/WARNING notes
 
-- Evidence link insert CHECK occurred because `summarySnapshot` raw private file-path guard blocked unsafe input.
+- Unsafe evidence-link insert CHECK occurs when `summarySnapshot` includes raw private file-path style data.
 - This is a guardrail proof (safe behavior), not an unsafe access widening.
-- Future smoke should include a positive safe evidence-link insert path.
+- Positive safe evidence-link insert smoke now passes with fake/dev-safe payload.
+- Staff evidence read-back is validated under RLS, while parent direct evidence-link read remains blocked/empty.
 - Unrelated parent fixture credentials missing/invalid CHECK remains expected.
 - Announcements phase1 optional `ANNOUNCEMENTS_TEST_OTHER_BRANCH_ID` CHECK remains expected.
 - No unsafe RLS widening observed.
@@ -90,14 +91,13 @@ Choose:
 - D. Real AI provider integration
 - E. PDF/export planning
 
-Recommendation: **A first** (small hardening milestone).
+Recommendation: **A completed** (small hardening milestone done). Next choose **B**.
 
 Why:
 
-- evidence-link source traceability is core to trustworthy report workflows,
-- current smoke proves unsafe raw-path guard but does not yet prove positive safe evidence-link insert,
-- safe positive evidence-link smoke should be proven before UI/provider phases,
-- keep no real AI/no UI/no PDF constraints unchanged.
+- evidence-link source traceability guard + positive insert path is now covered,
+- next highest-value step is controlled UI shell planning/implementation with demo/manual data only,
+- keep no real AI/no PDF constraints unchanged.
 
 ## 9) Next implementation prompt (copy-paste)
 

@@ -392,3 +392,12 @@ Do not run build/lint/typecheck/smoke suite unless runtime files change.
 - No real AI provider wiring and no PDF/export implementation in this checkpoint.
 - Detailed checkpoint:
   - `docs/ai-parent-report-031-application-service-pass-checkpoint.md`.
+
+## Checkpoint update (evidence-link smoke hardening)
+
+- AI parent report smoke now proves both evidence-link behaviors:
+  - positive safe evidence-link insert PASS using fake/dev-safe snapshot payload,
+  - unsafe raw private path-style snapshot blocked by service guard (expected).
+- Staff evidence read-back is now verified under RLS where allowed.
+- Parent direct evidence-link read remains blocked/empty in MVP scope.
+- No UI changes, no SQL/RLS changes, no provider wiring, no PDF/export in this checkpoint.

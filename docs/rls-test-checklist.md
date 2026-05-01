@@ -1245,3 +1245,13 @@ Expected outcomes for this milestone:
   - evidence-link unsafe raw path guard case,
   - unrelated-parent credential fixture missing,
   - optional announcements phase1 cross-branch fixture CHECK.
+
+### AI parent reports evidence-link hardening expectations
+
+- Positive case:
+  - safe fake/dev evidence-link insert should PASS.
+- Negative case:
+  - unsafe raw private file-path style evidence snapshot should be blocked (PASS/CHECK guard proof).
+- Visibility case:
+  - staff evidence read-back may PASS where RLS permits,
+  - parent direct evidence-link read should remain blocked/empty.

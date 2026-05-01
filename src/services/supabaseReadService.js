@@ -56,6 +56,8 @@ const AI_PARENT_REPORT_FIELDS =
   "id,student_id,class_id,branch_id,report_type,report_period_start,report_period_end,status,current_version_id,created_by_profile_id,assigned_teacher_profile_id,approved_by_profile_id,released_by_profile_id,released_at,created_at,updated_at";
 const AI_PARENT_REPORT_VERSION_FIELDS =
   "id,report_id,version_number,generation_source,structured_sections,teacher_edits,final_text,ai_model_label,ai_generated_at,created_by_profile_id,created_at";
+const AI_PARENT_REPORT_EVIDENCE_FIELDS =
+  "id,report_id,evidence_type,source_table,source_id,summary_snapshot,include_in_parent_report,created_at";
 const AI_PARENT_REPORT_STATUS_VALUES = new Set([
   "draft",
   "teacher_review",
@@ -1850,6 +1852,32 @@ export async function getAiParentReportCurrentVersion({ reportId } = {}) {
     return { data: mapAiParentReportVersionRow(versionRead.data), error: null };
   } catch (_error) {
     return { data: null, error: { message: "Unable to load AI parent report current version right now." } };
+  }
+}
+
+export async function listAiParentReportEvidenceLinks({ reportId } = {}) {
+  if (!isSupabaseConfigured() || !supabase) {
+    return { data: [], error: { message: "Supabase is not configured" } };
+  }
+  if (!isUuidLike(reportId)) {
+    return { data: [], error: { message: "reportId must be a UUID" } };
+  }
+
+  try {
+    const { data, error } = await supabase
+      .from("ai_parent_report_evidence_links")
+      .select(AI_PARENT_REPORT_EVIDENCE_FIELDS)
+      .eq("report_id", trimString(reportId))
+      .order("created_at", { ascending: false });
+    if (error) {
+      return {
+        data: [],
+        error: sanitizeReadError(error, "Unable to load AI parent report evidence links right now."),
+      };
+    }
+    return { data: Array.isArray(data) ? data : [], error: null };
+  } catch (_error) {
+    return { data: [], error: { message: "Unable to load AI parent report evidence links right now." } };
   }
 }
 
