@@ -175,6 +175,30 @@ Reminder: **Frontend filtering is not security. RLS must enforce access at datab
   - apply `027` in Supabase DEV SQL editor,
   - rerun focused Company News create/publish smoke checks with fake/dev fixtures.
 
+## Company News create-path SQL manual DEV apply note (027)
+
+- Manual apply target: `supabase/sql/027_company_news_create_foundation.sql`.
+- Supabase DEV SQL Editor result: **Success. No rows returned.**
+- Verified policy/helper posture:
+  - `announcements_insert_020` now calls `can_insert_announcement_row_027(...)`,
+  - `can_insert_announcement_row_027(...)` exists,
+  - insert gating changed only; no select/update/delete policy widening in this patch.
+- Verified behavior via smoke outputs:
+  - HQ direct `company_news` create PASS,
+  - teacher popup eligibility/seen/dismiss/suppression PASS,
+  - parent/student popup read blocked-or-empty PASS,
+  - cross-user popup dismiss blocked PASS,
+  - popup write path preserves `read_at` / `done_status`.
+- Request-regression validation remains PASS:
+  - HQ/supervisor request create path PASS,
+  - supervisor publish PASS,
+  - teacher create blocked PASS,
+  - parent/student internal read blocked-or-empty PASS.
+- Optional CHECK still expected when env is missing:
+  - `ANNOUNCEMENTS_TEST_OTHER_BRANCH_ID` for cross-branch negative fixture.
+- No production apply in this checkpoint.
+- No runtime/UI/service changes in this checkpoint.
+
 ### Announcements attachments role checks (current proven state)
 
 - HQ can upload/list/open signed URL for internal attachments.

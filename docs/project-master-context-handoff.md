@@ -598,6 +598,15 @@ Current status note:
   - keeps teacher/parent/student create blocked,
   - does not widen parent-facing announcements/events scope,
   - does not add notifications/emails or service/UI create wiring in this slice.
+- Company News create-path SQL application checkpoint is now completed in DEV:
+  - `027` manually applied in Supabase DEV SQL Editor (`Success. No rows returned.`),
+  - verified `announcements_insert_020` now references `can_insert_announcement_row_027(...)`,
+  - verified helper `can_insert_announcement_row_027(...)` exists,
+  - verified scope remains insert-gate only (no select/update/delete policy changes),
+  - popup smoke now reports HQ direct `company_news` create PASS,
+  - phase1 smoke remains PASS for request workflow regression safety,
+  - optional cross-branch negative CHECK remains when `ANNOUNCEMENTS_TEST_OTHER_BRANCH_ID` is not configured,
+  - no production apply, and no runtime/UI/service changes in this checkpoint.
 
 ## 12) Next immediate milestone prompt (copy-paste)
 

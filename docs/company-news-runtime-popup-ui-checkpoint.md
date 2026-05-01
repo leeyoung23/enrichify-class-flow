@@ -3,6 +3,22 @@
 Date: 2026-05-01  
 Scope: runtime app-shell warm popup UI shell/wiring using existing popup services only
 
+## Checkpoint update (027 create-path SQL manual DEV apply)
+
+- Manual DEV apply for Company News create-path SQL is completed:
+  - `supabase/sql/027_company_news_create_foundation.sql`
+  - SQL Editor result: `Success. No rows returned.`
+- Runtime popup wiring in this doc remains unchanged (no runtime/UI/service edits in this checkpoint).
+- Relevant impact for runtime popup context:
+  - HQ direct `company_news` draft insert is now DB-allowed by insert policy.
+  - popup smoke confirms eligible published Company News lifecycle still behaves as expected.
+- Preserved boundaries remain unchanged:
+  - no parent-facing announcements/events,
+  - no `parent_facing_media`,
+  - no notifications/emails/live chat,
+  - no service-role frontend usage.
+- Authenticated Company News create UI remains preview-disabled until service-layer create wrapper milestone.
+
 ## 1) What was implemented
 
 - Runtime app-shell Company News popup is wired in `src/components/layout/AppLayout.jsx`.

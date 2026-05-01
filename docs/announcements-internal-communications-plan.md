@@ -22,6 +22,27 @@ Scope: planning only for Announcements/Internal Communications and Document Hub 
 - Parent-facing announcements/events remain future; `parent_facing_media` remains out of scope.
 - Service/UI create wiring remains future (this checkpoint is SQL draft + documentation only).
 
+## Checkpoint update (027 Company News create-path SQL manual DEV application)
+
+- `027` is now manually applied in Supabase DEV:
+  - `supabase/sql/027_company_news_create_foundation.sql`
+  - SQL Editor result: `Success. No rows returned.`
+- Verified outcome:
+  - `announcements_insert_020` now uses `can_insert_announcement_row_027(...)`,
+  - request insert behavior remains preserved,
+  - HQ-only internal_staff `company_news` draft insert is now allowed.
+- Validation evidence in this checkpoint:
+  - `npm run test:supabase:company-news:popup` PASS (including HQ direct `company_news` create PASS),
+  - `npm run test:supabase:announcements:phase1` PASS (request workflow regression safe),
+  - optional cross-branch CHECK remains when `ANNOUNCEMENTS_TEST_OTHER_BRANCH_ID` is not configured.
+- Boundaries remain unchanged:
+  - teacher/parent/student create blocked,
+  - branch supervisor `company_news` create blocked for MVP,
+  - no parent-facing announcements/events opening,
+  - no `parent_facing_media`,
+  - no notifications/emails/live chat,
+  - no runtime/UI/service changes in this checkpoint.
+
 ## Checkpoint update (Company News UI shell with demo parity)
 
 - Company News tab in `Announcements` now renders a shell experience (not placeholder-only):

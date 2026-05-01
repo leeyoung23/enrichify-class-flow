@@ -3,6 +3,26 @@
 Date: 2026-05-01  
 Scope: planning/review only for safe real HQ Company News create/publish path (no runtime/UI/service/SQL changes in this milestone)
 
+## Checkpoint update (027 manual DEV SQL application)
+
+- `027` manual apply is now completed in Supabase DEV:
+  - SQL file: `supabase/sql/027_company_news_create_foundation.sql`
+  - SQL Editor result: `Success. No rows returned.`
+- Verified policy/helper state in DEV:
+  - `announcements_insert_020` now references `can_insert_announcement_row_027(...)`
+  - `can_insert_announcement_row_027(...)` exists.
+- `027` effect remains narrowly scoped:
+  - insert gating only,
+  - no select/update/delete policy changes in this patch,
+  - request insert branch preserved,
+  - HQ-only internal_staff `company_news` draft insert now DB-allowed.
+- Validation checkpoint (from smoke runs in this apply milestone):
+  - `npm run test:supabase:company-news:popup` PASS
+  - `npm run test:supabase:announcements:phase1` PASS
+  - optional cross-branch CHECK remains when `ANNOUNCEMENTS_TEST_OTHER_BRANCH_ID` is missing.
+- No runtime/UI/service changes in this checkpoint.
+- No production apply in this checkpoint.
+
 ## Checkpoint update (027 SQL draft for HQ Company News create path)
 
 - Added manual/dev-first SQL draft: `supabase/sql/027_company_news_create_foundation.sql`.

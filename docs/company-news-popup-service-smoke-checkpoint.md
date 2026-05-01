@@ -3,6 +3,26 @@
 Date: 2026-05-01  
 Scope: service + smoke only for internal Company News popup eligibility/seen/dismiss path
 
+## Checkpoint update (027 manual DEV apply validation)
+
+- `027` has now been manually applied in Supabase DEV (no production apply):
+  - `supabase/sql/027_company_news_create_foundation.sql`
+  - SQL Editor result: `Success. No rows returned.`
+- Post-apply popup smoke now confirms direct create-path allowance is active:
+  - HQ Admin direct `company_news` create PASS.
+  - teacher eligible popup visibility PASS.
+  - teacher seen/dismiss PASS.
+  - dismissed suppression PASS.
+  - parent/student blocked-or-empty PASS.
+  - cross-user popup dismiss blocked PASS.
+  - `read_at` / `done_status` unchanged PASS.
+  - cleanup PASS.
+- Post-apply request regression remains stable:
+  - `npm run test:supabase:announcements:phase1` PASS.
+- Optional CHECK remains expected when cross-branch fixture env is absent:
+  - `ANNOUNCEMENTS_TEST_OTHER_BRANCH_ID`.
+- No runtime/UI/service changes were made in this checkpoint.
+
 ## Checkpoint update (027 create-path SQL draft prepared)
 
 - New manual/dev-first SQL draft added: `supabase/sql/027_company_news_create_foundation.sql` (review-first, not auto-applied).
