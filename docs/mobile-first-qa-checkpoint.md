@@ -76,6 +76,7 @@ Scope note:
   - HQ/supervisor read-only `Completion Overview` summary badges and per-person row card wrapping.
   - Company News shell cards (emoji/category/date/priority/popup badge) wrap cleanly.
   - Company News detail warm pop-up preview card remains readable and non-dense on ~390px.
+  - Authenticated Company News create preview-disabled copy remains clear and non-confusing.
 - Authenticated non-demo mode is now wired for live staff read/create/status/reply actions.
 - Re-check on ~390px and ~768px:
   - card density with live rows,
@@ -90,6 +91,7 @@ Scope note:
   - no parent-facing media enabled,
   - no Company News pop-up behavior yet,
   - Company News warm pop-up panel is preview-only in detail (no runtime/app-shell trigger),
+  - no popup persistence/dismissal backend behavior in this phase,
   - no parent-facing announcements/events yet,
   - no live chat/notification behavior in this phase.
 - Environment validation note:

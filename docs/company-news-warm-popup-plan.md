@@ -26,7 +26,7 @@ Scope: planning-only checkpoint for Company News / Big News mode and warm portal
 - Staff attachments upload/list/view is live.
 - MyTasks visibility for Announcement Requests is live.
 - HQ/supervisor completion overview UI is live.
-- `Company News` mode is currently placeholder-only in Announcements.
+- Company News UI shell now exists in Announcements (cards/detail/create-demo shell).
 - No runtime warm pop-up behavior exists yet.
 - No notifications/emails automation exists yet.
 - No parent-facing announcements/events in current staff Announcements flow.
@@ -273,20 +273,21 @@ Safeguards:
 
 Choose:
 
-- **A.** Company News data model review
-- **B.** Company News UI shell with demo parity
-- **C.** Company News real service wiring
-- **D.** Warm pop-up runtime shell
-- **E.** Parent-facing announcements/events plan
+- **A.** Runtime warm pop-up planning/data model review
+- **B.** Runtime warm pop-up UI shell
+- **C.** Parent-facing announcements/events plan
+- **D.** Notification/email automation planning
+- **E.** Reports/PDF/AI OCR plan
 
-**Recommendation: B (Company News UI shell with demo parity).**
+**Recommendation: A (Runtime warm pop-up planning/data model review).**
 
 Why:
 
-- Existing fields are enough for MVP Company News shell.
-- UI shell validates distinction between News and Request before popup runtime complexity.
-- Popup dismissal/repeat persistence can be refined after shell feedback.
-- Parent-facing and notification/email automation should remain later.
+- Company News UI shell is already in place.
+- Runtime pop-up requires careful dismissal/frequency/persistence rules before any implementation.
+- This helps avoid repeated/annoying pop-up behavior.
+- Notification/email coupling should remain separate for now.
+- Parent-facing announcements should follow after staff runtime model is clear.
 
 ## 16) Next implementation prompt (copy-paste)
 
@@ -300,7 +301,7 @@ Branch:
 cursor/safe-lint-typecheck-486d
 
 Latest expected commit:
-Add Company News warm pop-up plan
+Document Company News UI shell
 
 Before doing anything, verify:
 - git branch --show-current
@@ -308,10 +309,11 @@ Before doing anything, verify:
 - git status --short
 
 Task:
-Company News UI shell with demo parity only (no warm pop-up runtime yet).
+Company News runtime warm pop-up planning/data model review only.
 
 Hard constraints:
-- UI shell only. Do not implement runtime warm pop-up behavior yet.
+- Docs/planning only.
+- Do not implement runtime warm pop-up behavior in this milestone.
 - Do not change Supabase SQL or RLS. Do not apply SQL.
 - Do not add services.
 - Do not add MyTasks task side effects for Company News.
@@ -322,12 +324,11 @@ Hard constraints:
 - Use fake/dev data only.
 
 Deliverables:
-1) Company News list/detail shell in Announcements with clear visual distinction from requests.
-2) Demo parity for HQ/supervisor/teacher views (local-only fake data in demo mode).
-3) Safe empty/loading/error copy in authenticated path.
-4) Update checkpoint docs.
+1) Runtime warm pop-up trigger/frequency/dismissal strategy.
+2) Data-model review: existing fields vs optional extension candidates.
+3) Non-goals and safety boundaries before runtime implementation.
+4) Phased rollout recommendation.
 
 Validation efficiency rule:
-- Runtime/UI changed: run build/lint/typecheck only.
 - Docs-only: run `git diff --name-only` only.
 ```

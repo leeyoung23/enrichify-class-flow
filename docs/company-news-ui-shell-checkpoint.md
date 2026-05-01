@@ -1,68 +1,180 @@
 # Company News UI Shell Checkpoint
 
 Date: 2026-05-01  
-Scope: Company News UI shell inside `Announcements` with demo parity only
+Scope: documentation checkpoint for Company News UI shell with demo parity only
+
+## Documentation-only note
+
+- This milestone updates documentation only.
+- Validation rule for this checkpoint: `git diff --name-only` only.
 
 ## 1) What was implemented
 
-- `Announcements` now renders a Company News shell in the existing `Company News` tab/filter.
-- News-style cards and detail shell are available for Company News rows.
-- Added warm pop-up **preview panel** in Company News detail (preview-only, non-runtime).
-- Added HQ demo-only local `Create Company News` shell form.
-- Preserved existing request workflow (read/done/undone/reply, attachments, completion overview) without behavior changes.
+- Company News tab/shell inside Announcements is now active.
+- News-style cards are rendered for Company News items.
+- Company News detail shell is rendered.
+- Demo fake Company News data is included.
+- HQ demo local `Create Company News` shell is included.
+- Warm pop-up preview panel exists in Company News detail only.
+- Authenticated `Create Company News` remains disabled/preview-only.
 
-## 2) Demo parity behavior
+## 2) Files changed
 
-- Demo mode includes local fake Company News cards:
+- `src/pages/Announcements.jsx`
+- `docs/company-news-ui-shell-checkpoint.md`
+- `docs/company-news-warm-popup-plan.md`
+- `docs/announcements-internal-communications-plan.md`
+- `docs/mobile-first-qa-checkpoint.md`
+- `docs/project-master-context-handoff.md`
+
+## 3) Company News shell behavior
+
+- Company News filter renders real shell content (not placeholder-only).
+- Cards include:
+  - title
+  - subtitle/body preview
+  - category/template
+  - emoji
+  - publish-style date
+  - priority/tone
+  - pop-up enabled badge
+  - `View detail` action
+- Detail includes:
+  - full content
+  - category/template
+  - audience label
+  - emoji
+  - warm pop-up preview panel
+  - runtime-later note
+
+## 4) demoRole behavior
+
+- Fake cards include:
   - congratulations/recognition
   - important update
   - training reminder
   - holiday/closure
   - event reminder
-- Cards include title, subtitle/body preview, category label, emoji, publish-style date, priority/tone, optional pop-up enabled badge, and detail action.
-- HQ demo can create Company News locally (no Supabase call).
-- Supervisor/teacher demo can view Company News but cannot create.
+- HQ demo can create Company News locally only.
+- Supervisor/teacher demo can view but not create.
+- No Supabase calls for demo Company News create.
+- Existing demo request flow remains intact.
 
-## 3) Authenticated behavior (current milestone)
+## 5) Authenticated mode behavior
 
-- Company News tab can show rows where `announcement_type = company_news` if already returned by existing reads.
-- No real Company News create/write call is wired in this milestone.
-- Create button in authenticated mode is preview-disabled with safe copy.
-- No new service methods were added.
+- Company News tab can display real `company_news` rows if returned by existing `listAnnouncements(...)`.
+- No real Company News write call was added.
+- Authenticated `Create Company News` is preview-disabled with safe copy.
+- Request workflow remains preserved.
+- Company News detail does not run request-only detail/attachments/completion queries.
 
-## 4) Warm pop-up preview behavior
+## 6) Warm pop-up preview behavior
 
-- Detail panel includes a warm pop-up preview card:
-  - short 5-10 second style mock copy,
-  - `View` and `Dismiss` preview buttons (non-functional).
+- Preview panel exists inside Company News detail only.
+- Short mock copy is shown.
+- `View` and `Dismiss` preview buttons are shown.
 - Not implemented:
-  - app-shell runtime pop-up trigger,
-  - persistence/dismissal backend state,
-  - repeated display logic/frequency controls.
+  - app-shell pop-up trigger
+  - persistence
+  - frequency/repeat logic
+  - backend dismissal state
 
-## 5) Safety boundaries preserved
+## 7) Safety boundaries
 
-- No Supabase SQL changes.
-- No RLS changes.
-- No SQL apply.
-- No new services.
-- No MyTasks side effects for Company News.
-- No parent-facing announcements/events.
-- No `parent_facing_media` enablement.
-- No notifications/emails.
-- No live chat.
-- No service-role frontend usage.
+- no SQL/RLS changes
+- no SQL apply
+- no runtime warm pop-up
+- no popup persistence/dismissal backend
+- no MyTasks side effects
+- no parent-facing announcements/events
+- no `parent_facing_media`
+- no notifications/emails
+- no live chat
+- no service-role frontend
 
-## 6) Validation
+## 8) Validation result
 
+- `git diff --name-only`
 - `npm run build` PASS
 - `npm run lint` PASS
 - `npm run typecheck` PASS
+- announcement smoke scripts were not run because this milestone was UI shell-only with no service/SQL changes
 
-## 7) What remains future
+## 9) What remains future
 
-- Runtime warm pop-up behavior in app shell (later milestone).
-- Popup frequency/dismissal persistence strategy.
-- Optional model review only if popup persistence requires additional fields.
-- Parent-facing announcements/events remain future.
-- Notifications/emails remain future.
+- runtime warm pop-up behavior in app shell
+- popup frequency/dismissal persistence strategy
+- optional popup-specific data-model extension review
+- parent-facing announcements/events
+- notification/email automation
+- live chat later/optional
+- reports/PDF/AI OCR later
+
+## 10) Recommended next milestone
+
+Choose:
+
+- **A.** Runtime warm pop-up planning/data model review
+- **B.** Runtime warm pop-up UI shell
+- **C.** Parent-facing announcements/events plan
+- **D.** Notification/email automation planning
+- **E.** Reports/PDF/AI OCR plan
+
+**Recommendation: A first.**
+
+Why A first:
+
+- Company News UI shell already exists.
+- Runtime pop-up requires careful dismissal/frequency/persistence rules before implementation.
+- This avoids annoying repeated pop-ups.
+- Notification/email coupling should remain separate for now.
+- Parent-facing announcements should follow after staff Company News runtime model is clear.
+
+## 11) Next implementation prompt (copy-paste)
+
+```text
+Continue this same project only.
+
+Project folder:
+~/Desktop/enrichify-class-flow
+
+Branch:
+cursor/safe-lint-typecheck-486d
+
+Latest expected commit:
+Document Company News UI shell
+
+Before doing anything, verify:
+- git branch --show-current
+- git log --oneline -12
+- git status --short
+
+Task:
+Company News runtime warm pop-up planning/data model review only.
+
+Hard constraints:
+- Docs/planning only.
+- Do not change app UI or runtime logic in this milestone.
+- Do not add services.
+- Do not change Supabase SQL or RLS; do not apply SQL.
+- Do not add runtime warm pop-up behavior.
+- Do not add popup persistence/dismissal backend behavior.
+- Do not add MyTasks side effects.
+- Do not add parent-facing announcements/events.
+- Do not enable parent_facing_media.
+- Do not auto-send emails/notifications.
+- Do not start live chat.
+- Preserve demoRole/local fallback behavior.
+- Use fake/dev data only.
+
+Deliverables:
+1) runtime warm pop-up trigger/frequency/dismissal strategy
+2) whether existing fields are enough vs optional data-model extensions
+3) non-goals and safety boundaries before runtime implementation
+4) phased rollout recommendation
+
+Validation efficiency rule:
+- Docs-only checkpoint.
+- Run: git diff --name-only
+- Do not run build/lint/typecheck/smoke unless runtime files change.
+```

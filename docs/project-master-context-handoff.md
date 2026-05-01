@@ -509,6 +509,8 @@ Current status note:
   - no SQL/RLS changes, no MyTasks side effects, no parent-facing announcements/events, and no notifications/emails.
 - Company News UI shell checkpoint doc:
   - `docs/company-news-ui-shell-checkpoint.md`
+- Recommended immediate next milestone:
+  - runtime warm pop-up planning/data model review (docs-only) before any runtime trigger implementation.
 - UI milestone validation note:
   - build/lint/typecheck PASS,
   - announcement smoke scripts completed with DNS `ENOTFOUND` CHECK skips in this environment,
@@ -539,7 +541,7 @@ Branch:
 cursor/safe-lint-typecheck-486d
 
 Latest expected commit:
-Document Announcements completion overview UI
+Document Company News UI shell
 
 Before doing anything, verify:
 - git branch --show-current
@@ -547,17 +549,19 @@ Before doing anything, verify:
 - git status --short
 
 Task:
-Company News real service wiring review only (no runtime warm pop-up).
+Company News runtime warm pop-up planning/data model review only.
 
 Hard constraints:
-- Planning/review only unless runtime wiring is explicitly approved in that milestone.
-- Keep existing Company News UI shell and request workflow behavior unchanged unless explicitly scoped.
+- Docs/planning only.
+- Keep existing Company News UI shell and request workflow behavior unchanged.
 - Do not change Supabase SQL or RLS; do not apply SQL.
-- Do not add new backend services unless explicitly approved.
+- Do not add services.
 - Do not use service role in frontend.
 - Do not expose env values or passwords.
 - Do not call real AI APIs; do not add provider keys.
 - Do not auto-send emails or notifications.
+- Do not add runtime warm pop-up behavior in this milestone.
+- Do not add popup persistence/dismissal backend behavior.
 - Do not add parent-facing announcements/events.
 - Do not enable parent_facing_media.
 - Preserve demoRole and local/demo fallback.
@@ -565,9 +569,9 @@ Hard constraints:
 - No storage_path, staff_note, or raw SQL/RLS/env strings in UI.
 
 Deliverables:
-1) Confirm whether existing `listAnnouncements(...)`/`createAnnouncementRequest(...)` scope safely supports Company News read/write paths.
-2) Define smallest safe runtime wiring slice for Company News without pop-up runtime.
-3) Keep strict non-goals: no pop-up runtime, no notifications/emails, no MyTasks side effects.
+1) Define runtime warm pop-up trigger/frequency/dismissal strategy.
+2) Review current data model for popup readiness vs optional extension needs.
+3) Keep strict non-goals: no runtime trigger implementation, no notifications/emails, no MyTasks side effects.
 4) Update docs/checkpoints only for planning milestone.
 
 Validation efficiency rule:

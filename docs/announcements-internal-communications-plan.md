@@ -25,6 +25,9 @@ Scope: planning only for Announcements/Internal Communications and Document Hub 
   - no notifications/emails.
 - Checkpoint doc:
   - `docs/company-news-ui-shell-checkpoint.md`.
+- Recommended immediate next milestone:
+  - **Runtime warm pop-up planning/data model review** (docs-only),
+  - define dismissal/frequency/persistence rules before runtime trigger work.
 
 ## Checkpoint update (completion overview read service + smoke)
 
@@ -52,9 +55,10 @@ Scope: planning only for Announcements/Internal Communications and Document Hub 
 Roadmap implication:
 
 - Staff attachment UI wiring is now completed; **MyTasks Announcement Requests** UI is also completed.
-- Recommend next milestone **A. Completion overview UI for HQ/supervisor** (read service + smoke already exist; see `docs/announcements-completion-overview-read-service-checkpoint.md`).
-- Rationale: operational visibility should be surfaced in-product before notifications/emails, Company News, or parent-facing expansion.
-- Keep Company News warm pop-up, parent-facing announcements/events, and report/PDF/AI OCR for later milestones.
+- Completion overview UI is now completed, and Company News UI shell is now added.
+- Recommend next milestone **A. Runtime warm pop-up planning/data model review**.
+- Rationale: runtime pop-up behavior needs clear dismissal/frequency/persistence rules before implementation.
+- Keep parent-facing announcements/events, notification/email automation, and report/PDF/AI OCR for later milestones.
 
 ## Checkpoint update (staff attachments UI wired)
 
