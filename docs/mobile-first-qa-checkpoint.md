@@ -1,5 +1,16 @@
 # Mobile-first QA checkpoint
 
+## Checkpoint update (parent-facing announcements/media milestone alignment)
+
+- Parent-facing announcement and media service boundaries are now smoke-proven.
+- Parent-facing media smoke confirms release-gated visibility and signed URL-only access.
+- No ParentView announcements/events UI shell exists yet.
+- Mobile-first roadmap alignment now recommends:
+  - ParentView announcements/events UI shell with demo parity first,
+  - then parent-facing creation UI after display safety is validated.
+- No SQL/RLS changes are required for this next UI-shell milestone.
+
+
 This checkpoint defines a practical mobile-first QA pass before starting another major backend vertical.
 
 Scope note:

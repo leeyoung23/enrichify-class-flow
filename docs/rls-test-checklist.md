@@ -1,5 +1,49 @@
 # RLS Test Checklist
 
+## Checkpoint update (parent-facing media smoke pass documented)
+
+- Parent-facing media service milestone is now documented as PASS and stable.
+- Confirmed service methods:
+  - `uploadParentAnnouncementMedia(...)`
+  - `listParentAnnouncementMedia(...)`
+  - `getParentAnnouncementMediaSignedUrl(...)`
+  - `releaseParentAnnouncementMedia(...)`
+  - `deleteParentAnnouncementMedia(...)`
+- Boundary confirmation:
+  - anon client + JWT + RLS only,
+  - private bucket `parent-announcements-media` only,
+  - signed URL only (no public URL model),
+  - no service-role frontend,
+  - no internal `announcements-attachments` bucket reuse.
+- Release boundary confirmation:
+  - upload defaults `released_to_parent=false`,
+  - parent unreleased access blocked,
+  - manager release helper gates released visibility.
+- Smoke summary confirmation:
+  - HQ upload/list/signed URL/release PASS,
+  - parent unreleased deny + released allow PASS,
+  - parent other-branch blocked PASS,
+  - teacher blocked PASS,
+  - student blocked/empty PASS,
+  - cleanup PASS,
+  - expected unrelated-parent credential CHECK remains.
+- Validation confirmation:
+  - `git diff --name-only` pre-test ran,
+  - `build/lint/typecheck` PASS,
+  - `test:supabase:parent-announcements:media` PASS,
+  - `test:supabase:parent-announcements` PASS,
+  - `test:supabase:announcements:phase1` PASS,
+  - optional `company-news:create` + `announcements:attachments` PASS,
+  - npm `devdir` warning remains non-blocking.
+- No SQL/RLS changes in this checkpoint.
+- No app UI/runtime behavior changes in this checkpoint.
+- No notifications/emails/live chat in this checkpoint.
+- Canonical doc:
+  - `docs/parent-facing-announcements-media-service-smoke-checkpoint.md`
+- Recommended next milestone now:
+  - **A. ParentView announcements/events UI shell with demo parity** first.
+
+
 ## Checkpoint update (parent-facing media service + smoke)
 
 - Parent-facing media service methods are now added in `src/services/supabaseUploadService.js`:
