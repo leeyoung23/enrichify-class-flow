@@ -129,3 +129,13 @@ Coverage goals in smoke:
   - raw/private path-style snapshot values are blocked as expected.
 - Parent evidence visibility safety is now checked directly:
   - parent direct evidence-link read remains blocked/empty.
+- Milestone checkpoint reference:
+  - `docs/ai-parent-report-evidence-smoke-hardening-checkpoint.md`.
+
+## 11) Current recommended next milestone
+
+- Next recommended milestone is now:
+  - AI parent report UI shell with demo/manual data only.
+- Rationale:
+  - service lifecycle + evidence traceability behavior is now proven under current RLS boundaries,
+  - UI shell can validate teacher workflow shape before mock AI service/UI wiring.

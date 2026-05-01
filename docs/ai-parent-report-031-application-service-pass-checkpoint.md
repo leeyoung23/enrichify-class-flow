@@ -55,6 +55,8 @@ From `npm run test:supabase:ai-parent-reports` (post-031):
 - Unrelated parent fixture credentials missing/invalid CHECK remains expected.
 - Announcements phase1 optional `ANNOUNCEMENTS_TEST_OTHER_BRANCH_ID` CHECK remains expected.
 - No unsafe RLS widening observed.
+- Evidence hardening detail reference:
+  - `docs/ai-parent-report-evidence-smoke-hardening-checkpoint.md`.
 
 ## 5) RLS/privacy boundary
 
@@ -85,19 +87,20 @@ From `npm run test:supabase:ai-parent-reports` (post-031):
 
 Choose:
 
-- A. AI parent report service smoke hardening: safe evidence-link positive test
-- B. AI parent report UI shell with demo/manual data
-- C. Mock AI report draft service
-- D. Real AI provider integration
-- E. PDF/export planning
+- A. AI parent report UI shell with demo/manual data
+- B. Mock AI report draft service
+- C. Real AI provider integration
+- D. PDF/export planning
+- E. Notification/email planning
 
-Recommendation: **A completed** (small hardening milestone done). Next choose **B**.
+Recommendation: **A first**.
 
 Why:
 
-- evidence-link source traceability guard + positive insert path is now covered,
-- next highest-value step is controlled UI shell planning/implementation with demo/manual data only,
-- keep no real AI/no PDF constraints unchanged.
+- data model/RLS/service/evidence traceability path is now proven,
+- UI shell can validate teacher workflow safely without real AI/provider integration,
+- mock AI report draft service should follow after UI shape is clear,
+- real provider and PDF/export should stay deferred.
 
 ## 9) Next implementation prompt (copy-paste)
 

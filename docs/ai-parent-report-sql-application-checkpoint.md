@@ -197,3 +197,5 @@ Run only what matches changed files.
   - staff read-back evidence visibility PASS where RLS permits,
   - parent direct evidence-link read blocked/empty.
 - This follow-up does not change SQL/RLS; behavior is validated at service/smoke layer only.
+- Dedicated checkpoint doc:
+  - `docs/ai-parent-report-evidence-smoke-hardening-checkpoint.md`.

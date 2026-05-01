@@ -401,3 +401,13 @@ Do not run build/lint/typecheck/smoke suite unless runtime files change.
 - Staff evidence read-back is now verified under RLS where allowed.
 - Parent direct evidence-link read remains blocked/empty in MVP scope.
 - No UI changes, no SQL/RLS changes, no provider wiring, no PDF/export in this checkpoint.
+- Detailed checkpoint:
+  - `docs/ai-parent-report-evidence-smoke-hardening-checkpoint.md`.
+
+## Checkpoint update (next milestone direction)
+
+- Recommended next milestone:
+  - AI parent report UI shell with demo/manual data only.
+- Reasoning:
+  - model/RLS/service/evidence-smoke boundaries are now proven,
+  - UI shell is the safest next step before mock AI draft service and long before real provider wiring.

@@ -1255,3 +1255,5 @@ Expected outcomes for this milestone:
 - Visibility case:
   - staff evidence read-back may PASS where RLS permits,
   - parent direct evidence-link read should remain blocked/empty.
+- Milestone checkpoint reference:
+  - `docs/ai-parent-report-evidence-smoke-hardening-checkpoint.md`.

@@ -1175,3 +1175,14 @@ Handoff status: complete for continuity. Use this file as the primary context an
   - staff read-back PASS when RLS permits,
   - parent direct evidence-link read blocked/empty.
 - No SQL/RLS/UI/provider/PDF changes in this hardening step.
+- Checkpoint doc:
+  - `docs/ai-parent-report-evidence-smoke-hardening-checkpoint.md`.
+
+### AI parent report next milestone recommendation note
+
+- Recommended next milestone:
+  - AI parent report UI shell with demo/manual data only.
+- Sequence rationale:
+  - service + RLS + evidence traceability behavior is already proven,
+  - UI shape should be validated before mock AI draft service,
+  - real provider integration and PDF/export remain later phases.
