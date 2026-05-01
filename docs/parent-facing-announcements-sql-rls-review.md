@@ -1,0 +1,303 @@
+# Parent-facing Announcements and Events SQL/RLS Review
+
+Date: 2026-05-01  
+Scope: planning/review only for safest SQL/RLS direction before implementation (no UI/runtime/service/SQL changes in this milestone)
+
+## 1) Current state
+
+- Staff-facing `Announcements` internal module exists and is a strong internal prototype.
+- Parent-facing announcements/events planning doc already exists (`docs/parent-facing-announcements-events-plan.md`).
+- Parent-facing announcements/events are not implemented yet.
+- Parent-facing media is not enabled (`parent_facing_media` remains reserved/disabled).
+- Notification/email automation is not implemented.
+
+## 2) Product goal
+
+Parent-facing announcements/events should provide a parent-safe official channel for notices, events, activities, and reminders:
+
+- placed near `ParentView` / Memories communication context,
+- reduced dependence on WhatsApp broadcast chains,
+- improved trust/transparency through clear official posts,
+- strict protection against internal staff content leakage.
+
+## 3) Data model options
+
+### A. Extend existing `announcements` with `audience_type='parent_facing'`
+
+Pros:
+
+- fastest reuse path.
+
+Risks:
+
+- existing internal model already carries request/task semantics (`requires_response`, `requires_upload`, `done/undone`, completion tracking),
+- internal attachment model currently includes staff-only roles and notes,
+- mixed internal + parent predicates increase RLS policy complexity and regression risk,
+- accidental leakage risk is higher if any policy edge is missed.
+
+### B. Separate `parent_announcements` table family
+
+Pros:
+
+- strongest privacy boundary,
+- cleaner RLS reasoning and easier audits,
+- avoids cross-coupling with internal request/task workflows.
+
+Risks:
+
+- additional schema/service work.
+
+### C. Hybrid: separate parent-facing table now, optional shared design later
+
+Pros:
+
+- keeps strongest boundary now,
+- allows later abstraction reuse once behavior is proven safe.
+
+Risks:
+
+- requires future consolidation planning if unification is ever desired.
+
+### D. Reuse Company News and extend parent targets
+
+Pros:
+
+- reuse existing Company News draft/publish flow shape.
+
+Risks:
+
+- Company News is explicitly internal-staff oriented today,
+- extending it to parent audience blurs internal-vs-parent release boundary,
+- higher chance of internal culture/ops content crossing into parent channel.
+
+### Recommendation
+
+Recommend **Option B** now (with C-style flexibility later): introduce a **separate parent-facing data model** first.  
+This is the safest path for privacy and RLS correctness given current internal announcement statuses, internal attachments, and operational workflow fields.
+
+## 4) Recommended core parent-facing tables
+
+Recommended separate model:
+
+- `parent_announcements`
+- `parent_announcement_targets`
+- `parent_announcement_read_receipts` (or `parent_announcement_statuses` if richer state is needed)
+- `parent_announcement_media`
+
+Optional later:
+
+- `parent_announcement_templates`
+
+## 5) `parent_announcements` fields
+
+Planned fields:
+
+- `id`
+- `title`
+- `subtitle`
+- `body`
+- `announcement_type` / `event_type`
+- `branch_id`
+- `class_id` (nullable)
+- `status` (`draft` / `published` / `archived`)
+- `publish_at` / `published_at`
+- `event_start_at` / `event_end_at` (nullable)
+- `location` (nullable)
+- `created_by_profile_id`
+- `updated_by_profile_id`
+- `created_at` / `updated_at`
+
+Notes:
+
+- Keep parent-facing lifecycle simple in MVP.
+- Do not include internal request/task fields (`requires_response`, `requires_upload`, done/undone workflow) in parent model.
+
+## 6) Targeting model
+
+Targeting plan:
+
+- branch-wide parent audience,
+- class-scoped parent audience,
+- selected students / linked guardians,
+- programme/cohort targeting later.
+
+Non-leakage constraints:
+
+- no unrelated family visibility,
+- no cross-branch leakage,
+- no fallback to broad targets when specific target resolution fails.
+
+## 7) Parent visibility / RLS
+
+RLS direction by role:
+
+- **HQ**: global create/publish/archive management for parent-facing posts.
+- **Supervisor**: own-branch create/publish/archive only when explicitly allowed.
+- **Teacher**: blocked from create/publish in MVP (future reconsideration possible).
+- **Parent**: read-only access to published parent-facing rows scoped to linked child/branch/class target resolution.
+
+Must-hold boundaries:
+
+- parent cannot read any `internal_staff` announcement content,
+- parent cannot read `announcement_attachments` internal rows,
+- parent can read parent-facing media only when parent-facing post is published and media is released,
+- frontend remains anon client + JWT (no service role in frontend).
+
+## 8) Media/storage model
+
+Planning recommendation:
+
+- private bucket dedicated to parent-facing media (example: `parent-announcements-media`),
+- signed URLs only,
+- no public URLs by default,
+- no reuse of internal `announcements-attachments` bucket or rows,
+- `parent_announcement_media` metadata table with explicit release boundary,
+- enforce image/file type + size limits,
+- never expose staff-only fields such as `staff_note`.
+
+## 9) Staff/HQ creation governance
+
+Creation governance plan:
+
+- HQ can create/publish parent-facing posts,
+- supervisor own-branch create/publish if approved by product policy,
+- teacher blocked initially,
+- template-assisted parent-friendly copy,
+- preview before publish,
+- edit/archive governance in later phase,
+- audit timestamps + actor IDs on create/update/publish/archive.
+
+## 10) ParentView UI implications (future)
+
+Future UI direction only:
+
+- add `Announcements & Events` section near Memories in `ParentView`,
+- latest/featured card,
+- list + detail view,
+- event date/time/location fields,
+- optional media thumbnails,
+- mobile-first card layout,
+- no staff controls exposed in parent view.
+
+## 11) Notification/email boundary
+
+This review adds no auto-email behavior.
+
+Future optional direction:
+
+- publish email notification,
+- event reminder email,
+- separate notification service with template safety, rate limits, and audit trail.
+
+Boundary reminder:
+
+- attendance arrival email remains a separate attendance module track.
+
+## 12) RLS risks and safeguards
+
+Key risks:
+
+- cross-family leakage,
+- internal content leakage into parent surface,
+- confusion between internal attachments and parent media,
+- branch/class target misconfiguration,
+- stale event visibility,
+- weak parent-facing copy quality,
+- service-role misuse in frontend,
+- signed URL leakage risk.
+
+Safeguards:
+
+- separate parent-facing tables and media bucket,
+- policy-first review gate before UI/service rollout,
+- explicit publish/release lifecycle controls,
+- strict linked-child + branch/class eligibility checks,
+- short-lived signed URLs only,
+- audit logging for create/edit/publish/archive actions.
+
+## 13) Testing plan (future smoke)
+
+Future validation cases:
+
+- HQ create + publish parent-facing announcement,
+- supervisor own-branch create + publish when allowed,
+- parent linked to targeted class/branch can read published post,
+- unrelated parent is blocked,
+- parent cannot read internal staff announcements,
+- parent cannot read internal attachments,
+- parent media signed URL access is scope-limited,
+- parent/student/staff role boundary checks,
+- no notification/email side effects in base rollout.
+
+## 14) Recommended next milestone
+
+Options:
+
+- A. Draft parent-facing announcements SQL/RLS foundation
+- B. ParentView UI shell with demo parity
+- C. Parent-facing media/storage planning
+- D. Notification/email planning
+- E. Reports/PDF/AI OCR plan
+
+Recommendation: **A first**.
+
+Why:
+
+- parent-facing content has high privacy impact,
+- separate model and RLS must be drafted/reviewed before UI/services,
+- media/email should follow only after core parent visibility is safe and testable.
+
+## 15) Next implementation prompt (copy-paste)
+
+```text
+Continue this same project only.
+
+Project folder:
+~/Desktop/enrichify-class-flow
+
+Branch:
+cursor/safe-lint-typecheck-486d
+
+Latest expected commit:
+Add parent-facing announcements SQL RLS review
+
+Before doing anything, verify:
+- git branch --show-current
+- git log --oneline -12
+- git status --short
+
+Task:
+Draft parent-facing announcements SQL/RLS foundation only.
+
+Hard constraints:
+- SQL/RLS draft + docs only for this milestone.
+- Do not change app UI.
+- Do not change runtime logic.
+- Do not add UI/services for parent-facing announcements/events yet.
+- Do not apply SQL automatically.
+- Do not call real AI APIs.
+- Do not add provider keys.
+- Do not expose env values or passwords.
+- Do not commit .env.local.
+- Do not upload files.
+- Use fake/dev data only.
+- Do not use service role key in frontend.
+- Do not remove demoRole or demo/local fallback.
+- Do not auto-send emails or notifications.
+- Do not start live chat.
+- Keep parent_facing_media release-gated; do not enable by default.
+
+Please draft:
+1) `parent_announcements` foundation SQL.
+2) `parent_announcement_targets` SQL.
+3) `parent_announcement_read_receipts` (or statuses) SQL.
+4) `parent_announcement_media` SQL + private bucket policy draft.
+5) RLS policies for HQ/supervisor/teacher/parent scopes with strict linked-child checks.
+6) Companion checkpoint documentation.
+
+Validation efficiency rule:
+Docs/review only unless runtime files change.
+Run:
+- git diff --name-only
+Do not run build/lint/typecheck/smoke suite unless runtime files change.
+```
