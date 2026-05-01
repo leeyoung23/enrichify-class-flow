@@ -63,6 +63,10 @@ Scope: planning/review only for safest SQL/RLS direction before implementation (
 - No notification/email behavior.
 - Service checkpoint doc:
   - `docs/parent-facing-announcements-service-smoke-checkpoint.md`
+- CHECK investigation result:
+  - direct insert diagnostics now confirm current create-path blocker is RLS insert denial (`42501`) on `parent_announcements`,
+  - fixture discovery now resolves branch/class/student IDs via env override + deterministic fake fallback where possible,
+  - unrelated parent negative check remains auth-fixture dependent when unrelated fake credentials are unavailable.
 
 ## 1) Current state
 

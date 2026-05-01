@@ -25,6 +25,88 @@ function isUuidLike(value) {
   );
 }
 
+const DEFAULT_FAKE_BRANCH_ID = "11111111-1111-1111-1111-111111111111";
+const DEFAULT_FAKE_OTHER_BRANCH_ID = "22222222-2222-2222-2222-222222222222";
+const DEFAULT_FAKE_CLASS_ID = "33333333-3333-3333-3333-333333333331";
+const DEFAULT_FAKE_STUDENT_ID = "55555555-5555-5555-5555-555555555555";
+
+function safeRole(value) {
+  const role = typeof value === "string" ? value.trim() : "";
+  return role || "unknown";
+}
+
+function safeActive(value) {
+  if (value === true) return "true";
+  if (value === false) return "false";
+  return "unknown";
+}
+
+function safeBranch(value) {
+  if (isUuidLike(value)) return "uuid";
+  if (value == null || value === "") return "null";
+  return "non_uuid";
+}
+
+function formatProfileContext(label, profile) {
+  return `${label}: role=${safeRole(profile?.role)} is_active=${safeActive(profile?.is_active)} branch_id=${safeBranch(profile?.branch_id)}`;
+}
+
+function pickUuid(candidate, fallback = null) {
+  return isUuidLike(candidate) ? String(candidate).trim() : fallback;
+}
+
+function formatDbError(error) {
+  if (!error) return "unknown";
+  const code = typeof error.code === "string" ? error.code : "n/a";
+  const message = typeof error.message === "string" ? error.message : "unknown";
+  return `code=${code} message=${message}`;
+}
+
+async function diagnoseDirectCreateInsert({
+  supabase,
+  branchId,
+  profileId,
+  label,
+}) {
+  const nowIso = new Date().toISOString();
+  const probe = await supabase
+    .from("parent_announcements")
+    .insert({
+      title: `Diag ${label} ${nowIso}`,
+      subtitle: "diag",
+      body: "diag",
+      announcement_type: "reminder",
+      branch_id: isUuidLike(branchId) ? branchId : null,
+      class_id: null,
+      status: "draft",
+      publish_at: null,
+      published_at: null,
+      event_start_at: null,
+      event_end_at: null,
+      location: null,
+      created_by_profile_id: profileId,
+      updated_by_profile_id: profileId,
+    })
+    .select("id")
+    .maybeSingle();
+
+  if (probe.error || !probe.data?.id) {
+    printResult("CHECK", `${label} direct insert diagnostic: ${formatDbError(probe.error)}`);
+    return;
+  }
+
+  printResult("CHECK", `${label} direct insert diagnostic: insert succeeded`);
+  const cleanup = await supabase
+    .from("parent_announcements")
+    .delete()
+    .eq("id", probe.data.id)
+    .select("id")
+    .maybeSingle();
+  if (cleanup.error) {
+    printResult("CHECK", `${label} direct insert diagnostic cleanup: ${formatDbError(cleanup.error)}`);
+  }
+}
+
 async function signInRole({ label, email, passwordVar }, deps) {
   const password = resolvePassword(passwordVar);
   if (!password) {
@@ -97,12 +179,15 @@ async function run() {
   };
   const parentUser = {
     label: "Parent",
-    email: "parent.demo@example.test",
+    email: process.env.PARENT_ANNOUNCEMENTS_TEST_PARENT_EMAIL || "parent.demo@example.test",
     passwordVar: "RLS_TEST_PARENT_PASSWORD",
   };
   const unrelatedParentUser = {
     label: "Unrelated Parent",
-    email: process.env.RLS_TEST_UNRELATED_PARENT_EMAIL || "parent.unrelated@example.test",
+    email:
+      process.env.PARENT_ANNOUNCEMENTS_TEST_UNRELATED_PARENT_EMAIL ||
+      process.env.RLS_TEST_UNRELATED_PARENT_EMAIL ||
+      "parent.unrelated@example.test",
     passwordVar: "RLS_TEST_UNRELATED_PARENT_PASSWORD",
   };
   const studentUser = {
@@ -118,43 +203,106 @@ async function run() {
 
   let hqPublishedAnnouncementId = null;
   let supervisorPublishedAnnouncementId = null;
+  let otherBranchAnnouncementId = null;
   let linkedParentVisible = false;
+  let hqFixtureBranchId = null;
+  let fixtureClassId = null;
+  let fixtureStudentId = null;
 
   // 1) HQ create draft + publish with branch target.
   const hqSignIn = await signInRole(hqUser, deps);
   if (hqSignIn.ok) {
     const hqCtx = await resolveCurrentProfileContext(supabase);
-    const hqBranchId = isUuidLike(process.env.PARENT_ANNOUNCEMENTS_TEST_BRANCH_ID)
-      ? process.env.PARENT_ANNOUNCEMENTS_TEST_BRANCH_ID.trim()
-      : (isUuidLike(hqCtx.data?.branch_id) ? hqCtx.data.branch_id : null);
-
-    if (!hqBranchId) {
-      printResult("CHECK", "HQ create/publish skipped (missing branch fixture id)");
+    if (hqCtx.error || !hqCtx.data?.id) {
+      printResult("CHECK", "HQ: profile context unavailable");
     } else {
-      const createResult = await createParentAnnouncement({
-        title: `Smoke Parent Announcement HQ ${new Date().toISOString()}`,
-        subtitle: "Fake/dev parent announcement",
-        body: "Fake/dev parent announcement body for RLS smoke.",
-        announcementType: "centre_notice",
-        branchId: hqBranchId,
-        targets: [{ targetType: "branch", branchId: hqBranchId }],
-      });
-      if (createResult.error || !createResult.data?.announcement?.id) {
-        printResult("WARNING", `HQ: create parent announcement failed (${createResult.error?.message || "unknown"})`);
-        failureCount += 1;
-      } else {
-        hqPublishedAnnouncementId = createResult.data.announcement.id;
-        createdParentAnnouncementIds.push(hqPublishedAnnouncementId);
-        printResult("PASS", "HQ: create parent announcement draft succeeded");
+      printResult("CHECK", formatProfileContext("HQ context", hqCtx.data));
 
-        const publishResult = await publishParentAnnouncement({
-          parentAnnouncementId: hqPublishedAnnouncementId,
+      hqFixtureBranchId = pickUuid(
+        trimEnv("PARENT_ANNOUNCEMENTS_TEST_BRANCH_ID"),
+        pickUuid(hqCtx.data.branch_id, DEFAULT_FAKE_BRANCH_ID)
+      );
+      fixtureClassId = pickUuid(trimEnv("PARENT_ANNOUNCEMENTS_TEST_CLASS_ID"), DEFAULT_FAKE_CLASS_ID);
+      fixtureStudentId = pickUuid(trimEnv("PARENT_ANNOUNCEMENTS_TEST_STUDENT_ID"), DEFAULT_FAKE_STUDENT_ID);
+      const otherBranchId = pickUuid(
+        trimEnv("PARENT_ANNOUNCEMENTS_TEST_OTHER_BRANCH_ID"),
+        DEFAULT_FAKE_OTHER_BRANCH_ID
+      );
+
+      printResult(
+        "CHECK",
+        `Fixture discovery: branch_id=${hqFixtureBranchId ? "found" : "missing"} class_id=${
+          fixtureClassId ? "found" : "missing"
+        } student_id=${fixtureStudentId ? "found" : "missing"} other_branch_id=${
+          otherBranchId ? "found" : "missing"
+        }`
+      );
+
+      if (!hqFixtureBranchId) {
+        printResult("CHECK", "HQ create/publish skipped (branch fixture unresolved)");
+      } else {
+        const createResult = await createParentAnnouncement({
+          title: `Smoke Parent Announcement HQ ${new Date().toISOString()}`,
+          subtitle: "Fake/dev parent announcement",
+          body: "Fake/dev parent announcement body for RLS smoke.",
+          announcementType: "centre_notice",
+          branchId: hqFixtureBranchId,
+          targets: [{ targetType: "branch", branchId: hqFixtureBranchId }],
         });
-        if (publishResult.error || publishResult.data?.status !== "published") {
-          printResult("WARNING", `HQ: publish parent announcement failed (${publishResult.error?.message || "unknown"})`);
-          failureCount += 1;
+        if (createResult.error || !createResult.data?.announcement?.id) {
+          printResult(
+            "CHECK",
+            `HQ: create parent announcement failed (stage=insert_or_targets; ${createResult.error?.message || "unknown"})`
+          );
+          await diagnoseDirectCreateInsert({
+            supabase,
+            branchId: hqFixtureBranchId,
+            profileId: hqCtx.data.id,
+            label: "HQ",
+          });
         } else {
-          printResult("PASS", "HQ: publish parent announcement succeeded");
+          hqPublishedAnnouncementId = createResult.data.announcement.id;
+          createdParentAnnouncementIds.push(hqPublishedAnnouncementId);
+          printResult("PASS", "HQ: create parent announcement draft succeeded");
+
+          const publishResult = await publishParentAnnouncement({
+            parentAnnouncementId: hqPublishedAnnouncementId,
+          });
+          if (publishResult.error || publishResult.data?.status !== "published") {
+            printResult(
+              "CHECK",
+              `HQ: publish parent announcement failed (stage=publish; ${publishResult.error?.message || "unknown"})`
+            );
+          } else {
+            printResult("PASS", "HQ: publish parent announcement succeeded");
+          }
+
+          if (otherBranchId && otherBranchId !== hqFixtureBranchId) {
+            const otherCreate = await createParentAnnouncement({
+              title: `Smoke Parent Announcement HQ Other Branch ${new Date().toISOString()}`,
+              body: "Fake/dev other-branch visibility negative fixture.",
+              announcementType: "event",
+              branchId: otherBranchId,
+              targets: [{ targetType: "branch", branchId: otherBranchId }],
+            });
+            if (!otherCreate.error && otherCreate.data?.announcement?.id) {
+              otherBranchAnnouncementId = otherCreate.data.announcement.id;
+              createdParentAnnouncementIds.push(otherBranchAnnouncementId);
+              const otherPublish = await publishParentAnnouncement({
+                parentAnnouncementId: otherBranchAnnouncementId,
+              });
+              if (otherPublish.error || otherPublish.data?.status !== "published") {
+                printResult(
+                  "CHECK",
+                  `HQ: other-branch publish fixture CHECK (${otherPublish.error?.message || "unknown"})`
+                );
+              } else {
+                printResult("PASS", "HQ: other-branch published fixture created for parent negative check");
+              }
+            } else {
+              printResult("CHECK", `HQ: other-branch fixture CHECK (${otherCreate.error?.message || "unknown"})`);
+            }
+          }
         }
       }
     }
@@ -167,6 +315,9 @@ async function run() {
   const supervisorSignIn = await signInRole(supervisorUser, deps);
   if (supervisorSignIn.ok) {
     const supervisorCtx = await resolveCurrentProfileContext(supabase);
+    if (!supervisorCtx.error && supervisorCtx.data) {
+      printResult("CHECK", formatProfileContext("Branch Supervisor context", supervisorCtx.data));
+    }
     const supervisorBranchId = isUuidLike(supervisorCtx.data?.branch_id) ? supervisorCtx.data.branch_id : null;
     if (!supervisorBranchId) {
       printResult("CHECK", "Branch Supervisor own-branch create/publish skipped (branch unavailable)");
@@ -179,7 +330,33 @@ async function run() {
         targets: [{ targetType: "branch", branchId: supervisorBranchId }],
       });
       if (supervisorCreate.error || !supervisorCreate.data?.announcement?.id) {
-        printResult("CHECK", `Branch Supervisor own-branch create CHECK (${supervisorCreate.error?.message || "unknown"})`);
+        printResult(
+          "CHECK",
+          `Branch Supervisor own-branch create CHECK (stage=insert_or_targets; ${supervisorCreate.error?.message || "unknown"})`
+        );
+        await diagnoseDirectCreateInsert({
+          supabase,
+          branchId: supervisorBranchId,
+          profileId: supervisorCtx.data?.id || null,
+          label: "Branch Supervisor",
+        });
+
+        const createDraftNoTargets = await createParentAnnouncement({
+          title: `Smoke Parent Announcement Supervisor NoTargets ${new Date().toISOString()}`,
+          body: "Fake/dev supervisor isolate-no-targets",
+          announcementType: "reminder",
+          branchId: supervisorBranchId,
+          targets: [],
+        });
+        if (createDraftNoTargets.error || !createDraftNoTargets.data?.announcement?.id) {
+          printResult(
+            "CHECK",
+            `Branch Supervisor diagnostic CHECK (stage=announcement_insert_only; ${createDraftNoTargets.error?.message || "unknown"})`
+          );
+        } else {
+          createdParentAnnouncementIds.push(createDraftNoTargets.data.announcement.id);
+          printResult("CHECK", "Branch Supervisor diagnostic: announcement insert-only succeeded; target-stage likely blocker");
+        }
       } else {
         supervisorPublishedAnnouncementId = supervisorCreate.data.announcement.id;
         createdParentAnnouncementIds.push(supervisorPublishedAnnouncementId);
@@ -197,7 +374,7 @@ async function run() {
     }
 
     // 3) Supervisor cross-branch/mixed-target blocked (if testable).
-    const otherBranchId = trimEnv("PARENT_ANNOUNCEMENTS_TEST_OTHER_BRANCH_ID");
+    const otherBranchId = pickUuid(trimEnv("PARENT_ANNOUNCEMENTS_TEST_OTHER_BRANCH_ID"), DEFAULT_FAKE_OTHER_BRANCH_ID);
     if (!supervisorPublishedAnnouncementId || !isUuidLike(otherBranchId) || !supervisorBranchId || otherBranchId === supervisorBranchId) {
       printResult("CHECK", "Branch Supervisor cross-branch/mixed-target check skipped (fixture missing)");
     } else {
@@ -253,6 +430,10 @@ async function run() {
   // 5) Parent linked visibility + mark read + create blocked.
   const parentSignIn = await signInRole(parentUser, deps);
   if (parentSignIn.ok) {
+    const parentCtx = await resolveCurrentProfileContext(supabase);
+    if (!parentCtx.error && parentCtx.data) {
+      printResult("CHECK", formatProfileContext("Parent context", parentCtx.data));
+    }
     const parentCreate = await createParentAnnouncement({
       title: `Parent should fail ${new Date().toISOString()}`,
       body: "Fake/dev parent blocked create attempt",
@@ -299,6 +480,18 @@ async function run() {
       }
     }
 
+    if (otherBranchAnnouncementId) {
+      const parentSeesOtherBranch = (parentList.data || []).some((row) => row?.id === otherBranchAnnouncementId);
+      if (parentSeesOtherBranch) {
+        printResult("WARNING", "Parent: unrelated other-branch published fixture unexpectedly visible");
+        failureCount += 1;
+      } else {
+        printResult("PASS", "Parent: unrelated other-branch published fixture blocked/empty as expected");
+      }
+    } else {
+      printResult("CHECK", "Parent: unrelated branch negative check skipped (other-branch fixture unavailable)");
+    }
+
     const parentInternalRead = await listAnnouncements({ audienceType: "internal_staff" });
     if (parentInternalRead.error || (Array.isArray(parentInternalRead.data) && parentInternalRead.data.length === 0)) {
       printResult("PASS", "Parent: internal_staff announcements blocked/empty as expected");
@@ -329,7 +522,10 @@ async function run() {
       }
     }
   } else {
-    printResult("CHECK", "Unrelated Parent check skipped");
+    printResult(
+      "CHECK",
+      "Unrelated Parent check skipped (missing/invalid unrelated parent fixture credentials or auth user)"
+    );
   }
   await signOut();
 

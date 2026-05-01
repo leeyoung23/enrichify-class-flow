@@ -87,6 +87,10 @@ Reminder: **Frontend filtering is not security. RLS must enforce access at datab
   - no parent-facing media upload/service path,
   - no SQL/RLS changes,
   - no notifications/emails.
+- CHECK investigation update:
+  - smoke now logs non-secret actor/fixture context and direct insert diagnostics,
+  - current HQ/supervisor create CHECKs show `42501` insert RLS denial on `parent_announcements`,
+  - unrelated parent CHECK remains auth-fixture credential dependent.
 
 ## Announcements completion overview read-service checkpoint note (2026-05-01)
 

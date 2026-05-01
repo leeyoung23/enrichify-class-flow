@@ -19,6 +19,10 @@ Scope: manual Supabase DEV SQL application checkpoint for `028` (docs-only updat
   - no notifications/emails.
 - Service/smoke checkpoint doc:
   - `docs/parent-facing-announcements-service-smoke-checkpoint.md`
+- CHECK investigation note:
+  - smoke now prints role/is_active/branch and fixture discovery diagnostics,
+  - current create-path CHECKs show direct insert `42501` (`row violates row-level security policy`),
+  - remaining unrelated-parent CHECK is credential/auth-fixture dependent.
 
 ## 1) Application status
 

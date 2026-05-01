@@ -58,6 +58,10 @@ Scope: planning-only checkpoint for parent-facing announcements/events next laye
   - parent visibility remains RLS-bound.
 - Service checkpoint doc:
   - `docs/parent-facing-announcements-service-smoke-checkpoint.md`
+- CHECK-investigation update:
+  - fixture discovery and diagnostics were strengthened in smoke script,
+  - current HQ/supervisor create CHECKs trace to active DEV insert RLS denial (`42501`) rather than missing branch/class/student IDs,
+  - unrelated parent check remains dependent on fake unrelated-parent auth fixture credentials.
 
 ## 1) Current state
 

@@ -100,6 +100,33 @@ Covered:
 - cleanup of fake/dev rows.
 - explicit statement that media service/storage object access is not exercised in this milestone.
 
+## 6.1) CHECK investigation update
+
+Latest diagnostic run confirms:
+
+- HQ create failure is **not** a missing branch fixture issue.
+- Branch supervisor create failure is **not** a missing own-branch fixture issue.
+- Direct insert diagnostics for both roles return:
+  - `code=42501`
+  - `new row violates row-level security policy for table "parent_announcements"`
+
+Interpretation:
+
+- Current remaining create/publish CHECKs are primarily due active DEV RLS/policy enforcement state, not missing branch/class/student IDs in smoke script.
+- Fixture discovery is now improved and reports non-secret context:
+  - actor role / is_active / branch-id shape,
+  - fixture ID found/missing status,
+  - create failure stage (`insert_or_targets`, `announcement_insert_only`, `publish`).
+- Unrelated parent CHECK remains fixture-auth dependent:
+  - missing/invalid unrelated fake parent credentials or auth user.
+
+## 6.2) Safe fixture-path decision
+
+- Discovery-first path is implemented in script (env override + deterministic fake fallback IDs from `005`).
+- A new SQL fixture patch (`029`) is **not drafted in this checkpoint** because:
+  - the dominant blocker is RLS insert denial (`42501`) rather than branch/class/student fixture absence,
+  - unrelated parent credential failure requires fake auth-user readiness, not table-only fixture rows.
+
 ## 7) Boundaries preserved
 
 - no ParentView UI shell implementation yet.

@@ -68,6 +68,13 @@ This master handoff preserves product direction, implemented milestones, archite
 - Parent visibility remains RLS-bound with anon client + JWT only.
 - Service checkpoint doc:
   - `docs/parent-facing-announcements-service-smoke-checkpoint.md`
+- Smoke CHECK diagnostics are now improved:
+  - includes actor role/is_active/branch and fixture found/missing states without secret logging.
+- Current blocker note:
+  - parent-announcements create-path CHECKs are currently RLS insert denials (`42501`) in DEV for HQ/supervisor create probes.
+- Fixture status note:
+  - branch/class/student discovery now has env override + deterministic fake fallback,
+  - unrelated-parent proof remains dependent on optional fake unrelated-parent auth credentials.
 
 ## Checkpoint update (authenticated HQ Company News create UI wired)
 
