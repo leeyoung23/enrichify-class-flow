@@ -1,5 +1,33 @@
 # Parent-facing Announcements Service + Smoke Checkpoint
 
+## Checkpoint update (ParentView announcements/events shell with demo parity)
+
+- ParentView now includes a read-only `Announcements & Events` shell near parent communication surfaces.
+- Scope is parent viewing only:
+  - no parent-facing creation UI,
+  - no staff creation/manage controls,
+  - no upload controls in this shell milestone.
+- Demo parity behavior:
+  - uses local fake parent-facing announcements/events only,
+  - no Supabase calls for demo announcements list/detail,
+  - includes varied fake announcement/event types.
+- Authenticated non-demo parent behavior:
+  - list via `listParentAnnouncements({ status: 'published', includeArchived: false })`,
+  - detail via `getParentAnnouncementDetail(...)`,
+  - released media list via `listParentAnnouncementMedia(...)`,
+  - released media open via `getParentAnnouncementMediaSignedUrl({ expiresIn: 300 })`,
+  - non-blocking read-receipt call via `markParentAnnouncementRead(...)` on detail open.
+- Media/read safety:
+  - released-only media visibility remains RLS-gated,
+  - signed URL only, no public URL model,
+  - no `storage_path` display,
+  - no internal `announcements-attachments` exposure/reuse.
+- No SQL/RLS changes in this checkpoint.
+- No notification/email/live chat behavior in this checkpoint.
+- Canonical UI checkpoint doc:
+  - `docs/parent-view-announcements-events-ui-checkpoint.md`
+
+
 ## Checkpoint update (parent-facing media smoke pass documented)
 
 - Parent-facing media service milestone is now documented as PASS and stable.

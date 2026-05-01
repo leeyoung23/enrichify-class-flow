@@ -2,7 +2,13 @@ import React, { useMemo, useState, useEffect, useCallback } from 'react';
 import { getCurrentUser, getSelectedDemoRole } from '@/services/authService';
 import { getStudentById, getClassById, listAttendanceRecords, listParentUpdatesByStudent, getStudentFeeStatus } from '@/services/dataService';
 import { canAccessStudentRecord, ROLES } from '@/services/permissionService';
-import { getStudentLearningContext, getClassLearningContext, listCurriculumProfiles } from '@/services/supabaseReadService';
+import {
+  getStudentLearningContext,
+  getClassLearningContext,
+  listCurriculumProfiles,
+  listParentAnnouncements,
+  getParentAnnouncementDetail,
+} from '@/services/supabaseReadService';
 import {
   uploadFeeReceipt,
   getFeeReceiptSignedUrl,
@@ -15,7 +21,10 @@ import {
   getHomeworkFileSignedUrl,
   createHomeworkSubmission,
   uploadHomeworkFile,
+  listParentAnnouncementMedia,
+  getParentAnnouncementMediaSignedUrl,
 } from '@/services/supabaseUploadService';
+import { markParentAnnouncementRead } from '@/services/supabaseWriteService';
 import { useSupabaseAuthState } from '@/hooks/useSupabaseAuthState';
 import { isSupabaseConfigured } from '@/services/supabaseClient';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -450,6 +459,299 @@ function LearningFocusSummary({ isDemoMode, learningFocus, loading }) {
   );
 }
 
+const PARENT_ANNOUNCEMENT_TYPE_LABELS = {
+  event: 'Event',
+  activity: 'Activity',
+  centre_notice: 'Centre Notice',
+  holiday_closure: 'Holiday Closure',
+  reminder: 'Reminder',
+  celebration: 'Celebration',
+  programme_update: 'Programme Update',
+  parent_workshop: 'Parent Workshop',
+  graduation_concert: 'Graduation Concert',
+};
+
+const DEMO_PARENT_ANNOUNCEMENTS = [
+  {
+    id: 'demo-parent-ann-event',
+    title: 'Family Learning Fair',
+    announcementType: 'event',
+    bodyPreview: 'Join us for a family-friendly learning fair this Saturday with reading games and mini workshops.',
+    body: 'Join us for a family-friendly learning fair this Saturday. Session highlights include reading games, maths puzzles, and teacher Q&A corners.',
+    publishedAt: '2026-05-01T08:00:00.000Z',
+    eventStartAt: '2026-05-04T10:00:00.000Z',
+    eventEndAt: '2026-05-04T12:00:00.000Z',
+    location: 'Main Hall',
+    media: [{ id: 'demo-media-1', fileName: 'family-fair-poster.png', mimeType: 'image/png' }],
+  },
+  {
+    id: 'demo-parent-ann-activity',
+    title: 'Class Gardening Activity Week',
+    announcementType: 'activity',
+    bodyPreview: 'Students will join hands-on gardening sessions this week. Please pack a hat and water bottle.',
+    body: 'Students will join hands-on gardening sessions this week. Please prepare a hat and a labeled water bottle each day.',
+    publishedAt: '2026-04-30T09:00:00.000Z',
+    eventStartAt: '2026-05-02T09:00:00.000Z',
+    eventEndAt: '2026-05-06T14:00:00.000Z',
+    location: 'School Garden Zone',
+    media: [],
+  },
+  {
+    id: 'demo-parent-ann-centre',
+    title: 'Centre Notice: Term 2 Arrival Reminder',
+    announcementType: 'centre_notice',
+    bodyPreview: 'Please arrive 10 minutes before class to settle in and complete attendance smoothly.',
+    body: 'Please arrive 10 minutes before class to settle in and complete attendance smoothly. Thank you for helping class sessions start on time.',
+    publishedAt: '2026-04-29T08:30:00.000Z',
+    eventStartAt: null,
+    eventEndAt: null,
+    location: null,
+    media: [],
+  },
+  {
+    id: 'demo-parent-ann-holiday',
+    title: 'Holiday Closure Notice',
+    announcementType: 'holiday_closure',
+    bodyPreview: 'The centre will be closed on 2026-05-08 for a public holiday. Classes resume the next day.',
+    body: 'The centre will be closed on Friday 2026-05-08 for a public holiday. Normal classes resume on Saturday.',
+    publishedAt: '2026-04-27T11:00:00.000Z',
+    eventStartAt: '2026-05-08T00:00:00.000Z',
+    eventEndAt: '2026-05-08T23:59:00.000Z',
+    location: 'All Branches',
+    media: [],
+  },
+  {
+    id: 'demo-parent-ann-reminder',
+    title: 'Reminder: Reading Log Submission',
+    announcementType: 'reminder',
+    bodyPreview: 'Please submit this week’s reading log by Friday to help teachers review progress.',
+    body: 'Please submit this week’s reading log by Friday evening. This helps teachers tailor next-week support.',
+    publishedAt: '2026-04-26T07:20:00.000Z',
+    eventStartAt: null,
+    eventEndAt: null,
+    location: null,
+    media: [],
+  },
+  {
+    id: 'demo-parent-ann-celebration',
+    title: 'Celebration: Reading Stars',
+    announcementType: 'celebration',
+    bodyPreview: 'Congratulations to all students who completed their reading challenge milestones this month.',
+    body: 'Congratulations to all students who completed reading challenge milestones this month. Families are invited to our recognition moment next week.',
+    publishedAt: '2026-04-25T10:15:00.000Z',
+    eventStartAt: null,
+    eventEndAt: null,
+    location: null,
+    media: [],
+  },
+  {
+    id: 'demo-parent-ann-workshop',
+    title: 'Parent Workshop: Supporting Homework Habits',
+    announcementType: 'parent_workshop',
+    bodyPreview: 'A practical workshop for families on building calm and consistent homework routines at home.',
+    body: 'A practical workshop for families on building calm and consistent homework routines at home. Bring your questions for a live Q&A.',
+    publishedAt: '2026-04-24T09:45:00.000Z',
+    eventStartAt: '2026-05-10T15:00:00.000Z',
+    eventEndAt: '2026-05-10T16:00:00.000Z',
+    location: 'Parent Learning Room',
+    media: [{ id: 'demo-media-2', fileName: 'workshop-invite.pdf', mimeType: 'application/pdf' }],
+  },
+];
+
+function formatParentAnnouncementDateTime(value) {
+  if (!value) return '';
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return '';
+  return date.toLocaleString('en-AU', {
+    day: '2-digit',
+    month: 'short',
+    year: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+  });
+}
+
+function ParentAnnouncementsEventsSection({
+  isDemoMode,
+  loading,
+  error,
+  announcements,
+  selectedAnnouncementId,
+  onSelectAnnouncement,
+  detailLoading,
+  detail,
+  detailError,
+  mediaRows,
+  mediaLoading,
+  mediaError,
+  onOpenMedia,
+}) {
+  const selectedAnnouncement = announcements.find((row) => row.id === selectedAnnouncementId) || null;
+  const featured = announcements[0] || null;
+
+  if (loading) {
+    return (
+      <Card id="parent-announcements-events">
+        <CardHeader className="pb-3">
+          <CardTitle className="text-base">Announcements & Events</CardTitle>
+        </CardHeader>
+        <CardContent className="text-sm text-muted-foreground">Loading announcements and events...</CardContent>
+      </Card>
+    );
+  }
+
+  if (error) {
+    return (
+      <Card id="parent-announcements-events" className="border-dashed">
+        <CardHeader className="pb-3">
+          <CardTitle className="text-base">Announcements & Events</CardTitle>
+        </CardHeader>
+        <CardContent className="text-sm text-muted-foreground">{error}</CardContent>
+      </Card>
+    );
+  }
+
+  if (!announcements.length) {
+    return (
+      <Card id="parent-announcements-events" className="border-dashed">
+        <CardHeader className="pb-3">
+          <CardTitle className="text-base">Announcements & Events</CardTitle>
+        </CardHeader>
+        <CardContent className="text-sm text-muted-foreground">
+          No parent announcements are available right now.
+        </CardContent>
+      </Card>
+    );
+  }
+
+  return (
+    <Card id="parent-announcements-events">
+      <CardHeader className="pb-3">
+        <CardTitle className="text-base">Announcements & Events</CardTitle>
+      </CardHeader>
+      <CardContent className="space-y-4">
+        <p className="text-sm text-muted-foreground">
+          {isDemoMode
+            ? 'Demo-only preview: announcement and media cards are local examples only.'
+            : 'Published parent updates from your centre and class will appear here.'}
+        </p>
+
+        {featured ? (
+          <div className="rounded-lg border bg-muted/20 p-3 space-y-2">
+            <div className="flex items-center justify-between gap-2">
+              <Badge variant="outline" className="bg-amber-50 text-amber-700 border-amber-200">Featured</Badge>
+              <Badge variant="outline">
+                {PARENT_ANNOUNCEMENT_TYPE_LABELS[featured.announcementType] || 'Announcement'}
+              </Badge>
+            </div>
+            <p className="text-sm font-medium">{featured.title}</p>
+            <p className="text-xs text-muted-foreground">{featured.bodyPreview}</p>
+            {featured.eventStartAt ? (
+              <p className="text-xs text-muted-foreground">
+                Event: {formatParentAnnouncementDateTime(featured.eventStartAt)}
+                {featured.eventEndAt ? ` - ${formatParentAnnouncementDateTime(featured.eventEndAt)}` : ''}
+              </p>
+            ) : null}
+            {featured.location ? (
+              <p className="text-xs text-muted-foreground">Location: {featured.location}</p>
+            ) : null}
+          </div>
+        ) : null}
+
+        <div className="space-y-2">
+          {announcements.map((item) => {
+            const isSelected = selectedAnnouncementId === item.id;
+            return (
+              <button
+                key={item.id}
+                type="button"
+                onClick={() => onSelectAnnouncement(item.id)}
+                className={`w-full text-left rounded-lg border p-3 space-y-1.5 transition-colors ${
+                  isSelected ? 'border-primary bg-primary/5' : 'hover:bg-muted/30'
+                }`}
+              >
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                  <p className="text-sm font-medium">{item.title}</p>
+                  <Badge variant="outline">
+                    {PARENT_ANNOUNCEMENT_TYPE_LABELS[item.announcementType] || 'Announcement'}
+                  </Badge>
+                </div>
+                <p className="text-xs text-muted-foreground line-clamp-2">{item.bodyPreview}</p>
+                {item.publishedAt ? (
+                  <p className="text-[11px] text-muted-foreground">
+                    Published: {formatParentAnnouncementDateTime(item.publishedAt)}
+                  </p>
+                ) : null}
+              </button>
+            );
+          })}
+        </div>
+
+        <div className="rounded-lg border p-3 space-y-2">
+          <p className="text-sm font-medium">
+            {selectedAnnouncement?.title || detail?.title || 'Announcement detail'}
+          </p>
+          {detailLoading ? (
+            <p className="text-xs text-muted-foreground">Loading detail...</p>
+          ) : detailError ? (
+            <p className="text-xs text-muted-foreground">{detailError}</p>
+          ) : (
+            <>
+              <p className="text-sm text-muted-foreground whitespace-pre-line">
+                {detail?.body || selectedAnnouncement?.body || selectedAnnouncement?.bodyPreview || 'No detail is available.'}
+              </p>
+              {(detail?.eventStartAt || selectedAnnouncement?.eventStartAt) ? (
+                <p className="text-xs text-muted-foreground">
+                  Event: {formatParentAnnouncementDateTime(detail?.eventStartAt || selectedAnnouncement?.eventStartAt)}
+                  {(detail?.eventEndAt || selectedAnnouncement?.eventEndAt)
+                    ? ` - ${formatParentAnnouncementDateTime(detail?.eventEndAt || selectedAnnouncement?.eventEndAt)}`
+                    : ''}
+                </p>
+              ) : null}
+              {(detail?.location || selectedAnnouncement?.location) ? (
+                <p className="text-xs text-muted-foreground">
+                  Location: {detail?.location || selectedAnnouncement?.location}
+                </p>
+              ) : null}
+            </>
+          )}
+
+          <div className="pt-2 space-y-2">
+            <p className="text-xs font-medium text-foreground">Released media</p>
+            {mediaLoading ? (
+              <p className="text-xs text-muted-foreground">Loading released media...</p>
+            ) : mediaError ? (
+              <p className="text-xs text-muted-foreground">{mediaError}</p>
+            ) : mediaRows.length === 0 ? (
+              <p className="text-xs text-muted-foreground">No released media for this announcement yet.</p>
+            ) : (
+              <div className="space-y-2">
+                {mediaRows.map((mediaItem) => (
+                  <div key={mediaItem.id} className="rounded-md border p-2.5 space-y-1.5">
+                    <p className="text-xs font-medium break-words">{mediaItem.fileName}</p>
+                    <p className="text-[11px] text-muted-foreground">
+                      {mediaItem.mimeType || 'File'}{mediaItem.mediaRole ? ` • ${mediaItem.mediaRole}` : ''}
+                    </p>
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant="outline"
+                      className="min-h-8 px-2.5 text-xs"
+                      onClick={() => onOpenMedia(mediaItem)}
+                    >
+                      Open media
+                    </Button>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
+
 function LatestParentComment({ updates }) {
   const latestComment = updates.find((item) => item.update_type !== 'weekly_report');
   return (
@@ -860,6 +1162,16 @@ export default function ParentView() {
   const [parentHomeworkMarkedWorkBySubmissionId, setParentHomeworkMarkedWorkBySubmissionId] = useState({});
   const [homeworkUploadDraftByTaskId, setHomeworkUploadDraftByTaskId] = useState({});
   const [homeworkSubmitLoadingByTaskId, setHomeworkSubmitLoadingByTaskId] = useState({});
+  const [parentAnnouncementsLoading, setParentAnnouncementsLoading] = useState(false);
+  const [parentAnnouncementsError, setParentAnnouncementsError] = useState('');
+  const [parentAnnouncementsRows, setParentAnnouncementsRows] = useState([]);
+  const [selectedParentAnnouncementId, setSelectedParentAnnouncementId] = useState(null);
+  const [parentAnnouncementDetailLoading, setParentAnnouncementDetailLoading] = useState(false);
+  const [parentAnnouncementDetailError, setParentAnnouncementDetailError] = useState('');
+  const [parentAnnouncementDetail, setParentAnnouncementDetail] = useState(null);
+  const [parentAnnouncementMediaLoading, setParentAnnouncementMediaLoading] = useState(false);
+  const [parentAnnouncementMediaError, setParentAnnouncementMediaError] = useState('');
+  const [parentAnnouncementMediaRows, setParentAnnouncementMediaRows] = useState([]);
 
   const latestApprovedUpdate = useMemo(() => updates[0], [updates]);
   const parentHomeworkTasksWithStatus = useMemo(() => {
@@ -984,6 +1296,169 @@ export default function ParentView() {
       cancelled = true;
     };
   }, [isDemoMode, hasSupabaseSession, student?.id, cls?.id]);
+
+  const loadParentAnnouncements = useCallback(async () => {
+    if (isDemoStudentPreview) {
+      setParentAnnouncementsLoading(false);
+      setParentAnnouncementsError('');
+      setParentAnnouncementsRows([]);
+      setSelectedParentAnnouncementId(null);
+      setParentAnnouncementDetail(null);
+      setParentAnnouncementDetailError('');
+      setParentAnnouncementMediaRows([]);
+      setParentAnnouncementMediaError('');
+      return;
+    }
+    if (isDemoMode) {
+      setParentAnnouncementsLoading(false);
+      setParentAnnouncementsError('');
+      setParentAnnouncementsRows(DEMO_PARENT_ANNOUNCEMENTS);
+      setSelectedParentAnnouncementId(DEMO_PARENT_ANNOUNCEMENTS[0]?.id || null);
+      return;
+    }
+    if (!hasSupabaseSession || !isSupabaseConfigured()) {
+      setParentAnnouncementsLoading(false);
+      setParentAnnouncementsError('');
+      setParentAnnouncementsRows([]);
+      setSelectedParentAnnouncementId(null);
+      return;
+    }
+
+    setParentAnnouncementsLoading(true);
+    setParentAnnouncementsError('');
+    try {
+      const listResult = await listParentAnnouncements({
+        status: 'published',
+        includeArchived: false,
+      });
+      if (listResult.error) {
+        throw new Error(listResult.error.message || 'Unable to load parent announcements right now.');
+      }
+      const rows = Array.isArray(listResult.data) ? listResult.data : [];
+      setParentAnnouncementsRows(rows);
+      setSelectedParentAnnouncementId((prev) => {
+        if (prev && rows.some((row) => row.id === prev)) return prev;
+        return rows[0]?.id || null;
+      });
+    } catch (error) {
+      setParentAnnouncementsRows([]);
+      setSelectedParentAnnouncementId(null);
+      setParentAnnouncementsError(error?.message || 'Unable to load parent announcements right now.');
+    } finally {
+      setParentAnnouncementsLoading(false);
+    }
+  }, [isDemoStudentPreview, isDemoMode, hasSupabaseSession]);
+
+  useEffect(() => {
+    void loadParentAnnouncements();
+  }, [loadParentAnnouncements]);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    const loadDetailAndMedia = async () => {
+      if (isDemoStudentPreview) {
+        setParentAnnouncementDetail(null);
+        setParentAnnouncementDetailError('');
+        setParentAnnouncementMediaRows([]);
+        setParentAnnouncementMediaError('');
+        setParentAnnouncementDetailLoading(false);
+        setParentAnnouncementMediaLoading(false);
+        return;
+      }
+
+      const selectedId = selectedParentAnnouncementId;
+      if (!selectedId) {
+        setParentAnnouncementDetail(null);
+        setParentAnnouncementDetailError('');
+        setParentAnnouncementMediaRows([]);
+        setParentAnnouncementMediaError('');
+        setParentAnnouncementDetailLoading(false);
+        setParentAnnouncementMediaLoading(false);
+        return;
+      }
+
+      if (isDemoMode) {
+        const row = DEMO_PARENT_ANNOUNCEMENTS.find((item) => item.id === selectedId) || null;
+        setParentAnnouncementDetail(row);
+        setParentAnnouncementDetailError('');
+        setParentAnnouncementMediaRows((row?.media || []).map((item) => ({
+          id: item.id,
+          fileName: item.fileName,
+          mimeType: item.mimeType || null,
+          mediaRole: 'attachment',
+          demoPreview: true,
+        })));
+        setParentAnnouncementMediaError('');
+        setParentAnnouncementDetailLoading(false);
+        setParentAnnouncementMediaLoading(false);
+        return;
+      }
+
+      if (!hasSupabaseSession || !isSupabaseConfigured()) {
+        setParentAnnouncementDetail(null);
+        setParentAnnouncementDetailError('');
+        setParentAnnouncementMediaRows([]);
+        setParentAnnouncementMediaError('');
+        setParentAnnouncementDetailLoading(false);
+        setParentAnnouncementMediaLoading(false);
+        return;
+      }
+
+      setParentAnnouncementDetailLoading(true);
+      setParentAnnouncementDetailError('');
+      setParentAnnouncementMediaLoading(true);
+      setParentAnnouncementMediaError('');
+      setParentAnnouncementMediaRows([]);
+
+      try {
+        const detailResult = await getParentAnnouncementDetail({ parentAnnouncementId: selectedId });
+        if (detailResult.error) {
+          throw new Error(detailResult.error.message || 'Unable to load parent announcement detail right now.');
+        }
+        if (cancelled) return;
+        setParentAnnouncementDetail(detailResult.data || null);
+
+        const mediaResult = await listParentAnnouncementMedia({
+          parentAnnouncementId: selectedId,
+        });
+        if (cancelled) return;
+        if (mediaResult.error) {
+          setParentAnnouncementMediaRows([]);
+          setParentAnnouncementMediaError(mediaResult.error.message || 'Unable to load released media right now.');
+        } else {
+          const rows = Array.isArray(mediaResult.data) ? mediaResult.data : [];
+          setParentAnnouncementMediaRows(rows.map((item) => ({
+            id: item.id,
+            fileName: item.file_name || 'Released media',
+            mimeType: item.mime_type || null,
+            mediaRole: item.media_role || null,
+            demoPreview: false,
+          })));
+          setParentAnnouncementMediaError('');
+        }
+
+        void markParentAnnouncementRead({ parentAnnouncementId: selectedId });
+      } catch (error) {
+        if (!cancelled) {
+          setParentAnnouncementDetail(null);
+          setParentAnnouncementDetailError(error?.message || 'Unable to load parent announcement detail right now.');
+          setParentAnnouncementMediaRows([]);
+          setParentAnnouncementMediaError('');
+        }
+      } finally {
+        if (!cancelled) {
+          setParentAnnouncementDetailLoading(false);
+          setParentAnnouncementMediaLoading(false);
+        }
+      }
+    };
+
+    void loadDetailAndMedia();
+    return () => {
+      cancelled = true;
+    };
+  }, [selectedParentAnnouncementId, isDemoMode, hasSupabaseSession, isDemoStudentPreview]);
 
   const loadParentHomeworkStatus = useCallback(async () => {
     if (isDemoStudentPreview) {
@@ -1163,6 +1638,33 @@ export default function ParentView() {
         window.open(signedUrlResult.data.signed_url, '_blank', 'noopener,noreferrer');
       } catch {
         toast.error('Marked work is not available to open right now.');
+      }
+    })();
+  }, [isDemoMode, hasSupabaseSession]);
+
+  const handleOpenParentAnnouncementMedia = useCallback((mediaItem) => {
+    if (isDemoMode || mediaItem?.demoPreview) {
+      toast.message(`Demo preview only: ${mediaItem?.fileName || 'Released media'} does not open a real file in demo mode.`);
+      return;
+    }
+    if (!isSupabaseConfigured() || !hasSupabaseSession) {
+      toast.message('Media preview is available only for authenticated parent sessions.');
+      return;
+    }
+    if (!isUuidLike(mediaItem?.id)) {
+      toast.error('Released media is not available to open right now.');
+      return;
+    }
+    (async () => {
+      try {
+        const signedUrlResult = await getParentAnnouncementMediaSignedUrl({ mediaId: mediaItem.id, expiresIn: 300 });
+        if (signedUrlResult.error || !signedUrlResult.data?.signed_url) {
+          toast.error('Released media is not available to open right now.');
+          return;
+        }
+        window.open(signedUrlResult.data.signed_url, '_blank', 'noopener,noreferrer');
+      } catch {
+        toast.error('Released media is not available to open right now.');
       }
     })();
   }, [isDemoMode, hasSupabaseSession]);
@@ -1534,6 +2036,26 @@ export default function ParentView() {
         )}
 
         {!isDemoStudentPreview && (
+          <div className="mb-6">
+            <ParentAnnouncementsEventsSection
+              isDemoMode={isDemoMode}
+              loading={parentAnnouncementsLoading}
+              error={parentAnnouncementsError}
+              announcements={parentAnnouncementsRows}
+              selectedAnnouncementId={selectedParentAnnouncementId}
+              onSelectAnnouncement={setSelectedParentAnnouncementId}
+              detailLoading={parentAnnouncementDetailLoading}
+              detail={parentAnnouncementDetail}
+              detailError={parentAnnouncementDetailError}
+              mediaRows={parentAnnouncementMediaRows}
+              mediaLoading={parentAnnouncementMediaLoading}
+              mediaError={parentAnnouncementMediaError}
+              onOpenMedia={handleOpenParentAnnouncementMedia}
+            />
+          </div>
+        )}
+
+        {!isDemoStudentPreview && (
           <Card className="mb-6">
             <CardHeader className="pb-3">
               <CardTitle className="text-base">Learning Portal</CardTitle>
@@ -1547,6 +2069,10 @@ export default function ParentView() {
                 <Button variant="outline" className="justify-start gap-2" onClick={() => document.getElementById('parent-homework-status')?.scrollIntoView({ behavior: 'smooth' })}>
                   <BookOpen className="h-4 w-4" />
                   View Homework Status
+                </Button>
+                <Button variant="outline" className="justify-start gap-2" onClick={() => document.getElementById('parent-announcements-events')?.scrollIntoView({ behavior: 'smooth' })}>
+                  <FileText className="h-4 w-4" />
+                  View Announcements & Events
                 </Button>
                 <Button variant="outline" className="justify-start gap-2" onClick={() => document.getElementById('homework-history')?.scrollIntoView({ behavior: 'smooth' })}>
                   <BookOpen className="h-4 w-4" />
