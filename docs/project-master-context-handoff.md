@@ -617,6 +617,10 @@ Current status note:
   - service guards enforce internal Company News draft/publish lifecycle and target requirement before publish,
   - no UI/runtime create wiring in this checkpoint,
   - no SQL/RLS changes in this checkpoint.
+- Company News MyTasks side-effect fix is now applied:
+  - `listMyAnnouncementTasks(...)` excludes `announcement_type='company_news'` by default,
+  - request/reminder task behavior is preserved for MyTasks,
+  - Company News remains Announcements + popup + read oriented by default.
 
 ## 12) Next immediate milestone prompt (copy-paste)
 

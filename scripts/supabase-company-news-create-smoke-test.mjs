@@ -187,7 +187,8 @@ async function run() {
       if (!appearsInTasks) {
         printResult("PASS", "Teacher: Company News did not create a MyTasks item");
       } else {
-        printResult("CHECK", "Teacher: Company News appeared in MyTasks (existing derived read semantics)");
+        printResult("WARNING", "Teacher: Company News unexpectedly appeared in MyTasks");
+        failureCount += 1;
       }
     }
   } else {

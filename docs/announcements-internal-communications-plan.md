@@ -2,6 +2,14 @@
 
 Scope: planning only for Announcements/Internal Communications and Document Hub rollout (no UI/runtime/service/SQL changes in this milestone).
 
+## Checkpoint update (Company News vs MyTasks boundary)
+
+- MyTasks default derived-read now excludes `company_news`.
+- Product boundary is now explicit:
+  - Request/reminder announcements are task-oriented,
+  - Company News is news/popup/read-oriented.
+- No SQL/RLS changes and no parent-facing scope changes in this checkpoint.
+
 ## Checkpoint update (Company News create service + smoke)
 
 - Dedicated Company News write path is now present in service layer:

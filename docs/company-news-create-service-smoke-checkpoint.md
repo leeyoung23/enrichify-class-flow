@@ -3,6 +3,14 @@
 Date: 2026-05-01  
 Scope: service + smoke only (`createCompanyNews` / `publishCompanyNews`), no UI/runtime/SQL changes
 
+## Checkpoint update (MyTasks exclusion fix)
+
+- `listMyAnnouncementTasks(...)` now excludes `company_news` by default.
+- Product behavior is now enforced as PASS in Company News create smoke:
+  - Company News must not appear in MyTasks unless a future explicit opt-in task mode is designed.
+- Request/reminder MyTasks behavior remains intact.
+- No SQL/RLS changes and no UI create wiring in this checkpoint.
+
 ## 1) What was added
 
 - `src/services/supabaseWriteService.js`:

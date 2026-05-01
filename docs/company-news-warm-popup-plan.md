@@ -3,6 +3,14 @@
 Date: 2026-05-01  
 Scope: planning-only checkpoint for Company News / Big News mode and warm portal pop-up behavior
 
+## Checkpoint update (MyTasks semantics alignment)
+
+- Company News is now explicitly excluded from `listMyAnnouncementTasks(...)` default derived-read behavior.
+- This aligns runtime positioning:
+  - Company News = news/popup/read path,
+  - Request/reminder = task/MyTasks path.
+- No SQL/RLS changes were needed for this behavior update.
+
 ## Checkpoint update (026 popup status SQL draft only)
 
 - Manual/dev-first SQL draft is now added at `supabase/sql/026_company_news_popup_status_foundation.sql`.

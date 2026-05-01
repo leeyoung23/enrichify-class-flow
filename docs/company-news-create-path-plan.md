@@ -3,6 +3,13 @@
 Date: 2026-05-01  
 Scope: planning/review only for safe real HQ Company News create/publish path (no runtime/UI/service/SQL changes in this milestone)
 
+## Checkpoint update (MyTasks default exclusion enforced)
+
+- MyTasks derived-read semantics now exclude `company_news` by default.
+- Company News remains read/popup/news-oriented, not task-oriented.
+- Request/reminder announcements remain the default task-producing type for MyTasks.
+- Future option: explicit opt-in task-enabled Company News can be designed later if product needs it.
+
 ## Checkpoint update (create service + smoke delivered)
 
 - Service layer now includes dedicated Company News write wrappers:

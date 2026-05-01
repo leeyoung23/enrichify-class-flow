@@ -1309,6 +1309,7 @@ export async function listMyAnnouncementTasks({ includeDone = false, statusFilte
       .from("announcements")
       .select(ANNOUNCEMENT_FIELDS)
       .eq("audience_type", "internal_staff")
+      .eq("announcement_type", "request")
       .eq("status", "published")
       .order("created_at", { ascending: false });
 

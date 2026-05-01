@@ -3,6 +3,13 @@
 Date: 2026-05-01  
 Scope: checkpoint documentation for MyTasks **Announcement Requests** UI (read-only; existing read service only)
 
+## Checkpoint update (Company News excluded by default)
+
+- Announcement Requests section now reflects updated derived-read semantics:
+  - request/reminder tasks remain visible,
+  - Company News items are excluded by default.
+- This keeps MyTasks focused on obligations and keeps Company News in Announcements/popup flows.
+
 ## 1) What was implemented
 
 - **MyTasks Announcement Requests** section with a summary card group (totals / pending / overdue / done) and stacked task cards below.

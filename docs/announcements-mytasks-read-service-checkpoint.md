@@ -3,6 +3,14 @@
 Date: 2026-05-01  
 Scope: documentation checkpoint for Announcements-derived MyTasks read service and smoke validation (no UI/SQL/RLS changes in this milestone)
 
+## Checkpoint update (Company News default exclusion)
+
+- `listMyAnnouncementTasks(...)` now scopes to task-oriented announcements by default:
+  - includes `announcement_type='request'`
+  - excludes `announcement_type='company_news'`
+- This preserves request/reminder MyTasks behavior while removing Company News side effects from MyTasks.
+- Future expansion to include Company News in tasks should be explicit opt-in, not default.
+
 ## UI integration update (Announcement Requests)
 
 - `MyTasks` now displays `Announcement Requests` cards using existing `listMyAnnouncementTasks(...)`.

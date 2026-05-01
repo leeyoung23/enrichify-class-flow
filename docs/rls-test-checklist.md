@@ -220,6 +220,14 @@ Reminder: **Frontend filtering is not security. RLS must enforce access at datab
   - no parent-facing announcements/events,
   - no notification/email behavior.
 
+## Company News MyTasks exclusion note (2026-05-01)
+
+- `listMyAnnouncementTasks(...)` now excludes `company_news` by default.
+- Validation expectation is now strict:
+  - Company News should not appear in MyTasks unless a future explicit opt-in mode is introduced.
+- Request/reminder MyTasks behavior remains unchanged.
+- No SQL/RLS changes were required for this behavior fix.
+
 ### Announcements attachments role checks (current proven state)
 
 - HQ can upload/list/open signed URL for internal attachments.
