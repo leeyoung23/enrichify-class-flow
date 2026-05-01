@@ -4,8 +4,10 @@ const FEE_RECEIPTS_BUCKET = "fee-receipts";
 const CLASS_MEMORIES_BUCKET = "class-memories";
 const HOMEWORK_SUBMISSIONS_BUCKET = "homework-submissions";
 const ANNOUNCEMENTS_ATTACHMENTS_BUCKET = "announcements-attachments";
+const PARENT_ANNOUNCEMENTS_MEDIA_BUCKET = "parent-announcements-media";
 const MAX_HOMEWORK_FILE_BYTES = 2 * 1024 * 1024;
 const MAX_ANNOUNCEMENT_ATTACHMENT_BYTES = 25 * 1024 * 1024;
+const MAX_PARENT_ANNOUNCEMENT_MEDIA_BYTES = 25 * 1024 * 1024;
 const HOMEWORK_TASK_STATUS_VALUES = new Set(["draft", "assigned", "closed", "archived"]);
 const HOMEWORK_SUBMISSION_STATUS_VALUES = new Set([
   "submitted",
@@ -44,6 +46,17 @@ const SAFE_ANNOUNCEMENT_ATTACHMENT_CONTENT_TYPES = new Set([
   "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
   "application/vnd.ms-powerpoint",
   "application/vnd.openxmlformats-officedocument.presentationml.presentation",
+]);
+const PARENT_ANNOUNCEMENT_MEDIA_ROLE_VALUES = new Set([
+  "parent_media",
+  "cover_image",
+  "attachment",
+]);
+const SAFE_PARENT_ANNOUNCEMENT_MEDIA_CONTENT_TYPES = new Set([
+  "application/pdf",
+  "image/png",
+  "image/jpeg",
+  "image/webp",
 ]);
 
 function sanitizeFileName(fileName = "") {
@@ -121,6 +134,15 @@ function buildAnnouncementAttachmentObjectPath({
 }) {
   const safeName = sanitizeFileName(fileName || "announcement-attachment.txt");
   return `${announcementId}/${attachmentId}/${safeName}`;
+}
+
+function buildParentAnnouncementMediaObjectPath({
+  parentAnnouncementId,
+  mediaId,
+  fileName,
+}) {
+  const safeName = sanitizeFileName(fileName || "parent-announcement-media.txt");
+  return `${parentAnnouncementId}/${mediaId}/${safeName}`;
 }
 
 export async function uploadFeeReceipt({ feeRecordId, file, fileName, contentType } = {}) {
@@ -1243,5 +1265,281 @@ export async function deleteAnnouncementAttachment({ attachmentId } = {}) {
     };
   } catch (err) {
     return { data: null, error: { message: err?.message || String(err) } };
+  }
+}
+
+export async function uploadParentAnnouncementMedia({
+  parentAnnouncementId,
+  file,
+  mediaRole = "parent_media",
+  fileName,
+  contentType,
+} = {}) {
+  if (!isSupabaseConfigured() || !supabase) {
+    return { data: null, error: { message: "Supabase is not configured" } };
+  }
+  if (!isUuidLike(parentAnnouncementId)) {
+    return { data: null, error: { message: "parentAnnouncementId must be a UUID" } };
+  }
+  if (!file) {
+    return { data: null, error: { message: "file is required" } };
+  }
+
+  const normalizedRole = trimString(mediaRole || "parent_media");
+  if (!PARENT_ANNOUNCEMENT_MEDIA_ROLE_VALUES.has(normalizedRole)) {
+    return { data: null, error: { message: "mediaRole must be parent_media, cover_image, or attachment" } };
+  }
+
+  const resolvedContentType = trimString(contentType || file?.type || "application/octet-stream");
+  if (!SAFE_PARENT_ANNOUNCEMENT_MEDIA_CONTENT_TYPES.has(resolvedContentType)) {
+    return { data: null, error: { message: "Unsupported parent announcement media content type" } };
+  }
+
+  const fileSizeBytes = Number(file?.size || 0);
+  if (
+    !Number.isFinite(fileSizeBytes) ||
+    fileSizeBytes <= 0 ||
+    fileSizeBytes > MAX_PARENT_ANNOUNCEMENT_MEDIA_BYTES
+  ) {
+    return { data: null, error: { message: "Parent announcement media file size must be > 0 and <= 25MB" } };
+  }
+
+  try {
+    const { profileId, error: authError } = await getAuthenticatedProfileIdOrError();
+    if (authError || !profileId) return { data: null, error: authError };
+
+    const mediaId = crypto.randomUUID();
+    const nowIso = new Date().toISOString();
+    const safeName = sanitizeFileName(fileName || file?.name || "parent-announcement-media.txt");
+    const objectPath = buildParentAnnouncementMediaObjectPath({
+      parentAnnouncementId: trimString(parentAnnouncementId),
+      mediaId,
+      fileName: safeName,
+    });
+
+    const metadataInsert = await supabase
+      .from("parent_announcement_media")
+      .insert({
+        id: mediaId,
+        parent_announcement_id: trimString(parentAnnouncementId),
+        uploaded_by_profile_id: profileId,
+        file_name: safeName,
+        storage_path: objectPath,
+        mime_type: resolvedContentType,
+        file_size: Math.round(fileSizeBytes),
+        media_role: normalizedRole,
+        released_to_parent: false,
+        created_at: nowIso,
+      });
+
+    if (metadataInsert.error) {
+      return { data: null, error: { message: "Unable to save parent announcement media metadata right now." } };
+    }
+
+    const objectUpload = await supabase.storage
+      .from(PARENT_ANNOUNCEMENTS_MEDIA_BUCKET)
+      .upload(objectPath, file, {
+        upsert: false,
+        contentType: resolvedContentType,
+      });
+
+    if (objectUpload.error) {
+      const cleanup = await supabase
+        .from("parent_announcement_media")
+        .delete()
+        .eq("id", mediaId);
+      return {
+        data: null,
+        error: {
+          message: "Unable to upload parent announcement media right now.",
+          cleanup_warning: cleanup.error
+            ? "Automatic metadata cleanup was blocked by RLS; manual cleanup may be required."
+            : null,
+        },
+      };
+    }
+
+    return {
+      data: {
+        media: {
+          id: mediaId,
+          parent_announcement_id: trimString(parentAnnouncementId),
+          uploaded_by_profile_id: profileId,
+          file_name: safeName,
+          mime_type: resolvedContentType,
+          file_size: Math.round(fileSizeBytes),
+          media_role: normalizedRole,
+          released_to_parent: false,
+          created_at: nowIso,
+        },
+        metadata_first: true,
+        private_bucket_only: true,
+        public_url_supported: false,
+      },
+      error: null,
+    };
+  } catch (_err) {
+    return { data: null, error: { message: "Unable to upload parent announcement media right now." } };
+  }
+}
+
+export async function listParentAnnouncementMedia({ parentAnnouncementId } = {}) {
+  if (!isSupabaseConfigured() || !supabase) {
+    return { data: [], error: { message: "Supabase is not configured" } };
+  }
+  if (parentAnnouncementId != null && parentAnnouncementId !== "" && !isUuidLike(parentAnnouncementId)) {
+    return { data: [], error: { message: "parentAnnouncementId must be a UUID when provided" } };
+  }
+
+  try {
+    let query = supabase
+      .from("parent_announcement_media")
+      .select("id,parent_announcement_id,uploaded_by_profile_id,file_name,mime_type,file_size,media_role,released_to_parent,created_at")
+      .order("created_at", { ascending: false });
+
+    if (isUuidLike(parentAnnouncementId)) query = query.eq("parent_announcement_id", trimString(parentAnnouncementId));
+
+    const { data, error } = await query;
+    if (error) {
+      return { data: [], error: { message: "Unable to load parent announcement media right now." } };
+    }
+    return { data: Array.isArray(data) ? data : [], error: null };
+  } catch (_err) {
+    return { data: [], error: { message: "Unable to load parent announcement media right now." } };
+  }
+}
+
+export async function getParentAnnouncementMediaSignedUrl({ mediaId, expiresIn = 60 } = {}) {
+  if (!isSupabaseConfigured() || !supabase) {
+    return { data: null, error: { message: "Supabase is not configured" } };
+  }
+  if (!isUuidLike(mediaId)) {
+    return { data: null, error: { message: "mediaId must be a UUID" } };
+  }
+  const ttl = Number.isFinite(Number(expiresIn)) ? Math.max(30, Math.min(3600, Number(expiresIn))) : 60;
+
+  try {
+    const mediaRead = await supabase
+      .from("parent_announcement_media")
+      .select("id,storage_path")
+      .eq("id", trimString(mediaId))
+      .maybeSingle();
+    if (mediaRead.error || !mediaRead.data?.id) {
+      return { data: null, error: { message: "Parent announcement media is not visible right now." } };
+    }
+    const storagePath = trimString(mediaRead.data.storage_path);
+    if (!storagePath) {
+      return { data: null, error: { message: "Parent announcement media file is unavailable right now." } };
+    }
+
+    const signedUrlResult = await supabase.storage
+      .from(PARENT_ANNOUNCEMENTS_MEDIA_BUCKET)
+      .createSignedUrl(storagePath, ttl);
+    if (signedUrlResult.error || !signedUrlResult.data?.signedUrl) {
+      return { data: null, error: { message: "Unable to create parent announcement media signed URL right now." } };
+    }
+
+    return {
+      data: {
+        media_id: mediaRead.data.id,
+        signed_url: signedUrlResult.data.signedUrl,
+        bucket: PARENT_ANNOUNCEMENTS_MEDIA_BUCKET,
+        expires_in: ttl,
+      },
+      error: null,
+    };
+  } catch (_err) {
+    return { data: null, error: { message: "Unable to create parent announcement media signed URL right now." } };
+  }
+}
+
+export async function releaseParentAnnouncementMedia({ mediaId } = {}) {
+  if (!isSupabaseConfigured() || !supabase) {
+    return { data: null, error: { message: "Supabase is not configured" } };
+  }
+  if (!isUuidLike(mediaId)) {
+    return { data: null, error: { message: "mediaId must be a UUID" } };
+  }
+
+  try {
+    const releaseResult = await supabase
+      .from("parent_announcement_media")
+      .update({
+        released_to_parent: true,
+      })
+      .eq("id", trimString(mediaId));
+    if (releaseResult.error) {
+      return { data: null, error: { message: "Unable to release parent announcement media right now." } };
+    }
+
+    const readBack = await supabase
+      .from("parent_announcement_media")
+      .select("id,parent_announcement_id,media_role,released_to_parent,created_at")
+      .eq("id", trimString(mediaId))
+      .maybeSingle();
+    if (readBack.error || !readBack.data?.id) {
+      return {
+        data: {
+          id: trimString(mediaId),
+          parent_announcement_id: null,
+          media_role: null,
+          released_to_parent: true,
+          created_at: null,
+        },
+        error: null,
+      };
+    }
+    return { data: readBack.data, error: null };
+  } catch (_err) {
+    return { data: null, error: { message: "Unable to release parent announcement media right now." } };
+  }
+}
+
+export async function deleteParentAnnouncementMedia({ mediaId } = {}) {
+  if (!isSupabaseConfigured() || !supabase) {
+    return { data: null, error: { message: "Supabase is not configured" } };
+  }
+  if (!isUuidLike(mediaId)) {
+    return { data: null, error: { message: "mediaId must be a UUID" } };
+  }
+
+  try {
+    const mediaRead = await supabase
+      .from("parent_announcement_media")
+      .select("id,storage_path")
+      .eq("id", trimString(mediaId))
+      .maybeSingle();
+    if (mediaRead.error || !mediaRead.data?.id) {
+      return { data: null, error: { message: "Parent announcement media is not visible right now." } };
+    }
+
+    const storagePath = trimString(mediaRead.data.storage_path);
+    const metadataDelete = await supabase
+      .from("parent_announcement_media")
+      .delete()
+      .eq("id", trimString(mediaId));
+    if (metadataDelete.error) {
+      return { data: null, error: { message: "Unable to delete parent announcement media metadata right now." } };
+    }
+
+    let cleanupWarning = null;
+    if (storagePath) {
+      const objectDelete = await supabase.storage
+        .from(PARENT_ANNOUNCEMENTS_MEDIA_BUCKET)
+        .remove([storagePath]);
+      if (objectDelete.error) {
+        cleanupWarning = "Parent announcement media object cleanup was blocked.";
+      }
+    }
+
+    return {
+      data: {
+        media_id: trimString(mediaId),
+        cleanup_warning: cleanupWarning,
+      },
+      error: null,
+    };
+  } catch (_err) {
+    return { data: null, error: { message: "Unable to delete parent announcement media right now." } };
   }
 }

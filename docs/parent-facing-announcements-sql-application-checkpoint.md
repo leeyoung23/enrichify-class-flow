@@ -1,5 +1,39 @@
 # Parent-facing Announcements SQL Application Checkpoint
 
+## Checkpoint update (parent-facing media service + smoke)
+
+- Parent-facing media service methods are now added in `src/services/supabaseUploadService.js`:
+  - `uploadParentAnnouncementMedia(...)`
+  - `listParentAnnouncementMedia(...)`
+  - `getParentAnnouncementMediaSignedUrl(...)`
+  - `releaseParentAnnouncementMedia(...)`
+  - `deleteParentAnnouncementMedia(...)` (cleanup helper)
+- Focused smoke script/command now exists:
+  - `scripts/supabase-parent-announcements-media-smoke-test.mjs`
+  - `npm run test:supabase:parent-announcements:media`
+- Service posture:
+  - anon client + JWT + RLS only,
+  - private bucket only (`parent-announcements-media`),
+  - signed URL only (no public URL path),
+  - no service-role frontend usage,
+  - no reuse of internal `announcements-attachments` bucket.
+- Upload flow uses metadata-first path with cleanup attempt on object-upload failure.
+- Upload validation includes media-role allowlist, content-type allowlist, and size boundary (`<= 25MB`).
+- Release boundary update:
+  - upload defaults `released_to_parent=false`,
+  - manager release helper `releaseParentAnnouncementMedia(...)` sets `released_to_parent=true`,
+  - parent access remains release-gated by existing RLS helper path.
+- Smoke outcome intent/result:
+  - manager upload/list/signed URL proof,
+  - parent unreleased deny + released allow proof where fixture allows,
+  - teacher/student media-block proof,
+  - cleanup proof with CHECK-only warnings when fixture/session constrained.
+- No app UI implementation in this checkpoint.
+- No SQL/RLS changes in this checkpoint.
+- No notifications/emails in this checkpoint.
+- Canonical media checkpoint doc:
+  - `docs/parent-facing-announcements-media-service-smoke-checkpoint.md`
+
 ## Checkpoint update (029 insert RLS manual DEV application + smoke proof)
 
 - `029` manual apply target:
