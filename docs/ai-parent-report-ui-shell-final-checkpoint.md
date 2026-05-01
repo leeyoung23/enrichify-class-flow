@@ -31,3 +31,9 @@ Reason:
 - Staff release action exists already.
 - Parent release boundary display is the remaining critical product surface.
 - Parent-safe visibility rules should be fully planned before more AI generation UX.
+
+## Follow-up status
+
+- ParentView released-report display UI is now implemented in a dedicated parent-safe section.
+- Follow-up checkpoint:
+  - `docs/parent-view-ai-report-display-ui-checkpoint.md`

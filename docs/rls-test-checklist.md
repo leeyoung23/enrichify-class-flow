@@ -16,6 +16,13 @@
   - no service-role frontend usage.
 - Follow-up planning target:
   - Parent-side released/current-version-only report visibility checks (no evidence-link/raw-draft exposure) before UI implementation.
+- Follow-up status:
+  - ParentView released-report display UI is now wired with released/current-version-only boundaries.
+- Parent-facing verification emphasis for this milestone:
+  - released report visibility only for linked parent,
+  - no evidence-link visibility,
+  - no draft/unreleased visibility,
+  - no raw AI/provider metadata exposure.
 
 ## Checkpoint update (AI parent reports 030 manual DEV apply confirmed)
 

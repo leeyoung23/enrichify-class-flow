@@ -3,6 +3,20 @@
 Date: 2026-05-02  
 Scope: planning only for parent-side released AI parent report display
 
+## Checkpoint update (UI wiring complete)
+
+- ParentView released-report display is now wired.
+- Parent-facing section added: `Progress Reports`.
+- Display is release-bound and parent-safe:
+  - released rows only,
+  - current-version content only.
+- Demo parent mode uses local fake/dev released rows only.
+- Authenticated mode uses existing read services only.
+- No evidence links/raw AI/provider metadata/PDF links are shown.
+- No SQL/RLS/provider/notification side-effect changes were introduced.
+- UI checkpoint reference:
+  - `docs/parent-view-ai-report-display-ui-checkpoint.md`
+
 ## 1) Current state
 
 - Staff AI Parent Reports UI exists at `/ai-parent-reports`.

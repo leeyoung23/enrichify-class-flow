@@ -29,6 +29,26 @@
 - Next recommended milestone:
   - ParentView released-report display planning first (no implementation in this docs checkpoint).
 
+## Checkpoint update (ParentView released-report display UI milestone)
+
+- ParentView now includes a parent-facing `Progress Reports` section.
+- Scope is parent-safe released display only:
+  - released reports only,
+  - current-version-only content display,
+  - no staff controls.
+- Demo behavior:
+  - local fake/dev released reports only.
+- Authenticated behavior:
+  - existing AI parent report read services with JWT + RLS.
+- Boundary confirmation:
+  - no evidence links/release-events/raw version history/raw AI/provider metadata in parent UI,
+  - no SQL/RLS changes,
+  - no provider wiring,
+  - no PDF/export,
+  - no notification/email side effects.
+- Checkpoint doc:
+  - `docs/parent-view-ai-report-display-ui-checkpoint.md`
+
 ## Checkpoint update (AI parent reports 030 manual DEV apply completed)
 
 - Manual apply target:

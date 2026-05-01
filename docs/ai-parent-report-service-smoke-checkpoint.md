@@ -8,6 +8,8 @@
 - Parent-side report display remains deferred in this milestone.
 - No SQL/RLS/provider/PDF/export changes were added as part of UI shell.
 - Recommended next milestone is now parent-side released-report display planning before mock AI draft-assist UX.
+- Parent-side released-report display follow-up is now wired:
+  - see `docs/parent-view-ai-report-display-ui-checkpoint.md`.
 
 ## 1) Scope and status
 

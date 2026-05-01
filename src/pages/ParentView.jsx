@@ -8,6 +8,9 @@ import {
   listCurriculumProfiles,
   listParentAnnouncements,
   getParentAnnouncementDetail,
+  listAiParentReports,
+  getAiParentReportDetail,
+  getAiParentReportCurrentVersion,
 } from '@/services/supabaseReadService';
 import {
   uploadFeeReceipt,
@@ -569,6 +572,291 @@ function formatParentAnnouncementDateTime(value) {
     hour: '2-digit',
     minute: '2-digit',
   });
+}
+
+const DEMO_PARENT_RELEASED_REPORTS = [
+  {
+    id: 'demo-parent-report-released-1',
+    studentId: 'student-01',
+    classId: 'class-alpha',
+    branchId: 'branch-north',
+    reportType: 'monthly_progress',
+    reportPeriodStart: '2026-04-01',
+    reportPeriodEnd: '2026-04-30',
+    status: 'released',
+    currentVersionId: 'demo-parent-report-released-1-v1',
+    releasedAt: '2026-05-01T09:30:00.000Z',
+    createdAt: '2026-05-01T09:10:00.000Z',
+    updatedAt: '2026-05-01T09:30:00.000Z',
+  },
+  {
+    id: 'demo-parent-report-released-2',
+    studentId: 'student-01',
+    classId: 'class-alpha',
+    branchId: 'branch-north',
+    reportType: 'weekly_brief',
+    reportPeriodStart: '2026-04-21',
+    reportPeriodEnd: '2026-04-27',
+    status: 'released',
+    currentVersionId: 'demo-parent-report-released-2-v1',
+    releasedAt: '2026-04-28T11:00:00.000Z',
+    createdAt: '2026-04-28T10:45:00.000Z',
+    updatedAt: '2026-04-28T11:00:00.000Z',
+  },
+];
+
+const DEMO_PARENT_RELEASED_REPORT_CURRENT_VERSION_BY_ID = {
+  'demo-parent-report-released-1': {
+    id: 'demo-parent-report-released-1-v1',
+    reportId: 'demo-parent-report-released-1',
+    versionNumber: 1,
+    structuredSections: {
+      summary: 'Your child has shown steady progress this month with improved confidence during reading activities.',
+      attendance_punctuality: 'Attendance has been consistent, with one late arrival this period.',
+      lesson_progression: 'Classwork moved from guided responses to short independent summaries.',
+      homework_completion: 'Most homework tasks were completed on time with good effort.',
+      strengths: 'Reading fluency and participation in class discussions.',
+      areas_for_improvement: 'Adding more detail to written responses.',
+      next_recommendations: 'Practice short daily summaries and explain one key idea in full sentences.',
+      parent_support_suggestions: 'Read together for 10 minutes daily and ask one follow-up question about the text.',
+      teacher_final_comment: 'A positive month overall. Keep routines consistent for continued growth.',
+    },
+    finalText: {
+      teacher_final_comment: 'A positive month overall. Keep routines consistent for continued growth.',
+    },
+    createdAt: '2026-05-01T09:20:00.000Z',
+  },
+  'demo-parent-report-released-2': {
+    id: 'demo-parent-report-released-2-v1',
+    reportId: 'demo-parent-report-released-2',
+    versionNumber: 1,
+    structuredSections: {
+      summary: 'A solid week of engagement with clear effort in literacy tasks.',
+      attendance_punctuality: 'Present for all sessions in this report window.',
+      lesson_progression: 'Completed guided reading and moved into vocabulary extension tasks.',
+      homework_completion: 'Homework was submitted and reviewed within the week.',
+      strengths: 'Consistency and willingness to ask helpful questions.',
+      areas_for_improvement: 'Check final answers carefully before submission.',
+      next_recommendations: 'Keep using a short checklist before homework submission.',
+      parent_support_suggestions: 'Encourage a calm 15-minute homework block at a regular time each day.',
+      teacher_final_comment: 'Thank you for strong home support this week.',
+    },
+    finalText: {
+      teacher_final_comment: 'Thank you for strong home support this week.',
+    },
+    createdAt: '2026-04-28T10:50:00.000Z',
+  },
+};
+
+const RELEASED_STATUS_BADGE_CLASS = 'bg-purple-100 text-purple-700 border-purple-200';
+
+function formatParentReportTypeLabel(value) {
+  const key = typeof value === 'string' ? value.trim() : '';
+  if (!key) return 'Progress report';
+  return key
+    .split('_')
+    .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
+    .join(' ');
+}
+
+function mapSectionValueToText(value) {
+  if (typeof value === 'string') return value.trim();
+  if (Array.isArray(value)) {
+    const list = value
+      .map((item) => (typeof item === 'string' ? item.trim() : ''))
+      .filter(Boolean);
+    return list.join(', ');
+  }
+  if (value && typeof value === 'object') {
+    try {
+      return JSON.stringify(value);
+    } catch {
+      return '';
+    }
+  }
+  if (typeof value === 'number' || typeof value === 'boolean') return String(value);
+  return '';
+}
+
+function resolveParentReportSection({ currentVersion, detail }, keys) {
+  if (!Array.isArray(keys) || keys.length === 0) return '';
+  const structured = currentVersion?.structuredSections && typeof currentVersion.structuredSections === 'object'
+    ? currentVersion.structuredSections
+    : {};
+  const finalText = currentVersion?.finalText && typeof currentVersion.finalText === 'object'
+    ? currentVersion.finalText
+    : {};
+
+  for (const key of keys) {
+    const fromStructured = mapSectionValueToText(structured[key]);
+    if (fromStructured) return fromStructured;
+    const fromFinalText = mapSectionValueToText(finalText[key]);
+    if (fromFinalText) return fromFinalText;
+  }
+  const fallbackTeacherComment = mapSectionValueToText(finalText.teacher_final_comment || structured.teacher_final_comment);
+  if (fallbackTeacherComment && keys.includes('teacher_final_comment')) return fallbackTeacherComment;
+  return '';
+}
+
+function ParentProgressReportsSection({
+  isDemoMode,
+  loading,
+  error,
+  reports,
+  selectedReportId,
+  onSelectReport,
+  detail,
+  currentVersion,
+  detailLoading,
+  detailError,
+  studentName,
+  className,
+  classSubject,
+}) {
+  if (loading) {
+    return (
+      <Card id="parent-progress-reports">
+        <CardHeader className="pb-3">
+          <CardTitle className="text-base">Progress Reports</CardTitle>
+        </CardHeader>
+        <CardContent className="text-sm text-muted-foreground">Loading released progress reports...</CardContent>
+      </Card>
+    );
+  }
+
+  if (error) {
+    return (
+      <Card id="parent-progress-reports" className="border-dashed">
+        <CardHeader className="pb-3">
+          <CardTitle className="text-base">Progress Reports</CardTitle>
+        </CardHeader>
+        <CardContent className="text-sm text-muted-foreground">{error}</CardContent>
+      </Card>
+    );
+  }
+
+  if (!reports.length) {
+    return (
+      <Card id="parent-progress-reports" className="border-dashed">
+        <CardHeader className="pb-3">
+          <CardTitle className="text-base">Progress Reports</CardTitle>
+        </CardHeader>
+        <CardContent className="text-sm text-muted-foreground">
+          No released progress reports are available right now.
+        </CardContent>
+      </Card>
+    );
+  }
+
+  const selectedSummary = reports.find((item) => item.id === selectedReportId) || reports[0];
+  const latest = reports[0];
+  const detailContext = { currentVersion, detail };
+  const sectionRows = [
+    { title: 'Summary', keys: ['summary', 'student_summary'] },
+    { title: 'Attendance & punctuality', keys: ['attendance_punctuality', 'attendance_summary'] },
+    { title: 'Lesson progression', keys: ['lesson_progression', 'learning_focus'] },
+    { title: 'Homework completion', keys: ['homework_completion'] },
+    { title: 'Strengths', keys: ['strengths'] },
+    { title: 'Areas for improvement', keys: ['areas_for_improvement'] },
+    { title: 'Next recommendations', keys: ['next_recommendations'] },
+    { title: 'Parent support suggestions', keys: ['parent_support_suggestions', 'suggested_home_practice'] },
+    { title: 'Teacher final comment', keys: ['teacher_final_comment'] },
+  ]
+    .map((section) => ({ ...section, text: resolveParentReportSection(detailContext, section.keys) }))
+    .filter((section) => section.text);
+
+  return (
+    <Card id="parent-progress-reports">
+      <CardHeader className="pb-3">
+        <CardTitle className="text-base">Progress Reports</CardTitle>
+      </CardHeader>
+      <CardContent className="space-y-4">
+        <p className="text-sm text-muted-foreground">
+          {isDemoMode
+            ? 'Demo-only preview: released report cards below use local fake data only.'
+            : 'Released reports shared by your child\'s teacher are shown here.'}
+        </p>
+
+        <div className="rounded-lg border bg-muted/20 p-3 space-y-1.5">
+          <div className="flex items-center justify-between gap-2">
+            <p className="text-sm font-medium">{formatParentReportTypeLabel(latest.reportType)}</p>
+            <Badge variant="outline" className={RELEASED_STATUS_BADGE_CLASS}>Released</Badge>
+          </div>
+          <p className="text-xs text-muted-foreground">
+            Period: {formatReleasedDateLabel(latest.reportPeriodStart)} - {formatReleasedDateLabel(latest.reportPeriodEnd)}
+          </p>
+          {latest.releasedAt ? (
+            <p className="text-xs text-muted-foreground">
+              Released: {formatParentAnnouncementDateTime(latest.releasedAt)}
+            </p>
+          ) : null}
+        </div>
+
+        <div className="space-y-2">
+          {reports.map((row) => {
+            const isSelected = selectedSummary?.id === row.id;
+            return (
+              <button
+                key={row.id}
+                type="button"
+                onClick={() => onSelectReport(row.id)}
+                className={`w-full text-left rounded-lg border p-3 space-y-1.5 transition-colors ${
+                  isSelected ? 'border-primary bg-primary/5' : 'hover:bg-muted/30'
+                }`}
+              >
+                <div className="flex items-center justify-between gap-2">
+                  <p className="text-sm font-medium">{formatParentReportTypeLabel(row.reportType)}</p>
+                  <Badge variant="outline" className={RELEASED_STATUS_BADGE_CLASS}>Released</Badge>
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  Period: {formatReleasedDateLabel(row.reportPeriodStart)} - {formatReleasedDateLabel(row.reportPeriodEnd)}
+                </p>
+                {row.releasedAt ? (
+                  <p className="text-[11px] text-muted-foreground">
+                    Released: {formatParentAnnouncementDateTime(row.releasedAt)}
+                  </p>
+                ) : null}
+              </button>
+            );
+          })}
+        </div>
+
+        <div className="rounded-lg border p-3 space-y-2">
+          <p className="text-sm font-medium">Report detail</p>
+          {detailLoading ? (
+            <p className="text-xs text-muted-foreground">Loading released report detail...</p>
+          ) : detailError ? (
+            <p className="text-xs text-muted-foreground">{detailError}</p>
+          ) : (
+            <>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs text-muted-foreground">
+                <p><span className="font-medium text-foreground">Student:</span> {studentName || 'Linked child'}</p>
+                <p><span className="font-medium text-foreground">Class:</span> {className || 'Class'}</p>
+                <p><span className="font-medium text-foreground">Programme:</span> {classSubject || 'Learning programme'}</p>
+                <p><span className="font-medium text-foreground">Status:</span> Released</p>
+              </div>
+              {sectionRows.length === 0 ? (
+                <p className="text-xs text-muted-foreground">
+                  Released summary sections are not available for this report yet.
+                </p>
+              ) : (
+                <div className="space-y-2">
+                  {sectionRows.map((section) => (
+                    <details key={section.title} className="rounded-md border bg-muted/20 px-2.5 py-2">
+                      <summary className="cursor-pointer list-none text-sm font-medium text-foreground">
+                        {section.title}
+                      </summary>
+                      <p className="mt-2 text-xs text-foreground whitespace-pre-line">{section.text}</p>
+                    </details>
+                  ))}
+                </div>
+              )}
+            </>
+          )}
+        </div>
+      </CardContent>
+    </Card>
+  );
 }
 
 function ParentAnnouncementsEventsSection({
@@ -1172,6 +1460,14 @@ export default function ParentView() {
   const [parentAnnouncementMediaLoading, setParentAnnouncementMediaLoading] = useState(false);
   const [parentAnnouncementMediaError, setParentAnnouncementMediaError] = useState('');
   const [parentAnnouncementMediaRows, setParentAnnouncementMediaRows] = useState([]);
+  const [parentProgressReportsLoading, setParentProgressReportsLoading] = useState(false);
+  const [parentProgressReportsError, setParentProgressReportsError] = useState('');
+  const [parentProgressReports, setParentProgressReports] = useState([]);
+  const [selectedParentProgressReportId, setSelectedParentProgressReportId] = useState(null);
+  const [parentProgressReportDetailLoading, setParentProgressReportDetailLoading] = useState(false);
+  const [parentProgressReportDetailError, setParentProgressReportDetailError] = useState('');
+  const [parentProgressReportDetail, setParentProgressReportDetail] = useState(null);
+  const [parentProgressReportCurrentVersion, setParentProgressReportCurrentVersion] = useState(null);
 
   const latestApprovedUpdate = useMemo(() => updates[0], [updates]);
   const parentHomeworkTasksWithStatus = useMemo(() => {
@@ -1353,6 +1649,60 @@ export default function ParentView() {
     void loadParentAnnouncements();
   }, [loadParentAnnouncements]);
 
+  const loadParentProgressReports = useCallback(async () => {
+    if (isDemoStudentPreview) {
+      setParentProgressReportsLoading(false);
+      setParentProgressReportsError('');
+      setParentProgressReports([]);
+      setSelectedParentProgressReportId(null);
+      return;
+    }
+    if (isDemoMode) {
+      const demoRows = DEMO_PARENT_RELEASED_REPORTS;
+      setParentProgressReportsLoading(false);
+      setParentProgressReportsError('');
+      setParentProgressReports(demoRows);
+      setSelectedParentProgressReportId((prev) => {
+        if (prev && demoRows.some((row) => row.id === prev)) return prev;
+        return demoRows[0]?.id || null;
+      });
+      return;
+    }
+    if (!hasSupabaseSession || !isSupabaseConfigured()) {
+      setParentProgressReportsLoading(false);
+      setParentProgressReportsError('');
+      setParentProgressReports([]);
+      setSelectedParentProgressReportId(null);
+      return;
+    }
+
+    setParentProgressReportsLoading(true);
+    setParentProgressReportsError('');
+    try {
+      const listResult = await listAiParentReports({ status: 'released', includeArchived: false });
+      if (listResult.error) {
+        throw new Error(listResult.error.message || 'Unable to load released progress reports right now.');
+      }
+      const rows = Array.isArray(listResult.data) ? listResult.data : [];
+      const filteredRows = student?.id ? rows.filter((row) => row.studentId === student.id) : rows;
+      setParentProgressReports(filteredRows);
+      setSelectedParentProgressReportId((prev) => {
+        if (prev && filteredRows.some((row) => row.id === prev)) return prev;
+        return filteredRows[0]?.id || null;
+      });
+    } catch (error) {
+      setParentProgressReports([]);
+      setSelectedParentProgressReportId(null);
+      setParentProgressReportsError(error?.message || 'Unable to load released progress reports right now.');
+    } finally {
+      setParentProgressReportsLoading(false);
+    }
+  }, [isDemoStudentPreview, isDemoMode, hasSupabaseSession, student?.id]);
+
+  useEffect(() => {
+    void loadParentProgressReports();
+  }, [loadParentProgressReports]);
+
   useEffect(() => {
     let cancelled = false;
 
@@ -1459,6 +1809,74 @@ export default function ParentView() {
       cancelled = true;
     };
   }, [selectedParentAnnouncementId, isDemoMode, hasSupabaseSession, isDemoStudentPreview]);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    const loadProgressReportDetail = async () => {
+      if (isDemoStudentPreview) {
+        setParentProgressReportDetailLoading(false);
+        setParentProgressReportDetailError('');
+        setParentProgressReportDetail(null);
+        setParentProgressReportCurrentVersion(null);
+        return;
+      }
+
+      const selectedId = selectedParentProgressReportId;
+      if (!selectedId) {
+        setParentProgressReportDetailLoading(false);
+        setParentProgressReportDetailError('');
+        setParentProgressReportDetail(null);
+        setParentProgressReportCurrentVersion(null);
+        return;
+      }
+
+      if (isDemoMode) {
+        const detailRow = DEMO_PARENT_RELEASED_REPORTS.find((row) => row.id === selectedId) || null;
+        const versionRow = DEMO_PARENT_RELEASED_REPORT_CURRENT_VERSION_BY_ID[selectedId] || null;
+        setParentProgressReportDetail(detailRow);
+        setParentProgressReportCurrentVersion(versionRow);
+        setParentProgressReportDetailLoading(false);
+        setParentProgressReportDetailError('');
+        return;
+      }
+
+      if (!hasSupabaseSession || !isSupabaseConfigured()) {
+        setParentProgressReportDetailLoading(false);
+        setParentProgressReportDetailError('');
+        setParentProgressReportDetail(null);
+        setParentProgressReportCurrentVersion(null);
+        return;
+      }
+
+      setParentProgressReportDetailLoading(true);
+      setParentProgressReportDetailError('');
+      try {
+        const [detailResult, currentVersionResult] = await Promise.all([
+          getAiParentReportDetail({ reportId: selectedId }),
+          getAiParentReportCurrentVersion({ reportId: selectedId }),
+        ]);
+        if (detailResult.error) {
+          throw new Error(detailResult.error.message || 'Unable to load released report detail right now.');
+        }
+        if (cancelled) return;
+        setParentProgressReportDetail(detailResult.data || null);
+        setParentProgressReportCurrentVersion(currentVersionResult.error ? null : (currentVersionResult.data || null));
+      } catch (error) {
+        if (cancelled) return;
+        setParentProgressReportDetail(null);
+        setParentProgressReportCurrentVersion(null);
+        setParentProgressReportDetailError(error?.message || 'Unable to load released report detail right now.');
+      } finally {
+        if (!cancelled) setParentProgressReportDetailLoading(false);
+      }
+    };
+
+    void loadProgressReportDetail();
+    return () => {
+      cancelled = true;
+    };
+  }, [selectedParentProgressReportId, isDemoMode, hasSupabaseSession, isDemoStudentPreview]);
 
   const loadParentHomeworkStatus = useCallback(async () => {
     if (isDemoStudentPreview) {
@@ -2074,6 +2492,10 @@ export default function ParentView() {
                   <FileText className="h-4 w-4" />
                   View Announcements & Events
                 </Button>
+                <Button variant="outline" className="justify-start gap-2" onClick={() => document.getElementById('parent-progress-reports')?.scrollIntoView({ behavior: 'smooth' })}>
+                  <FileText className="h-4 w-4" />
+                  View Progress Reports
+                </Button>
                 <Button variant="outline" className="justify-start gap-2" onClick={() => document.getElementById('homework-history')?.scrollIntoView({ behavior: 'smooth' })}>
                   <BookOpen className="h-4 w-4" />
                   View Homework History
@@ -2113,6 +2535,21 @@ export default function ParentView() {
                 isDemoMode={isDemoMode}
                 learningFocus={learningFocus}
                 loading={learningFocusLoading}
+              />
+              <ParentProgressReportsSection
+                isDemoMode={isDemoMode}
+                loading={parentProgressReportsLoading}
+                error={parentProgressReportsError}
+                reports={parentProgressReports}
+                selectedReportId={selectedParentProgressReportId}
+                onSelectReport={setSelectedParentProgressReportId}
+                detail={parentProgressReportDetail}
+                currentVersion={parentProgressReportCurrentVersion}
+                detailLoading={parentProgressReportDetailLoading}
+                detailError={parentProgressReportDetailError}
+                studentName={student?.name}
+                className={cls?.name}
+                classSubject={cls?.subject}
               />
               <ParentHomeworkStatusSection
                 isDemoMode={isDemoMode}

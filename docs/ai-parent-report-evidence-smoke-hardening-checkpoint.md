@@ -12,7 +12,8 @@ Scope: docs-only checkpoint for AI parent report evidence-link smoke hardening
   - parent direct evidence-link visibility remains blocked/empty.
 - No SQL/RLS changes were introduced in the UI shell milestone.
 - No real AI provider and no PDF/export were added.
-- ParentView released-report display remains intentionally deferred.
+- ParentView released-report display was deferred in this evidence checkpoint and is now delivered in a follow-up milestone.
+- Follow-up: ParentView released-report display UI is now wired with released/current-version-only boundaries and still does not expose evidence links.
 
 ## 1) Key checkpoint notes
 

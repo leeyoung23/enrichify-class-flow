@@ -16,6 +16,8 @@
   - no PDF/export controls.
 - Follow-up mobile QA target (after planning/implementation):
   - ParentView released-report display card/list readability for released-current-version-only scope.
+- Status update:
+  - ParentView `Progress Reports` released/current-version-only section is now wired; include manual QA at ~390px/~768px for card stacking, section expansion readability, and no admin-control bleed.
 
 ## Checkpoint update (final communication-module QA baseline)
 
