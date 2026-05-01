@@ -120,6 +120,32 @@ Reminder: **Frontend filtering is not security. RLS must enforce access at datab
 - No production apply in this checkpoint.
 - No runtime/UI/service changes in this checkpoint.
 
+## Company News popup service + smoke note (2026-05-01)
+
+- New service methods:
+  - `listEligibleCompanyNewsPopups({ limit })`
+  - `markCompanyNewsPopupSeen({ announcementId })`
+  - `dismissCompanyNewsPopup({ announcementId })`
+- New smoke script and command:
+  - `scripts/supabase-company-news-popup-smoke-test.mjs`
+  - `npm run test:supabase:company-news:popup`
+- Expected smoke behavior:
+  - teacher can read eligible internal `company_news` popup row(s),
+  - teacher seen/dismiss popup status writes succeed on own row,
+  - dismissed item is excluded from eligible popup list,
+  - request/reminder rows are excluded from company-news popup list,
+  - parent/student popup reads are blocked-or-empty,
+  - manager cross-user popup field write is blocked by popup self-update guard.
+- Current checkpoint notes:
+  - direct HQ `company_news` create remains CHECK-blocked by current request-first create-path policy shape (expected),
+  - fixture conversion path still validates popup service behavior safely without SQL/RLS changes.
+- Boundaries unchanged:
+  - no runtime app-shell popup UI,
+  - no SQL/RLS changes,
+  - no notification/email automation,
+  - no parent-facing announcements/events,
+  - `parent_facing_media` remains out of scope.
+
 ### Announcements attachments role checks (current proven state)
 
 - HQ can upload/list/open signed URL for internal attachments.

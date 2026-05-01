@@ -155,3 +155,21 @@ Validation efficiency rule:
 - Service changes: run build/lint/typecheck + focused popup smoke only.
 - Docs-only follow-up: run `git diff --name-only`.
 ```
+
+## Checkpoint update (popup service + smoke completed)
+
+- Popup service methods are now added:
+  - `listEligibleCompanyNewsPopups(...)`
+  - `markCompanyNewsPopupSeen(...)`
+  - `dismissCompanyNewsPopup(...)`
+- Focused smoke test is now added:
+  - `scripts/supabase-company-news-popup-smoke-test.mjs`
+  - `npm run test:supabase:company-news:popup`
+- Service + smoke checkpoint doc:
+  - `docs/company-news-popup-service-smoke-checkpoint.md`
+- This service checkpoint preserves boundaries:
+  - no runtime app-shell popup UI wiring,
+  - no SQL/RLS changes,
+  - no notifications/emails,
+  - no parent-facing announcements/events,
+  - no `parent_facing_media`.

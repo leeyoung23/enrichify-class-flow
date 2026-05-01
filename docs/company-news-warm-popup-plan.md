@@ -36,6 +36,22 @@ Scope: planning-only checkpoint for Company News / Big News mode and warm portal
 - Companion checkpoint:
   - `docs/company-news-popup-status-sql-application-checkpoint.md`
 
+## Checkpoint update (popup service + smoke)
+
+- Company News popup service methods are now implemented in read/write services:
+  - `listEligibleCompanyNewsPopups(...)`
+  - `markCompanyNewsPopupSeen(...)`
+  - `dismissCompanyNewsPopup(...)`
+- Focused popup smoke script is now added:
+  - `scripts/supabase-company-news-popup-smoke-test.mjs`
+  - `npm run test:supabase:company-news:popup`
+- Service smoke confirms own-row seen/dismiss path and dismissed-item suppression for targeted teacher.
+- Parent/student popup list path remains blocked-or-empty.
+- No runtime app-shell popup UI exists yet in this checkpoint.
+- No SQL/RLS changes in this checkpoint.
+- No notifications/emails in this checkpoint.
+- No parent-facing announcements/events in this checkpoint.
+
 ## Checkpoint update (Company News UI shell now added)
 
 - Company News UI shell is now present in `src/pages/Announcements.jsx`:

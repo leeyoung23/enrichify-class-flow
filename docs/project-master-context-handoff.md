@@ -552,6 +552,22 @@ Current status note:
     - function `guard_announcement_statuses_popup_self_update_026`,
   - verified `announcement_statuses` policy shape remains unchanged at 4 policies from `020`,
   - no runtime/UI/service changes in this checkpoint.
+- Company News popup service + smoke checkpoint is now added:
+  - `docs/company-news-popup-service-smoke-checkpoint.md`
+- New internal Company News popup service methods are now implemented:
+  - `src/services/supabaseReadService.js`:
+    - `listEligibleCompanyNewsPopups(...)`
+  - `src/services/supabaseWriteService.js`:
+    - `markCompanyNewsPopupSeen(...)`
+    - `dismissCompanyNewsPopup(...)`
+- Focused popup smoke script now exists:
+  - `scripts/supabase-company-news-popup-smoke-test.mjs`
+  - `npm run test:supabase:company-news:popup`
+- Popup service/smoke scope remains constrained:
+  - no runtime app-shell popup UI wiring in this milestone,
+  - no SQL/RLS changes in this milestone,
+  - no notifications/emails/live-chat behavior,
+  - no parent-facing announcements/events and no `parent_facing_media`.
 
 ## 12) Next immediate milestone prompt (copy-paste)
 

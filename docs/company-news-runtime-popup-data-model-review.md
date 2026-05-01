@@ -39,6 +39,27 @@ Scope: planning/review only for safest runtime warm pop-up strategy and data mod
 - Manual application checkpoint doc:
   - `docs/company-news-popup-status-sql-application-checkpoint.md`
 
+## Checkpoint update (popup service + smoke)
+
+- Popup service methods are now added:
+  - read: `listEligibleCompanyNewsPopups(...)`
+  - write: `markCompanyNewsPopupSeen(...)`, `dismissCompanyNewsPopup(...)`
+- Focused smoke test is now added:
+  - `scripts/supabase-company-news-popup-smoke-test.mjs`
+  - `npm run test:supabase:company-news:popup`
+- Verified in service smoke:
+  - targeted teacher can list eligible popup,
+  - seen/dismiss writes succeed for own row,
+  - dismissed item is no longer returned,
+  - parent/student blocked-or-empty,
+  - cross-user popup dismiss write attempt by manager is blocked.
+- No runtime app-shell popup UI is wired in this checkpoint.
+- No SQL/RLS changes were made in this checkpoint.
+- No notifications/emails were added.
+- No parent-facing announcements/events were added.
+- Service/smoke checkpoint doc:
+  - `docs/company-news-popup-service-smoke-checkpoint.md`
+
 ## Documentation-only note
 
 - This is a docs/review checkpoint only.

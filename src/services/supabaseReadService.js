@@ -30,7 +30,7 @@ const ANNOUNCEMENT_FIELDS =
 const ANNOUNCEMENT_TARGET_FIELDS =
   "id,announcement_id,target_type,branch_id,target_profile_id,target_role,created_at";
 const ANNOUNCEMENT_STATUS_FIELDS =
-  "id,announcement_id,profile_id,read_at,done_status,done_at,undone_reason,last_seen_at,created_at,updated_at";
+  "id,announcement_id,profile_id,read_at,done_status,done_at,undone_reason,last_seen_at,popup_seen_at,popup_dismissed_at,popup_last_shown_at,created_at,updated_at";
 const ANNOUNCEMENT_REPLY_FIELDS =
   "id,announcement_id,profile_id,body,reply_type,parent_reply_id,created_at";
 const ANNOUNCEMENT_STATUS_VALUES = new Set(["draft", "published", "closed", "archived"]);
@@ -46,6 +46,37 @@ function isUuidLike(value) {
 
 function trimString(value) {
   return typeof value === "string" ? value.trim() : "";
+}
+
+function priorityRank(priority) {
+  const normalized = trimString(priority).toLowerCase();
+  if (normalized === "urgent") return 0;
+  if (normalized === "high") return 1;
+  if (normalized === "normal") return 2;
+  if (normalized === "low") return 3;
+  return 4;
+}
+
+function toTimestamp(value) {
+  if (typeof value !== "string" || !value.trim()) return 0;
+  const parsed = Date.parse(value);
+  return Number.isNaN(parsed) ? 0 : parsed;
+}
+
+function buildAnnouncementBodyPreview(subtitle, body) {
+  const subtitleText = trimString(subtitle);
+  const bodyText = trimString(body);
+  if (subtitleText) return subtitleText.slice(0, 200);
+  if (bodyText) return bodyText.slice(0, 200);
+  return "";
+}
+
+async function getAuthenticatedProfileId() {
+  const { data, error } = await supabase.auth.getUser();
+  if (error || !data?.user?.id) {
+    return { profileId: null, error: { message: error?.message || "Authenticated user is required" } };
+  }
+  return { profileId: data.user.id, error: null };
 }
 
 function mapSubmissionStatusToTrackerStatus(submissionStatus = "") {
@@ -1452,6 +1483,101 @@ export async function listAnnouncements({
     return { data: Array.isArray(data) ? data : [], error: null };
   } catch (error) {
     return { data: [], error };
+  }
+}
+
+/**
+ * Return popup-eligible internal Company News rows visible to current user.
+ * Uses anon client + JWT + RLS only.
+ */
+export async function listEligibleCompanyNewsPopups({ limit } = {}) {
+  if (!isSupabaseConfigured() || !supabase) {
+    return { data: [], error: { message: "Supabase is not configured" } };
+  }
+  const resolvedLimit = Number.isInteger(limit) && limit > 0 ? Math.min(limit, 20) : 1;
+
+  try {
+    const { profileId, error: authError } = await getAuthenticatedProfileId();
+    if (authError || !profileId) {
+      return { data: [], error: authError || { message: "Authenticated user is required" } };
+    }
+
+    const announcementRead = await supabase
+      .from("announcements")
+      .select("id,title,subtitle,body,priority,popup_emoji,published_at,created_at")
+      .eq("audience_type", "internal_staff")
+      .eq("announcement_type", "company_news")
+      .eq("status", "published")
+      .eq("popup_enabled", true)
+      .order("published_at", { ascending: false })
+      .order("created_at", { ascending: false })
+      .limit(50);
+    if (announcementRead.error) {
+      return { data: [], error: { message: "Unable to load eligible Company News popups right now." } };
+    }
+
+    const announcementRows = Array.isArray(announcementRead.data) ? announcementRead.data : [];
+    if (announcementRows.length === 0) return { data: [], error: null };
+
+    const announcementIds = announcementRows
+      .map((row) => trimString(row?.id))
+      .filter((id) => isUuidLike(id));
+    if (announcementIds.length === 0) return { data: [], error: null };
+
+    const statusRead = await supabase
+      .from("announcement_statuses")
+      .select("announcement_id,profile_id,read_at,popup_seen_at,popup_dismissed_at,popup_last_shown_at")
+      .eq("profile_id", profileId)
+      .in("announcement_id", announcementIds);
+    if (statusRead.error) {
+      return { data: [], error: { message: "Unable to load eligible Company News popups right now." } };
+    }
+
+    const statusByAnnouncementId = new Map();
+    for (const row of Array.isArray(statusRead.data) ? statusRead.data : []) {
+      const announcementId = trimString(row?.announcement_id);
+      if (!isUuidLike(announcementId)) continue;
+      statusByAnnouncementId.set(announcementId, row);
+    }
+
+    const eligible = [];
+    for (const row of announcementRows) {
+      const announcementId = trimString(row?.id);
+      if (!isUuidLike(announcementId)) continue;
+
+      const ownStatus = statusByAnnouncementId.get(announcementId) || null;
+      if (ownStatus?.popup_dismissed_at) continue;
+
+      const bodyPreview = buildAnnouncementBodyPreview(row?.subtitle, row?.body);
+      eligible.push({
+        announcementId,
+        title: trimString(row?.title) || "Untitled Company News",
+        subtitle: trimString(row?.subtitle) || "",
+        bodyPreview,
+        popupEmoji: trimString(row?.popup_emoji) || "",
+        priority: trimString(row?.priority) || "normal",
+        publishedAt: row?.published_at || null,
+        popupSeenAt: ownStatus?.popup_seen_at || null,
+        popupDismissedAt: ownStatus?.popup_dismissed_at || null,
+        popupLastShownAt: ownStatus?.popup_last_shown_at || null,
+        actionUrl: `/announcements?announcementId=${announcementId}`,
+        _unseenRank: ownStatus?.popup_seen_at || ownStatus?.read_at ? 1 : 0,
+      });
+    }
+
+    eligible.sort((a, b) => {
+      if (a._unseenRank !== b._unseenRank) return a._unseenRank - b._unseenRank;
+      const priorityDelta = priorityRank(a.priority) - priorityRank(b.priority);
+      if (priorityDelta !== 0) return priorityDelta;
+      return toTimestamp(b.publishedAt) - toTimestamp(a.publishedAt);
+    });
+
+    return {
+      data: eligible.slice(0, resolvedLimit).map(({ _unseenRank, ...row }) => row),
+      error: null,
+    };
+  } catch (_error) {
+    return { data: [], error: { message: "Unable to load eligible Company News popups right now." } };
   }
 }
 

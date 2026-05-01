@@ -56,6 +56,27 @@ Scope: planning only for Announcements/Internal Communications and Document Hub 
 - Checkpoint doc:
   - `docs/company-news-popup-status-sql-application-checkpoint.md`
 
+## Checkpoint update (Company News popup service + smoke)
+
+- Service methods now exist for internal Company News popup flow:
+  - `listEligibleCompanyNewsPopups(...)`
+  - `markCompanyNewsPopupSeen(...)`
+  - `dismissCompanyNewsPopup(...)`
+- Focused smoke command now exists:
+  - `npm run test:supabase:company-news:popup`
+- Service smoke confirms:
+  - teacher eligible popup read path,
+  - own-row seen/dismiss writes,
+  - dismissed popup suppression from list,
+  - parent/student blocked-or-empty popup reads,
+  - manager cross-user popup write blocked by guard.
+- No app UI/runtime page behavior changes in this slice.
+- No SQL/RLS changes in this slice.
+- No notification/email behavior in this slice.
+- No parent-facing announcements/events in this slice.
+- Checkpoint doc:
+  - `docs/company-news-popup-service-smoke-checkpoint.md`
+
 ## Checkpoint update (completion overview read service + smoke)
 
 - Manager completion overview read service is now added:

@@ -1347,6 +1347,154 @@ export async function publishAnnouncement({ announcementId } = {}) {
   }
 }
 
+async function validateCompanyNewsPopupAnnouncement(announcementId) {
+  const readResult = await supabase
+    .from("announcements")
+    .select("id,announcement_type,audience_type,status,popup_enabled")
+    .eq("id", trimString(announcementId))
+    .maybeSingle();
+
+  if (readResult.error || !readResult.data?.id) {
+    return { data: null, error: { message: "Unable to update Company News popup status right now." } };
+  }
+
+  const row = readResult.data;
+  if (
+    row.announcement_type !== "company_news" ||
+    row.audience_type !== "internal_staff" ||
+    row.status !== "published" ||
+    row.popup_enabled !== true
+  ) {
+    return { data: null, error: { message: "Announcement is not eligible for Company News popup updates." } };
+  }
+
+  return { data: row, error: null };
+}
+
+async function upsertOwnCompanyNewsPopupStatus({
+  announcementId,
+  profileId,
+  popupSeenAt,
+  popupDismissedAt,
+  popupLastShownAt,
+} = {}) {
+  const existingRead = await supabase
+    .from("announcement_statuses")
+    .select(
+      "id,announcement_id,profile_id,read_at,last_seen_at,done_status,done_at,undone_reason,popup_seen_at,popup_dismissed_at,popup_last_shown_at,created_at,updated_at"
+    )
+    .eq("announcement_id", trimString(announcementId))
+    .eq("profile_id", profileId)
+    .maybeSingle();
+  if (existingRead.error && existingRead.error.code !== "PGRST116") {
+    return { data: null, error: { message: "Unable to update Company News popup status right now." } };
+  }
+
+  const nowIso = new Date().toISOString();
+  if (existingRead.data?.id) {
+    const updatePayload = {
+      popup_seen_at: popupSeenAt ?? existingRead.data.popup_seen_at ?? null,
+      popup_dismissed_at: popupDismissedAt ?? existingRead.data.popup_dismissed_at ?? null,
+      popup_last_shown_at: popupLastShownAt ?? nowIso,
+      updated_at: nowIso,
+    };
+    const updateResult = await supabase
+      .from("announcement_statuses")
+      .update(updatePayload)
+      .eq("id", existingRead.data.id)
+      .select(
+        "id,announcement_id,profile_id,read_at,last_seen_at,done_status,done_at,undone_reason,popup_seen_at,popup_dismissed_at,popup_last_shown_at,created_at,updated_at"
+      )
+      .maybeSingle();
+    if (updateResult.error) {
+      return { data: null, error: { message: "Unable to update Company News popup status right now." } };
+    }
+    return { data: updateResult.data ?? null, error: null };
+  }
+
+  const insertPayload = {
+    announcement_id: trimString(announcementId),
+    profile_id: profileId,
+    done_status: "pending",
+    popup_seen_at: popupSeenAt ?? null,
+    popup_dismissed_at: popupDismissedAt ?? null,
+    popup_last_shown_at: popupLastShownAt ?? nowIso,
+    created_at: nowIso,
+    updated_at: nowIso,
+  };
+  const insertResult = await supabase
+    .from("announcement_statuses")
+    .insert(insertPayload)
+    .select(
+      "id,announcement_id,profile_id,read_at,last_seen_at,done_status,done_at,undone_reason,popup_seen_at,popup_dismissed_at,popup_last_shown_at,created_at,updated_at"
+    )
+    .maybeSingle();
+  if (insertResult.error) {
+    return { data: null, error: { message: "Unable to update Company News popup status right now." } };
+  }
+  return { data: insertResult.data ?? null, error: null };
+}
+
+export async function markCompanyNewsPopupSeen({ announcementId } = {}) {
+  if (!isSupabaseConfigured() || !supabase) {
+    return { data: null, error: { message: "Supabase is not configured" } };
+  }
+  if (!isUuidLike(announcementId)) {
+    return { data: null, error: { message: "announcementId must be a UUID" } };
+  }
+
+  try {
+    const { profileId, error: authError } = await getAuthenticatedProfileId();
+    if (authError || !profileId) {
+      return { data: null, error: authError || { message: "Authenticated user is required" } };
+    }
+
+    const validated = await validateCompanyNewsPopupAnnouncement(announcementId);
+    if (validated.error) return { data: null, error: validated.error };
+
+    const nowIso = new Date().toISOString();
+    return await upsertOwnCompanyNewsPopupStatus({
+      announcementId,
+      profileId,
+      popupSeenAt: nowIso,
+      popupDismissedAt: null,
+      popupLastShownAt: nowIso,
+    });
+  } catch (_err) {
+    return { data: null, error: { message: "Unable to update Company News popup status right now." } };
+  }
+}
+
+export async function dismissCompanyNewsPopup({ announcementId } = {}) {
+  if (!isSupabaseConfigured() || !supabase) {
+    return { data: null, error: { message: "Supabase is not configured" } };
+  }
+  if (!isUuidLike(announcementId)) {
+    return { data: null, error: { message: "announcementId must be a UUID" } };
+  }
+
+  try {
+    const { profileId, error: authError } = await getAuthenticatedProfileId();
+    if (authError || !profileId) {
+      return { data: null, error: authError || { message: "Authenticated user is required" } };
+    }
+
+    const validated = await validateCompanyNewsPopupAnnouncement(announcementId);
+    if (validated.error) return { data: null, error: validated.error };
+
+    const nowIso = new Date().toISOString();
+    return await upsertOwnCompanyNewsPopupStatus({
+      announcementId,
+      profileId,
+      popupSeenAt: null,
+      popupDismissedAt: nowIso,
+      popupLastShownAt: nowIso,
+    });
+  } catch (_err) {
+    return { data: null, error: { message: "Unable to update Company News popup status right now." } };
+  }
+}
+
 export async function markAnnouncementRead({ announcementId } = {}) {
   if (!isSupabaseConfigured() || !supabase) {
     return { data: null, error: { message: "Supabase is not configured" } };
