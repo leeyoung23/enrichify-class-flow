@@ -431,3 +431,17 @@ Do not run build/lint/typecheck/smoke suite unless runtime files change.
   - no update/delete behavior introduced for those audit tables in this milestone.
 - Service/smoke checkpoint reference:
   - `docs/ai-parent-report-service-smoke-checkpoint.md`.
+
+## Checkpoint update (draft create diagnostics pre-031 apply)
+
+- Focused diagnostics classify current draft-create CHECK as SELECT policy / RETURNING visibility class:
+  - helper predicate pass,
+  - raw insert pass,
+  - insert with RETURNING RLS fail.
+- This points to policy shape (row visibility for RETURNING) rather than payload or fixture relation mismatch.
+- A patch draft was prepared (manual/dev-first only):
+  - `supabase/sql/031_fix_ai_parent_reports_insert_rls.sql`
+- Patch intent:
+  - keep insert predicate unchanged,
+  - keep parent released-only linked-child rule unchanged,
+  - switch select policy to row-predicate helper for safer RETURNING visibility.

@@ -87,3 +87,17 @@ Coverage goals in smoke:
 - Real provider integration/wiring.
 - PDF/export snapshot/storage model implementation.
 - Notification/email workflow.
+
+## 8) Draft create CHECK diagnosis update
+
+- Diagnostic outcome from `npm run test:supabase:ai-parent-reports`:
+  - helper predicate `can_insert_ai_parent_report_row_030(...)` returns `true`,
+  - raw insert without RETURNING succeeds,
+  - insert with RETURNING fails with RLS violation.
+- Conclusion:
+  - not a service payload issue,
+  - not a fixture student/class/branch mismatch in current fake fixture,
+  - likely SELECT policy/RETURNING visibility mismatch on `ai_parent_reports`.
+- Manual/dev-first patch drafted (not applied automatically):
+  - `supabase/sql/031_fix_ai_parent_reports_insert_rls.sql`
+  - introduces row-predicate select helper and recreates `ai_parent_reports_select_030` using row columns instead of self-lookup pattern.

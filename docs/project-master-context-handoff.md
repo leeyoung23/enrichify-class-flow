@@ -1127,3 +1127,19 @@ Handoff status: complete for continuity. Use this file as the primary context an
   - release/version event insert PASS or CHECK without privilege widening.
 - Checkpoint doc:
   - `docs/ai-parent-report-service-smoke-checkpoint.md`.
+
+### AI parent report draft-create diagnostics note
+
+- Diagnostic probes were added to `scripts/supabase-ai-parent-reports-smoke-test.mjs` with non-secret output:
+  - actor role/is_active/branch marker,
+  - selected fake fixture IDs (masked),
+  - relationship validity check,
+  - failure stage labeling (`fixture_discovery`, `service_create`, `raw_insert_without_returning`, `insert_with_returning`, `helper_predicate`, `constraint_or_fk`, `downstream_lifecycle`).
+- Current root-cause classification:
+  - helper predicate PASS,
+  - raw insert PASS,
+  - insert with RETURNING fails by RLS.
+- Manual/dev-first SQL patch draft created (not applied):
+  - `supabase/sql/031_fix_ai_parent_reports_insert_rls.sql`
+- Next manual step if approved:
+  - apply `031` in Supabase DEV SQL editor, then rerun `npm run test:supabase:ai-parent-reports`.

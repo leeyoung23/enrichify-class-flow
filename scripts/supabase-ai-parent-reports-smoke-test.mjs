@@ -18,6 +18,19 @@ function printResult(kind, message) {
   console.log(`[${kind}] ${message}`);
 }
 
+function maskUuid(value) {
+  if (!isUuidLike(value)) return "missing";
+  const text = String(value).trim();
+  return `${text.slice(0, 8)}...${text.slice(-4)}`;
+}
+
+function formatDbError(error) {
+  if (!error) return "unknown";
+  const code = typeof error.code === "string" ? error.code : "n/a";
+  const message = typeof error.message === "string" ? error.message : "unknown";
+  return `code=${code} message=${message}`;
+}
+
 function trimEnv(key) {
   const raw = process.env[key];
   return typeof raw === "string" ? raw.trim() : "";
@@ -63,6 +76,182 @@ async function resolveCurrentProfileContext(supabase) {
     return { data: null, error: profileRead.error || { message: "Profile lookup failed" } };
   }
   return { data: profileRead.data, error: null };
+}
+
+async function diagnoseAiParentReportDraftInsert({
+  supabase,
+  actorProfileId,
+  fixtureBranchId,
+  fixtureClassId,
+  fixtureStudentId,
+  assignedTeacherProfileId,
+} = {}) {
+  const stage = "fixture_discovery";
+  const relationshipProbe = await supabase
+    .from("students")
+    .select("id,branch_id,class_id")
+    .eq("id", fixtureStudentId)
+    .maybeSingle();
+  if (relationshipProbe.error || !relationshipProbe.data?.id) {
+    printResult(
+      "CHECK",
+      `[${stage}] student/class/branch relation lookup unavailable (${formatDbError(relationshipProbe.error)})`
+    );
+  } else {
+    const relationValid =
+      relationshipProbe.data.branch_id === fixtureBranchId &&
+      (fixtureClassId == null || fixtureClassId === "" || relationshipProbe.data.class_id === fixtureClassId);
+    printResult(
+      "CHECK",
+      `[${stage}] relationship_valid=${relationValid ? "yes" : "no"} student_branch=${maskUuid(
+        relationshipProbe.data.branch_id
+      )} student_class=${maskUuid(relationshipProbe.data.class_id)} selected_branch=${maskUuid(
+        fixtureBranchId
+      )} selected_class=${maskUuid(fixtureClassId)}`
+    );
+  }
+
+  const helperStage = "helper_predicate";
+  let helperAllowsInsert = null;
+  const helperProbe = await supabase.rpc("can_insert_ai_parent_report_row_030", {
+    student_uuid: fixtureStudentId,
+    class_uuid: fixtureClassId,
+    branch_uuid: fixtureBranchId,
+    creator_uuid: actorProfileId,
+    assigned_teacher_uuid: assignedTeacherProfileId,
+  });
+  if (helperProbe.error) {
+    printResult("CHECK", `[${helperStage}] rpc unavailable (${formatDbError(helperProbe.error)})`);
+  } else {
+    helperAllowsInsert = Boolean(helperProbe.data);
+    printResult("CHECK", `[${helperStage}] can_insert_ai_parent_report_row_030=${helperAllowsInsert}`);
+  }
+
+  const nowIso = new Date().toISOString();
+  const probePeriodStart = "2099-01-01";
+  const probePeriodEnd = "2099-01-07";
+  const rawInsertStage = "raw_insert_without_returning";
+  const rawInsert = await supabase.from("ai_parent_reports").insert({
+    student_id: fixtureStudentId,
+    class_id: fixtureClassId,
+    branch_id: fixtureBranchId,
+    report_type: "weekly_brief",
+    report_period_start: probePeriodStart,
+    report_period_end: probePeriodEnd,
+    status: "draft",
+    current_version_id: null,
+    created_by_profile_id: actorProfileId,
+    assigned_teacher_profile_id: assignedTeacherProfileId,
+    approved_by_profile_id: null,
+    released_by_profile_id: null,
+    released_at: null,
+    created_at: nowIso,
+    updated_at: nowIso,
+  });
+  if (rawInsert.error) {
+    printResult("CHECK", `[${rawInsertStage}] failed (${formatDbError(rawInsert.error)})`);
+  } else {
+    printResult("PASS", `[${rawInsertStage}] succeeded`);
+  }
+
+  const returningStage = "insert_with_returning";
+  const returningInsert = await supabase
+    .from("ai_parent_reports")
+    .insert({
+      student_id: fixtureStudentId,
+      class_id: fixtureClassId,
+      branch_id: fixtureBranchId,
+      report_type: "weekly_brief",
+      report_period_start: probePeriodStart,
+      report_period_end: probePeriodEnd,
+      status: "draft",
+      current_version_id: null,
+      created_by_profile_id: actorProfileId,
+      assigned_teacher_profile_id: assignedTeacherProfileId,
+      approved_by_profile_id: null,
+      released_by_profile_id: null,
+      released_at: null,
+      created_at: nowIso,
+      updated_at: nowIso,
+    })
+    .select(
+      "id,student_id,class_id,branch_id,report_type,report_period_start,report_period_end,status,created_by_profile_id"
+    )
+    .maybeSingle();
+
+  if (returningInsert.error || !returningInsert.data?.id) {
+    printResult(
+      "CHECK",
+      `[${returningStage}] failed (${formatDbError(returningInsert.error)})`
+    );
+    if (!rawInsert.error && helperAllowsInsert === true) {
+      printResult(
+        "CHECK",
+        "[constraint_or_fk] helper true + raw insert pass but RETURNING failed -> likely SELECT policy/RETURNING visibility issue"
+      );
+    }
+    if (rawInsert.error && helperAllowsInsert === true) {
+      printResult(
+        "CHECK",
+        "[constraint_or_fk] helper true but raw insert failed -> likely table constraint/FK/payload mismatch"
+      );
+    }
+  } else {
+    printResult("PASS", `[${returningStage}] succeeded`);
+  }
+
+  const selectStage = "insert_with_returning";
+  if (returningInsert.data?.id) {
+    const directSelect = await supabase
+      .from("ai_parent_reports")
+      .select("id,status")
+      .eq("id", returningInsert.data.id)
+      .maybeSingle();
+    if (directSelect.error || !directSelect.data?.id) {
+      printResult(
+        "CHECK",
+        `[${selectStage}] direct select after returning insert blocked (${formatDbError(directSelect.error)})`
+      );
+    } else {
+      printResult("PASS", `[${selectStage}] direct select after returning insert visible`);
+    }
+
+    const cleanup = await supabase
+      .from("ai_parent_reports")
+      .delete()
+      .eq("id", returningInsert.data.id)
+      .select("id")
+      .maybeSingle();
+    if (cleanup.error) {
+      printResult("CHECK", `[constraint_or_fk] cleanup after returning insert blocked (${formatDbError(cleanup.error)})`);
+    }
+  }
+
+  // cleanup for raw insert probe by unique-ish title lookup is not possible here because title does not exist,
+  // so delete a best-effort row via exact payload filter ordered by created_at.
+  const rawProbeRows = await supabase
+    .from("ai_parent_reports")
+    .select("id,created_at")
+    .eq("student_id", fixtureStudentId)
+    .eq("branch_id", fixtureBranchId)
+    .eq("report_type", "weekly_brief")
+    .eq("report_period_start", probePeriodStart)
+    .eq("report_period_end", probePeriodEnd)
+    .eq("status", "draft")
+    .eq("created_by_profile_id", actorProfileId)
+    .order("created_at", { ascending: false })
+    .limit(1);
+  if (!rawProbeRows.error && Array.isArray(rawProbeRows.data) && rawProbeRows.data[0]?.id) {
+    const cleanupRaw = await supabase
+      .from("ai_parent_reports")
+      .delete()
+      .eq("id", rawProbeRows.data[0].id)
+      .select("id")
+      .maybeSingle();
+    if (cleanupRaw.error) {
+      printResult("CHECK", `[constraint_or_fk] cleanup after raw insert probe blocked (${formatDbError(cleanupRaw.error)})`);
+    }
+  }
 }
 
 async function run() {
@@ -140,9 +329,9 @@ async function run() {
 
   printResult(
     "CHECK",
-    `Fixture discovery: branch=${isUuidLike(fixtureBranchId) ? "found" : "missing"} class=${
-      isUuidLike(fixtureClassId) ? "found" : "missing"
-    } student=${isUuidLike(fixtureStudentId) ? "found" : "missing"}`
+    `[fixture_discovery] selected_branch_id=${maskUuid(fixtureBranchId)} selected_class_id=${maskUuid(
+      fixtureClassId
+    )} selected_student_id=${maskUuid(fixtureStudentId)}`
   );
 
   let draftReportId = null;
@@ -157,6 +346,14 @@ async function run() {
     if (hqCtx.error || !hqCtx.data?.id) {
       printResult("CHECK", "HQ context unavailable; staff draft path skipped");
     } else {
+      printResult(
+        "CHECK",
+        `[fixture_discovery] actor role=${hqCtx.data.role || "unknown"} is_active=${String(
+          hqCtx.data.is_active
+        )} actor_branch_id=${maskUuid(hqCtx.data.branch_id)} selected_teacher_profile_id=${maskUuid(
+          assignedTeacherProfileId
+        )}`
+      );
       const draftResult = await createAiParentReportDraft({
         studentId: fixtureStudentId,
         classId: fixtureClassId,
@@ -167,11 +364,19 @@ async function run() {
         assignedTeacherProfileId,
       });
       if (draftResult.error || !draftResult.data?.id) {
-        printResult("CHECK", `HQ: create draft CHECK (${draftResult.error?.message || "unknown"})`);
+        printResult("CHECK", `[service_create] HQ draft create CHECK (${draftResult.error?.message || "unknown"})`);
+        await diagnoseAiParentReportDraftInsert({
+          supabase,
+          actorProfileId: hqCtx.data.id,
+          fixtureBranchId,
+          fixtureClassId,
+          fixtureStudentId,
+          assignedTeacherProfileId,
+        });
       } else {
         draftReportId = draftResult.data.id;
         createdReportIds.push(draftReportId);
-        printResult("PASS", "HQ: create AI parent report draft succeeded");
+        printResult("PASS", "[service_create] HQ create AI parent report draft succeeded");
       }
 
       if (draftReportId) {
@@ -255,7 +460,7 @@ async function run() {
   const teacherSignIn = await signInRole(teacherUser, deps);
   if (teacherSignIn.ok) {
     if (!draftReportId || !releasedVersionId) {
-      printResult("CHECK", "Teacher lifecycle checks skipped (draft/version fixture unavailable)");
+      printResult("CHECK", "[downstream_lifecycle] Teacher lifecycle checks skipped (draft/version fixture unavailable)");
     } else {
       const submitResult = await submitAiParentReportForReview({ reportId: draftReportId });
       if (submitResult.error) {

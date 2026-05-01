@@ -1210,3 +1210,17 @@ Expected outcomes for this milestone:
 - release/version audit event inserts are PASS or CHECK with explicit reason (no privilege widening),
 - no service-role frontend usage,
 - no real provider/PDF/export flows exercised.
+
+### AI parent reports insert diagnostics (pre-031 apply)
+
+- Stage probes now expected in smoke output:
+  - `fixture_discovery`
+  - `service_create`
+  - `raw_insert_without_returning`
+  - `insert_with_returning`
+  - `helper_predicate`
+  - `constraint_or_fk`
+  - `downstream_lifecycle`
+- If helper is `true` and raw insert passes but RETURNING fails, classify as select-policy/RETURNING visibility issue.
+- Patch draft reference (manual/dev-first only, not auto-applied):
+  - `supabase/sql/031_fix_ai_parent_reports_insert_rls.sql`

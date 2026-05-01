@@ -169,3 +169,19 @@ Run only what matches changed files.
 - Parent draft visibility remains blocked; released linked-child visibility path is tested.
 - Checkpoint reference:
   - `docs/ai-parent-report-service-smoke-checkpoint.md`.
+
+## 12) Follow-up diagnostic patch (not applied yet)
+
+- A focused diagnostic run found an insert-returning mismatch on `ai_parent_reports`:
+  - helper predicate allows insert,
+  - raw insert (no RETURNING) succeeds,
+  - insert with RETURNING fails by RLS.
+- A manual/dev-first patch draft was added:
+  - `supabase/sql/031_fix_ai_parent_reports_insert_rls.sql`
+- Status:
+  - draft only,
+  - not applied automatically,
+  - no production apply assumption.
+- Manual next DEV step (if approved):
+  - run `031_fix_ai_parent_reports_insert_rls.sql` in Supabase DEV SQL editor,
+  - rerun `npm run test:supabase:ai-parent-reports` to confirm draft create path moves from CHECK to PASS.
