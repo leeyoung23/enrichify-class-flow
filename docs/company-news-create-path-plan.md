@@ -3,6 +3,19 @@
 Date: 2026-05-01  
 Scope: planning/review only for safe real HQ Company News create/publish path (no runtime/UI/service/SQL changes in this milestone)
 
+## Checkpoint update (create service + smoke delivered)
+
+- Service layer now includes dedicated Company News write wrappers:
+  - `createCompanyNews(...)`
+  - `publishCompanyNews(...)`
+- Focused smoke now exists:
+  - `scripts/supabase-company-news-create-smoke-test.mjs`
+  - `npm run test:supabase:company-news:create`
+- Safer publish rule used in service:
+  - at least one target required before publish.
+- No SQL/RLS changes in this checkpoint.
+- No authenticated HQ create UI wiring in this checkpoint.
+
 ## Checkpoint update (027 manual DEV SQL application)
 
 - `027` manual apply is now completed in Supabase DEV:

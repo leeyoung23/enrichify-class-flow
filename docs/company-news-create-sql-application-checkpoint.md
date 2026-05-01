@@ -3,6 +3,19 @@
 Date: 2026-05-01  
 Scope: documentation-only checkpoint for manual Supabase DEV apply of `027` (no app/runtime/service changes in this milestone)
 
+## Checkpoint update (create service + smoke)
+
+- Added dedicated write services in `src/services/supabaseWriteService.js`:
+  - `createCompanyNews(...)`
+  - `publishCompanyNews(...)`
+- Added focused smoke command:
+  - `npm run test:supabase:company-news:create`
+- Service scope remains internal staff only:
+  - no UI wiring in this checkpoint,
+  - no SQL/RLS changes,
+  - no notification/email side effects,
+  - no parent-facing announcements/events.
+
 ## 1) Application status
 
 - Manual apply target: `supabase/sql/027_company_news_create_foundation.sql`.

@@ -199,6 +199,27 @@ Reminder: **Frontend filtering is not security. RLS must enforce access at datab
 - No production apply in this checkpoint.
 - No runtime/UI/service changes in this checkpoint.
 
+## Company News create service + smoke note (2026-05-01)
+
+- Service wrappers now added in `src/services/supabaseWriteService.js`:
+  - `createCompanyNews(...)`
+  - `publishCompanyNews(...)`
+- New smoke script/command:
+  - `scripts/supabase-company-news-create-smoke-test.mjs`
+  - `npm run test:supabase:company-news:create`
+- Expected smoke assertions:
+  - HQ create/publish company_news PASS,
+  - supervisor/teacher create blocked,
+  - parent/student internal staff read blocked-or-empty,
+  - fake/dev cleanup PASS.
+- Service-level target safety in this milestone:
+  - create supports target types `branch|role|profile`,
+  - publish requires at least one target row before status transition.
+- Boundaries unchanged:
+  - no SQL/RLS changes,
+  - no parent-facing announcements/events,
+  - no notification/email behavior.
+
 ### Announcements attachments role checks (current proven state)
 
 - HQ can upload/list/open signed URL for internal attachments.

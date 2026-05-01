@@ -43,6 +43,8 @@ const ANNOUNCEMENT_PRIORITY_VALUES = new Set(["low", "normal", "high", "urgent"]
 const ANNOUNCEMENT_DONE_STATUS_VALUES = new Set(["pending", "done", "undone"]);
 const ANNOUNCEMENT_REPLY_TYPE_VALUES = new Set(["question", "update", "completion_note"]);
 const ANNOUNCEMENT_TARGET_TYPE_VALUES = new Set(["branch", "role", "profile", "class"]);
+const COMPANY_NEWS_TARGET_TYPE_VALUES = new Set(["branch", "role", "profile"]);
+const COMPANY_NEWS_MAX_POPUP_EMOJI_LENGTH = 16;
 
 function isUuidLike(value) {
   if (typeof value !== "string") return false;
@@ -111,6 +113,112 @@ function normalizeAnnouncementTargets(targets) {
     });
   }
   return { rows, error: null };
+}
+
+function normalizeCompanyNewsTargets(targets) {
+  if (!Array.isArray(targets)) return { rows: [], error: null };
+  const rows = [];
+  for (const target of targets) {
+    const targetType = trimString(target?.targetType || target?.target_type);
+    if (!COMPANY_NEWS_TARGET_TYPE_VALUES.has(targetType)) {
+      return { rows: [], error: { message: "Company News targets must be branch, role, or profile" } };
+    }
+    const branchId = trimString(target?.branchId || target?.branch_id);
+    const targetProfileId = trimString(target?.targetProfileId || target?.target_profile_id);
+    const targetRole = trimString(target?.targetRole || target?.target_role);
+    if (targetType === "branch" && !isUuidLike(branchId)) {
+      return { rows: [], error: { message: "targetType branch requires branchId UUID" } };
+    }
+    if (targetType === "profile" && !isUuidLike(targetProfileId)) {
+      return { rows: [], error: { message: "targetType profile requires targetProfileId UUID" } };
+    }
+    if (targetType === "role" && !targetRole) {
+      return { rows: [], error: { message: "targetType role requires targetRole" } };
+    }
+    rows.push({
+      target_type: targetType,
+      branch_id: isUuidLike(branchId) ? branchId : null,
+      target_profile_id: isUuidLike(targetProfileId) ? targetProfileId : null,
+      target_role: targetRole || null,
+    });
+  }
+  return { rows, error: null };
+}
+
+function sanitizeServiceError(error, fallbackMessage) {
+  if (!error) return { message: fallbackMessage };
+  const message = trimString(error?.message);
+  if (!message) return { message: fallbackMessage };
+  const lower = message.toLowerCase();
+  if (lower.includes("row-level security") || lower.includes("permission denied")) {
+    return { message: fallbackMessage };
+  }
+  return { message };
+}
+
+function validateCompanyNewsInput({
+  title,
+  subtitle,
+  body,
+  priority,
+  popupEnabled,
+  popupEmoji,
+  targets,
+} = {}) {
+  if (!trimString(title)) {
+    return { ok: false, error: { message: "title is required" } };
+  }
+
+  const normalizedSubtitle = normalizeNullableText(subtitle, { maxLength: 240 });
+  const normalizedBody = normalizeNullableText(body, { maxLength: 8000 });
+  if (!normalizedSubtitle && !normalizedBody) {
+    return { ok: false, error: { message: "body or subtitle is required" } };
+  }
+
+  const normalizedPriority = trimString(priority) || "normal";
+  if (!ANNOUNCEMENT_PRIORITY_VALUES.has(normalizedPriority)) {
+    return { ok: false, error: { message: "priority must be low, normal, high, or urgent" } };
+  }
+
+  if (popupEnabled != null && typeof popupEnabled !== "boolean") {
+    return { ok: false, error: { message: "popupEnabled must be a boolean when provided" } };
+  }
+
+  const normalizedPopupEmoji = normalizeNullableText(popupEmoji, {
+    maxLength: COMPANY_NEWS_MAX_POPUP_EMOJI_LENGTH,
+  });
+  if (
+    popupEmoji != null &&
+    typeof popupEmoji === "string" &&
+    popupEmoji.trim() &&
+    normalizedPopupEmoji !== popupEmoji.trim()
+  ) {
+    return {
+      ok: false,
+      error: { message: `popupEmoji must be at most ${COMPANY_NEWS_MAX_POPUP_EMOJI_LENGTH} characters` },
+    };
+  }
+  if (popupEmoji != null && typeof popupEmoji !== "string") {
+    return { ok: false, error: { message: "popupEmoji must be a string when provided" } };
+  }
+
+  const normalizedTargets = normalizeCompanyNewsTargets(targets);
+  if (normalizedTargets.error) {
+    return { ok: false, error: normalizedTargets.error };
+  }
+
+  return {
+    ok: true,
+    data: {
+      normalizedTitle: trimString(title).slice(0, 240),
+      normalizedSubtitle,
+      normalizedBody,
+      normalizedPriority,
+      normalizedPopupEnabled: Boolean(popupEnabled),
+      normalizedPopupEmoji,
+      normalizedTargets: normalizedTargets.rows,
+    },
+  };
 }
 
 function buildClassCurriculumWritableFields({ learningFocus, termLabel, startDate, endDate } = {}) {
@@ -1344,6 +1452,178 @@ export async function publishAnnouncement({ announcementId } = {}) {
     return { data: data ?? null, error: error ?? null };
   } catch (err) {
     return { data: null, error: { message: err?.message || String(err) } };
+  }
+}
+
+export async function createCompanyNews({
+  title,
+  subtitle,
+  body,
+  priority = "normal",
+  popupEnabled = false,
+  popupEmoji,
+  targets = [],
+} = {}) {
+  if (!isSupabaseConfigured() || !supabase) {
+    return { data: null, error: { message: "Supabase is not configured" } };
+  }
+
+  const validation = validateCompanyNewsInput({
+    title,
+    subtitle,
+    body,
+    priority,
+    popupEnabled,
+    popupEmoji,
+    targets,
+  });
+  if (!validation.ok) return { data: null, error: validation.error };
+
+  try {
+    const { profileId, error: authError } = await getAuthenticatedProfileId();
+    if (authError || !profileId) {
+      return { data: null, error: authError || { message: "Authenticated user is required" } };
+    }
+
+    const nowIso = new Date().toISOString();
+    const {
+      normalizedTitle,
+      normalizedSubtitle,
+      normalizedBody,
+      normalizedPriority,
+      normalizedPopupEnabled,
+      normalizedPopupEmoji,
+      normalizedTargets,
+    } = validation.data;
+
+    const announcementInsert = await supabase
+      .from("announcements")
+      .insert({
+        branch_id: null,
+        created_by_profile_id: profileId,
+        announcement_type: "company_news",
+        title: normalizedTitle,
+        subtitle: normalizedSubtitle,
+        body: normalizedBody,
+        priority: normalizedPriority,
+        status: "draft",
+        audience_type: "internal_staff",
+        due_date: null,
+        requires_response: false,
+        requires_upload: false,
+        popup_enabled: normalizedPopupEnabled,
+        popup_emoji: normalizedPopupEmoji,
+        created_at: nowIso,
+        updated_at: nowIso,
+        published_at: null,
+      })
+      .select(
+        "id,branch_id,created_by_profile_id,announcement_type,title,subtitle,body,priority,status,audience_type,requires_response,requires_upload,popup_enabled,popup_emoji,created_at,updated_at,published_at"
+      )
+      .maybeSingle();
+
+    if (announcementInsert.error || !announcementInsert.data?.id) {
+      return {
+        data: null,
+        error: sanitizeServiceError(announcementInsert.error, "Unable to create Company News draft right now."),
+      };
+    }
+
+    if (normalizedTargets.length === 0) {
+      return {
+        data: {
+          announcement: announcementInsert.data,
+          targets: [],
+          requires_targeting_before_publish: true,
+        },
+        error: null,
+      };
+    }
+
+    const targetRows = normalizedTargets.map((row) => ({
+      announcement_id: announcementInsert.data.id,
+      ...row,
+      created_at: nowIso,
+    }));
+    const targetsInsert = await supabase
+      .from("announcement_targets")
+      .insert(targetRows)
+      .select("id,announcement_id,target_type,branch_id,target_profile_id,target_role,created_at");
+
+    if (targetsInsert.error) {
+      const cleanupResult = await supabase
+        .from("announcements")
+        .delete()
+        .eq("id", announcementInsert.data.id)
+        .select("id")
+        .maybeSingle();
+      return {
+        data: { announcement: announcementInsert.data, targets: [] },
+        error: {
+          message: "Company News draft was created but targets failed to save.",
+          cleanup_warning: cleanupResult.error
+            ? "Automatic cleanup was blocked by RLS; manual cleanup may be required."
+            : null,
+        },
+      };
+    }
+
+    return {
+      data: {
+        announcement: announcementInsert.data,
+        targets: Array.isArray(targetsInsert.data) ? targetsInsert.data : [],
+        requires_targeting_before_publish: false,
+      },
+      error: null,
+    };
+  } catch (_err) {
+    return { data: null, error: { message: "Unable to create Company News draft right now." } };
+  }
+}
+
+export async function publishCompanyNews({ announcementId } = {}) {
+  if (!isSupabaseConfigured() || !supabase) {
+    return { data: null, error: { message: "Supabase is not configured" } };
+  }
+  if (!isUuidLike(announcementId)) {
+    return { data: null, error: { message: "announcementId must be a UUID" } };
+  }
+
+  try {
+    const rowRead = await supabase
+      .from("announcements")
+      .select("id,announcement_type,audience_type,status")
+      .eq("id", trimString(announcementId))
+      .maybeSingle();
+    if (rowRead.error || !rowRead.data?.id) {
+      return { data: null, error: { message: "Unable to publish Company News right now." } };
+    }
+    if (rowRead.data.announcement_type !== "company_news" || rowRead.data.audience_type !== "internal_staff") {
+      return { data: null, error: { message: "Only internal Company News can be published with this method." } };
+    }
+    if (rowRead.data.status !== "draft" && rowRead.data.status !== "published") {
+      return { data: null, error: { message: "Company News must be draft or published to continue." } };
+    }
+
+    const targetRead = await supabase
+      .from("announcement_targets")
+      .select("id")
+      .eq("announcement_id", trimString(announcementId))
+      .limit(1);
+    if (targetRead.error) {
+      return { data: null, error: { message: "Unable to validate Company News targets right now." } };
+    }
+    if (!Array.isArray(targetRead.data) || targetRead.data.length === 0) {
+      return { data: null, error: { message: "At least one internal target is required before publish." } };
+    }
+
+    const published = await publishAnnouncement({ announcementId });
+    if (published.error) {
+      return { data: null, error: sanitizeServiceError(published.error, "Unable to publish Company News right now.") };
+    }
+    return { data: published.data ?? null, error: null };
+  } catch (_err) {
+    return { data: null, error: { message: "Unable to publish Company News right now." } };
   }
 }
 

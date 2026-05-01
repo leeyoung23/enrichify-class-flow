@@ -3,6 +3,15 @@
 Date: 2026-05-01  
 Scope: service + smoke only for internal Company News popup eligibility/seen/dismiss path
 
+## Checkpoint update (create service dependency added)
+
+- Dedicated Company News create/publish wrappers are now available in write service:
+  - `createCompanyNews(...)`
+  - `publishCompanyNews(...)`
+- New focused create smoke command is added:
+  - `npm run test:supabase:company-news:create`
+- Popup smoke script remains valid and unchanged as a dedicated popup lifecycle check.
+
 ## Checkpoint update (027 manual DEV apply validation)
 
 - `027` has now been manually applied in Supabase DEV (no production apply):

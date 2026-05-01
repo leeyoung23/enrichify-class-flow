@@ -607,6 +607,16 @@ Current status note:
   - phase1 smoke remains PASS for request workflow regression safety,
   - optional cross-branch negative CHECK remains when `ANNOUNCEMENTS_TEST_OTHER_BRANCH_ID` is not configured,
   - no production apply, and no runtime/UI/service changes in this checkpoint.
+- Company News create service + smoke checkpoint is now added:
+  - `src/services/supabaseWriteService.js` now includes:
+    - `createCompanyNews(...)`
+    - `publishCompanyNews(...)`
+  - focused create smoke script:
+    - `scripts/supabase-company-news-create-smoke-test.mjs`
+    - `npm run test:supabase:company-news:create`
+  - service guards enforce internal Company News draft/publish lifecycle and target requirement before publish,
+  - no UI/runtime create wiring in this checkpoint,
+  - no SQL/RLS changes in this checkpoint.
 
 ## 12) Next immediate milestone prompt (copy-paste)
 

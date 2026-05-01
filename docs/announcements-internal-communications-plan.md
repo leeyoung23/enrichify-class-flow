@@ -2,6 +2,19 @@
 
 Scope: planning only for Announcements/Internal Communications and Document Hub rollout (no UI/runtime/service/SQL changes in this milestone).
 
+## Checkpoint update (Company News create service + smoke)
+
+- Dedicated Company News write path is now present in service layer:
+  - `createCompanyNews(...)`
+  - `publishCompanyNews(...)`
+- Focused smoke added:
+  - `npm run test:supabase:company-news:create`
+- This checkpoint keeps boundaries unchanged:
+  - no SQL/RLS changes,
+  - no UI/runtime create wiring,
+  - no parent-facing announcements/events,
+  - no notifications/emails.
+
 ## Checkpoint update (completion overview read service checkpoint doc formalized)
 
 - Canonical checkpoint (sections 1–11: implementation, behavior, metrics, semantics, smoke, tests, boundaries, future, next milestone, copy-paste prompt):
