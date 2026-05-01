@@ -490,13 +490,17 @@ Current status note:
   - `npm run test:supabase:announcements:phase1` PASS with optional cross-branch CHECK when fixture var is missing,
   - `npm run test:supabase:announcements:attachments` PASS with expected diagnostic CHECK lines.
 - Recommended immediate next milestone is now:
-  - **Completion overview UI shell** for HQ/supervisor (read service + smoke are now in place),
-  - optional SQL view/RPC optimization only if runtime complexity/performance demands it later,
-  - Company News / parent-facing / notifications only after operational visibility is clear.
+  - **Completion overview UI shell** for HQ/supervisor (read service + smoke are now in place).
 - Completion overview read-service checkpoint is now added:
   - `src/services/supabaseReadService.js` includes `listAnnouncementCompletionOverview({ announcementId, branchId, includeCompleted })`,
   - `scripts/supabase-announcements-completion-overview-smoke-test.mjs` now validates HQ/supervisor reads plus teacher/parent/student manager-overview block-or-empty behavior,
   - no completion overview UI wiring yet, no SQL/RLS changes, and no notifications/emails in this slice.
+- Completion overview UI checkpoint is now added:
+  - `src/pages/Announcements.jsx` now renders read-only manager `Completion Overview` for HQ/supervisor only,
+  - authenticated non-demo mode reads use existing `listAnnouncementCompletionOverview({ announcementId })`,
+  - demo mode keeps local-only fake overview rows for HQ/supervisor and no Supabase reads for that block,
+  - teacher manager overview remains hidden in demo and authenticated paths,
+  - no SQL/RLS changes, no new services, no reminder/email manager actions, and no notification side effects in this slice.
 - MyTasks UI integration checkpoint is **completed** for Announcements (see `docs/announcements-mytasks-ui-checkpoint.md`):
   - `src/pages/MyTasks.jsx` renders read-only `Announcement Requests` cards from `listMyAnnouncementTasks({ includeDone: true })` in authenticated staff mode,
   - demo mode remains local-only with fake announcement task cards and no Supabase calls for that block,
@@ -531,11 +535,12 @@ Before doing anything, verify:
 - git status --short
 
 Task:
-Announcements completion overview UI integration for HQ/supervisor only.
+Announcements completion reminder/notification planning only.
 
 Hard constraints:
-- UI wiring only for HQ/supervisor; no teacher/parent/student manager overview surfaces.
-- Consume existing listAnnouncementCompletionOverview({ announcementId, branchId, includeCompleted }) from supabaseReadService.js only.
+- Docs/planning only.
+- Do not change app UI in this milestone.
+- Keep existing HQ/supervisor read-only completion overview unchanged.
 - Do not change Supabase SQL or RLS; do not apply SQL.
 - Do not add new backend services beyond existing read patterns unless explicitly approved.
 - Do not use service role in frontend.
@@ -549,14 +554,12 @@ Hard constraints:
 - No storage_path, staff_note, or raw SQL/RLS/env strings in UI.
 
 Deliverables:
-1) HQ/supervisor-only "Completion" section or tab inside Announcements detail (mobile-friendly).
-2) Summary cards for key metrics + per-person table/stacked rows.
-3) Read-only first: no reminder/email actions.
-4) Safe empty/loading/error copy.
-5) Update relevant docs/checkpoints after UI wiring.
+1) Reminder/notification product shape and role matrix for completion workflows.
+2) Safety/non-goal boundaries: no auto-send, no parent/student manager visibility.
+3) Phased rollout recommendation after read-only completion overview UI.
+4) Update relevant docs/checkpoints only.
 
 Validation efficiency rule:
-- Runtime/UI changed: run npm run build, npm run lint, npm run typecheck, and npm run test:supabase:announcements:completion (plus related announcement smokes if touched).
 - Docs-only: run git diff --name-only only unless runtime files change.
 ```
 

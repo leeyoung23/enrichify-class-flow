@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { useOutletContext } from 'react-router-dom';
+import { useLocation, useOutletContext } from 'react-router-dom';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -17,6 +17,7 @@ import { ROLES, getRole } from '@/services/permissionService';
 import { isSupabaseConfigured } from '@/services/supabaseClient';
 import { useSupabaseAuthState } from '@/hooks/useSupabaseAuthState';
 import {
+  listAnnouncementCompletionOverview,
   listAnnouncements,
   listAnnouncementReplies,
   listAnnouncementStatuses,
@@ -119,6 +120,148 @@ const DEMO_ANNOUNCEMENT_ATTACHMENTS = {
   ],
 };
 
+const DEMO_COMPLETION_OVERVIEW = {
+  'demo-ann-1': {
+    totalTargeted: 4,
+    readCount: 3,
+    unreadCount: 1,
+    doneCount: 1,
+    pendingCount: 2,
+    undoneCount: 1,
+    responseProvidedCount: 2,
+    responseMissingCount: 2,
+    uploadProvidedCount: 0,
+    uploadMissingCount: 0,
+    overdueCount: 1,
+    latestReplyAt: '2026-05-01T09:20:00.000Z',
+    latestUploadAt: null,
+    rows: [
+      {
+        profileId: 'demo-profile-1',
+        staffName: 'Teacher Amy',
+        role: 'teacher',
+        branchName: 'Demo North Branch',
+        readAt: '2026-05-01T08:40:00.000Z',
+        doneStatus: 'pending',
+        replyCount: 1,
+        attachmentCount: 0,
+        responseProvided: true,
+        uploadProvided: false,
+        isOverdue: false,
+        lastActivityAt: '2026-05-01T09:20:00.000Z',
+        undoneReason: null,
+      },
+      {
+        profileId: 'demo-profile-2',
+        staffName: 'Teacher Ben',
+        role: 'teacher',
+        branchName: 'Demo North Branch',
+        readAt: '2026-05-01T08:55:00.000Z',
+        doneStatus: 'done',
+        replyCount: 1,
+        attachmentCount: 0,
+        responseProvided: true,
+        uploadProvided: false,
+        isOverdue: false,
+        lastActivityAt: '2026-05-01T09:10:00.000Z',
+        undoneReason: null,
+      },
+      {
+        profileId: 'demo-profile-3',
+        staffName: 'Teacher Cara',
+        role: 'teacher',
+        branchName: 'Demo North Branch',
+        readAt: '2026-05-01T08:15:00.000Z',
+        doneStatus: 'undone',
+        replyCount: 0,
+        attachmentCount: 0,
+        responseProvided: false,
+        uploadProvided: false,
+        isOverdue: true,
+        lastActivityAt: '2026-05-01T08:50:00.000Z',
+        undoneReason: 'Need student files before completing.',
+      },
+      {
+        profileId: 'demo-profile-4',
+        staffName: 'Teacher Dan',
+        role: 'teacher',
+        branchName: 'Demo North Branch',
+        readAt: null,
+        doneStatus: 'pending',
+        replyCount: 0,
+        attachmentCount: 0,
+        responseProvided: false,
+        uploadProvided: false,
+        isOverdue: false,
+        lastActivityAt: null,
+        undoneReason: null,
+      },
+    ],
+  },
+  'demo-ann-2': {
+    totalTargeted: 3,
+    readCount: 2,
+    unreadCount: 1,
+    doneCount: 1,
+    pendingCount: 2,
+    undoneCount: 0,
+    responseProvidedCount: 1,
+    responseMissingCount: 2,
+    uploadProvidedCount: 1,
+    uploadMissingCount: 2,
+    overdueCount: 1,
+    latestReplyAt: '2026-05-01T10:05:00.000Z',
+    latestUploadAt: '2026-05-01T10:08:00.000Z',
+    rows: [
+      {
+        profileId: 'demo-profile-5',
+        staffName: 'Teacher Ella',
+        role: 'teacher',
+        branchName: 'Demo North Branch',
+        readAt: '2026-05-01T09:40:00.000Z',
+        doneStatus: 'done',
+        replyCount: 1,
+        attachmentCount: 1,
+        responseProvided: true,
+        uploadProvided: true,
+        isOverdue: false,
+        lastActivityAt: '2026-05-01T10:08:00.000Z',
+        undoneReason: null,
+      },
+      {
+        profileId: 'demo-profile-6',
+        staffName: 'Teacher Finn',
+        role: 'teacher',
+        branchName: 'Demo North Branch',
+        readAt: '2026-05-01T09:41:00.000Z',
+        doneStatus: 'pending',
+        replyCount: 0,
+        attachmentCount: 0,
+        responseProvided: false,
+        uploadProvided: false,
+        isOverdue: true,
+        lastActivityAt: '2026-05-01T09:41:00.000Z',
+        undoneReason: null,
+      },
+      {
+        profileId: 'demo-profile-7',
+        staffName: 'Teacher Grace',
+        role: 'teacher',
+        branchName: 'Demo North Branch',
+        readAt: null,
+        doneStatus: 'pending',
+        replyCount: 0,
+        attachmentCount: 0,
+        responseProvided: false,
+        uploadProvided: false,
+        isOverdue: false,
+        lastActivityAt: null,
+        undoneReason: null,
+      },
+    ],
+  },
+};
+
 function statusTone(status) {
   if (status === 'done') return 'bg-emerald-100 text-emerald-700 border-emerald-200';
   if (status === 'undone') return 'bg-orange-100 text-orange-700 border-orange-200';
@@ -154,6 +297,21 @@ function formatFileType(mimeType) {
   return normalized;
 }
 
+function formatDateTime(value) {
+  if (!value) return '—';
+  const parsed = new Date(value);
+  if (Number.isNaN(parsed.getTime())) return '—';
+  return parsed.toLocaleString();
+}
+
+function roleLabel(value) {
+  if (!value) return 'Staff';
+  if (value === 'hq_admin') return 'HQ Admin';
+  if (value === 'branch_supervisor') return 'Branch Supervisor';
+  if (value === 'teacher') return 'Teacher';
+  return value;
+}
+
 function roleCanUploadAttachment(role) {
   return role === ROLES.HQ_ADMIN || role === ROLES.BRANCH_SUPERVISOR || role === ROLES.TEACHER;
 }
@@ -167,6 +325,7 @@ function getAllowedAttachmentRoles(role) {
 
 export default function Announcements() {
   const { user } = useOutletContext();
+  const location = useLocation();
   const { appUser: supabaseAppUser } = useSupabaseAuthState();
   const queryClient = useQueryClient();
   const selectedDemoRole = getSelectedDemoRole();
@@ -175,6 +334,7 @@ export default function Announcements() {
   const isStaff = role === ROLES.HQ_ADMIN || role === ROLES.BRANCH_SUPERVISOR || role === ROLES.TEACHER;
   const canCreateInDemo = role === ROLES.HQ_ADMIN || role === ROLES.BRANCH_SUPERVISOR;
   const canCreateInAuth = role === ROLES.HQ_ADMIN || role === ROLES.BRANCH_SUPERVISOR;
+  const canViewManagerOverview = role === ROLES.HQ_ADMIN || role === ROLES.BRANCH_SUPERVISOR;
   const canUploadAttachments = roleCanUploadAttachment(role);
   const allowedAttachmentRoles = getAllowedAttachmentRoles(role);
   const canUseSupabaseAnnouncements = isStaff && !isDemoMode && isSupabaseConfigured() && Boolean(supabaseAppUser?.id);
@@ -205,6 +365,15 @@ export default function Announcements() {
   const [uploadNote, setUploadNote] = useState('');
   const [uploadFile, setUploadFile] = useState(null);
   const [demoUploadName, setDemoUploadName] = useState('');
+
+  useEffect(() => {
+    const stateAnnouncementId = location.state?.announcementId;
+    const queryAnnouncementId = new URLSearchParams(location.search).get('announcementId');
+    const preferredId = stateAnnouncementId || queryAnnouncementId;
+    if (typeof preferredId === 'string' && preferredId.trim()) {
+      setSelectedId(preferredId.trim());
+    }
+  }, [location.search, location.state]);
 
   useEffect(() => {
     if (!allowedAttachmentRoles.includes(uploadRole)) {
@@ -299,10 +468,22 @@ export default function Announcements() {
     },
   });
 
+  const completionOverviewQuery = useQuery({
+    queryKey: ['announcement-completion-overview', selected?.id, supabaseAppUser?.id, role],
+    enabled: canUseSupabaseAnnouncements && canViewManagerOverview && Boolean(selected?.id),
+    queryFn: async () => {
+      const result = await listAnnouncementCompletionOverview({ announcementId: selected.id });
+      if (result.error) throw new Error('Completion overview is temporarily unavailable.');
+      const first = Array.isArray(result.data) ? (result.data[0] || null) : null;
+      return first;
+    },
+  });
+
   const refreshAnnouncements = async () => {
     await Promise.all([
       queryClient.invalidateQueries({ queryKey: ['announcements-internal-staff'] }),
       queryClient.invalidateQueries({ queryKey: ['announcement-detail'] }),
+      queryClient.invalidateQueries({ queryKey: ['announcement-completion-overview'] }),
     ]);
   };
 
@@ -557,6 +738,9 @@ export default function Announcements() {
   const demoAttachments = selected ? (demoAttachmentsByAnnouncementId[selected.id] || []) : [];
   const authAttachments = Array.isArray(attachmentsQuery.data) ? attachmentsQuery.data : [];
   const attachmentRows = isDemoMode ? demoAttachments : authAttachments;
+  const demoCompletionOverview = selected ? (DEMO_COMPLETION_OVERVIEW[selected.id] || null) : null;
+  const authCompletionOverview = completionOverviewQuery.data || null;
+  const completionOverview = isDemoMode ? demoCompletionOverview : authCompletionOverview;
 
   if (!isStaff) {
     return (
@@ -930,6 +1114,81 @@ export default function Announcements() {
                       )}
                     </div>
                   </div>
+
+                  {canViewManagerOverview ? (
+                    <div className="rounded-lg border p-3 space-y-3">
+                      <div>
+                        <p className="text-sm font-medium">Completion Overview</p>
+                        <p className="text-xs text-muted-foreground mt-1">
+                          Read-only manager visibility for HQ and branch supervisors only.
+                        </p>
+                      </div>
+
+                      {!isDemoMode && completionOverviewQuery.isLoading ? (
+                        <p className="text-xs text-muted-foreground">Loading completion overview...</p>
+                      ) : null}
+
+                      {!isDemoMode && completionOverviewQuery.isError ? (
+                        <p className="text-xs text-amber-700">Completion overview is temporarily unavailable.</p>
+                      ) : null}
+
+                      {!isDemoMode && !completionOverviewQuery.isLoading && !completionOverviewQuery.isError && !completionOverview ? (
+                        <p className="text-xs text-muted-foreground">No completion overview rows available for this announcement.</p>
+                      ) : null}
+
+                      {isDemoMode && !completionOverview ? (
+                        <p className="text-xs text-muted-foreground">No demo completion overview for this announcement yet.</p>
+                      ) : null}
+
+                      {completionOverview ? (
+                        <>
+                          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
+                            <Badge variant="outline">Total targeted {completionOverview.totalTargeted || 0}</Badge>
+                            <Badge variant="outline">Read {completionOverview.readCount || 0} / Unread {completionOverview.unreadCount || 0}</Badge>
+                            <Badge variant="outline">Done {completionOverview.doneCount || 0} / Pending {completionOverview.pendingCount || 0} / Undone {completionOverview.undoneCount || 0}</Badge>
+                            <Badge variant="outline">Response provided {completionOverview.responseProvidedCount || 0} / missing {completionOverview.responseMissingCount || 0}</Badge>
+                            <Badge variant="outline">Upload provided {completionOverview.uploadProvidedCount || 0} / missing {completionOverview.uploadMissingCount || 0}</Badge>
+                            <Badge variant="outline">Overdue {completionOverview.overdueCount || 0}</Badge>
+                            <Badge variant="outline">Latest reply {formatDateTime(completionOverview.latestReplyAt)}</Badge>
+                            <Badge variant="outline">Latest upload {formatDateTime(completionOverview.latestUploadAt)}</Badge>
+                          </div>
+
+                          <div className="space-y-2">
+                            {(completionOverview.rows || []).length === 0 ? (
+                              <p className="text-xs text-muted-foreground">No per-person completion rows available.</p>
+                            ) : (
+                              (completionOverview.rows || []).map((person) => (
+                                <div key={person.profileId} className="rounded-lg border p-2 space-y-1">
+                                  <div className="flex flex-wrap items-center justify-between gap-2">
+                                    <p className="text-xs font-medium">{person.staffName || 'Staff'}</p>
+                                    <div className="flex flex-wrap gap-1">
+                                      <Badge variant="outline">{roleLabel(person.role)}</Badge>
+                                      <Badge variant="outline">{person.branchName || 'No branch'}</Badge>
+                                      <Badge variant="outline" className={statusTone(person.doneStatus || 'pending')}>
+                                        {person.doneStatus || 'pending'}
+                                      </Badge>
+                                      {person.isOverdue ? <Badge variant="outline" className="bg-red-100 text-red-700 border-red-200">Overdue</Badge> : null}
+                                    </div>
+                                  </div>
+                                  <div className="flex flex-wrap gap-2 text-xs text-muted-foreground">
+                                    <span>Read: {person.readAt ? formatDateTime(person.readAt) : 'Unread'}</span>
+                                    <span>Replies: {person.replyCount || 0}</span>
+                                    <span>Uploads: {person.attachmentCount || 0}</span>
+                                    <span>{person.responseProvided ? 'Response provided' : 'Response missing'}</span>
+                                    <span>{person.uploadProvided ? 'Upload provided' : 'Upload missing'}</span>
+                                    <span>Last activity: {formatDateTime(person.lastActivityAt)}</span>
+                                  </div>
+                                  {person.undoneReason ? (
+                                    <p className="text-xs text-amber-700">Undone reason: {person.undoneReason}</p>
+                                  ) : null}
+                                </div>
+                              ))
+                            )}
+                          </div>
+                        </>
+                      ) : null}
+                    </div>
+                  ) : null}
                 </Card>
               )}
             </div>

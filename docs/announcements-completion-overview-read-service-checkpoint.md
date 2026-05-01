@@ -3,6 +3,15 @@
 Date: 2026-05-01  
 Scope: **documentation checkpoint** for manager completion overview read service + smoke (runtime was implemented in commit `6798f6b`; this doc milestone does not change code)
 
+## UI integration update (2026-05-01)
+
+- HQ/supervisor read-only Completion Overview UI is now wired in `src/pages/Announcements.jsx`.
+- Uses existing `listAnnouncementCompletionOverview({ announcementId, branchId, includeCompleted })` only.
+- Demo mode remains local-only with fake completion rows for HQ/supervisor demo and no Supabase calls.
+- Teacher demo and teacher authenticated paths do not show manager overview UI.
+- No SQL/RLS/service additions; no notifications/emails/actions were added.
+- UI checkpoint doc: `docs/announcements-completion-overview-ui-checkpoint.md`.
+
 ## Documentation-only note
 
 - This milestone **updates documentation only**.
@@ -15,7 +24,7 @@ Implemented in **`6798f6b`** (not re-implemented in this doc-only pass):
 - **`listAnnouncementCompletionOverview({ announcementId, branchId, includeCompleted } = {})`** in `src/services/supabaseReadService.js`.
 - **Completion overview smoke script:** `scripts/supabase-announcements-completion-overview-smoke-test.mjs`.
 - **Package command:** `npm run test:supabase:announcements:completion`.
-- **No completion overview UI** integration in `Announcements` or elsewhere.
+- **Completion overview UI now exists** in `Announcements` for HQ/supervisor read-only (see UI update above).
 - **No Supabase SQL/RLS** changes.
 - **No notification/email** side effects from this read path.
 
@@ -114,7 +123,7 @@ Covers (fake/dev fixtures only):
 
 ## 8) Safety boundaries
 
-- **No completion overview UI** yet.
+- **No completion overview manager actions** (read-only UI only).
 - **No SQL/RLS** changes for this capability.
 - **No service-role** frontend usage.
 - **No parent/student manager overview** rows.

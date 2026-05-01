@@ -2,6 +2,14 @@
 
 Checkpoint scope: authenticated non-demo Staff Announcements wiring using existing Phase 1 services, while preserving demo local-only behavior.
 
+## Update: completion overview UI wiring milestone
+
+- Staff Announcements detail panel now includes read-only `Completion Overview` for HQ/supervisor only.
+- Authenticated non-demo manager reads use existing `listAnnouncementCompletionOverview({ announcementId })`.
+- Demo mode keeps local-only fake completion rows for HQ/supervisor; teacher demo does not see manager overview.
+- No manager write actions (no reminders/emails/force-done/export), no SQL/RLS/service changes.
+- Checkpoint doc: `docs/announcements-completion-overview-ui-checkpoint.md`.
+
 ## Update: attachments UI wiring milestone
 
 - Staff Announcements detail panel now includes real internal attachment list/upload/view wiring using existing attachment services.
@@ -90,28 +98,28 @@ Checkpoint scope: authenticated non-demo Staff Announcements wiring using existi
 
 ## 8) What remains future
 
-- MyTasks integration.
+- Reminder/notification planning and later automation (after trust/UX sign-off).
 - Company News warm pop-up behavior.
 - Parent-facing announcements/events.
 - Live chat (later and optional).
-- Notification/email automation (future only).
+- Notification/email implementation (future only, no auto-send in current checkpoints).
 - Delete-attachment UI action remains future unless additional RLS proof is required.
 
 ## 9) Recommended next milestone
 
 Choose:
 
-- A. MyTasks integration planning
+- A. Reminder/notification planning (no auto-send yet)
 - B. Company News warm pop-up planning
 - C. Parent-facing announcements/events planning
 - D. Attachment delete UI
 - E. Report/PDF/AI OCR planning
 
-Recommendation: **A. MyTasks integration planning**.
+Recommendation: **A. Reminder/notification planning**.
 
 Why A first:
 
-- Internal request/reply/upload loop now works in staff announcements.
-- MyTasks is the next natural layer for pending/done/undone task visibility.
-- Company News and parent-facing announcements should remain later phases.
-- Attachment delete UI is lower priority than task visibility.
+- Internal request/reply/upload flow and manager completion visibility are now live.
+- Next decision is product-safe reminder/notification shape before any automation.
+- Company News and parent-facing announcements remain later phases.
+- Attachment delete UI remains lower priority than communication/completion workflow maturity.

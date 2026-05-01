@@ -1,7 +1,7 @@
 # Announcements Completion Overview Plan
 
 Date: 2026-05-01  
-Scope: completion overview strategy + read-service checkpoint + **formalized checkpoint documentation** (no UI/SQL/RLS changes in this milestone)
+Scope: completion overview strategy + read-service checkpoint + **HQ/supervisor read-only UI integration checkpoint** (no SQL/RLS changes in this milestone)
 
 ## Checkpoint update (documentation-only, read service checkpoint formalized)
 
@@ -15,15 +15,24 @@ Scope: completion overview strategy + read-service checkpoint + **formalized che
 - Added focused smoke script:
   - `scripts/supabase-announcements-completion-overview-smoke-test.mjs`
   - `npm run test:supabase:announcements:completion`
-- Current completion-overview milestone remains **service + smoke only** (no UI integration yet).
+- Historical note: completion overview started as **service + smoke only**; UI integration is now completed in a later checkpoint section in this doc.
 - No SQL/RLS changes, no notification/email automation, and no parent-facing announcements/events were added.
 - Detailed checkpoint record: `docs/announcements-completion-overview-read-service-checkpoint.md`.
+
+## Checkpoint update (UI integration added)
+
+- `src/pages/Announcements.jsx` now renders a read-only `Completion Overview` section in the detail panel.
+- Visibility is HQ/supervisor only; teacher cannot see manager overview in demo or authenticated paths.
+- Authenticated non-demo reads use `listAnnouncementCompletionOverview({ announcementId })` when selected announcement changes.
+- Demo mode remains local-only with fake overview rows for HQ/supervisor and no Supabase calls.
+- No SQL/RLS/service additions; no reminder/email/notification actions were added.
+- UI checkpoint record: `docs/announcements-completion-overview-ui-checkpoint.md`.
 
 ## 1) Current state
 
 - Staff own-task visibility is live in `MyTasks` via read-only `Announcement Requests` cards.
 - Announcement request workflow is live for staff: read/status/reply/upload in `Announcements`.
-- **Manager completion overview read path exists:** `listAnnouncementCompletionOverview(...)` + `npm run test:supabase:announcements:completion` (no HQ/supervisor **UI** for overview yet).
+- **Manager completion overview read path and UI now exist:** `listAnnouncementCompletionOverview(...)` + read-only HQ/supervisor section in `Announcements`.
 - Notification/email automation does not exist yet.
 
 ## 2) Product purpose
@@ -221,20 +230,20 @@ Planned smoke coverage for the implementation milestone:
 
 Choose:
 
-- **A.** Implement `listAnnouncementCompletionOverview(...)` read service + smoke test
-- **B.** Completion overview UI shell first
-- **C.** SQL view/RPC draft
-- **D.** Company News warm pop-up planning
-- **E.** Notification/email planning
+- **A.** SQL view/RPC optimization review (only if scale/perf requires)
+- **B.** Reminder/notification planning (read-only visibility already present)
+- **C.** Company News warm pop-up planning
+- **D.** Parent-facing announcements/events planning
+- **E.** Reporting/PDF/AI OCR planning
 
-**Recommendation: A first.**
+**Recommendation: B first.**
 
 Why:
 
-- own-task `MyTasks` UI is already live;
-- manager overview needs service-level proof before UI;
-- keep notifications/emails later until counts are reliable;
-- avoid SQL view/RPC now unless service-layer derivation becomes too complex.
+- read service + smoke + manager UI are now all proven in a safe read-only shape;
+- next product value is careful reminder/notification planning (still no auto-send in this phase);
+- SQL view/RPC can wait unless aggregation complexity/performance becomes a real issue;
+- Company News and parent-facing expansion remain later.
 
 ## 14) Next implementation prompt (copy-paste)
 

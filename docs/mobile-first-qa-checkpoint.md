@@ -72,20 +72,22 @@ Scope note:
   - request cards stacking and badge wrapping,
   - detail card action button wrapping (`Mark Read`, `Done`, `Undone`, `Add Reply`),
   - create-request shell fields and Save/Cancel actions in demo mode,
-  - attachment list/upload/view panel readability and button wrapping.
+  - attachment list/upload/view panel readability and button wrapping,
+  - HQ/supervisor read-only `Completion Overview` summary badges and per-person row card wrapping.
 - Authenticated non-demo mode is now wired for live staff read/create/status/reply actions.
 - Re-check on ~390px and ~768px:
   - card density with live rows,
   - action-button wrap for mark read/done/undone/reply,
   - create-request form wrapping including optional branch/target inputs,
-  - loading/empty/error states remain clear and non-technical.
+  - completion overview loading/empty/error states remain clear and non-technical,
+  - per-person status chips (`done/pending/undone/overdue`) stay readable.
 - Keep safety messaging in QA notes:
   - attachments are internal staff-only,
+  - completion overview is HQ/supervisor-only read visibility (teacher hidden),
   - no parent-facing media enabled,
   - no Company News pop-up behavior yet,
   - no parent-facing announcements/events yet,
   - no live chat/notification behavior in this phase.
-  - no MyTasks integration in this checkpoint.
 
 ### `Dashboard`
 
