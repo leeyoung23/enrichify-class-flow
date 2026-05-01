@@ -1,5 +1,25 @@
 # AI Parent Report Service Smoke Checkpoint
 
+## 0b) Mock draft service follow-up update
+
+- New helper added:
+  - `generateMockAiParentReportDraft({ reportId, input })`
+  - file: `src/services/supabaseWriteService.js`
+- Behavior confirmation:
+  - deterministic fake/dev output,
+  - creates version with `generationSource='mock_ai'`,
+  - no real provider call, no provider key, no Edge Function/provider wiring.
+- New focused smoke:
+  - `scripts/supabase-ai-parent-report-mock-draft-smoke-test.mjs`
+  - `npm run test:supabase:ai-parent-report:mock-draft`
+- Boundaries preserved:
+  - no SQL/RLS changes,
+  - parent draft block preserved,
+  - no auto-release,
+  - no PDF/export.
+- Detailed checkpoint:
+  - `docs/mock-ai-parent-report-draft-service-smoke-checkpoint.md`
+
 ## 0) UI shell follow-up status
 
 - Staff UI shell is now added at `/ai-parent-reports` using existing service methods.

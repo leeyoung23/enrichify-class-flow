@@ -1,5 +1,25 @@
 # Project Master Context Handoff
 
+## Checkpoint update (mock AI parent report draft service + smoke)
+
+- Added mock draft helper in service layer:
+  - `src/services/supabaseWriteService.js`
+  - `generateMockAiParentReportDraft({ reportId, input })`
+- Helper currently enforces:
+  - deterministic fake/dev draft wording,
+  - version creation with `generationSource='mock_ai'`,
+  - no real provider/API path,
+  - no provider key dependency,
+  - no auto-release.
+- Added focused smoke:
+  - `scripts/supabase-ai-parent-report-mock-draft-smoke-test.mjs`
+  - `npm run test:supabase:ai-parent-report:mock-draft`
+- Parent-safe release boundary remains unchanged:
+  - draft versions remain non-parent-visible until explicit release.
+- No SQL/RLS changes, no PDF/export, and no notification/email side effects in this milestone.
+- Checkpoint doc:
+  - `docs/mock-ai-parent-report-draft-service-smoke-checkpoint.md`
+
 ## Checkpoint update (AI parent report UI shell milestone)
 
 - Added staff-side AI parent report UI shell:

@@ -3,6 +3,26 @@
 Date: 2026-05-02  
 Scope: planning-only milestone for mock AI parent report draft generation before any real provider integration
 
+## Checkpoint update (mock draft service + smoke implemented)
+
+- Mock draft helper is now implemented in:
+  - `src/services/supabaseWriteService.js`
+  - `generateMockAiParentReportDraft({ reportId, input })`
+- Helper behavior:
+  - deterministic fake/dev-safe output,
+  - uses existing version-creation service path with `generationSource='mock_ai'`,
+  - no provider call, no provider key, no Edge Function path.
+- Focused smoke script is now added:
+  - `scripts/supabase-ai-parent-report-mock-draft-smoke-test.mjs`
+  - command: `npm run test:supabase:ai-parent-report:mock-draft`
+- Safety boundaries preserved:
+  - no SQL/RLS changes,
+  - no auto-release,
+  - parent draft block preserved,
+  - no PDF/export.
+- Service checkpoint doc:
+  - `docs/mock-ai-parent-report-draft-service-smoke-checkpoint.md`
+
 ## 1) Current state
 
 - AI parent report SQL/RLS foundation exists and is already applied in DEV for current milestone flows.

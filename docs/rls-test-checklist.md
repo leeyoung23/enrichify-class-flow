@@ -1,5 +1,28 @@
 # RLS Test Checklist
 
+## Checkpoint update (mock AI parent report draft service path)
+
+- New service helper:
+  - `generateMockAiParentReportDraft({ reportId, input })`
+  - implemented in `src/services/supabaseWriteService.js`
+- RLS safety expectation:
+  - helper creates draft version via existing write-service + RLS path only,
+  - `generationSource='mock_ai'`,
+  - `real_ai` remains blocked.
+- Parent boundary expectation:
+  - parent cannot read draft/mock versions before release,
+  - parent released visibility remains linked-child + released current-version only.
+- Focused smoke command:
+  - `npm run test:supabase:ai-parent-report:mock-draft`
+- Preserve non-goals:
+  - no SQL/RLS changes,
+  - no service-role usage,
+  - no provider keys/provider wiring,
+  - no auto-release,
+  - no PDF/export.
+- Checkpoint reference:
+  - `docs/mock-ai-parent-report-draft-service-smoke-checkpoint.md`
+
 ## Checkpoint update (AI parent report UI shell alignment)
 
 - New staff UI shell route exists:

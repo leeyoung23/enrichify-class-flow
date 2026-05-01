@@ -3,6 +3,25 @@
 Date: 2026-05-02  
 Scope: planning-only blueprint for AI-assisted parent progress reports before provider integration
 
+## Checkpoint update (mock AI draft service + smoke path)
+
+- Mock draft service helper is now implemented in write service:
+  - `generateMockAiParentReportDraft({ reportId, input })`
+- Current mock posture:
+  - deterministic fake/dev generation only,
+  - `generationSource='mock_ai'` via existing version path,
+  - no real provider call,
+  - no provider keys,
+  - no Edge Function provider wiring.
+- Focused smoke coverage now includes mock draft generation path:
+  - `npm run test:supabase:ai-parent-report:mock-draft`
+- Parent safety boundaries unchanged:
+  - draft remains staff-only before explicit release,
+  - no auto-release,
+  - no PDF/export.
+- Checkpoint reference:
+  - `docs/mock-ai-parent-report-draft-service-smoke-checkpoint.md`
+
 ## Checkpoint update (AI parent report staff UI shell added)
 
 - Staff-side AI parent report page is now added at `/ai-parent-reports`:
