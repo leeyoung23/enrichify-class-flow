@@ -29,9 +29,11 @@ import {
   uploadAnnouncementAttachment,
 } from '@/services/supabaseUploadService';
 import {
+  createCompanyNews,
   createAnnouncementReply,
   createAnnouncementRequest,
   markAnnouncementRead,
+  publishCompanyNews,
   updateAnnouncementDoneStatus,
 } from '@/services/supabaseWriteService';
 
@@ -429,6 +431,7 @@ export default function Announcements() {
   const canCreateInDemo = role === ROLES.HQ_ADMIN || role === ROLES.BRANCH_SUPERVISOR;
   const canCreateInAuth = role === ROLES.HQ_ADMIN || role === ROLES.BRANCH_SUPERVISOR;
   const canCreateCompanyNewsInDemo = role === ROLES.HQ_ADMIN;
+  const canCreateCompanyNewsInAuth = role === ROLES.HQ_ADMIN;
   const canViewManagerOverview = role === ROLES.HQ_ADMIN || role === ROLES.BRANCH_SUPERVISOR;
   const canUploadAttachments = roleCanUploadAttachment(role);
   const allowedAttachmentRoles = getAllowedAttachmentRoles(role);
@@ -471,6 +474,10 @@ export default function Announcements() {
     toneLabel: 'warm',
     priority: 'normal',
     audienceLabel: 'Internal staff',
+    targetType: 'branch',
+    targetBranchId: '',
+    targetRole: '',
+    targetProfileId: '',
   });
 
   useEffect(() => {
@@ -789,6 +796,111 @@ export default function Announcements() {
     onError: (error) => toast.error(error?.message || 'Unable to create request right now.'),
   });
 
+  const companyNewsCreateMutation = useMutation({
+    mutationFn: async ({ shouldPublish = false } = {}) => {
+      if (!canCreateCompanyNewsInAuth) {
+        throw new Error('Only HQ can create Company News.');
+      }
+      const hasTitle = companyNewsForm.title.trim().length > 0;
+      const hasContent = companyNewsForm.subtitle.trim().length > 0 || companyNewsForm.body.trim().length > 0;
+      if (!hasTitle) throw new Error('Title is required.');
+      if (!hasContent) throw new Error('Add subtitle or body before saving.');
+
+      const targets = toTargetPayload({
+        targetType: companyNewsForm.targetType,
+        targetBranchId: companyNewsForm.targetBranchId,
+        targetRole: companyNewsForm.targetRole,
+        targetProfileId: companyNewsForm.targetProfileId,
+      });
+
+      if (shouldPublish && targets.length === 0) {
+        throw new Error('Add at least one internal target before publishing.');
+      }
+
+      const createResult = await createCompanyNews({
+        title: companyNewsForm.title.trim(),
+        subtitle: companyNewsForm.subtitle.trim() || undefined,
+        body: companyNewsForm.body.trim() || undefined,
+        priority: companyNewsForm.priority,
+        popupEnabled: Boolean(companyNewsForm.popupEnabled),
+        popupEmoji: companyNewsForm.emoji.trim() || undefined,
+        targets,
+      });
+
+      if (createResult.error || !createResult.data?.announcement?.id) {
+        throw new Error('Unable to save Company News draft right now.');
+      }
+
+      if (!shouldPublish) {
+        return {
+          announcementId: createResult.data.announcement.id,
+          published: false,
+        };
+      }
+
+      const publishResult = await publishCompanyNews({ announcementId: createResult.data.announcement.id });
+      if (publishResult.error) {
+        throw new Error('Draft saved, but publish is unavailable right now.');
+      }
+
+      return {
+        announcementId: createResult.data.announcement.id,
+        published: true,
+      };
+    },
+    onSuccess: async (result) => {
+      setCompanyNewsCreateOpen(false);
+      setCompanyNewsForm({
+        title: '',
+        subtitle: '',
+        body: '',
+        templateLabel: 'General news',
+        emoji: '📣',
+        popupEnabled: true,
+        toneLabel: 'warm',
+        priority: 'normal',
+        audienceLabel: 'Internal staff',
+        targetType: 'branch',
+        targetBranchId: '',
+        targetRole: '',
+        targetProfileId: '',
+      });
+      setActiveFilter('Company News');
+      if (result?.announcementId) {
+        setSelectedId(result.announcementId);
+      }
+      toast.success(result?.published ? 'Company News published.' : 'Company News draft saved.');
+      await refreshAnnouncements();
+      if (result?.announcementId) {
+        setSelectedId(result.announcementId);
+      }
+    },
+    onError: (error) => {
+      const message = String(error?.message || '');
+      if (message.includes('Title is required')) {
+        toast.error('Title is required.');
+        return;
+      }
+      if (message.includes('subtitle or body')) {
+        toast.error('Add subtitle or body before saving.');
+        return;
+      }
+      if (message.includes('at least one internal target')) {
+        toast.error('Add branch, role, or profile target before publishing.');
+        return;
+      }
+      if (message.includes('Only HQ can create Company News')) {
+        toast.error('Only HQ can create Company News.');
+        return;
+      }
+      if (message.includes('Draft saved, but publish is unavailable')) {
+        toast.error('Draft saved, but publish is unavailable right now.');
+        return;
+      }
+      toast.error('Company News save is unavailable right now.');
+    },
+  });
+
   const onDemoCreate = () => {
     if (!createForm.title.trim()) return;
     const created = {
@@ -865,6 +977,10 @@ export default function Announcements() {
       toneLabel: 'warm',
       priority: 'normal',
       audienceLabel: 'Internal staff',
+      targetType: 'branch',
+      targetBranchId: '',
+      targetRole: '',
+      targetProfileId: '',
     });
     setActiveFilter('Company News');
     toast.success('Demo Company News saved locally.');
@@ -928,9 +1044,9 @@ export default function Announcements() {
                 ) : null
               )
               : (
-                canCreateInAuth ? (
-                  <Button className="min-h-10" variant="outline" disabled>
-                    Create Company News (preview only)
+                canCreateCompanyNewsInAuth ? (
+                  <Button className="min-h-10" onClick={() => setCompanyNewsCreateOpen((prev) => !prev)}>
+                    Create Company News
                   </Button>
                 ) : null
               )
@@ -1124,11 +1240,164 @@ export default function Announcements() {
             </Card>
           ) : null}
 
-          {activeFilter === 'Company News' && !isDemoMode && canCreateInAuth ? (
+          {activeFilter === 'Company News' && companyNewsCreateOpen && !isDemoMode && canCreateCompanyNewsInAuth ? (
+            <Card className="p-4 sm:p-5 space-y-3">
+              <p className="font-medium">Create Company News</p>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div className="space-y-1">
+                  <Label>Title</Label>
+                  <Input
+                    value={companyNewsForm.title}
+                    onChange={(e) => setCompanyNewsForm((p) => ({ ...p, title: e.target.value }))}
+                    placeholder="Required"
+                  />
+                </div>
+                <div className="space-y-1">
+                  <Label>Subtitle</Label>
+                  <Input
+                    value={companyNewsForm.subtitle}
+                    onChange={(e) => setCompanyNewsForm((p) => ({ ...p, subtitle: e.target.value }))}
+                    placeholder="Optional"
+                  />
+                </div>
+                <div className="space-y-1 sm:col-span-2">
+                  <Label>Body</Label>
+                  <Textarea
+                    value={companyNewsForm.body}
+                    onChange={(e) => setCompanyNewsForm((p) => ({ ...p, body: e.target.value }))}
+                    className="min-h-[100px]"
+                    placeholder="Required when subtitle is empty"
+                  />
+                </div>
+                <div className="space-y-1">
+                  <Label>Category / template</Label>
+                  <Select value={companyNewsForm.templateLabel} onValueChange={(value) => setCompanyNewsForm((p) => ({ ...p, templateLabel: value }))}>
+                    <SelectTrigger><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="Congratulations">Congratulations</SelectItem>
+                      <SelectItem value="Important update">Important update</SelectItem>
+                      <SelectItem value="Training reminder">Training reminder</SelectItem>
+                      <SelectItem value="Holiday / closure">Holiday / closure</SelectItem>
+                      <SelectItem value="Event reminder">Event reminder</SelectItem>
+                      <SelectItem value="General news">General news</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-1">
+                  <Label>Emoji</Label>
+                  <Input
+                    value={companyNewsForm.emoji}
+                    onChange={(e) => setCompanyNewsForm((p) => ({ ...p, emoji: e.target.value }))}
+                    placeholder="📣"
+                  />
+                </div>
+                <div className="space-y-1">
+                  <Label>Tone / style</Label>
+                  <Select value={companyNewsForm.toneLabel} onValueChange={(value) => setCompanyNewsForm((p) => ({ ...p, toneLabel: value }))}>
+                    <SelectTrigger><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="celebratory">Celebratory</SelectItem>
+                      <SelectItem value="important">Important</SelectItem>
+                      <SelectItem value="warm reminder">Warm reminder</SelectItem>
+                      <SelectItem value="supportive">Supportive</SelectItem>
+                      <SelectItem value="informative">Informative</SelectItem>
+                      <SelectItem value="warm">Warm</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-1">
+                  <Label>Priority</Label>
+                  <Select value={companyNewsForm.priority} onValueChange={(value) => setCompanyNewsForm((p) => ({ ...p, priority: value }))}>
+                    <SelectTrigger><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="low">Low</SelectItem>
+                      <SelectItem value="normal">Normal</SelectItem>
+                      <SelectItem value="high">High</SelectItem>
+                      <SelectItem value="urgent">Urgent</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-1">
+                  <Label>Target type</Label>
+                  <Select value={companyNewsForm.targetType} onValueChange={(value) => setCompanyNewsForm((p) => ({ ...p, targetType: value }))}>
+                    <SelectTrigger><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="branch">Branch</SelectItem>
+                      <SelectItem value="role">Role</SelectItem>
+                      <SelectItem value="profile">Profile</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-1">
+                  <Label>Target Branch ID (UUID)</Label>
+                  <Input
+                    value={companyNewsForm.targetBranchId}
+                    onChange={(e) => setCompanyNewsForm((p) => ({ ...p, targetBranchId: e.target.value }))}
+                    placeholder="Required for branch target"
+                  />
+                </div>
+                <div className="space-y-1">
+                  <Label>Target Role</Label>
+                  <Input
+                    value={companyNewsForm.targetRole}
+                    onChange={(e) => setCompanyNewsForm((p) => ({ ...p, targetRole: e.target.value }))}
+                    placeholder="hq_admin / branch_supervisor / teacher"
+                  />
+                </div>
+                <div className="space-y-1">
+                  <Label>Target Profile ID (UUID)</Label>
+                  <Input
+                    value={companyNewsForm.targetProfileId}
+                    onChange={(e) => setCompanyNewsForm((p) => ({ ...p, targetProfileId: e.target.value }))}
+                    placeholder="Required for profile target"
+                  />
+                </div>
+              </div>
+              <div className="flex flex-wrap gap-2">
+                <Button
+                  type="button"
+                  variant={companyNewsForm.popupEnabled ? 'default' : 'outline'}
+                  className="min-h-10"
+                  onClick={() => setCompanyNewsForm((p) => ({ ...p, popupEnabled: !p.popupEnabled }))}
+                  disabled={companyNewsCreateMutation.isPending}
+                >
+                  Pop-up enabled
+                </Button>
+                <Badge variant="outline">{companyNewsForm.audienceLabel}</Badge>
+              </div>
+              <div className="flex flex-wrap gap-2">
+                <Button
+                  className="min-h-10"
+                  onClick={() => companyNewsCreateMutation.mutate({ shouldPublish: false })}
+                  disabled={companyNewsCreateMutation.isPending}
+                >
+                  {companyNewsCreateMutation.isPending ? 'Saving...' : 'Save Draft'}
+                </Button>
+                <Button
+                  className="min-h-10"
+                  variant="outline"
+                  onClick={() => companyNewsCreateMutation.mutate({ shouldPublish: true })}
+                  disabled={companyNewsCreateMutation.isPending}
+                >
+                  {companyNewsCreateMutation.isPending ? 'Publishing...' : 'Create & Publish'}
+                </Button>
+                <Button
+                  variant="outline"
+                  className="min-h-10"
+                  onClick={() => setCompanyNewsCreateOpen(false)}
+                  disabled={companyNewsCreateMutation.isPending}
+                >
+                  Cancel
+                </Button>
+              </div>
+            </Card>
+          ) : null}
+
+          {activeFilter === 'Company News' && !isDemoMode && !canCreateCompanyNewsInAuth ? (
             <Card className="p-4 sm:p-5 border-dashed">
-              <p className="text-sm font-medium">Create Company News (preview-only in this milestone)</p>
+              <p className="text-sm font-medium">Company News is HQ-managed</p>
               <p className="text-xs text-muted-foreground mt-1">
-                Real Company News write wiring is intentionally deferred. This milestone delivers UI shell and demo parity only.
+                Branch supervisor and teacher roles have view-only access for this milestone.
               </p>
             </Card>
           ) : null}

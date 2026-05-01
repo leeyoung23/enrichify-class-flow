@@ -3,6 +3,19 @@
 Date: 2026-05-01  
 Scope: planning/review only for safe real HQ Company News create/publish path (no runtime/UI/service/SQL changes in this milestone)
 
+## Checkpoint update (authenticated HQ create UI wired)
+
+- Authenticated HQ Company News create UI is now wired in `Announcements`.
+- Existing write services are used:
+  - `createCompanyNews(...)`
+  - `publishCompanyNews(...)`
+- Authenticated role behavior in this checkpoint:
+  - HQ/admin can create (draft and create+publish flow),
+  - branch supervisor and teacher are view-only for Company News create.
+- Company News remains excluded from MyTasks by default.
+- No notifications/emails side effects were introduced.
+- Parent-facing announcements/events remain future.
+
 ## Checkpoint update (MyTasks default exclusion enforced)
 
 - MyTasks derived-read semantics now exclude `company_news` by default.

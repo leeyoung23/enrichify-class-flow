@@ -3,6 +3,21 @@
 Date: 2026-05-01  
 Scope: service + smoke only (`createCompanyNews` / `publishCompanyNews`), no UI/runtime/SQL changes
 
+## Checkpoint update (authenticated HQ create UI wiring)
+
+- Authenticated `Announcements` now wires HQ-only Company News creation UI using existing:
+  - `createCompanyNews(...)` for draft create
+  - `publishCompanyNews(...)` for publish action
+- Branch supervisor and teacher remain view-only for Company News create in authenticated mode.
+- Demo behavior is preserved:
+  - HQ demo create remains local-only,
+  - supervisor/teacher demo remain view-only,
+  - no Supabase Company News create call in demo.
+- Company News remains excluded from MyTasks by default.
+- No notifications/emails/live-chat side effects were added.
+- No parent-facing announcements/events were added.
+- No SQL/RLS changes in this UI wiring checkpoint.
+
 ## Checkpoint update (MyTasks exclusion fix)
 
 - `listMyAnnouncementTasks(...)` now excludes `company_news` by default.

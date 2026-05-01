@@ -2,6 +2,20 @@
 
 This master handoff preserves product direction, implemented milestones, architecture constraints, and safe continuation priorities for future ChatGPT/Cursor sessions.
 
+## Checkpoint update (authenticated HQ Company News create UI wired)
+
+- `Announcements` now wires authenticated HQ-only Company News create/publish UI using existing services:
+  - `createCompanyNews(...)`
+  - `publishCompanyNews(...)`
+- Branch supervisor and teacher remain view-only for Company News create in authenticated mode.
+- Demo behavior remains local-only and preserves `demoRole` fallback:
+  - HQ demo create is local-only,
+  - supervisor/teacher demo do not create Company News.
+- Company News remains excluded from MyTasks by default.
+- No notification/email/live chat side effects were added.
+- Parent-facing announcements/events remain future.
+- No SQL/RLS changes were introduced in this milestone.
+
 ## 1) Product identity and vision
 
 **Young’s Learners / Enrichify Class Flow** is not just an admin dashboard.  

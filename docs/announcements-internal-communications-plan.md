@@ -2,6 +2,19 @@
 
 Scope: planning only for Announcements/Internal Communications and Document Hub rollout (no UI/runtime/service/SQL changes in this milestone).
 
+## Checkpoint update (authenticated HQ Company News create UI)
+
+- Authenticated HQ Company News create UI is now wired in `src/pages/Announcements.jsx`.
+- Existing Company News write services are now used from UI:
+  - `createCompanyNews(...)`
+  - `publishCompanyNews(...)`
+- Company News create access:
+  - HQ/admin: allowed,
+  - branch supervisor/teacher: view-only for create.
+- Company News remains excluded from MyTasks default behavior.
+- No notification/email/live chat side effects were introduced.
+- No parent-facing announcements/events were added in this checkpoint.
+
 ## Checkpoint update (Company News vs MyTasks boundary)
 
 - MyTasks default derived-read now excludes `company_news`.

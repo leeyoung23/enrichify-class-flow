@@ -3,6 +3,18 @@
 Date: 2026-05-01  
 Scope: runtime app-shell warm popup UI shell/wiring using existing popup services only
 
+## Checkpoint update (HQ create UI now wired in Announcements)
+
+- Authenticated HQ create/publish UI for Company News is now wired on `Announcements`.
+- Runtime popup scope remains unchanged and still relies on existing popup services.
+- Company News authoring now uses existing write services:
+  - `createCompanyNews(...)`
+  - `publishCompanyNews(...)`
+- Branch supervisor and teacher remain view-only for Company News create in authenticated mode.
+- Company News remains excluded from MyTasks by default.
+- No notifications/emails/live chat behavior was added in this checkpoint.
+- Parent-facing announcements/events remain future.
+
 ## Checkpoint update (027 create-path SQL manual DEV apply)
 
 - Manual DEV apply for Company News create-path SQL is completed:

@@ -7,6 +7,18 @@ Scope note:
 - Planning/documentation checkpoint; lists mobile-sensitive areas and QA order.
 - **`StaffTimeClock`** mock UI is implemented (local demo only); include it in manual QA passes below.
 
+## Checkpoint update (Announcements HQ Company News create UI)
+
+- Authenticated HQ create/publish UI for Company News is now wired in `Announcements`.
+- Mobile QA should include authenticated HQ create form checks:
+  - Save Draft button loading/disabled state,
+  - Create & Publish button loading/disabled state,
+  - branch/role/profile target input clarity and wrapping on ~390px.
+- Branch supervisor/teacher remain view-only for Company News create in authenticated mode.
+- Demo behavior remains local-only for HQ create; no Supabase create calls in demo.
+- Company News remains excluded from MyTasks by default.
+- No notifications/emails/live-chat behavior was added in this checkpoint.
+
 ## 1) Mobile-first principle
 
 - Parents and teachers mainly use phones; phone usability is the primary acceptance bar.

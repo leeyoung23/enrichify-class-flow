@@ -3,6 +3,17 @@
 Date: 2026-05-01  
 Scope: planning-only checkpoint for Company News / Big News mode and warm portal pop-up behavior
 
+## Checkpoint update (authenticated HQ create UI milestone)
+
+- Authenticated HQ Company News create UI is now wired in `Announcements`.
+- Draft + publish path uses existing services:
+  - `createCompanyNews(...)`
+  - `publishCompanyNews(...)`
+- Branch supervisor and teacher remain view-only for Company News create.
+- Company News remains excluded from MyTasks by default.
+- No notification/email/live-chat side effects were added.
+- Parent-facing announcements/events remain a future phase.
+
 ## Checkpoint update (MyTasks semantics alignment)
 
 - Company News is now explicitly excluded from `listMyAnnouncementTasks(...)` default derived-read behavior.

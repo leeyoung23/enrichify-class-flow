@@ -3,6 +3,21 @@
 Date: 2026-05-01  
 Scope: documentation checkpoint for Company News UI shell with demo parity only
 
+## Checkpoint update (authenticated HQ create enabled)
+
+- Authenticated `Create Company News` is now enabled for HQ only in `Announcements`.
+- Authenticated create flow uses existing services:
+  - `createCompanyNews(...)` for draft save
+  - `publishCompanyNews(...)` for publish
+- Branch supervisor and teacher remain view-only for Company News create in authenticated mode.
+- Demo parity remains preserved:
+  - HQ demo create is local-only,
+  - supervisor/teacher demo remain view-only,
+  - no Supabase Company News write in demo path.
+- Company News remains excluded from MyTasks by default.
+- No notifications/emails/live chat were added.
+- Parent-facing announcements/events remain future.
+
 ## Checkpoint update (runtime popup shell/wiring follow-up)
 
 - Runtime warm popup shell is now implemented in app layout shell:
