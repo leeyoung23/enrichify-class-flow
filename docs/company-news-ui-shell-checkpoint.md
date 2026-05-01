@@ -15,6 +15,16 @@ Scope: documentation checkpoint for Company News UI shell with demo parity only
   - no parent-facing announcements/events,
   - no notifications/emails/live chat,
   - no real HQ Company News create path.
+- Runtime validation in follow-up milestone:
+  - `npm run build` PASS
+  - `npm run lint` PASS
+  - `npm run typecheck` PASS
+  - `npm run test:supabase:company-news:popup` PASS (with expected CHECK for direct HQ create-path block)
+
+## Checkpoint update (recommended next milestone after runtime popup)
+
+- Recommended next milestone is now **A. Real HQ Company News create path planning**.
+- Reason: runtime popup display path is working, but safe HQ creation/publish path remains constrained by current request-first create-path shape.
 
 ## Documentation-only note
 

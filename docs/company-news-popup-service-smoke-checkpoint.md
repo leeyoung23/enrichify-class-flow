@@ -12,6 +12,12 @@ Scope: service + smoke only for internal Company News popup eligibility/seen/dis
 - Wiring keeps service usage staff-only and non-blocking.
 - Demo popup path remains local-only and intentionally does not call popup services.
 - No service API changes were required for runtime shell wiring.
+- Runtime popup validation checkpoint:
+  - `npm run build` PASS
+  - `npm run lint` PASS
+  - `npm run typecheck` PASS
+  - `npm run test:supabase:company-news:popup` PASS
+  - expected CHECK remains: direct HQ `company_news` create blocked by request-first create-path constraints.
 
 ## Checkpoint note
 

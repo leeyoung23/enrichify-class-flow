@@ -586,6 +586,9 @@ Current status note:
   - popup smoke PASS with expected CHECK for direct HQ `company_news` create block under request-first create-path policy,
   - phase1/mytasks/completion announcement smokes PASS (optional cross-branch CHECK still possible without fixture env),
   - npm `devdir` warning is non-blocking.
+- Recommended next milestone after runtime popup:
+  - **A. Real HQ Company News create path planning** first,
+  - rationale: runtime popup display is ready, but safe production Company News creation/publish path is still constrained by request-first create-path behavior.
 
 ## 12) Next immediate milestone prompt (copy-paste)
 

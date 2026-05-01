@@ -33,7 +33,7 @@ Scope: docs/planning only for safe runtime warm popup UI wiring (no runtime impl
   - `listEligibleCompanyNewsPopups({ limit })`
   - `markCompanyNewsPopupSeen({ announcementId })`
   - `dismissCompanyNewsPopup({ announcementId })`
-- Runtime app-shell popup UI is not implemented yet.
+- Runtime app-shell popup UI is now implemented in `AppLayout` using existing popup services.
 - Real HQ Company News create path is not implemented yet (current request-first create-path policy still blocks direct path).
 - Notifications/emails are not implemented.
 - Parent-facing announcements/events are not implemented.
@@ -256,8 +256,26 @@ Recommendation: **A first**.
 Reason:
 
 - Popup data/status service path is already proven.
-- Runtime value now depends on safe placement and guardrails, which are now clarified.
+- Runtime value is now delivered with safe placement and guardrails.
 - Real HQ create path and parent/notification tracks can remain separate follow-up milestones.
+
+## 16) Recommended next milestone (post-runtime checkpoint)
+
+Choose:
+
+- A. Real HQ Company News create path planning
+- B. Parent-facing announcements/events plan
+- C. Notification/email planning
+- D. Popup animation/template polish
+- E. Reports/PDF/AI OCR plan
+
+Recommendation: **A first**.
+
+Why:
+
+- Runtime popup display is now wired safely for eligible staff.
+- Production readiness still depends on safe HQ Company News creation/publish path.
+- Focused popup smoke still reports expected CHECK that direct HQ `company_news` create is blocked by current request-first create path.
 
 Implementation fallback note:
 

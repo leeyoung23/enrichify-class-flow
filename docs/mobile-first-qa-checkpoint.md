@@ -97,6 +97,8 @@ Scope note:
   - no popup repeat storm in same session (session guard enabled),
   - no parent-facing announcements/events yet,
   - no live chat/notification behavior in this phase.
+- Runtime Company News popup follow-up note:
+  - current next planning focus is safe HQ Company News create-path planning (runtime popup display is already wired).
 - Environment validation note:
   - build/lint/typecheck passed in the latest completion overview UI milestone,
   - announcement smoke scripts completed with DNS `ENOTFOUND` CHECK skips in this environment,
