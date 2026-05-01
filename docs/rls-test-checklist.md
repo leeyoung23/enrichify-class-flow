@@ -32,6 +32,33 @@ Reminder: **Frontend filtering is not security. RLS must enforce access at datab
   - mixed-target cross-branch announcements must not be manageable by branch supervisors.
 - No parent-facing UI/services or notification/email automation are added in this checkpoint.
 
+## Parent-facing announcements SQL manual DEV application note (028)
+
+- Manual apply target: `supabase/sql/028_parent_announcements_foundation.sql`.
+- Supabase DEV SQL Editor result: applied in DEV.
+- No production apply in this checkpoint.
+- No runtime/UI/service changes in this checkpoint.
+- Verification summary:
+  - parent-facing tables exist: `parent_announcements`, `parent_announcement_targets`, `parent_announcement_read_receipts`, `parent_announcement_media`,
+  - RLS enabled and parent-facing policies present on all four parent-facing tables,
+  - helper set present including:
+    - `parent_announcement_branch_id`
+    - `can_manage_parent_announcement`
+    - `can_access_parent_announcement`
+    - `can_access_parent_announcement_media`
+    - `parent_has_linked_student_in_branch_028`
+    - `parent_has_linked_student_in_class_028`
+    - `can_insert_parent_announcement_row_028`
+    - `can_manage_parent_announcement_target_write_028`
+    - `is_parent_announcement_supervisor_scope_safe_028`
+  - private storage bucket `parent-announcements-media` exists with storage policies.
+- Boundary checks to keep validating with fake/dev role tests:
+  - HQ global manage,
+  - supervisor own-branch manage only,
+  - parent published linked-child scoped visibility only,
+  - teacher/student blocked in MVP where intended,
+  - parent read-receipt own-row write path only.
+
 ## Announcements completion overview read-service checkpoint note (2026-05-01)
 
 - Full checkpoint (implementation summary, read behavior, metrics, per-person fields, semantics, smoke, tests, boundaries, future, recommended next milestone, copy-paste UI prompt):

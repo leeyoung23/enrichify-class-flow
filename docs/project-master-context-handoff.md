@@ -32,6 +32,27 @@ This master handoff preserves product direction, implemented milestones, archite
   - helper `is_parent_announcement_supervisor_scope_safe_028(...)` enforces supervisor manage only when announcement row and all targets stay in one managed branch,
   - `can_manage_parent_announcement(...)` now uses this guard to block mixed-target cross-branch manage escalation.
 
+## Checkpoint update (028 parent-facing announcements SQL manual DEV application)
+
+- `028` is now manually applied in Supabase DEV:
+  - `supabase/sql/028_parent_announcements_foundation.sql`
+- Application posture:
+  - no production apply,
+  - no runtime/UI/service changes,
+  - no notification/email behavior.
+- Verification checkpoint confirms:
+  - parent-facing tables exist (`parent_announcements`, `parent_announcement_targets`, `parent_announcement_read_receipts`, `parent_announcement_media`),
+  - RLS and parent-facing table policies exist,
+  - helper functions exist including `is_parent_announcement_supervisor_scope_safe_028(...)`,
+  - private storage bucket `parent-announcements-media` exists with storage policies.
+- Safety boundaries preserved:
+  - parent-facing model remains separate from internal announcements,
+  - internal `announcement_attachments` are not reused in parent-facing model,
+  - internal `parent_facing_media` remains disabled/reserved,
+  - no parent-facing UI/services in this checkpoint.
+- Canonical SQL application checkpoint doc:
+  - `docs/parent-facing-announcements-sql-application-checkpoint.md`
+
 ## Checkpoint update (authenticated HQ Company News create UI wired)
 
 - `Announcements` now wires authenticated HQ-only Company News create/publish UI using existing services:

@@ -29,6 +29,23 @@ Scope: planning/review only for safest SQL/RLS direction before implementation (
   - tightened `can_manage_parent_announcement(...)` so branch supervisors cannot manage announcements that include any out-of-branch targets,
   - protects against cross-branch edit/delete/media/target side effects from mixed-target announcements.
 
+## Checkpoint update (028 manual DEV SQL application)
+
+- `028` was manually applied in Supabase DEV SQL Editor.
+- No production apply in this checkpoint.
+- No runtime/UI/service changes in this checkpoint.
+- No notification/email behavior was introduced.
+- SQL application verification confirmed:
+  - parent-facing tables exist,
+  - RLS is enabled on all parent-facing tables,
+  - parent-facing table policies exist,
+  - helper functions exist including `is_parent_announcement_supervisor_scope_safe_028(...)`,
+  - private storage bucket `parent-announcements-media` exists with policies.
+- Security hardening continuity:
+  - pre-apply mixed-target cross-branch supervisor manage escalation is fixed and preserved after apply.
+- Canonical application checkpoint:
+  - `docs/parent-facing-announcements-sql-application-checkpoint.md`
+
 ## 1) Current state
 
 - Staff-facing `Announcements` internal module exists and is a strong internal prototype.
@@ -259,9 +276,9 @@ Future validation cases:
 
 Options:
 
-- A. Draft parent-facing announcements SQL/RLS foundation
+- A. Parent-facing announcements service + smoke test
 - B. ParentView UI shell with demo parity
-- C. Parent-facing media/storage planning
+- C. Parent-facing media service + smoke test
 - D. Notification/email planning
 - E. Reports/PDF/AI OCR plan
 
@@ -269,9 +286,10 @@ Recommendation: **A first**.
 
 Why:
 
-- parent-facing content has high privacy impact,
-- separate model and RLS must be drafted/reviewed before UI/services,
-- media/email should follow only after core parent visibility is safe and testable.
+- SQL/RLS foundation is now manually applied in DEV,
+- service smoke should prove create/read/visibility boundaries before any parent-facing UI rollout,
+- media service should follow once core visibility boundaries are proven,
+- notification/email behavior should remain later until service-level safety is stable.
 
 ## 15) Next implementation prompt (copy-paste)
 

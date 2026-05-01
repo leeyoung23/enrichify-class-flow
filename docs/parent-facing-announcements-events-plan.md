@@ -24,6 +24,25 @@ Scope: planning-only checkpoint for parent-facing announcements/events next laye
   - branch supervisor manage scope was hardened so supervisors can manage only announcements whose row and targets stay fully inside a single managed branch,
   - this closes cross-branch manage risk from mixed-target announcements before manual DEV apply.
 
+## Checkpoint update (028 manual DEV SQL application)
+
+- `028` is now manually applied in Supabase DEV:
+  - `supabase/sql/028_parent_announcements_foundation.sql`
+- No production apply in this checkpoint.
+- No runtime/UI/service changes in this checkpoint.
+- No notification/email behavior was introduced.
+- Verification confirms parent-facing foundation exists:
+  - tables: `parent_announcements`, `parent_announcement_targets`, `parent_announcement_read_receipts`, `parent_announcement_media`
+  - RLS enabled + policies present on parent-facing tables
+  - helper functions present including `is_parent_announcement_supervisor_scope_safe_028(...)`
+  - private bucket `parent-announcements-media` exists with storage policies
+- Internal safety boundaries remain unchanged:
+  - no internal `announcement_attachments` reuse
+  - internal `parent_facing_media` remains disabled/reserved
+  - no parent-facing UI/services in this checkpoint
+- Application checkpoint doc:
+  - `docs/parent-facing-announcements-sql-application-checkpoint.md`
+
 ## 1) Current state
 
 - Staff `Announcements` is now a strong internal prototype:
@@ -269,9 +288,9 @@ Safeguards:
 
 Options:
 
-- A. Parent-facing announcements/events SQL/RLS data model review
+- A. Parent-facing announcements service + smoke test
 - B. ParentView UI shell with demo parity
-- C. Parent-facing media/storage planning
+- C. Parent-facing media service + smoke test
 - D. Notification/email planning
 - E. Reports/PDF/AI OCR plan
 
@@ -279,10 +298,10 @@ Recommendation: **A first**.
 
 Why A first:
 
-- parent-facing communication has high privacy risk,
-- audience and family boundary design must be correct before UI/service,
-- media/email should follow after parent-facing data boundary is clear,
-- this keeps rollout sequence safety-first and aligns with existing backend-first hardening approach.
+- SQL/RLS foundation is now manually applied in DEV,
+- service smoke should prove create/read/visibility boundaries before UI rollout,
+- media service can follow after core parent announcement visibility is proven,
+- notification/email behavior should wait until service-level safety is validated.
 
 ## 15) Next implementation prompt (copy-paste)
 

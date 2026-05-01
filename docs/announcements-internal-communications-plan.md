@@ -25,6 +25,25 @@ Scope: planning only for Announcements/Internal Communications and Document Hub 
   - branch supervisor parent-announcement manage scope in `028` is now constrained to fully own-branch announcement row+target scope,
   - mixed-target cross-branch manage escalation path is closed in draft SQL.
 
+## Checkpoint update (028 parent-facing announcements SQL manual DEV application)
+
+- `028` is now manually applied in Supabase DEV:
+  - `supabase/sql/028_parent_announcements_foundation.sql`
+- No production apply in this checkpoint.
+- No runtime/UI/service changes in this checkpoint.
+- No notification/email behavior was introduced.
+- Parent-facing verification confirms:
+  - separate parent-facing tables exist,
+  - parent-facing table RLS/policies are present,
+  - helper functions are present including supervisor-scope hardening helper,
+  - private media bucket `parent-announcements-media` exists with storage policies.
+- Internal module boundary remains unchanged:
+  - internal `announcement_attachments` not exposed/reused for parent-facing path,
+  - internal `parent_facing_media` remains disabled/reserved,
+  - no parent-facing UI/services in this checkpoint.
+- Canonical application checkpoint:
+  - `docs/parent-facing-announcements-sql-application-checkpoint.md`
+
 ## Checkpoint update (authenticated HQ Company News create UI)
 
 - Authenticated HQ Company News create UI is now wired in `src/pages/Announcements.jsx`.
