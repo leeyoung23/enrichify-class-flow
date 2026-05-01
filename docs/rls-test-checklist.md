@@ -1,5 +1,58 @@
 # RLS Test Checklist
 
+## Checkpoint update (029 insert RLS manual DEV application + smoke proof)
+
+- `029` manual apply target:
+  - `supabase/sql/029_fix_parent_announcements_insert_rls.sql`
+- Supabase DEV SQL Editor result:
+  - Success. No rows returned.
+- No production apply in this checkpoint.
+- No runtime/UI/service changes in this checkpoint.
+- No parent-facing media service changes in this checkpoint.
+- No media/email/notification behavior added.
+- Root cause now documented as resolved:
+  - before `029`, raw insert without `RETURNING` could succeed while `insert(...).select()` (`INSERT ... RETURNING`) failed with `42501`,
+  - `RETURNING` path required `SELECT`-policy visibility for newly inserted draft rows,
+  - `029` introduced `can_select_parent_announcement_row_029(...)` and `can_insert_parent_announcement_row_029(...)` policy-helper wiring to resolve this.
+- SQL/RLS confirmation after manual apply:
+  - `parent_announcements_insert_028` now uses `can_insert_parent_announcement_row_029(...)`,
+  - `parent_announcements_select_028` now uses `can_select_parent_announcement_row_029(...)`,
+  - helper functions exist: `can_insert_parent_announcement_row_029`, `can_select_parent_announcement_row_029`,
+  - only parent-announcements insert/select policy wiring changed,
+  - update/delete/target/media/read-receipt/storage policy surfaces remain unchanged,
+  - parent read remains published + linked-child scoped,
+  - teacher/student remain blocked,
+  - supervisor own-branch safeguards remain preserved.
+- Parent-facing smoke now strongly passes:
+  - HQ context diagnostic + fixture discovery (`branch/class/student/other_branch`) resolved,
+  - HQ create draft PASS,
+  - HQ publish PASS,
+  - HQ other-branch negative fixture PASS,
+  - supervisor own-branch create PASS,
+  - supervisor own-branch publish PASS,
+  - supervisor mixed-target cross-branch create blocked PASS,
+  - teacher create/manage blocked PASS,
+  - parent create/manage blocked PASS,
+  - parent linked published visible PASS,
+  - parent detail read PASS,
+  - parent mark own read receipt PASS,
+  - parent unrelated other-branch blocked/empty PASS,
+  - parent internal_staff blocked/empty PASS,
+  - student blocked/empty PASS,
+  - cleanup PASS.
+- Remaining CHECK notes:
+  - unrelated parent auth fixture credential-check remains skipped when credentials are missing/invalid,
+  - parent negative branch coverage still exists via same parent blocked on unrelated other-branch fixture,
+  - Phase1 optional cross-branch check remains env-fixture dependent when `ANNOUNCEMENTS_TEST_OTHER_BRANCH_ID` is missing,
+  - no unsafe access observed.
+- Regression result note:
+  - `npm run test:supabase:announcements:phase1` PASS,
+  - request workflow unaffected,
+  - parent/student remain blocked from internal_staff announcements,
+  - optional cross-branch CHECK remains expected in fixture-missing contexts.
+- Canonical checkpoint doc:
+  - `docs/parent-facing-announcements-insert-rls-application-checkpoint.md`
+
 This checklist is for future Supabase role testing using fake/demo data only.
 
 Reminder: **Frontend filtering is not security. RLS must enforce access at database level.**
