@@ -20,7 +20,8 @@ Reminder: **Frontend filtering is not security. RLS must enforce access at datab
   - `announcement_replies`
   - `announcement_attachments`
 - No SQL/RLS changes were made for this checkpoint.
-- No completion-overview UI wiring in this checkpoint.
+- Completion-overview UI checkpoint is now documented at:
+  - `docs/announcements-completion-overview-ui-checkpoint.md`
 - No notification/email side effects were added.
 - Smoke script now exists:
   - `scripts/supabase-announcements-completion-overview-smoke-test.mjs`
@@ -30,6 +31,10 @@ Reminder: **Frontend filtering is not security. RLS must enforce access at datab
   - branch supervisor can load own-branch overview,
   - teacher/parent/student manager-overview paths are blocked-or-empty,
   - cleanup uses fake/dev fixture rows only.
+- Latest UI milestone environment note:
+  - build/lint/typecheck PASS,
+  - announcement smoke scripts completed with DNS `ENOTFOUND` CHECK skips in this environment,
+  - rerun smoke scripts when Supabase DNS/network is stable.
 
 ## Announcements attachments PASS checkpoint note (2026-05-01)
 

@@ -27,6 +27,10 @@ Scope: completion overview strategy + read-service checkpoint + **HQ/supervisor 
 - Demo mode remains local-only with fake overview rows for HQ/supervisor and no Supabase calls.
 - No SQL/RLS/service additions; no reminder/email/notification actions were added.
 - UI checkpoint record: `docs/announcements-completion-overview-ui-checkpoint.md`.
+- Validation note from UI milestone environment:
+  - build/lint/typecheck PASS,
+  - announcement smoke scripts completed with DNS `ENOTFOUND` CHECK skips,
+  - rerun smoke scripts when Supabase DNS/network is stable.
 
 ## 1) Current state
 
@@ -230,20 +234,20 @@ Planned smoke coverage for the implementation milestone:
 
 Choose:
 
-- **A.** SQL view/RPC optimization review (only if scale/perf requires)
-- **B.** Reminder/notification planning (read-only visibility already present)
-- **C.** Company News warm pop-up planning
-- **D.** Parent-facing announcements/events planning
-- **E.** Reporting/PDF/AI OCR planning
+- **A.** Company News warm pop-up planning
+- **B.** Notification/email automation planning
+- **C.** Parent-facing announcements/events planning
+- **D.** Rerun smoke validation only
+- **E.** Reports/PDF/AI OCR plan
 
-**Recommendation: B first.**
+**Recommendation: A first.**
 
 Why:
 
-- read service + smoke + manager UI are now all proven in a safe read-only shape;
-- next product value is careful reminder/notification planning (still no auto-send in this phase);
-- SQL view/RPC can wait unless aggregation complexity/performance becomes a real issue;
-- Company News and parent-facing expansion remain later.
+- internal request/document/task/overview loop is now complete at strong prototype level;
+- Company News is the second major Announcements mode from the original product vision;
+- notifications/emails should wait until communication states are mature and less noisy;
+- parent-facing announcements should follow after staff-facing Company News patterns are shaped.
 
 ## 14) Next implementation prompt (copy-paste)
 
@@ -257,7 +261,7 @@ Branch:
 cursor/safe-lint-typecheck-486d
 
 Latest expected commit:
-Add Announcements completion overview plan
+Document Announcements completion overview UI
 
 Before doing anything, verify:
 - git branch --show-current
@@ -265,16 +269,15 @@ Before doing anything, verify:
 - git status --short
 
 Task:
-Implement Announcements completion overview read service + smoke test only.
+Company News warm pop-up planning only.
 
 Scope:
-- Service/read + smoke test only.
+- Docs/planning only.
 - Do not change app UI.
 - Do not change runtime page logic.
-- Do not add SQL/RLS changes in this milestone.
 - Do not apply SQL.
+- Do not add services.
 - Do not add notifications/emails/live chat.
-- Do not add Company News pop-up.
 - Do not add parent-facing announcements/events.
 - Do not enable parent_facing_media.
 - No service role key in frontend.
@@ -282,25 +285,13 @@ Scope:
 - Use fake/dev fixtures only.
 
 Deliverables:
-1) Add `listAnnouncementCompletionOverview({ announcementId, branchId, includeCompleted } = {})`
-   in `src/services/supabaseReadService.js`.
-2) Return stable `{ data, error }` with:
-   - summary metrics per announcement
-   - per-person completion rows
-   - no `storage_path` exposure.
-3) Enforce role-safe behavior under existing RLS expectations:
-   - HQ global internal scope,
-   - supervisor own-branch scope,
-   - teacher/parent/student blocked for manager overview.
-4) Add smoke script:
-   - `scripts/supabase-announcements-completion-overview-smoke-test.mjs`
-   - fake/dev data only.
-5) Add/update docs checkpoint for the new helper + smoke outcomes.
+1) Define Company News warm pop-up product shape (audience, timing, dismiss, non-goals).
+2) Define safety boundaries and phased rollout notes.
+3) Keep notifications/email automation as future and explicitly non-auto-send.
+4) Update relevant docs/checkpoints only.
 
 Validation efficiency rule:
-- Runtime/service files changed -> run targeted checks you add for this milestone.
-- If docs-only changes, run only:
-  - git diff --name-only
+- Docs-only: run only `git diff --name-only`.
 ```
 
 ---

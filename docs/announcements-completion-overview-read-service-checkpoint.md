@@ -108,16 +108,18 @@ Covers (fake/dev fixtures only):
 - Asserts **no notification/email** side effects (smoke path is read/write fixture only; no notification hooks).
 - **Cleanup** removes fake **announcement + attachment** rows where RLS allows.
 
-## 7) Tests (recorded from runtime milestone `6798f6b`)
+## 7) Tests
 
 - `npm run build` PASS  
 - `npm run lint` PASS  
 - `npm run typecheck` PASS  
-- `npm run test:supabase:announcements:completion` PASS  
-- `npm run test:supabase:announcements:mytasks` PASS  
-- `npm run test:supabase:announcements:phase1` PASS with **optional CHECK** when `ANNOUNCEMENTS_TEST_OTHER_BRANCH_ID` is missing  
-- `npm run test:supabase:announcements:attachments` PASS with **expected diagnostic CHECK** lines  
+- `npm run test:supabase:announcements:completion` completed with DNS `ENOTFOUND` CHECK skips in this environment  
+- `npm run test:supabase:announcements:mytasks` completed with DNS `ENOTFOUND` CHECK skips in this environment  
+- `npm run test:supabase:announcements:phase1` completed with DNS `ENOTFOUND` CHECK skips in this environment  
+- `npm run test:supabase:announcements:attachments` completed with DNS `ENOTFOUND` CHECK skips in this environment  
 - npm warning **`Unknown env config "devdir"`** is **non-blocking** if observed  
+- DNS CHECK lines are connectivity/environment checks, not proof of backend failure
+- Recommended follow-up: rerun announcement smoke scripts when Supabase DNS/network is stable
 
 *This documentation-only checkpoint does not re-run the suite.*
 
@@ -134,7 +136,7 @@ Covers (fake/dev fixtures only):
 
 ## 9) What remains future
 
-- **Completion overview UI** integration for HQ/supervisor (read-only first; `Announcements` detail panel).
+- **Rerun** announcement smoke scripts when DNS/network is stable to reconfirm environment-backed PASS behavior.
 - **SQL view/RPC** only if service-layer aggregation becomes too heavy or inconsistent at scale.
 - **Materialized** completion/task rows later for **reminders / SLA / escalation** durability.
 - **Company News** warm pop-up.
@@ -146,20 +148,20 @@ Covers (fake/dev fixtures only):
 
 Choose:
 
-- **A.** Completion overview UI integration for HQ/supervisor  
-- **B.** SQL view/RPC optimization  
-- **C.** Company News warm pop-up planning  
-- **D.** Notification/email planning  
-- **E.** Parent-facing announcements/events planning  
+- **A.** Company News warm pop-up planning  
+- **B.** Notification/email planning  
+- **C.** Parent-facing announcements/events planning  
+- **D.** Rerun smoke validation only  
+- **E.** SQL view/RPC optimization review  
 
-**Recommendation: A (Completion overview UI integration for HQ/supervisor).**
+**Recommendation: A (Company News warm pop-up planning).**
 
 Why **A** first:
 
-- Read service + smoke are **proven** under RLS.
-- **Manager visibility** can now be surfaced safely **without** widening write surfaces.
-- **Notifications/emails** should wait until overview state is **visible and trusted** in UI.
-- **Company News** and **parent-facing** flows remain later phases.
+- Internal request/document/task/overview loop is complete at a strong prototype level.
+- **Company News** is the second major Announcements mode from the product vision.
+- **Notifications/emails** should wait until communication states are mature and less noisy.
+- **Parent-facing** flows should follow after staff-facing Company News patterns are shaped.
 
 ## 11) Next implementation prompt (copy-paste)
 
@@ -173,7 +175,7 @@ Branch:
 cursor/safe-lint-typecheck-486d
 
 Latest expected commit:
-Document Announcements completion overview read service
+Document Announcements completion overview UI
 
 Before doing anything, verify:
 - git branch --show-current
@@ -181,39 +183,38 @@ Before doing anything, verify:
 - git status --short
 
 Task:
-Announcements completion overview UI integration for HQ/supervisor only.
+Company News warm pop-up planning only.
 
 Hard constraints:
-- UI wiring only for HQ/supervisor; no teacher/parent/student manager overview surfaces.
-- Consume existing listAnnouncementCompletionOverview({ announcementId, branchId, includeCompleted }) from supabaseReadService.js only.
+- Docs/planning only.
+- Do not change app UI or runtime logic in this milestone.
 - Do not change Supabase SQL or RLS; do not apply SQL.
-- Do not add new backend services beyond existing read patterns unless explicitly approved.
+- Do not add services in this milestone.
 - Do not use service role in frontend.
 - Do not expose env values or passwords.
 - Do not call real AI APIs; do not add provider keys.
 - Do not auto-send emails or notifications.
-- Do not add Company News pop-up or parent-facing announcements/events.
+- Do not add parent-facing announcements/events in this milestone.
 - Do not enable parent_facing_media.
 - Preserve demoRole and local/demo fallback.
 - Use fake/dev data only in demo paths and smoke fixtures.
-- No storage_path, staff_note, or raw SQL/RLS/env strings in UI.
+- Preserve current completion overview UI boundaries (`storage_path`/`staff_note` still hidden).
 
 Deliverables:
-1) HQ/supervisor-only "Completion" section or tab inside Announcements detail (mobile-friendly).
-2) Summary cards for key metrics + per-person table/stacked rows.
-3) Read-only first: no reminder/email actions.
-4) Safe empty/loading/error copy.
-5) Update relevant docs/checkpoints after UI wiring.
+1) Company News warm pop-up product shape (timing, dismissal, role scope, non-goals).
+2) Safety boundaries and phased rollout notes.
+3) Validation scope for later implementation milestone.
 
 Validation:
-- Runtime/UI changed: run npm run build, npm run lint, npm run typecheck, and npm run test:supabase:announcements:completion (plus related announcement smokes if touched).
+- Docs-only: run `git diff --name-only` only unless runtime files change.
 ```
 
-## Files changed (this documentation milestone)
+## Files changed (UI milestone reference)
 
-- `docs/announcements-completion-overview-read-service-checkpoint.md` (this file)
+- `src/pages/Announcements.jsx`
+- `docs/announcements-completion-overview-ui-checkpoint.md`
+- `docs/announcements-completion-overview-read-service-checkpoint.md`
 - `docs/announcements-completion-overview-plan.md`
-- `docs/announcements-mytasks-ui-checkpoint.md`
-- `docs/announcements-internal-communications-plan.md`
+- `docs/staff-announcements-ui-real-wiring-checkpoint.md`
+- `docs/mobile-first-qa-checkpoint.md`
 - `docs/project-master-context-handoff.md`
-- `docs/rls-test-checklist.md`

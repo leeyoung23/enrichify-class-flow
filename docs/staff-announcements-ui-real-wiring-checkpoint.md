@@ -29,12 +29,12 @@ Checkpoint scope: authenticated non-demo Staff Announcements wiring using existi
 ## 2) Files changed
 
 - `src/pages/Announcements.jsx`
-- `docs/announcements-attachments-service-smoke-pass-checkpoint.md`
-- `docs/announcements-internal-communications-plan.md`
+- `docs/announcements-completion-overview-ui-checkpoint.md`
+- `docs/announcements-completion-overview-read-service-checkpoint.md`
+- `docs/announcements-completion-overview-plan.md`
 - `docs/mobile-first-qa-checkpoint.md`
 - `docs/project-master-context-handoff.md`
 - `docs/staff-announcements-ui-real-wiring-checkpoint.md`
-- `docs/staff-announcements-attachments-ui-checkpoint.md`
 
 ## 3) Authenticated read behavior
 
@@ -79,7 +79,7 @@ Checkpoint scope: authenticated non-demo Staff Announcements wiring using existi
 - No SQL/RLS changes.
 - No SQL apply.
 - No SQL/RLS/service additions for attachments (uses existing attachment services only).
-- No MyTasks integration.
+- No MyTasks write actions.
 - No Company News pop-up behavior.
 - No parent-facing announcements.
 - No live chat.
@@ -102,24 +102,24 @@ Checkpoint scope: authenticated non-demo Staff Announcements wiring using existi
 - Company News warm pop-up behavior.
 - Parent-facing announcements/events.
 - Live chat (later and optional).
-- Notification/email implementation (future only, no auto-send in current checkpoints).
+- Notification/email implementation (future only; no auto-send in current checkpoints).
 - Delete-attachment UI action remains future unless additional RLS proof is required.
 
 ## 9) Recommended next milestone
 
 Choose:
 
-- A. Reminder/notification planning (no auto-send yet)
-- B. Company News warm pop-up planning
+- A. Company News warm pop-up planning
+- B. Notification/email automation planning
 - C. Parent-facing announcements/events planning
-- D. Attachment delete UI
-- E. Report/PDF/AI OCR planning
+- D. Rerun smoke validation only
+- E. Reports/PDF/AI OCR plan
 
-Recommendation: **A. Reminder/notification planning**.
+Recommendation: **A. Company News warm pop-up planning**.
 
 Why A first:
 
-- Internal request/reply/upload flow and manager completion visibility are now live.
-- Next decision is product-safe reminder/notification shape before any automation.
-- Company News and parent-facing announcements remain later phases.
-- Attachment delete UI remains lower priority than communication/completion workflow maturity.
+- Internal request/document/task/overview loop is now complete at strong prototype level.
+- Company News is the second major Announcements mode from the original product vision.
+- Notifications/emails should wait until communication states are mature and less noisy.
+- Parent-facing announcements should follow after staff-facing Company News patterns are shaped.

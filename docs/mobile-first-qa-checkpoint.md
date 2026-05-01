@@ -88,6 +88,10 @@ Scope note:
   - no Company News pop-up behavior yet,
   - no parent-facing announcements/events yet,
   - no live chat/notification behavior in this phase.
+- Environment validation note:
+  - build/lint/typecheck passed in the latest completion overview UI milestone,
+  - announcement smoke scripts completed with DNS `ENOTFOUND` CHECK skips in this environment,
+  - rerun announcement smoke scripts when Supabase DNS/network is stable.
 
 ### `Dashboard`
 

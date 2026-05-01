@@ -490,17 +490,21 @@ Current status note:
   - `npm run test:supabase:announcements:phase1` PASS with optional cross-branch CHECK when fixture var is missing,
   - `npm run test:supabase:announcements:attachments` PASS with expected diagnostic CHECK lines.
 - Recommended immediate next milestone is now:
-  - **Completion overview UI shell** for HQ/supervisor (read service + smoke are now in place).
+  - **Company News warm pop-up planning** (completion overview read + UI checkpoint is now documented).
 - Completion overview read-service checkpoint is now added:
   - `src/services/supabaseReadService.js` includes `listAnnouncementCompletionOverview({ announcementId, branchId, includeCompleted })`,
   - `scripts/supabase-announcements-completion-overview-smoke-test.mjs` now validates HQ/supervisor reads plus teacher/parent/student manager-overview block-or-empty behavior,
-  - no completion overview UI wiring yet, no SQL/RLS changes, and no notifications/emails in this slice.
+  - no SQL/RLS changes, and no notifications/emails in this slice.
 - Completion overview UI checkpoint is now added:
   - `src/pages/Announcements.jsx` now renders read-only manager `Completion Overview` for HQ/supervisor only,
   - authenticated non-demo mode reads use existing `listAnnouncementCompletionOverview({ announcementId })`,
   - demo mode keeps local-only fake overview rows for HQ/supervisor and no Supabase reads for that block,
   - teacher manager overview remains hidden in demo and authenticated paths,
   - no SQL/RLS changes, no new services, no reminder/email manager actions, and no notification side effects in this slice.
+- UI milestone validation note:
+  - build/lint/typecheck PASS,
+  - announcement smoke scripts completed with DNS `ENOTFOUND` CHECK skips in this environment,
+  - rerun smoke scripts when Supabase DNS/network is stable.
 - MyTasks UI integration checkpoint is **completed** for Announcements (see `docs/announcements-mytasks-ui-checkpoint.md`):
   - `src/pages/MyTasks.jsx` renders read-only `Announcement Requests` cards from `listMyAnnouncementTasks({ includeDone: true })` in authenticated staff mode,
   - demo mode remains local-only with fake announcement task cards and no Supabase calls for that block,
@@ -527,7 +531,7 @@ Branch:
 cursor/safe-lint-typecheck-486d
 
 Latest expected commit:
-Document Announcements completion overview read service
+Document Announcements completion overview UI
 
 Before doing anything, verify:
 - git branch --show-current
@@ -535,7 +539,7 @@ Before doing anything, verify:
 - git status --short
 
 Task:
-Announcements completion reminder/notification planning only.
+Company News warm pop-up planning only.
 
 Hard constraints:
 - Docs/planning only.
@@ -547,14 +551,14 @@ Hard constraints:
 - Do not expose env values or passwords.
 - Do not call real AI APIs; do not add provider keys.
 - Do not auto-send emails or notifications.
-- Do not add Company News pop-up or parent-facing announcements/events.
+- Do not add parent-facing announcements/events.
 - Do not enable parent_facing_media.
 - Preserve demoRole and local/demo fallback.
 - Use fake/dev data only in demo paths and smoke fixtures.
 - No storage_path, staff_note, or raw SQL/RLS/env strings in UI.
 
 Deliverables:
-1) Reminder/notification product shape and role matrix for completion workflows.
+1) Company News warm pop-up product shape (timing, dismiss, role scope, non-goals).
 2) Safety/non-goal boundaries: no auto-send, no parent/student manager visibility.
 3) Phased rollout recommendation after read-only completion overview UI.
 4) Update relevant docs/checkpoints only.
