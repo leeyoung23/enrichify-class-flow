@@ -3,6 +3,31 @@
 Date: 2026-05-02  
 Scope: planning-only blueprint for AI-assisted parent progress reports before provider integration
 
+## Checkpoint update (AI parent report SQL/RLS foundation drafted)
+
+- Manual/dev-first SQL draft is now added:
+  - `supabase/sql/030_ai_parent_reports_foundation.sql`
+- `030` status:
+  - draft-only,
+  - not auto-applied,
+  - no production apply assumption.
+- Drafted core entities:
+  - `ai_parent_reports`
+  - `ai_parent_report_versions`
+  - `ai_parent_report_evidence_links`
+  - `ai_parent_report_release_events`
+- Drafted safety boundaries:
+  - parent access is released-only + linked-child scoped,
+  - AI drafts are staff-only,
+  - no service-role frontend usage,
+  - no auto-release behavior.
+- Deferred in this milestone:
+  - `ai_parent_report_pdf_exports`
+  - `ai_parent_report_templates`
+  - mock AI report draft service
+  - real provider integration
+  - report UI and PDF/export implementation.
+
 ## 1) Current state
 
 - Communication module is now a strong internal prototype with staff + parent-facing communication surfaces.

@@ -3,6 +3,31 @@
 Date: 2026-05-02  
 Scope: planning/review only for safest SQL/RLS data model before implementation
 
+## Checkpoint update (030 SQL/RLS foundation drafted)
+
+- Manual/dev-first SQL draft is now added:
+  - `supabase/sql/030_ai_parent_reports_foundation.sql`
+- `030` posture:
+  - draft-only,
+  - not auto-applied,
+  - no production apply assumption,
+  - fake/dev data posture only.
+- Draft includes:
+  - core report/version/evidence/release-event tables,
+  - status lifecycle constraints,
+  - updated_at trigger on `ai_parent_reports`,
+  - SECURITY DEFINER helper functions,
+  - RLS policy draft for HQ/supervisor/teacher/parent boundaries.
+- Parent boundary in draft:
+  - report select: released-only + linked child,
+  - version select: released current-version only,
+  - evidence links and release events remain staff-only in MVP draft.
+- Deferred remains unchanged:
+  - `ai_parent_report_pdf_exports`,
+  - `ai_parent_report_templates`,
+  - mock/real provider wiring,
+  - report UI/PDF runtime implementation.
+
 ## 1) Current state
 
 - AI parent report blueprint exists (`docs/ai-parent-report-blueprint-plan.md`).

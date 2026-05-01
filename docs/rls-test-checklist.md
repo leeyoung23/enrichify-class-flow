@@ -1,5 +1,34 @@
 # RLS Test Checklist
 
+## Checkpoint update (AI parent report SQL/RLS draft added - 030)
+
+- Draft patch reference:
+  - `supabase/sql/030_ai_parent_reports_foundation.sql` (manual/dev-first, review-first only; not auto-applied)
+- `030` draft scope:
+  - `ai_parent_reports`
+  - `ai_parent_report_versions`
+  - `ai_parent_report_evidence_links`
+  - `ai_parent_report_release_events`
+- `030` draft role intent:
+  - HQ: global manage/select
+  - branch supervisor: own-branch manage/select
+  - teacher: assigned/class-scoped draft/review manage
+  - parent: released-only linked-child read
+  - student: blocked in MVP
+- Parent visibility intent in draft:
+  - reports: `status = 'released'` + linked child only
+  - versions: released current-version only
+  - evidence links/release events: staff-only in MVP
+- Security boundary intent:
+  - AI drafts are staff-only
+  - no auto-release
+  - no provider key in frontend
+  - no mock/real provider wiring in this SQL milestone
+- Deferred in this phase:
+  - `ai_parent_report_pdf_exports`
+  - `ai_parent_report_templates`
+  - report UI/service wiring and PDF/export implementation
+
 ## Checkpoint update (final communication-module QA consolidation)
 
 - Final communication-module QA checkpoint now exists:

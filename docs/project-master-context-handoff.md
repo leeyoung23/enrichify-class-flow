@@ -1,5 +1,37 @@
 # Project Master Context Handoff
 
+## Checkpoint update (AI parent report SQL/RLS foundation draft added)
+
+- New manual/dev-first SQL draft now exists:
+  - `supabase/sql/030_ai_parent_reports_foundation.sql`
+- `030` status:
+  - draft-only,
+  - not auto-applied,
+  - no production apply assumption,
+  - no runtime/UI/service changes in this checkpoint.
+- `030` drafted entities:
+  - `ai_parent_reports`
+  - `ai_parent_report_versions`
+  - `ai_parent_report_evidence_links`
+  - `ai_parent_report_release_events`
+- `030` drafted role/RLS intent:
+  - HQ global manage/select,
+  - branch supervisor own-branch manage/select,
+  - teacher assigned/class-scoped draft/review manage,
+  - parent released-only linked-child read,
+  - student blocked in MVP.
+- `030` drafted privacy boundaries:
+  - AI drafts staff-only,
+  - parent cannot read draft versions/raw AI notes,
+  - no service-role frontend usage,
+  - no auto-release behavior.
+- Deferred remains explicit:
+  - `ai_parent_report_pdf_exports`,
+  - `ai_parent_report_templates`,
+  - mock AI report draft service,
+  - real provider integration,
+  - report UI and PDF/export implementation.
+
 ## Checkpoint update (final announcements/parent communication QA documented)
 
 - Final communication-module QA checkpoint is now documented:
