@@ -1,5 +1,25 @@
 # Project Master Context Handoff
 
+## Checkpoint update (parent-facing text-only creation UI wired)
+
+- Staff-side parent-facing creation shell is now wired in `src/pages/Announcements.jsx` as `Parent Notices`.
+- Existing parent-facing services are now used in UI wiring for this path:
+  - `listParentAnnouncements(...)`
+  - `createParentAnnouncement(...)`
+  - `publishParentAnnouncement(...)`
+  - `archiveParentAnnouncement(...)`
+- Role behavior in this milestone:
+  - HQ/admin and branch supervisor create/publish/archive where RLS allows,
+  - teacher remains view-only,
+  - parent/student remain blocked from staff route.
+- Boundaries preserved:
+  - ParentView remains read-only,
+  - no parent media upload/release UI,
+  - no SQL/RLS changes,
+  - no notifications/emails/live chat.
+- Canonical checkpoint:
+  - `docs/parent-facing-creation-ui-checkpoint.md`
+
 ## Checkpoint update (ParentView announcements/events UI checkpoint documented)
 
 - ParentView `Announcements & Events` UI shell milestone is now documented as complete.

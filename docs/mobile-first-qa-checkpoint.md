@@ -1,5 +1,19 @@
 # Mobile-first QA checkpoint
 
+## Checkpoint update (Parent Notices creation shell)
+
+- `Announcements` now includes a distinct staff-side `Parent Notices` mode for text-only parent-facing creation.
+- Add mobile QA checks for this new shell at ~390px and ~768px:
+  - create form field stacking and readability,
+  - preview panel readability and badge wrapping,
+  - save draft / create & publish / cancel button wrapping,
+  - archive button visibility for HQ/supervisor only,
+  - teacher view-only copy clarity.
+- Parent notices boundaries in this milestone:
+  - no parent media upload/release UI,
+  - no notifications/emails/live chat,
+  - no ParentView admin controls.
+
 ## Checkpoint update (ParentView announcements/events UI checkpoint documented)
 
 - ParentView `Announcements & Events` UI shell milestone is now documented as complete.

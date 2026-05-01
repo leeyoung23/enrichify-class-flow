@@ -1,5 +1,22 @@
 # Parent-facing Announcements Service + Smoke Checkpoint
 
+## Checkpoint update (text-only parent creation UI wired)
+
+- Staff-side `Parent Notices` create shell/wiring is now implemented in `src/pages/Announcements.jsx` using existing parent-facing services:
+  - `createParentAnnouncement(...)`
+  - `publishParentAnnouncement(...)`
+  - `archiveParentAnnouncement(...)`
+  - `listParentAnnouncements(...)`
+- MVP role behavior in UI:
+  - HQ/admin + branch supervisor create/publish/archive (RLS-governed),
+  - teacher view-only,
+  - parent/student remain blocked from staff route.
+- Creation is text-only in this milestone; media upload/release UI remains future.
+- No SQL/RLS changes in this checkpoint update.
+- No notifications/emails/live chat behavior added.
+- Canonical creation UI checkpoint:
+  - `docs/parent-facing-creation-ui-checkpoint.md`
+
 ## Checkpoint update (ParentView announcements/events UI checkpoint documented)
 
 - ParentView `Announcements & Events` UI shell milestone is now documented as complete.

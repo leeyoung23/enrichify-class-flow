@@ -1,5 +1,17 @@
 # ParentView Announcements and Events UI Checkpoint
 
+## Checkpoint update (staff-side parent notice creation wired)
+
+- Parent-facing text-only creation UI is now wired in staff `Announcements` under `Parent Notices`.
+- ParentView remains read-only and parent-safe:
+  - no create/publish/archive controls in ParentView,
+  - no parent media upload UI in ParentView.
+- Staff-side parent notice flow now supports draft/publish/archive for allowed roles.
+- No SQL/RLS changes in this checkpoint update.
+- No notification/email/live chat behavior added.
+- Canonical creation checkpoint:
+  - `docs/parent-facing-creation-ui-checkpoint.md`
+
 Date: 2026-05-02  
 Scope: ParentView `Announcements & Events` UI shell with demo parity only
 

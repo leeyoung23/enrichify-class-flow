@@ -1,5 +1,25 @@
 # Parent-facing Announcements and Events Plan
 
+## Checkpoint update (text-only creation UI wired in staff Announcements)
+
+- Parent-facing text-only creation mode is now wired as `Parent Notices` inside staff `Announcements`.
+- This follows placement recommendation A from this plan.
+- Current wired behavior:
+  - parent-friendly preview before submit,
+  - save draft,
+  - create then publish,
+  - archive action for HQ/supervisor where allowed.
+- MVP role behavior remains aligned:
+  - HQ/admin and branch supervisor create path,
+  - teacher view-only,
+  - parent/student no staff-route creation access.
+- Boundaries unchanged:
+  - no parent media upload/release UI in this milestone,
+  - no SQL/RLS changes,
+  - no notifications/emails/live chat.
+- Canonical checkpoint:
+  - `docs/parent-facing-creation-ui-checkpoint.md`
+
 ## Checkpoint update (ParentView announcements/events UI checkpoint documented)
 
 - ParentView `Announcements & Events` UI shell milestone is now documented as complete.

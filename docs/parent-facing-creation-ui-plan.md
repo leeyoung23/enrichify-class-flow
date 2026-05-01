@@ -1,5 +1,25 @@
 # Parent-facing Creation UI Plan
 
+## Checkpoint update (text-only creation UI wired)
+
+- Parent-facing text-only creation UI is now wired in staff `Announcements` as `Parent Notices`.
+- Placement remains staff-side only; ParentView remains read-only parent surface.
+- Role behavior in MVP:
+  - HQ/admin + branch supervisor can create/publish/archive where RLS allows,
+  - teacher is view-only,
+  - parent/student remain blocked from staff route.
+- Flow now wired:
+  - save draft,
+  - create then publish,
+  - archive action for manager roles.
+- Parent-friendly preview panel is now present before submit.
+- Boundaries preserved:
+  - no parent media upload/release UI in this milestone,
+  - no SQL/RLS changes,
+  - no notifications/emails/live chat.
+- Canonical implementation checkpoint:
+  - `docs/parent-facing-creation-ui-checkpoint.md`
+
 Date: 2026-05-02  
 Scope: planning-only checkpoint for safe staff/HQ/supervisor creation workflow before implementation
 

@@ -22,6 +22,7 @@ import {
   listAnnouncementReplies,
   listAnnouncementStatuses,
   listAnnouncementTargets,
+  listParentAnnouncements,
 } from '@/services/supabaseReadService';
 import {
   getAnnouncementAttachmentSignedUrl,
@@ -29,15 +30,29 @@ import {
   uploadAnnouncementAttachment,
 } from '@/services/supabaseUploadService';
 import {
+  archiveParentAnnouncement,
   createCompanyNews,
+  createParentAnnouncement,
   createAnnouncementReply,
   createAnnouncementRequest,
   markAnnouncementRead,
+  publishParentAnnouncement,
   publishCompanyNews,
   updateAnnouncementDoneStatus,
 } from '@/services/supabaseWriteService';
 
-const FILTERS = ['Requests', 'Company News', 'Done', 'Pending'];
+const FILTERS = ['Requests', 'Parent Notices', 'Company News', 'Done', 'Pending'];
+const PARENT_NOTICE_TYPE_OPTIONS = [
+  { value: 'event', label: 'Event' },
+  { value: 'activity', label: 'Activity' },
+  { value: 'centre_notice', label: 'Centre notice' },
+  { value: 'holiday_closure', label: 'Holiday closure' },
+  { value: 'reminder', label: 'Reminder' },
+  { value: 'celebration', label: 'Celebration' },
+  { value: 'programme_update', label: 'Programme update' },
+  { value: 'parent_workshop', label: 'Parent workshop' },
+  { value: 'graduation_concert', label: 'Graduation concert' },
+];
 const ANNOUNCEMENT_ATTACHMENT_ROLE_OPTIONS = [
   { value: 'hq_attachment', label: 'HQ Attachment' },
   { value: 'supervisor_attachment', label: 'Supervisor Attachment' },
@@ -188,6 +203,47 @@ const DEMO_ANNOUNCEMENTS = [
     audienceLabel: 'Internal staff',
     visibleTo: [ROLES.HQ_ADMIN, ROLES.BRANCH_SUPERVISOR, ROLES.TEACHER],
     replies: [],
+  },
+];
+
+const DEMO_PARENT_NOTICES = [
+  {
+    id: 'demo-parent-notice-1',
+    type: 'parent_notice',
+    title: 'North Branch Family Workshop',
+    subtitle: 'Reading confidence support session',
+    body: 'Families are invited to a short reading workshop this Friday. Please arrive 10 minutes early for registration.',
+    status: 'published',
+    branchLabel: 'Demo North Branch',
+    targetLabel: 'Branch parents',
+    priority: 'normal',
+    announcementType: 'parent_workshop',
+    eventStartAt: '2026-05-10T15:00:00.000Z',
+    eventEndAt: '2026-05-10T16:00:00.000Z',
+    location: 'North Branch Hall',
+    publishedAt: '2026-05-02T08:00:00.000Z',
+    createdAt: '2026-05-01T14:00:00.000Z',
+    audienceSummary: 'Branch target',
+    visibleTo: [ROLES.HQ_ADMIN, ROLES.BRANCH_SUPERVISOR, ROLES.TEACHER],
+  },
+  {
+    id: 'demo-parent-notice-2',
+    type: 'parent_notice',
+    title: 'Class 1A Activity Reminder',
+    subtitle: 'Bring hat and water bottle',
+    body: 'Outdoor activity is scheduled for Tuesday morning. Please prepare comfortable shoes, hat, and water bottle.',
+    status: 'draft',
+    branchLabel: 'Demo North Branch',
+    targetLabel: 'Class target',
+    priority: 'normal',
+    announcementType: 'activity',
+    eventStartAt: '2026-05-12T09:00:00.000Z',
+    eventEndAt: '2026-05-12T10:00:00.000Z',
+    location: 'School Garden Area',
+    publishedAt: null,
+    createdAt: '2026-05-01T16:00:00.000Z',
+    audienceSummary: 'Class target',
+    visibleTo: [ROLES.HQ_ADMIN, ROLES.BRANCH_SUPERVISOR, ROLES.TEACHER],
   },
 ];
 
@@ -400,6 +456,12 @@ function formatDateTime(value) {
   return parsed.toLocaleString();
 }
 
+function formatParentNoticeType(type) {
+  const normalized = String(type || '').trim();
+  if (!normalized) return 'Parent notice';
+  return normalized.replace(/_/g, ' ');
+}
+
 function roleLabel(value) {
   if (!value) return 'Staff';
   if (value === 'hq_admin') return 'HQ Admin';
@@ -464,6 +526,22 @@ export default function Announcements() {
   const [uploadFile, setUploadFile] = useState(null);
   const [demoUploadName, setDemoUploadName] = useState('');
   const [companyNewsCreateOpen, setCompanyNewsCreateOpen] = useState(false);
+  const [parentNoticeCreateOpen, setParentNoticeCreateOpen] = useState(false);
+  const [parentNoticeRows, setParentNoticeRows] = useState(() => DEMO_PARENT_NOTICES);
+  const [parentNoticeForm, setParentNoticeForm] = useState({
+    title: '',
+    subtitle: '',
+    body: '',
+    announcementType: 'event',
+    branchId: '',
+    classId: '',
+    targetType: 'branch',
+    targetBranchId: '',
+    targetClassId: '',
+    eventStartAt: '',
+    eventEndAt: '',
+    location: '',
+  });
   const [companyNewsForm, setCompanyNewsForm] = useState({
     title: '',
     subtitle: '',
@@ -509,6 +587,16 @@ export default function Announcements() {
     },
   });
 
+  const parentAnnouncementsQuery = useQuery({
+    queryKey: ['announcements-parent-facing', supabaseAppUser?.id, role],
+    enabled: canUseSupabaseAnnouncements,
+    queryFn: async () => {
+      const result = await listParentAnnouncements({ includeArchived: true });
+      if (result.error) throw new Error('Unable to load parent notices right now.');
+      return Array.isArray(result.data) ? result.data : [];
+    },
+  });
+
   const authenticatedRows = useMemo(() => {
     if (!canUseSupabaseAnnouncements) return [];
     return (announcementsQuery.data || []).map((row) => {
@@ -540,15 +628,39 @@ export default function Announcements() {
     });
   }, [canUseSupabaseAnnouncements, announcementsQuery.data]);
 
+  const authenticatedParentNoticeRows = useMemo(() => {
+    if (!canUseSupabaseAnnouncements) return [];
+    return (parentAnnouncementsQuery.data || []).map((row) => ({
+      id: row.id,
+      type: 'parent_notice',
+      title: row.title || 'Untitled parent notice',
+      subtitle: row.subtitle || '',
+      body: row.body || '',
+      status: row.status || 'draft',
+      branchLabel: row.branchId ? `Branch ${String(row.branchId).slice(0, 8)}` : 'Global',
+      targetLabel: row.classId ? 'Class target' : 'Branch target',
+      priority: 'normal',
+      announcementType: row.announcementType || 'event',
+      eventStartAt: row.eventStartAt || null,
+      eventEndAt: row.eventEndAt || null,
+      location: row.location || '',
+      publishedAt: row.publishedAt || null,
+      createdAt: row.createdAt || null,
+      audienceSummary: row.classId ? 'Class target' : 'Branch target',
+      visibleTo: [ROLES.HQ_ADMIN, ROLES.BRANCH_SUPERVISOR, ROLES.TEACHER],
+    }));
+  }, [canUseSupabaseAnnouncements, parentAnnouncementsQuery.data]);
+
   const visibleRows = useMemo(() => {
-    const sourceRows = isDemoMode ? rows : authenticatedRows;
+    const sourceRows = isDemoMode ? [...rows, ...parentNoticeRows] : [...authenticatedRows, ...authenticatedParentNoticeRows];
     const scoped = sourceRows.filter((row) => row.visibleTo.includes(role));
     if (activeFilter === 'Requests') return scoped.filter((row) => row.type === 'request');
+    if (activeFilter === 'Parent Notices') return scoped.filter((row) => row.type === 'parent_notice');
     if (activeFilter === 'Company News') return scoped.filter((row) => row.type === 'company_news');
     if (activeFilter === 'Done') return scoped.filter((row) => row.status === 'done');
     if (activeFilter === 'Pending') return scoped.filter((row) => row.status === 'pending' || row.status === 'undone');
     return scoped;
-  }, [activeFilter, rows, role, isDemoMode, authenticatedRows]);
+  }, [activeFilter, rows, role, isDemoMode, authenticatedRows, parentNoticeRows, authenticatedParentNoticeRows]);
 
   const selected = useMemo(
     () => visibleRows.find((row) => row.id === selectedId) || visibleRows[0] || null,
@@ -901,6 +1013,125 @@ export default function Announcements() {
     },
   });
 
+  const parentNoticeCreateMutation = useMutation({
+    mutationFn: async ({ shouldPublish = false } = {}) => {
+      if (!canCreateInAuth) {
+        throw new Error('Only HQ and branch supervisor can create parent notices.');
+      }
+      if (!parentNoticeForm.title.trim()) {
+        throw new Error('Title is required.');
+      }
+      if (!parentNoticeForm.body.trim()) {
+        throw new Error('Body is required.');
+      }
+
+      const targets = [];
+      if (parentNoticeForm.targetType === 'branch' && parentNoticeForm.targetBranchId.trim()) {
+        targets.push({ targetType: 'branch', branchId: parentNoticeForm.targetBranchId.trim() });
+      }
+      if (parentNoticeForm.targetType === 'class' && parentNoticeForm.targetClassId.trim()) {
+        targets.push({ targetType: 'class', classId: parentNoticeForm.targetClassId.trim() });
+      }
+
+      const createResult = await createParentAnnouncement({
+        title: parentNoticeForm.title.trim(),
+        subtitle: parentNoticeForm.subtitle.trim() || undefined,
+        body: parentNoticeForm.body.trim(),
+        announcementType: parentNoticeForm.announcementType,
+        branchId: parentNoticeForm.branchId.trim() || undefined,
+        classId: parentNoticeForm.classId.trim() || undefined,
+        eventStartAt: parentNoticeForm.eventStartAt || undefined,
+        eventEndAt: parentNoticeForm.eventEndAt || undefined,
+        location: parentNoticeForm.location.trim() || undefined,
+        targets,
+      });
+
+      if (createResult.error || !createResult.data?.announcement?.id) {
+        throw new Error('Unable to save parent notice draft right now.');
+      }
+
+      if (!shouldPublish) {
+        return {
+          parentAnnouncementId: createResult.data.announcement.id,
+          published: false,
+        };
+      }
+
+      if (targets.length === 0) {
+        throw new Error('Add at least one parent target before publishing.');
+      }
+
+      const publishResult = await publishParentAnnouncement({
+        parentAnnouncementId: createResult.data.announcement.id,
+      });
+      if (publishResult.error) {
+        throw new Error('Draft saved, but publish is unavailable right now.');
+      }
+
+      return {
+        parentAnnouncementId: createResult.data.announcement.id,
+        published: true,
+      };
+    },
+    onSuccess: async (result) => {
+      setParentNoticeCreateOpen(false);
+      setParentNoticeForm({
+        title: '',
+        subtitle: '',
+        body: '',
+        announcementType: 'event',
+        branchId: '',
+        classId: '',
+        targetType: 'branch',
+        targetBranchId: '',
+        targetClassId: '',
+        eventStartAt: '',
+        eventEndAt: '',
+        location: '',
+      });
+      setActiveFilter('Parent Notices');
+      if (result?.parentAnnouncementId) {
+        setSelectedId(result.parentAnnouncementId);
+      }
+      toast.success(result?.published ? 'Parent notice published.' : 'Parent notice draft saved.');
+      await queryClient.invalidateQueries({ queryKey: ['announcements-parent-facing'] });
+    },
+    onError: (error) => {
+      const message = String(error?.message || '');
+      if (message.includes('Title is required')) {
+        toast.error('Title is required.');
+        return;
+      }
+      if (message.includes('Body is required')) {
+        toast.error('Body is required.');
+        return;
+      }
+      if (message.includes('at least one parent target')) {
+        toast.error('Add branch or class target before publishing.');
+        return;
+      }
+      if (message.includes('Draft saved, but publish is unavailable')) {
+        toast.error('Draft saved, but publish is unavailable right now.');
+        return;
+      }
+      toast.error('Parent notice save is unavailable right now.');
+    },
+  });
+
+  const parentNoticeArchiveMutation = useMutation({
+    mutationFn: async () => {
+      if (!selected?.id) throw new Error('Select a parent notice first.');
+      const result = await archiveParentAnnouncement({ parentAnnouncementId: selected.id });
+      if (result.error) throw new Error('Unable to archive parent notice right now.');
+      return result.data;
+    },
+    onSuccess: async () => {
+      toast.success('Parent notice archived.');
+      await queryClient.invalidateQueries({ queryKey: ['announcements-parent-facing'] });
+    },
+    onError: () => toast.error('Unable to archive parent notice right now.'),
+  });
+
   const onDemoCreate = () => {
     if (!createForm.title.trim()) return;
     const created = {
@@ -986,6 +1217,60 @@ export default function Announcements() {
     toast.success('Demo Company News saved locally.');
   };
 
+  const onDemoCreateParentNotice = ({ shouldPublish = false } = {}) => {
+    if (!canCreateInDemo) return;
+    if (!parentNoticeForm.title.trim() || !parentNoticeForm.body.trim()) return;
+
+    const created = {
+      id: `demo-parent-notice-created-${Date.now()}`,
+      type: 'parent_notice',
+      title: parentNoticeForm.title.trim(),
+      subtitle: parentNoticeForm.subtitle.trim() || '',
+      body: parentNoticeForm.body.trim(),
+      status: shouldPublish ? 'published' : 'draft',
+      branchLabel: parentNoticeForm.branchId.trim()
+        ? `Branch ${parentNoticeForm.branchId.trim().slice(0, 8)}`
+        : (role === ROLES.HQ_ADMIN ? 'Global' : 'Demo North Branch'),
+      targetLabel: parentNoticeForm.targetType === 'class' ? 'Class target' : 'Branch target',
+      priority: 'normal',
+      announcementType: parentNoticeForm.announcementType,
+      eventStartAt: parentNoticeForm.eventStartAt || null,
+      eventEndAt: parentNoticeForm.eventEndAt || null,
+      location: parentNoticeForm.location.trim() || '',
+      publishedAt: shouldPublish ? new Date().toISOString() : null,
+      createdAt: new Date().toISOString(),
+      audienceSummary: parentNoticeForm.targetType === 'class' ? 'Class target' : 'Branch target',
+      visibleTo: [ROLES.HQ_ADMIN, ROLES.BRANCH_SUPERVISOR, ROLES.TEACHER],
+    };
+    setParentNoticeRows((prev) => [created, ...prev]);
+    setSelectedId(created.id);
+    setParentNoticeCreateOpen(false);
+    setParentNoticeForm({
+      title: '',
+      subtitle: '',
+      body: '',
+      announcementType: 'event',
+      branchId: '',
+      classId: '',
+      targetType: 'branch',
+      targetBranchId: '',
+      targetClassId: '',
+      eventStartAt: '',
+      eventEndAt: '',
+      location: '',
+    });
+    setActiveFilter('Parent Notices');
+    toast.success(shouldPublish ? 'Demo parent notice published locally.' : 'Demo parent notice draft saved locally.');
+  };
+
+  const onDemoArchiveParentNotice = () => {
+    if (!selected?.id) return;
+    setParentNoticeRows((prev) => prev.map((row) => (
+      row.id === selected.id ? { ...row, status: 'archived' } : row
+    )));
+    toast.success('Demo parent notice archived locally.');
+  };
+
   const onDemoUploadAttachment = () => {
     if (!selected?.id) return;
     if (!allowedAttachmentRoles.includes(uploadRole)) return;
@@ -1033,7 +1318,13 @@ export default function Announcements() {
       <PageHeader
         title="Announcements"
         description="Internal requests, reminders, and company updates"
-        action={activeFilter === 'Company News'
+        action={activeFilter === 'Parent Notices'
+          ? (((isDemoMode && canCreateInDemo) || (!isDemoMode && canCreateInAuth)) ? (
+            <Button className="min-h-10" onClick={() => setParentNoticeCreateOpen((prev) => !prev)}>
+              Create Parent Notice
+            </Button>
+          ) : null)
+          : (activeFilter === 'Company News'
           ? (
             isDemoMode
               ? (
@@ -1055,7 +1346,7 @@ export default function Announcements() {
             <Button className="min-h-10" onClick={() => setCreateOpen((prev) => !prev)}>
               Create Request
             </Button>
-          ) : null)}
+          ) : null))}
       />
 
       {!isDemoMode && !canUseSupabaseAnnouncements ? (
@@ -1064,7 +1355,7 @@ export default function Announcements() {
         </Card>
       ) : (
         <div className="space-y-4">
-          {activeFilter !== 'Company News' && createOpen && (isDemoMode ? canCreateInDemo : canCreateInAuth) ? (
+          {activeFilter !== 'Company News' && activeFilter !== 'Parent Notices' && createOpen && (isDemoMode ? canCreateInDemo : canCreateInAuth) ? (
             <Card className="p-4 sm:p-5 space-y-3">
               <p className="font-medium">{isDemoMode ? 'Create Request (demo-only local shell)' : 'Create Request'}</p>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -1155,6 +1446,178 @@ export default function Announcements() {
                   {isDemoMode ? 'Save locally' : (createMutation.isPending ? 'Saving...' : 'Save request')}
                 </Button>
                 <Button variant="outline" className="min-h-10" onClick={() => setCreateOpen(false)}>Cancel</Button>
+              </div>
+            </Card>
+          ) : null}
+
+          {activeFilter === 'Parent Notices' && parentNoticeCreateOpen ? (
+            <Card className="p-4 sm:p-5 space-y-3">
+              <p className="font-medium">{isDemoMode ? 'Create Parent Notice (demo-only local shell)' : 'Create Parent Notice'}</p>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div className="space-y-1">
+                  <Label>Title</Label>
+                  <Input
+                    value={parentNoticeForm.title}
+                    onChange={(e) => setParentNoticeForm((p) => ({ ...p, title: e.target.value }))}
+                    placeholder="Required"
+                  />
+                </div>
+                <div className="space-y-1">
+                  <Label>Subtitle</Label>
+                  <Input
+                    value={parentNoticeForm.subtitle}
+                    onChange={(e) => setParentNoticeForm((p) => ({ ...p, subtitle: e.target.value }))}
+                    placeholder="Optional"
+                  />
+                </div>
+                <div className="space-y-1 sm:col-span-2">
+                  <Label>Body</Label>
+                  <Textarea
+                    value={parentNoticeForm.body}
+                    onChange={(e) => setParentNoticeForm((p) => ({ ...p, body: e.target.value }))}
+                    className="min-h-[110px]"
+                    placeholder="Required"
+                  />
+                </div>
+                <div className="space-y-1">
+                  <Label>Type</Label>
+                  <Select
+                    value={parentNoticeForm.announcementType}
+                    onValueChange={(value) => setParentNoticeForm((p) => ({ ...p, announcementType: value }))}
+                  >
+                    <SelectTrigger><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      {PARENT_NOTICE_TYPE_OPTIONS.map((option) => (
+                        <SelectItem key={option.value} value={option.value}>{option.label}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-1">
+                  <Label>Target type</Label>
+                  <Select
+                    value={parentNoticeForm.targetType}
+                    onValueChange={(value) => setParentNoticeForm((p) => ({ ...p, targetType: value }))}
+                  >
+                    <SelectTrigger><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="branch">Branch</SelectItem>
+                      <SelectItem value="class">Class</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-1">
+                  <Label>Branch ID (optional UUID)</Label>
+                  <Input
+                    value={parentNoticeForm.branchId}
+                    onChange={(e) => setParentNoticeForm((p) => ({ ...p, branchId: e.target.value }))}
+                    placeholder="Row branch scope (optional)"
+                  />
+                </div>
+                {parentNoticeForm.targetType === 'branch' ? (
+                  <div className="space-y-1">
+                    <Label>Target Branch ID (UUID)</Label>
+                    <Input
+                      value={parentNoticeForm.targetBranchId}
+                      onChange={(e) => setParentNoticeForm((p) => ({ ...p, targetBranchId: e.target.value }))}
+                      placeholder="Required for branch target publish"
+                    />
+                  </div>
+                ) : (
+                  <div className="space-y-1">
+                    <Label>Target Class ID (UUID)</Label>
+                    <Input
+                      value={parentNoticeForm.targetClassId}
+                      onChange={(e) => setParentNoticeForm((p) => ({ ...p, targetClassId: e.target.value }))}
+                      placeholder="Required for class target publish"
+                    />
+                  </div>
+                )}
+                <div className="space-y-1">
+                  <Label>Class ID (optional row field UUID)</Label>
+                  <Input
+                    value={parentNoticeForm.classId}
+                    onChange={(e) => setParentNoticeForm((p) => ({ ...p, classId: e.target.value }))}
+                    placeholder="Optional class scope"
+                  />
+                </div>
+                <div className="space-y-1">
+                  <Label>Event start (optional)</Label>
+                  <Input
+                    type="datetime-local"
+                    value={parentNoticeForm.eventStartAt}
+                    onChange={(e) => setParentNoticeForm((p) => ({ ...p, eventStartAt: e.target.value }))}
+                  />
+                </div>
+                <div className="space-y-1">
+                  <Label>Event end (optional)</Label>
+                  <Input
+                    type="datetime-local"
+                    value={parentNoticeForm.eventEndAt}
+                    onChange={(e) => setParentNoticeForm((p) => ({ ...p, eventEndAt: e.target.value }))}
+                  />
+                </div>
+                <div className="space-y-1 sm:col-span-2">
+                  <Label>Location (optional)</Label>
+                  <Input
+                    value={parentNoticeForm.location}
+                    onChange={(e) => setParentNoticeForm((p) => ({ ...p, location: e.target.value }))}
+                    placeholder="Optional event location"
+                  />
+                </div>
+              </div>
+
+              <div className="rounded-lg border border-dashed p-3 space-y-2">
+                <p className="text-sm font-medium">Parent-facing preview (pre-submit)</p>
+                <p className="text-xs text-muted-foreground">Preview only. This does not embed ParentView.</p>
+                <div className="rounded-lg border bg-muted/20 p-3 space-y-2">
+                  <div className="flex flex-wrap items-center justify-between gap-2">
+                    <p className="text-sm font-semibold">{parentNoticeForm.title.trim() || 'Untitled parent notice'}</p>
+                    <Badge variant="outline">{formatParentNoticeType(parentNoticeForm.announcementType)}</Badge>
+                  </div>
+                  {parentNoticeForm.subtitle.trim() ? (
+                    <p className="text-xs text-muted-foreground">{parentNoticeForm.subtitle.trim()}</p>
+                  ) : null}
+                  <p className="text-sm">{parentNoticeForm.body.trim() || 'Body preview appears here.'}</p>
+                  <div className="flex flex-wrap gap-2">
+                    <Badge variant="outline">
+                      Audience {parentNoticeForm.targetType === 'class' ? 'Class target' : 'Branch target'}
+                    </Badge>
+                    {parentNoticeForm.eventStartAt ? <Badge variant="outline">Start {formatDateTime(parentNoticeForm.eventStartAt)}</Badge> : null}
+                    {parentNoticeForm.eventEndAt ? <Badge variant="outline">End {formatDateTime(parentNoticeForm.eventEndAt)}</Badge> : null}
+                    {parentNoticeForm.location.trim() ? <Badge variant="outline">Location {parentNoticeForm.location.trim()}</Badge> : null}
+                  </div>
+                </div>
+              </div>
+
+              <div className="flex flex-wrap gap-2">
+                <Button
+                  className="min-h-10"
+                  onClick={() => (isDemoMode
+                    ? onDemoCreateParentNotice({ shouldPublish: false })
+                    : parentNoticeCreateMutation.mutate({ shouldPublish: false }))}
+                  disabled={!isDemoMode && parentNoticeCreateMutation.isPending}
+                >
+                  {!isDemoMode && parentNoticeCreateMutation.isPending ? 'Saving...' : 'Save Draft'}
+                </Button>
+                <Button
+                  className="min-h-10"
+                  variant="outline"
+                  onClick={() => (isDemoMode
+                    ? onDemoCreateParentNotice({ shouldPublish: true })
+                    : parentNoticeCreateMutation.mutate({ shouldPublish: true }))}
+                  disabled={!isDemoMode && parentNoticeCreateMutation.isPending}
+                >
+                  {!isDemoMode && parentNoticeCreateMutation.isPending ? 'Publishing...' : 'Create & Publish'}
+                </Button>
+                <Button
+                  className="min-h-10"
+                  variant="outline"
+                  onClick={() => setParentNoticeCreateOpen(false)}
+                  disabled={!isDemoMode && parentNoticeCreateMutation.isPending}
+                >
+                  Cancel
+                </Button>
               </div>
             </Card>
           ) : null}
@@ -1414,6 +1877,7 @@ export default function Announcements() {
                     setActiveFilter(filter);
                     setCreateOpen(false);
                     setCompanyNewsCreateOpen(false);
+                    setParentNoticeCreateOpen(false);
                   }}
                 >
                   {filter}
@@ -1430,6 +1894,17 @@ export default function Announcements() {
               </div>
               <p className="text-sm text-muted-foreground">
                 News-style Company News cards/details are enabled in this shell milestone. Runtime warm pop-up behavior remains future and is not implemented here.
+              </p>
+            </Card>
+          ) : null}
+          {activeFilter === 'Parent Notices' ? (
+            <Card className="p-4 sm:p-5 border-dashed">
+              <div className="flex items-center gap-2 mb-2">
+                <BellRing className="h-4 w-4 text-muted-foreground" />
+                <p className="font-medium">Parent notices creation shell</p>
+              </div>
+              <p className="text-sm text-muted-foreground">
+                Text-only parent-facing draft/publish/archive flow is enabled here for allowed staff roles. Media upload, media release, and notifications remain out of scope.
               </p>
             </Card>
           ) : null}
@@ -1453,8 +1928,11 @@ export default function Announcements() {
                     <Badge variant="outline">{row.branchLabel}</Badge>
                     {row.type === 'company_news'
                       ? <Badge variant="outline">Published {row.publishDate || 'TBD'}</Badge>
-                      : (row.dueDate ? <Badge variant="outline">Due {row.dueDate}</Badge> : null)}
+                      : (row.type === 'parent_notice'
+                        ? <Badge variant="outline">{formatParentNoticeType(row.announcementType)}</Badge>
+                        : (row.dueDate ? <Badge variant="outline">Due {row.dueDate}</Badge> : null))}
                     {row.type === 'company_news' && row.popupEnabled ? <Badge variant="outline">Pop-up enabled</Badge> : null}
+                    {row.type === 'parent_notice' && row.publishedAt ? <Badge variant="outline">Published {String(row.publishedAt).slice(0, 10)}</Badge> : null}
                   </div>
                   <div className="flex flex-wrap gap-2 mt-2 text-xs text-muted-foreground">
                     {row.type === 'company_news' ? (
@@ -1462,6 +1940,12 @@ export default function Announcements() {
                         <span>{row.templateLabel || 'General news'}</span>
                         {row.emoji ? <span>{row.emoji}</span> : null}
                         <span>{row.toneLabel || 'warm'}</span>
+                      </>
+                    ) : row.type === 'parent_notice' ? (
+                      <>
+                        <span>{row.audienceSummary || row.targetLabel || 'Parent target'}</span>
+                        {row.eventStartAt ? <span>Starts {formatDateTime(row.eventStartAt)}</span> : null}
+                        {row.location ? <span>{row.location}</span> : null}
                       </>
                     ) : (
                       <>
@@ -1485,8 +1969,49 @@ export default function Announcements() {
               {!selected ? (
                 <Card className="p-5">
                   <p className="text-sm text-muted-foreground">
-                    {(!isDemoMode && announcementsQuery.isLoading) ? 'Loading announcements...' : 'No announcements in this filter.'}
+                    {(!isDemoMode && (announcementsQuery.isLoading || parentAnnouncementsQuery.isLoading)) ? 'Loading announcements...' : 'No announcements in this filter.'}
                   </p>
+                </Card>
+              ) : selected.type === 'parent_notice' ? (
+                <Card className="p-4 sm:p-5 space-y-4">
+                  <div className="flex flex-wrap items-center justify-between gap-2">
+                    <p className="font-semibold">{selected.title}</p>
+                    <div className="flex flex-wrap gap-2">
+                      <Badge variant="outline" className={statusTone(selected.status)}>{selected.status}</Badge>
+                      <Badge variant="outline">{formatParentNoticeType(selected.announcementType)}</Badge>
+                    </div>
+                  </div>
+                  <p className="text-sm text-muted-foreground">{selected.subtitle || 'No subtitle'}</p>
+                  <p className="text-sm">{selected.body}</p>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                    <Badge variant="outline">Audience {selected.audienceSummary || selected.targetLabel || 'Parent target'}</Badge>
+                    <Badge variant="outline">Branch {selected.branchLabel || 'Global'}</Badge>
+                    <Badge variant="outline">Start {formatDateTime(selected.eventStartAt)}</Badge>
+                    <Badge variant="outline">End {formatDateTime(selected.eventEndAt)}</Badge>
+                    <Badge variant="outline">Location {selected.location || '—'}</Badge>
+                    <Badge variant="outline">Published {selected.publishedAt ? formatDateTime(selected.publishedAt) : 'Draft only'}</Badge>
+                  </div>
+
+                  {role === ROLES.TEACHER ? (
+                    <p className="text-xs text-muted-foreground">
+                      Teacher role is view-only for parent-facing creation in this milestone.
+                    </p>
+                  ) : null}
+
+                  {(role === ROLES.HQ_ADMIN || role === ROLES.BRANCH_SUPERVISOR) && selected.status !== 'archived' ? (
+                    <div className="flex flex-wrap gap-2">
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="min-h-10"
+                        onClick={() => (isDemoMode ? onDemoArchiveParentNotice() : parentNoticeArchiveMutation.mutate())}
+                        disabled={!isDemoMode && parentNoticeArchiveMutation.isPending}
+                      >
+                        {!isDemoMode && parentNoticeArchiveMutation.isPending ? 'Archiving...' : 'Archive'}
+                      </Button>
+                    </div>
+                  ) : null}
                 </Card>
               ) : selected.type === 'company_news' ? (
                 <Card className="p-4 sm:p-5 space-y-4">
