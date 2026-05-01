@@ -2,6 +2,21 @@
 
 Scope: planning only for Announcements/Internal Communications and Document Hub rollout (no UI/runtime/service/SQL changes in this milestone).
 
+## Checkpoint update (completion overview read service + smoke)
+
+- Manager completion overview read service is now added:
+  - `listAnnouncementCompletionOverview(...)` in `src/services/supabaseReadService.js`.
+- Focused smoke test is now added:
+  - `scripts/supabase-announcements-completion-overview-smoke-test.mjs`
+  - `npm run test:supabase:announcements:completion`
+- Current slice is read-service + smoke only:
+  - no completion overview UI wiring yet,
+  - no SQL/RLS changes,
+  - no notifications/emails,
+  - no parent-facing announcements/events.
+- Companion checkpoint doc:
+  - `docs/announcements-completion-overview-read-service-checkpoint.md`.
+
 ## Checkpoint update (attachments service smoke PASS)
 
 - Announcements attachments service smoke now passes after `025` manual dev apply.

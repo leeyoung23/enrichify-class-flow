@@ -490,9 +490,13 @@ Current status note:
   - `npm run test:supabase:announcements:phase1` PASS with optional cross-branch CHECK when fixture var is missing,
   - `npm run test:supabase:announcements:attachments` PASS with expected diagnostic CHECK lines.
 - Recommended immediate next milestone is now:
-  - **Completion overview helper** for HQ/supervisor (cross-target monitoring; planning first),
+  - **Completion overview UI shell** for HQ/supervisor (read service + smoke are now in place),
   - optional SQL view/RPC optimization only if runtime complexity/performance demands it later,
   - Company News / parent-facing / notifications only after operational visibility is clear.
+- Completion overview read-service checkpoint is now added:
+  - `src/services/supabaseReadService.js` includes `listAnnouncementCompletionOverview({ announcementId, branchId, includeCompleted })`,
+  - `scripts/supabase-announcements-completion-overview-smoke-test.mjs` now validates HQ/supervisor reads plus teacher/parent/student manager-overview block-or-empty behavior,
+  - no completion overview UI wiring yet, no SQL/RLS changes, and no notifications/emails in this slice.
 - MyTasks UI integration checkpoint is **completed** for Announcements (see `docs/announcements-mytasks-ui-checkpoint.md`):
   - `src/pages/MyTasks.jsx` renders read-only `Announcement Requests` cards from `listMyAnnouncementTasks({ includeDone: true })` in authenticated staff mode,
   - demo mode remains local-only with fake announcement task cards and no Supabase calls for that block,

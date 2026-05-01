@@ -85,7 +85,7 @@ Recorded from the UI wiring milestone run:
 
 ## 9) What remains future
 
-- **Completion overview helper** for HQ/supervisor (cross-target / branch monitoring).
+- **Completion overview UI** for HQ/supervisor (service + smoke now exist; manager UI remains future).
 - **Optional SQL view/RPC** optimization only if read patterns outgrow client/service derivation.
 - **Materialized task records** later for reminder / SLA / escalation durability.
 - **Company News** warm pop-up.

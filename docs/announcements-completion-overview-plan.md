@@ -1,7 +1,17 @@
 # Announcements Completion Overview Plan
 
 Date: 2026-05-01  
-Scope: planning/review only for HQ/supervisor completion overview of internal announcement requests (no UI/runtime/service/SQL changes in this milestone)
+Scope: completion overview strategy + read-service checkpoint (no UI/SQL/RLS changes in this milestone)
+
+## Checkpoint update (read service + smoke added)
+
+- Added `listAnnouncementCompletionOverview({ announcementId, branchId, includeCompleted } = {})` in `src/services/supabaseReadService.js`.
+- Added focused smoke script:
+  - `scripts/supabase-announcements-completion-overview-smoke-test.mjs`
+  - `npm run test:supabase:announcements:completion`
+- Current completion-overview milestone remains **service + smoke only** (no UI integration yet).
+- No SQL/RLS changes, no notification/email automation, and no parent-facing announcements/events were added.
+- Detailed checkpoint record: `docs/announcements-completion-overview-read-service-checkpoint.md`.
 
 ## 1) Current state
 

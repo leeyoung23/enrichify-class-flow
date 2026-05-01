@@ -32,6 +32,7 @@
     "test:supabase:announcements:phase1": "node scripts/supabase-announcements-phase1-smoke-test.mjs",
     "test:supabase:announcements:attachments": "node scripts/supabase-announcements-attachments-smoke-test.mjs",
     "test:supabase:announcements:mytasks": "node scripts/supabase-announcements-mytasks-smoke-test.mjs",
+    "test:supabase:announcements:completion": "node scripts/supabase-announcements-completion-overview-smoke-test.mjs",
     "test:supabase:staff-time-clock": "node scripts/supabase-staff-time-clock-smoke-test.mjs",
     "test:supabase:staff-time-clock:review": "node scripts/supabase-staff-time-clock-review-smoke-test.mjs",
     "test:staff-time-clock:helpers": "node scripts/staff-time-clock-browser-helper-smoke-test.mjs",

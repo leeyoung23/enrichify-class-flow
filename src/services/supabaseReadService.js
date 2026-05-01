@@ -824,6 +824,433 @@ function isPastDate(isoDate) {
   return isoDate < todayIso;
 }
 
+function toIsoTimestamp(value) {
+  if (typeof value !== "string") return null;
+  const trimmed = value.trim();
+  if (!trimmed) return null;
+  const parsed = new Date(trimmed);
+  if (Number.isNaN(parsed.getTime())) return null;
+  return parsed.toISOString();
+}
+
+function maxIsoTimestamp(...values) {
+  const normalized = values
+    .map((value) => toIsoTimestamp(value))
+    .filter(Boolean);
+  if (normalized.length === 0) return null;
+  normalized.sort();
+  return normalized[normalized.length - 1];
+}
+
+function isStaffRole(roleValue) {
+  const role = trimString(roleValue);
+  return role === "hq_admin" || role === "branch_supervisor" || role === "teacher";
+}
+
+export async function listAnnouncementCompletionOverview({
+  announcementId,
+  branchId,
+  includeCompleted = true,
+} = {}) {
+  if (!isSupabaseConfigured() || !supabase) {
+    return { data: [], error: { message: "Supabase is not configured" } };
+  }
+  if (announcementId != null && announcementId !== "" && !isUuidLike(announcementId)) {
+    return { data: [], error: { message: "announcementId must be a UUID when provided" } };
+  }
+  if (branchId != null && branchId !== "" && !isUuidLike(branchId)) {
+    return { data: [], error: { message: "branchId must be a UUID when provided" } };
+  }
+
+  try {
+    const authRead = await supabase.auth.getUser();
+    const profileId = authRead?.data?.user?.id || null;
+    if (!isUuidLike(profileId)) {
+      return { data: [], error: { message: "Authenticated user is required" } };
+    }
+
+    const actorProfileRead = await supabase
+      .from("profiles")
+      .select("id,role,branch_id,is_active")
+      .eq("id", profileId)
+      .maybeSingle();
+    if (actorProfileRead.error || !actorProfileRead.data) {
+      return { data: [], error: { message: "Completion overview is temporarily unavailable." } };
+    }
+    const actorRole = trimString(actorProfileRead.data.role);
+    const actorBranchId = isUuidLike(actorProfileRead.data.branch_id)
+      ? trimString(actorProfileRead.data.branch_id)
+      : null;
+    const isHq = actorRole === "hq_admin";
+    const isSupervisor = actorRole === "branch_supervisor";
+    if (!isHq && !isSupervisor) {
+      return { data: [], error: null };
+    }
+
+    let announcementsQuery = supabase
+      .from("announcements")
+      .select(ANNOUNCEMENT_FIELDS)
+      .eq("audience_type", "internal_staff")
+      .eq("status", "published")
+      .order("created_at", { ascending: false });
+
+    if (isUuidLike(announcementId)) {
+      announcementsQuery = announcementsQuery.eq("id", trimString(announcementId));
+    }
+    const normalizedBranchId = isUuidLike(branchId) ? trimString(branchId) : null;
+    if (normalizedBranchId) {
+      announcementsQuery = announcementsQuery.eq("branch_id", normalizedBranchId);
+    }
+    if (isSupervisor && actorBranchId) {
+      announcementsQuery = announcementsQuery.eq("branch_id", actorBranchId);
+    }
+
+    const announcementsRead = await announcementsQuery;
+    if (announcementsRead.error) {
+      return { data: [], error: { message: "Completion overview is temporarily unavailable." } };
+    }
+    const announcements = Array.isArray(announcementsRead.data) ? announcementsRead.data : [];
+    const announcementIds = announcements
+      .map((row) => row?.id)
+      .filter((id) => isUuidLike(id));
+    if (announcementIds.length === 0) {
+      return { data: [], error: null };
+    }
+
+    const [targetsRead, statusesRead, repliesRead, attachmentsRead] = await Promise.all([
+      supabase
+        .from("announcement_targets")
+        .select("announcement_id,target_type,branch_id,target_profile_id,target_role")
+        .in("announcement_id", announcementIds),
+      supabase
+        .from("announcement_statuses")
+        .select("announcement_id,profile_id,read_at,done_status,done_at,undone_reason,updated_at")
+        .in("announcement_id", announcementIds),
+      supabase
+        .from("announcement_replies")
+        .select("announcement_id,profile_id,created_at")
+        .in("announcement_id", announcementIds),
+      supabase
+        .from("announcement_attachments")
+        .select("announcement_id,uploaded_by_profile_id,file_role,created_at")
+        .in("announcement_id", announcementIds),
+    ]);
+
+    if (targetsRead.error || statusesRead.error || repliesRead.error || attachmentsRead.error) {
+      return { data: [], error: { message: "Completion overview is temporarily unavailable." } };
+    }
+
+    const targetRows = Array.isArray(targetsRead.data) ? targetsRead.data : [];
+    const statusRows = Array.isArray(statusesRead.data) ? statusesRead.data : [];
+    const replyRows = Array.isArray(repliesRead.data) ? repliesRead.data : [];
+    const attachmentRows = Array.isArray(attachmentsRead.data) ? attachmentsRead.data : [];
+
+    const candidateProfileIds = new Set();
+    const targetBranchIds = new Set();
+    const targetRoles = new Set();
+
+    for (const row of statusRows) {
+      if (isUuidLike(row?.profile_id)) candidateProfileIds.add(trimString(row.profile_id));
+    }
+    for (const row of replyRows) {
+      if (isUuidLike(row?.profile_id)) candidateProfileIds.add(trimString(row.profile_id));
+    }
+    for (const row of attachmentRows) {
+      if (isUuidLike(row?.uploaded_by_profile_id)) {
+        candidateProfileIds.add(trimString(row.uploaded_by_profile_id));
+      }
+    }
+    for (const row of targetRows) {
+      const targetType = trimString(row?.target_type);
+      if (targetType === "profile" && isUuidLike(row?.target_profile_id)) {
+        candidateProfileIds.add(trimString(row.target_profile_id));
+      }
+      if ((targetType === "branch" || targetType === "class") && isUuidLike(row?.branch_id)) {
+        targetBranchIds.add(trimString(row.branch_id));
+      }
+      if (targetType === "role" && trimString(row?.target_role)) {
+        targetRoles.add(trimString(row.target_role));
+      }
+    }
+
+    let profileRows = [];
+    if (candidateProfileIds.size > 0 || targetBranchIds.size > 0 || targetRoles.size > 0) {
+      let profileQuery = supabase
+        .from("profiles")
+        .select("id,role,branch_id,is_active")
+        .eq("is_active", true);
+      if (candidateProfileIds.size > 0) {
+        profileQuery = profileQuery.in("id", [...candidateProfileIds]);
+      } else {
+        profileQuery = profileQuery.limit(0);
+      }
+      const profileRead = await profileQuery;
+      profileRows = profileRead.error || !Array.isArray(profileRead.data) ? [] : profileRead.data;
+
+      // Pull additional active branch/role scoped profiles when targets need expansion.
+      if (targetBranchIds.size > 0 || targetRoles.size > 0) {
+        let scopedProfileQuery = supabase
+          .from("profiles")
+          .select("id,role,branch_id,is_active")
+          .eq("is_active", true);
+        if (targetBranchIds.size > 0) {
+          scopedProfileQuery = scopedProfileQuery.in("branch_id", [...targetBranchIds]);
+        }
+        if (targetRoles.size > 0) {
+          scopedProfileQuery = scopedProfileQuery.in("role", [...targetRoles]);
+        }
+        const scopedProfileRead = await scopedProfileQuery;
+        if (!scopedProfileRead.error && Array.isArray(scopedProfileRead.data)) {
+          const seen = new Set(profileRows.map((row) => row?.id).filter(Boolean));
+          for (const row of scopedProfileRead.data) {
+            if (!row?.id || seen.has(row.id)) continue;
+            profileRows.push(row);
+            seen.add(row.id);
+          }
+        }
+      }
+    }
+
+    const profileMap = new Map();
+    for (const row of profileRows) {
+      if (!isUuidLike(row?.id)) continue;
+      const normalizedRole = trimString(row?.role);
+      if (!isStaffRole(normalizedRole)) continue;
+      profileMap.set(trimString(row.id), {
+        profileId: trimString(row.id),
+        role: normalizedRole,
+        branchId: isUuidLike(row?.branch_id) ? trimString(row.branch_id) : null,
+      });
+    }
+
+    const branchIds = [...new Set(
+      [
+        ...announcements.map((row) => (isUuidLike(row?.branch_id) ? trimString(row.branch_id) : null)),
+        ...profileRows.map((row) => (isUuidLike(row?.branch_id) ? trimString(row.branch_id) : null)),
+      ].filter(Boolean)
+    )];
+    const branchNameMap = new Map();
+    if (branchIds.length > 0) {
+      const branchRead = await supabase
+        .from("branches")
+        .select("id,name")
+        .in("id", branchIds);
+      if (!branchRead.error && Array.isArray(branchRead.data)) {
+        for (const row of branchRead.data) {
+          if (!isUuidLike(row?.id)) continue;
+          branchNameMap.set(trimString(row.id), trimString(row?.name) || null);
+        }
+      }
+    }
+
+    const targetsByAnnouncementId = new Map();
+    for (const row of targetRows) {
+      if (!isUuidLike(row?.announcement_id)) continue;
+      const key = trimString(row.announcement_id);
+      if (!targetsByAnnouncementId.has(key)) targetsByAnnouncementId.set(key, []);
+      targetsByAnnouncementId.get(key).push(row);
+    }
+
+    const statusesByAnnouncementId = new Map();
+    for (const row of statusRows) {
+      if (!isUuidLike(row?.announcement_id) || !isUuidLike(row?.profile_id)) continue;
+      const key = `${trimString(row.announcement_id)}:${trimString(row.profile_id)}`;
+      statusesByAnnouncementId.set(key, row);
+    }
+
+    const repliesByAnnouncementAndProfile = new Map();
+    const latestReplyByAnnouncementId = new Map();
+    for (const row of replyRows) {
+      if (!isUuidLike(row?.announcement_id) || !isUuidLike(row?.profile_id)) continue;
+      const announcementKey = trimString(row.announcement_id);
+      const profileKey = trimString(row.profile_id);
+      const key = `${announcementKey}:${profileKey}`;
+      const current = repliesByAnnouncementAndProfile.get(key) || { replyCount: 0, latestReplyAt: null };
+      current.replyCount += 1;
+      current.latestReplyAt = maxIsoTimestamp(current.latestReplyAt, row?.created_at);
+      repliesByAnnouncementAndProfile.set(key, current);
+      latestReplyByAnnouncementId.set(
+        announcementKey,
+        maxIsoTimestamp(latestReplyByAnnouncementId.get(announcementKey), row?.created_at)
+      );
+    }
+
+    const attachmentsByAnnouncementAndProfile = new Map();
+    const latestUploadByAnnouncementId = new Map();
+    for (const row of attachmentRows) {
+      if (!isUuidLike(row?.announcement_id) || !isUuidLike(row?.uploaded_by_profile_id)) continue;
+      const announcementKey = trimString(row.announcement_id);
+      const profileKey = trimString(row.uploaded_by_profile_id);
+      const key = `${announcementKey}:${profileKey}`;
+      const current = attachmentsByAnnouncementAndProfile.get(key) || {
+        attachmentCount: 0,
+        responseUploadCount: 0,
+        latestUploadAt: null,
+      };
+      current.attachmentCount += 1;
+      if (trimString(row?.file_role) === "response_upload") current.responseUploadCount += 1;
+      current.latestUploadAt = maxIsoTimestamp(current.latestUploadAt, row?.created_at);
+      attachmentsByAnnouncementAndProfile.set(key, current);
+      latestUploadByAnnouncementId.set(
+        announcementKey,
+        maxIsoTimestamp(latestUploadByAnnouncementId.get(announcementKey), row?.created_at)
+      );
+    }
+
+    const results = [];
+    for (const announcement of announcements) {
+      const annId = trimString(announcement?.id);
+      if (!isUuidLike(annId)) continue;
+
+      const requiresResponse = Boolean(announcement?.requires_response);
+      const requiresUpload = Boolean(announcement?.requires_upload);
+      const dueDate = toIsoDateString(announcement?.due_date);
+      const targetRowsForAnnouncement = targetsByAnnouncementId.get(annId) || [];
+      const targetedProfiles = new Map();
+
+      for (const target of targetRowsForAnnouncement) {
+        const targetType = trimString(target?.target_type);
+        if (targetType === "profile" && isUuidLike(target?.target_profile_id)) {
+          const pid = trimString(target.target_profile_id);
+          const profile = profileMap.get(pid);
+          if (profile) targetedProfiles.set(pid, { profile, targetSource: "profile" });
+        } else if (targetType === "branch" || targetType === "class") {
+          const tid = isUuidLike(target?.branch_id) ? trimString(target.branch_id) : null;
+          for (const profile of profileMap.values()) {
+            if (!tid || profile.branchId !== tid) continue;
+            if (!targetedProfiles.has(profile.profileId)) {
+              targetedProfiles.set(profile.profileId, { profile, targetSource: "branch" });
+            }
+          }
+        } else if (targetType === "role") {
+          const targetRole = trimString(target?.target_role);
+          const targetBranch = isUuidLike(target?.branch_id) ? trimString(target.branch_id) : null;
+          for (const profile of profileMap.values()) {
+            if (profile.role !== targetRole) continue;
+            if (targetBranch && profile.branchId !== targetBranch) continue;
+            if (!targetedProfiles.has(profile.profileId)) {
+              targetedProfiles.set(profile.profileId, { profile, targetSource: "role" });
+            }
+          }
+        }
+      }
+
+      const perPersonRows = [];
+      for (const { profile, targetSource } of targetedProfiles.values()) {
+        const statusKey = `${annId}:${profile.profileId}`;
+        const status = statusesByAnnouncementId.get(statusKey) || null;
+        const doneStatus = ANNOUNCEMENT_DONE_STATUS_VALUES.has(trimString(status?.done_status))
+          ? trimString(status.done_status)
+          : "pending";
+        const readAt = toIsoTimestamp(status?.read_at);
+        const replyState = repliesByAnnouncementAndProfile.get(statusKey) || {
+          replyCount: 0,
+          latestReplyAt: null,
+        };
+        const attachmentState = attachmentsByAnnouncementAndProfile.get(statusKey) || {
+          attachmentCount: 0,
+          responseUploadCount: 0,
+          latestUploadAt: null,
+        };
+        const responseProvided = replyState.replyCount > 0;
+        const uploadProvided = attachmentState.responseUploadCount > 0;
+        const isOverdue = Boolean(dueDate)
+          && isPastDate(dueDate)
+          && (doneStatus !== "done" || (requiresResponse && !responseProvided) || (requiresUpload && !uploadProvided));
+        const lastActivityAt = maxIsoTimestamp(
+          readAt,
+          status?.updated_at,
+          replyState.latestReplyAt,
+          attachmentState.latestUploadAt
+        );
+
+        if (
+          !includeCompleted
+          && doneStatus === "done"
+          && !isOverdue
+          && (!requiresResponse || responseProvided)
+          && (!requiresUpload || uploadProvided)
+        ) {
+          continue;
+        }
+
+        perPersonRows.push({
+          profileId: profile.profileId,
+          staffName: null,
+          role: profile.role,
+          branchId: profile.branchId || null,
+          branchName: profile.branchId ? (branchNameMap.get(profile.branchId) || null) : null,
+          targetSource,
+          readAt,
+          doneStatus,
+          undoneReason: trimString(status?.undone_reason) || null,
+          replyCount: replyState.replyCount,
+          responseProvided,
+          attachmentCount: attachmentState.attachmentCount,
+          uploadProvided,
+          isOverdue,
+          lastActivityAt,
+        });
+      }
+
+      const totalTargeted = perPersonRows.length;
+      const readCount = perPersonRows.filter((row) => Boolean(row.readAt)).length;
+      const unreadCount = totalTargeted - readCount;
+      const doneCount = perPersonRows.filter((row) => row.doneStatus === "done").length;
+      const pendingCount = perPersonRows.filter((row) => row.doneStatus === "pending").length;
+      const undoneCount = perPersonRows.filter((row) => row.doneStatus === "undone").length;
+      const responseRequiredCount = requiresResponse ? totalTargeted : 0;
+      const responseProvidedCount = requiresResponse
+        ? perPersonRows.filter((row) => row.responseProvided).length
+        : 0;
+      const responseMissingCount = requiresResponse
+        ? perPersonRows.filter((row) => !row.responseProvided).length
+        : 0;
+      const uploadRequiredCount = requiresUpload ? totalTargeted : 0;
+      const uploadProvidedCount = requiresUpload
+        ? perPersonRows.filter((row) => row.uploadProvided).length
+        : 0;
+      const uploadMissingCount = requiresUpload
+        ? perPersonRows.filter((row) => !row.uploadProvided).length
+        : 0;
+      const overdueCount = perPersonRows.filter((row) => row.isOverdue).length;
+
+      results.push({
+        announcementId: annId,
+        title: trimString(announcement?.title) || "Untitled announcement",
+        priority: trimString(announcement?.priority) || "normal",
+        branchId: isUuidLike(announcement?.branch_id) ? trimString(announcement.branch_id) : null,
+        branchName: isUuidLike(announcement?.branch_id)
+          ? (branchNameMap.get(trimString(announcement.branch_id)) || null)
+          : null,
+        dueDate,
+        requiresResponse,
+        requiresUpload,
+        totalTargeted,
+        readCount,
+        unreadCount,
+        doneCount,
+        pendingCount,
+        undoneCount,
+        responseRequiredCount,
+        responseProvidedCount,
+        responseMissingCount,
+        uploadRequiredCount,
+        uploadProvidedCount,
+        uploadMissingCount,
+        overdueCount,
+        latestReplyAt: latestReplyByAnnouncementId.get(annId) || null,
+        latestUploadAt: latestUploadByAnnouncementId.get(annId) || null,
+        rows: perPersonRows,
+      });
+    }
+
+    return { data: results, error: null };
+  } catch (_error) {
+    return { data: [], error: { message: "Completion overview is temporarily unavailable." } };
+  }
+}
+
 export async function listMyAnnouncementTasks({ includeDone = false, statusFilter } = {}) {
   if (!isSupabaseConfigured() || !supabase) {
     return { data: [], error: { message: "Supabase is not configured" } };

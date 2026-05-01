@@ -6,6 +6,27 @@ Reminder: **Frontend filtering is not security. RLS must enforce access at datab
 
 ---
 
+## Announcements completion overview read-service checkpoint note (2026-05-01)
+
+- `listAnnouncementCompletionOverview({ announcementId, branchId, includeCompleted })` is now added in `src/services/supabaseReadService.js`.
+- Derived manager overview uses only existing RLS-governed internal staff data:
+  - `announcements`
+  - `announcement_targets`
+  - `announcement_statuses`
+  - `announcement_replies`
+  - `announcement_attachments`
+- No SQL/RLS changes were made for this checkpoint.
+- No completion-overview UI wiring in this checkpoint.
+- No notification/email side effects were added.
+- Smoke script now exists:
+  - `scripts/supabase-announcements-completion-overview-smoke-test.mjs`
+  - `npm run test:supabase:announcements:completion`
+- Expected smoke behavior:
+  - HQ can load manager completion overview and observe read/reply/upload/done evidence counts,
+  - branch supervisor can load own-branch overview,
+  - teacher/parent/student manager-overview paths are blocked-or-empty,
+  - cleanup uses fake/dev fixture rows only.
+
 ## Announcements attachments PASS checkpoint note (2026-05-01)
 
 - `025` (`supabase/sql/025_fix_announcements_attachments_select_returning_rls.sql`) is manually applied in Supabase dev.
