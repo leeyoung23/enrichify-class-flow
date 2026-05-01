@@ -3,6 +3,19 @@
 Date: 2026-05-02  
 Scope: docs-only finalization for ParentView released-report display UI milestone
 
+## Final docs-only alignment update (after staff mock draft UI wiring)
+
+- Staff-side mock draft generation milestone is complete:
+  - `docs/mock-ai-parent-report-draft-ui-final-checkpoint.md`
+- ParentView boundary remains unchanged after staff wiring:
+  - released-only,
+  - current-version-only,
+  - no draft visibility,
+  - no evidence-link exposure,
+  - no provider/debug metadata.
+- No parent auto-release behavior exists:
+  - parent sees content only after explicit staff release lifecycle.
+
 ## 1) Key checkpoint notes
 
 - ParentView `Progress Reports` section is implemented.

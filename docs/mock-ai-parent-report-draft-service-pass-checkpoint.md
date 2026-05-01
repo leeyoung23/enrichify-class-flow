@@ -3,6 +3,21 @@
 Date: 2026-05-02  
 Scope: docs-only final checkpoint for mock AI parent report draft service + smoke pass milestone
 
+## Final docs-only alignment update
+
+- UI wiring milestone is now complete and documented:
+  - `docs/mock-ai-parent-report-draft-ui-final-checkpoint.md`
+- Service + UI alignment remains safe:
+  - authenticated staff uses `generateMockAiParentReportDraft({ reportId, input })`,
+  - demo mode remains local-only mock version simulation.
+- Boundaries remain unchanged:
+  - no real provider/API wiring,
+  - no provider keys,
+  - no auto submit/approve/release,
+  - parent visibility remains explicit release-only.
+- Recommended next milestone is updated to:
+  - **A. Real AI provider-boundary planning** (before any real provider implementation).
+
 ## 1) Key checkpoint notes
 
 - Mock AI draft generator helper is added.
@@ -106,18 +121,18 @@ Fallback copy:
 
 Choose:
 
-- A. Mock AI draft UI button wiring
-- B. Real AI provider integration planning
+- A. Real AI provider-boundary planning
+- B. Real AI provider implementation
 - C. PDF/export planning
 - D. Notification/email planning
 - E. Final AI report manual/mock QA checkpoint
 
-Recommendation: **A complete** in this checkpoint.
+Recommendation: **A first**.
 
 Why:
 
-- `Generate Mock Draft` staff-side UI wiring is now added,
-- service + smoke + UI trigger are aligned,
+- `Generate Mock Draft` mock workflow is now wired and stable,
+- before real AI implementation we must lock provider boundary, prompt contract, schema, data minimization, key storage, logging, and cost controls,
 - release boundary remains explicit and unchanged.
 
 ## 10) UI follow-up update

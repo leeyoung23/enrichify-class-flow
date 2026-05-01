@@ -1,5 +1,20 @@
 # Project Master Context Handoff
 
+## Checkpoint update (mock AI parent report draft UI docs finalization)
+
+- Final docs-only milestone checkpoint added:
+  - `docs/mock-ai-parent-report-draft-ui-final-checkpoint.md`
+- Confirmed boundaries for this milestone:
+  - staff-side `Generate Mock Draft` only,
+  - demo generation remains local-only and does not call Supabase,
+  - authenticated path calls `generateMockAiParentReportDraft({ reportId, input })`,
+  - no real provider/API wiring, no provider keys, no Edge Function,
+  - no PDF/export, no notification/email/live-chat side effects,
+  - no auto submit/approve/release,
+  - ParentView remains released/current-version-only.
+- Recommended next milestone is now:
+  - **A. Real AI provider-boundary planning first** (planning docs only).
+
 ## Checkpoint update (mock AI parent report draft service + smoke)
 
 - Added mock draft helper in service layer:
@@ -22,7 +37,7 @@
 - Final pass checkpoint:
   - `docs/mock-ai-parent-report-draft-service-pass-checkpoint.md`
 - Recommended next milestone:
-  - **A. Mock AI draft UI button wiring** (no real provider, no auto-release).
+  - **A. Real AI provider-boundary planning** (planning only; no real provider implementation yet).
 
 ## Checkpoint update (mock AI parent report draft UI wiring)
 

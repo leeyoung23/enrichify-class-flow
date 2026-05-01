@@ -3,6 +3,20 @@
 Date: 2026-05-02  
 Scope: docs-only final checkpoint for staff AI parent report UI shell milestone
 
+## Final docs-only alignment update (mock draft UI milestone)
+
+- Staff `Generate Mock Draft` wiring is now complete and checkpointed:
+  - `docs/mock-ai-parent-report-draft-ui-final-checkpoint.md`
+- UI shell boundaries remain unchanged:
+  - staff-side workflow only,
+  - no real provider wiring,
+  - no provider keys,
+  - no PDF/export,
+  - no notification/email/live-chat side effects,
+  - no auto-release behavior.
+- ParentView visibility rule remains:
+  - released/current-version-only.
+
 ## Snapshot
 
 - Staff-only UI shell is implemented at `/ai-parent-reports`.

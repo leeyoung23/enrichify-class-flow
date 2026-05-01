@@ -1,5 +1,22 @@
 # RLS Test Checklist
 
+## Checkpoint update (mock AI draft UI docs finalization)
+
+- Final checkpoint reference:
+  - `docs/mock-ai-parent-report-draft-ui-final-checkpoint.md`
+- RLS-aligned behavior remains:
+  - staff-side generation only,
+  - authenticated path calls `generateMockAiParentReportDraft({ reportId, input })`,
+  - demo path is local-only and does not call Supabase,
+  - parent draft visibility remains blocked until explicit release.
+- Security boundary remains unchanged:
+  - no SQL/RLS changes in this docs checkpoint,
+  - no provider keys,
+  - no real provider wiring,
+  - no service-role frontend usage.
+- Next milestone recommendation:
+  - **A. Real AI provider-boundary planning** before provider implementation.
+
 ## Checkpoint update (mock AI parent report draft service path)
 
 - New service helper:
@@ -25,7 +42,7 @@
 - Final pass checkpoint reference:
   - `docs/mock-ai-parent-report-draft-service-pass-checkpoint.md`
 - Next milestone recommendation:
-  - **A. Mock AI draft UI button wiring** while preserving draft block + explicit release boundary.
+  - **A. Real AI provider-boundary planning** while preserving draft block + explicit release boundary.
 - Follow-up status:
   - staff-side `Generate Mock Draft` UI action is now wired in `AI Parent Reports`.
 - UI wiring expectations under RLS boundary:

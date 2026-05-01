@@ -3,6 +3,19 @@
 Date: 2026-05-02  
 Scope: planning-only milestone for mock AI parent report draft generation before any real provider integration
 
+## Final docs-only alignment update (post UI wiring)
+
+- Mock draft UI wiring milestone is complete:
+  - `docs/mock-ai-parent-report-draft-ui-final-checkpoint.md`
+- Current implementation boundary remains:
+  - staff-side `Generate Mock Draft` only,
+  - demo local-only generation path,
+  - authenticated helper path only,
+  - no real provider wiring.
+- Roadmap recommendation is now:
+  - **A. Real AI provider-boundary planning first**
+  - do not jump directly to real provider implementation.
+
 ## Checkpoint update (mock draft service + smoke implemented)
 
 - Mock draft helper is now implemented in:
@@ -189,7 +202,7 @@ Future staff UI integration (after service proof):
 
 Choose:
 
-- A. Real AI provider integration planning
+- A. Real AI provider-boundary planning
 - B. PDF/export planning
 - C. Notification/email planning
 - D. Final AI report manual/mock QA checkpoint

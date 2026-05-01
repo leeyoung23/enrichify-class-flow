@@ -1,5 +1,17 @@
 # Mobile-first QA checkpoint
 
+## Checkpoint update (mock AI parent report draft UI finalization)
+
+- Staff `Generate Mock Draft` milestone is finalized in docs:
+  - `docs/mock-ai-parent-report-draft-ui-final-checkpoint.md`
+- Mobile QA reminders for this flow remain:
+  - selected-report detail context is clear before generation,
+  - source-note inputs stack/read cleanly at ~390px/~768px,
+  - `Generate Mock Draft` button remains visible and tap-friendly,
+  - no misleading auto-release message/copy in mobile states.
+- ParentView mobile boundary remains unchanged:
+  - released/current-version-only, no draft surfaces.
+
 ## Checkpoint update (AI parent report staff UI shell)
 
 - New staff page added: `AI Parent Reports` at `/ai-parent-reports`.

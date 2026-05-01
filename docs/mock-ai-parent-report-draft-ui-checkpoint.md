@@ -3,6 +3,22 @@
 Date: 2026-05-02  
 Scope: UI wiring checkpoint for staff-side `Generate Mock Draft` action only
 
+## Final docs-only alignment update
+
+- Finalized checkpoint reference:
+  - `docs/mock-ai-parent-report-draft-ui-final-checkpoint.md`
+- This milestone remains staff-only mock generation:
+  - no real AI provider,
+  - no provider keys,
+  - no Edge Function wiring,
+  - no PDF/export,
+  - no notification/email/live-chat side effects,
+  - no auto-release.
+- ParentView boundary is unchanged:
+  - released/current-version-only visibility.
+- Recommended next milestone is now locked to:
+  - **A. Real AI provider-boundary planning** (planning only; no implementation).
+
 ## 1) Key checkpoint notes
 
 - `Generate Mock Draft` UI action is added in `src/pages/AiParentReports.jsx`.
@@ -82,7 +98,7 @@ Scope: UI wiring checkpoint for staff-side `Generate Mock Draft` action only
 
 ## 8) Recommended next milestone
 
-Recommendation: **B. Real AI provider integration planning** (planning-only).
+Recommendation: **A. Real AI provider-boundary planning** (planning-only).
 
 Why:
 
