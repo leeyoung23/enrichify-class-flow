@@ -24,6 +24,11 @@
     - no drafts/unreleased rows,
     - no evidence links/raw metadata,
     - no PDF/export/staff controls in ParentView.
+  - `Generate Mock Draft` staff action is now wired in `AI Parent Reports`; include mobile QA for:
+    - source-note field stacking/readability,
+    - generate button visibility and wrap behavior,
+    - no accidental lifecycle auto-transition messaging,
+    - clear no-auto-release copy.
 
 ## Checkpoint update (final communication-module QA baseline)
 

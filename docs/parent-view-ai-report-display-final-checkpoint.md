@@ -102,11 +102,18 @@ ParentView does not show:
 - parent-safe report label polish,
 - richer released report history UX,
 - mock AI draft-assist planning,
-- mock AI draft service,
 - real AI provider integration,
 - PDF/export planning/implementation,
 - notification/email flow,
 - mobile manual QA.
+
+Checkpoint note:
+
+- Staff-side `Generate Mock Draft` UI is now added in `/ai-parent-reports`.
+- ParentView boundary remains unchanged:
+  - released-only/current-version-only,
+  - no draft visibility,
+  - no auto-release.
 
 ## 9) Recommended next milestone
 

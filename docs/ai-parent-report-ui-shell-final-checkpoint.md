@@ -42,3 +42,7 @@ Reason:
 - ParentView strict boundary reminder:
   - released/current-version only,
   - no evidence links/raw metadata/PDF/export/staff actions in parent surface.
+- Additional follow-up:
+  - staff-side `Generate Mock Draft` action is now wired in `AI Parent Reports` using existing mock helper only.
+- UI checkpoint:
+  - `docs/mock-ai-parent-report-draft-ui-checkpoint.md`

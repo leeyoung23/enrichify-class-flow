@@ -24,6 +24,23 @@
 - Recommended next milestone:
   - **A. Mock AI draft UI button wiring** (no real provider, no auto-release).
 
+## Checkpoint update (mock AI parent report draft UI wiring)
+
+- Staff AI Parent Reports page now includes:
+  - `Generate Mock Draft` action (staff-side only).
+- Runtime behavior:
+  - demo mode: local mock version simulation only,
+  - authenticated mode: calls `generateMockAiParentReportDraft({ reportId, input })`.
+- Boundaries preserved:
+  - no real provider wiring,
+  - no provider keys,
+  - no auto-submit/approve/release,
+  - no parent auto-visibility,
+  - no PDF/export,
+  - no notification/email side effects.
+- UI checkpoint doc:
+  - `docs/mock-ai-parent-report-draft-ui-checkpoint.md`
+
 ## Checkpoint update (AI parent report UI shell milestone)
 
 - Added staff-side AI parent report UI shell:

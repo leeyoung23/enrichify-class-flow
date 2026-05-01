@@ -112,17 +112,25 @@ Choose:
 - D. Notification/email planning
 - E. Final AI report manual/mock QA checkpoint
 
-Recommendation: **A first**.
+Recommendation: **A complete** in this checkpoint.
 
 Why:
 
-- service path is proven,
-- staff AI Parent Reports UI already exists,
-- next safe step is exposing a `Generate Mock Draft` button in staff UI,
-- still no real provider wiring,
-- still no auto-release.
+- `Generate Mock Draft` staff-side UI wiring is now added,
+- service + smoke + UI trigger are aligned,
+- release boundary remains explicit and unchanged.
 
-## 10) Next implementation prompt (copy-paste)
+## 10) UI follow-up update
+
+- `Generate Mock Draft` UI wiring is now implemented in staff AI Parent Reports page.
+- Staff-only behavior remains:
+  - no real provider,
+  - no auto-release,
+  - no parent auto-visibility.
+- UI checkpoint doc:
+  - `docs/mock-ai-parent-report-draft-ui-checkpoint.md`
+
+## 11) Next implementation prompt (copy-paste)
 
 ```text
 Latest expected commit:
@@ -133,7 +141,7 @@ Before doing anything, verify:
 - git log --oneline -12
 - git status --short
 
-Mock AI draft UI button wiring only.
+Real AI provider integration planning only.
 
 Do not change runtime logic.
 Do not add services.
@@ -155,14 +163,14 @@ Do not implement PDF/export.
 Do not auto-release AI-generated content.
 
 Goal:
-Add staff UI button to trigger existing mock draft helper and show generated draft preview/edit path.
+Plan provider-boundary integration for AI parent report draft generation without implementing real provider calls.
 
 Required behavior:
-1) Add `Generate Mock Draft` button in staff AI Parent Reports flow only.
-2) Call existing `generateMockAiParentReportDraft(...)`.
-3) Keep submit/approve/release actions explicit and unchanged.
-4) Do not expose draft to ParentView until explicit release.
-5) Update docs/checkpoint notes.
+1) Define server-side provider boundary and secret handling model.
+2) Keep frontend provider-free (no provider key in frontend).
+3) Preserve explicit submit/approve/release boundary.
+4) Keep parent visibility released-only.
+5) Update docs/checkpoint notes only.
 
 Validation efficiency rule:
 If runtime files change, run build/lint/typecheck + focused AI parent report smokes.

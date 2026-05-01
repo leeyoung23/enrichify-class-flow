@@ -26,6 +26,14 @@
   - `docs/mock-ai-parent-report-draft-service-pass-checkpoint.md`
 - Next milestone recommendation:
   - **A. Mock AI draft UI button wiring** while preserving draft block + explicit release boundary.
+- Follow-up status:
+  - staff-side `Generate Mock Draft` UI action is now wired in `AI Parent Reports`.
+- UI wiring expectations under RLS boundary:
+  - demo mode is local-only simulation,
+  - authenticated mode uses existing helper/service + JWT + RLS only,
+  - parent cannot read draft/mock versions before explicit release.
+- UI checkpoint reference:
+  - `docs/mock-ai-parent-report-draft-ui-checkpoint.md`
 
 ## Checkpoint update (AI parent report UI shell alignment)
 

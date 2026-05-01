@@ -24,6 +24,13 @@ Scope: planning-only milestone for mock AI parent report draft generation before
   - `docs/mock-ai-parent-report-draft-service-smoke-checkpoint.md`
 - Final pass checkpoint:
   - `docs/mock-ai-parent-report-draft-service-pass-checkpoint.md`
+- UI checkpoint:
+  - `docs/mock-ai-parent-report-draft-ui-checkpoint.md`
+- `Generate Mock Draft` staff UI action is now wired in:
+  - `src/pages/AiParentReports.jsx`
+  - demo mode local simulation only,
+  - authenticated mode uses `generateMockAiParentReportDraft(...)`,
+  - explicit submit/approve/release boundary remains required.
 
 ## 1) Current state
 
@@ -182,19 +189,18 @@ Future staff UI integration (after service proof):
 
 Choose:
 
-- A. Mock AI draft UI button wiring
-- B. Real AI provider integration planning
-- C. PDF/export planning
-- D. Notification/email planning
-- E. Final AI report manual/mock QA checkpoint
+- A. Real AI provider integration planning
+- B. PDF/export planning
+- C. Notification/email planning
+- D. Final AI report manual/mock QA checkpoint
 
 Recommendation: **A first**.
 
 Why:
 
-- service helper + smoke are now proven,
-- staff UI shell already exists and can safely expose mock generation action,
-- release approval boundary remains explicit and unchanged.
+- mock service + smoke + UI trigger are now available,
+- next step should be provider-boundary planning only (no live provider wiring),
+- release approval and parent visibility boundaries must stay explicit.
 
 ## 12) Next implementation prompt (copy-paste)
 

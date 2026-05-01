@@ -27,6 +27,7 @@ import {
   archiveAiParentReport,
   createAiParentReportDraft,
   createAiParentReportVersion,
+  generateMockAiParentReportDraft,
   releaseAiParentReport,
   submitAiParentReportForReview,
 } from '@/services/supabaseWriteService';
@@ -116,6 +117,8 @@ const DEMO_BASE_EVIDENCE = {
     },
   ],
 };
+const MOCK_UI_UNSAFE_INPUT_PATTERN =
+  /(https?:\/\/|file:\/\/|\/storage\/v1\/object\/|supabase\.co\/storage|[a-z]:\\|\/users\/|\/home\/|\/private\/|\\users\\|\\private\\|announcements-attachments|parent-announcements-media|class-memories|homework-submissions|staff-clock-selfies|provider|debug|api[_-]?key|token|secret)/i;
 
 function formatDateLabel(value) {
   if (!value) return '—';
@@ -175,11 +178,27 @@ export default function AiParentReports() {
   });
   const [creatingDraft, setCreatingDraft] = useState(false);
   const [creatingVersion, setCreatingVersion] = useState(false);
+  const [generatingMockDraft, setGeneratingMockDraft] = useState(false);
   const [lifecycleBusy, setLifecycleBusy] = useState('');
 
   const [demoReports, setDemoReports] = useState(DEMO_BASE_REPORTS);
   const [demoVersionsByReportId, setDemoVersionsByReportId] = useState(DEMO_BASE_VERSIONS);
   const [demoEvidenceByReportId, setDemoEvidenceByReportId] = useState(DEMO_BASE_EVIDENCE);
+  const [mockDraftForm, setMockDraftForm] = useState({
+    studentSummary: '',
+    attendanceSummary: '',
+    lessonProgression: '',
+    homeworkCompletion: '',
+    homeworkPerformance: '',
+    strengths: '',
+    improvementAreas: '',
+    learningGaps: '',
+    teacherObservations: '',
+    nextRecommendations: '',
+    parentSupportSuggestions: '',
+    teacherFinalComment: '',
+    evidenceSummaries: '',
+  });
 
   const selectedReport = useMemo(
     () => reports.find((item) => item.id === selectedReportId) || null,
@@ -321,6 +340,125 @@ export default function AiParentReports() {
       nextRecommendations: '',
       teacherFinalComment: '',
     });
+  };
+
+  const resetMockDraftForm = () => {
+    setMockDraftForm({
+      studentSummary: '',
+      attendanceSummary: '',
+      lessonProgression: '',
+      homeworkCompletion: '',
+      homeworkPerformance: '',
+      strengths: '',
+      improvementAreas: '',
+      learningGaps: '',
+      teacherObservations: '',
+      nextRecommendations: '',
+      parentSupportSuggestions: '',
+      teacherFinalComment: '',
+      evidenceSummaries: '',
+    });
+  };
+
+  const hasUnsafeMockInput = (value) => MOCK_UI_UNSAFE_INPUT_PATTERN.test(typeof value === 'string' ? value : '');
+
+  const buildMockDraftInput = () => ({
+    studentSummary: mockDraftForm.studentSummary.trim(),
+    attendanceSummary: mockDraftForm.attendanceSummary.trim(),
+    lessonProgression: mockDraftForm.lessonProgression.trim(),
+    homeworkCompletion: mockDraftForm.homeworkCompletion.trim(),
+    homeworkPerformance: mockDraftForm.homeworkPerformance.trim(),
+    strengths: mockDraftForm.strengths.trim(),
+    improvementAreas: mockDraftForm.improvementAreas.trim(),
+    learningGaps: mockDraftForm.learningGaps.trim(),
+    teacherObservations: mockDraftForm.teacherObservations.trim(),
+    nextRecommendations: mockDraftForm.nextRecommendations.trim(),
+    parentSupportSuggestions: mockDraftForm.parentSupportSuggestions.trim(),
+    teacherFinalComment: mockDraftForm.teacherFinalComment.trim(),
+    evidenceSummaries: mockDraftForm.evidenceSummaries.trim(),
+  });
+
+  const handleGenerateMockDraft = async () => {
+    if (!selectedReportId) {
+      toast.message('Select a report first.');
+      return;
+    }
+
+    const input = buildMockDraftInput();
+    const hasUnsafe = Object.values(input).some((value) => hasUnsafeMockInput(value));
+    if (hasUnsafe) {
+      toast.error('Mock draft source notes contain blocked private/provider-style patterns.');
+      return;
+    }
+
+    setGeneratingMockDraft(true);
+
+    if (inDemoMode) {
+      const nowIso = new Date().toISOString();
+      const existing = demoVersionsByReportId[selectedReportId] || [];
+      const nextVersionNumber = existing.length + 1;
+      const newVersionId = `${selectedReportId}-v${nextVersionNumber}`;
+      const fallback = 'More evidence is needed before making a detailed judgement in this area.';
+      const newVersion = {
+        id: newVersionId,
+        reportId: selectedReportId,
+        versionNumber: nextVersionNumber,
+        generationSource: 'mock_ai',
+        structuredSections: {
+          summary: input.studentSummary || fallback,
+          attendance_punctuality: input.attendanceSummary || fallback,
+          lesson_progression: input.lessonProgression || fallback,
+          homework_completion: input.homeworkCompletion || fallback,
+          homework_assessment_performance: input.homeworkPerformance || fallback,
+          strengths: input.strengths || fallback,
+          areas_for_improvement: input.improvementAreas || fallback,
+          learning_gaps: input.learningGaps || fallback,
+          next_recommendations: input.nextRecommendations || fallback,
+          parent_support_suggestions: input.parentSupportSuggestions || fallback,
+          teacher_final_comment: input.teacherFinalComment || fallback,
+        },
+        teacherEdits: {
+          mock_generation_note: 'deterministic local demo mock draft',
+          selected_evidence_summary: input.evidenceSummaries || fallback,
+        },
+        finalText: {
+          teacher_final_comment: input.teacherFinalComment || fallback,
+        },
+        aiModelLabel: 'mock_ui_shell',
+        aiGeneratedAt: nowIso,
+        createdByProfileId: 'demo-role-user',
+        createdAt: nowIso,
+      };
+      setDemoVersionsByReportId((prev) => ({
+        ...prev,
+        [selectedReportId]: [newVersion, ...existing],
+      }));
+      setDemoReports((prev) =>
+        prev.map((row) => (row.id === selectedReportId ? { ...row, updatedAt: nowIso } : row))
+      );
+      await loadDetail();
+      resetMockDraftForm();
+      toast.success('Demo mock draft generated locally. Review and release manually if needed.');
+      setGeneratingMockDraft(false);
+      return;
+    }
+
+    const result = await generateMockAiParentReportDraft({
+      reportId: selectedReportId,
+      input,
+    });
+    if (result.error || !result.data?.version?.id) {
+      toast.error('Unable to generate mock draft right now.');
+      setGeneratingMockDraft(false);
+      return;
+    }
+    if (result.warning?.check) {
+      toast.message(`Lifecycle event check: ${result.warning.message}`);
+    }
+    await Promise.all([loadReports(), loadDetail()]);
+    resetMockDraftForm();
+    toast.success('Mock draft generated. Review/edit and release manually when ready.');
+    setGeneratingMockDraft(false);
   };
 
   const handleCreateDraft = async () => {
@@ -807,6 +945,133 @@ export default function AiParentReports() {
           <Button onClick={() => { void handleCreateVersion(); }} disabled={creatingVersion || !selectedReportId}>
             {creatingVersion ? 'Creating version...' : 'Create Version'}
           </Button>
+        </Card>
+
+        <Card className="p-4 space-y-3">
+          <h2 className="font-semibold">Generate Mock Draft</h2>
+          <p className="text-sm text-muted-foreground">
+            Staff-side mock draft generation only. This does not send anything to parents. Submit/approve/release
+            remains manual and required.
+          </p>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div className="space-y-1.5 sm:col-span-2">
+              <Label htmlFor="apr-mock-student-summary">Student Summary</Label>
+              <Textarea
+                id="apr-mock-student-summary"
+                value={mockDraftForm.studentSummary}
+                onChange={(event) => setMockDraftForm((prev) => ({ ...prev, studentSummary: event.target.value }))}
+                placeholder="Safe fake/dev summary only"
+              />
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="apr-mock-attendance-summary">Attendance Summary</Label>
+              <Textarea
+                id="apr-mock-attendance-summary"
+                value={mockDraftForm.attendanceSummary}
+                onChange={(event) => setMockDraftForm((prev) => ({ ...prev, attendanceSummary: event.target.value }))}
+              />
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="apr-mock-lesson-progression">Lesson Progression</Label>
+              <Textarea
+                id="apr-mock-lesson-progression"
+                value={mockDraftForm.lessonProgression}
+                onChange={(event) => setMockDraftForm((prev) => ({ ...prev, lessonProgression: event.target.value }))}
+              />
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="apr-mock-homework-completion">Homework Completion</Label>
+              <Textarea
+                id="apr-mock-homework-completion"
+                value={mockDraftForm.homeworkCompletion}
+                onChange={(event) => setMockDraftForm((prev) => ({ ...prev, homeworkCompletion: event.target.value }))}
+              />
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="apr-mock-homework-performance">Homework Performance</Label>
+              <Textarea
+                id="apr-mock-homework-performance"
+                value={mockDraftForm.homeworkPerformance}
+                onChange={(event) => setMockDraftForm((prev) => ({ ...prev, homeworkPerformance: event.target.value }))}
+              />
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="apr-mock-strengths">Strengths</Label>
+              <Textarea
+                id="apr-mock-strengths"
+                value={mockDraftForm.strengths}
+                onChange={(event) => setMockDraftForm((prev) => ({ ...prev, strengths: event.target.value }))}
+              />
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="apr-mock-improvement-areas">Improvement Areas</Label>
+              <Textarea
+                id="apr-mock-improvement-areas"
+                value={mockDraftForm.improvementAreas}
+                onChange={(event) => setMockDraftForm((prev) => ({ ...prev, improvementAreas: event.target.value }))}
+              />
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="apr-mock-learning-gaps">Learning Gaps</Label>
+              <Textarea
+                id="apr-mock-learning-gaps"
+                value={mockDraftForm.learningGaps}
+                onChange={(event) => setMockDraftForm((prev) => ({ ...prev, learningGaps: event.target.value }))}
+              />
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="apr-mock-teacher-observations">Teacher Observations</Label>
+              <Textarea
+                id="apr-mock-teacher-observations"
+                value={mockDraftForm.teacherObservations}
+                onChange={(event) => setMockDraftForm((prev) => ({ ...prev, teacherObservations: event.target.value }))}
+              />
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="apr-mock-next-recommendations">Next Recommendations</Label>
+              <Textarea
+                id="apr-mock-next-recommendations"
+                value={mockDraftForm.nextRecommendations}
+                onChange={(event) => setMockDraftForm((prev) => ({ ...prev, nextRecommendations: event.target.value }))}
+              />
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="apr-mock-parent-support">Parent Support Suggestions</Label>
+              <Textarea
+                id="apr-mock-parent-support"
+                value={mockDraftForm.parentSupportSuggestions}
+                onChange={(event) => setMockDraftForm((prev) => ({ ...prev, parentSupportSuggestions: event.target.value }))}
+              />
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="apr-mock-final-comment">Teacher Final Comment</Label>
+              <Textarea
+                id="apr-mock-final-comment"
+                value={mockDraftForm.teacherFinalComment}
+                onChange={(event) => setMockDraftForm((prev) => ({ ...prev, teacherFinalComment: event.target.value }))}
+              />
+            </div>
+            <div className="space-y-1.5 sm:col-span-2">
+              <Label htmlFor="apr-mock-evidence-summaries">Evidence Summaries</Label>
+              <Textarea
+                id="apr-mock-evidence-summaries"
+                value={mockDraftForm.evidenceSummaries}
+                onChange={(event) => setMockDraftForm((prev) => ({ ...prev, evidenceSummaries: event.target.value }))}
+                placeholder="Comma or sentence list, fake/dev-safe notes only"
+              />
+            </div>
+          </div>
+          <Button
+            onClick={() => {
+              void handleGenerateMockDraft();
+            }}
+            disabled={generatingMockDraft || !selectedReportId}
+          >
+            {generatingMockDraft ? 'Generating mock draft...' : 'Generate Mock Draft'}
+          </Button>
+          <p className="text-xs text-muted-foreground">
+            No real AI provider is used. No auto-submit/approve/release. No parent visibility until explicit release.
+          </p>
         </Card>
 
         <Card className="p-4 space-y-3">
