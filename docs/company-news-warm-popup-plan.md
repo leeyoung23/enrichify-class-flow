@@ -9,7 +9,14 @@ Scope: planning-only checkpoint for Company News / Big News mode and warm portal
 - Draft + publish path uses existing services:
   - `createCompanyNews(...)`
   - `publishCompanyNews(...)`
+- `Save Draft` and `Create & Publish` are both wired.
+- Create & Publish uses safe two-step create then publish sequence.
+- Publish requires at least one target and validates target presence before publish.
+- Supported target types remain `branch|role|profile`; `class` target not added.
 - Branch supervisor and teacher remain view-only for Company News create.
+- Parent/student remain blocked from staff `Announcements` route.
+- Post-success behavior refreshes queries, switches Company News context, and selects created item when available.
+- Submit controls are disabled while pending; safe generic errors only.
 - Company News remains excluded from MyTasks by default.
 - No notification/email/live-chat side effects were added.
 - Parent-facing announcements/events remain a future phase.

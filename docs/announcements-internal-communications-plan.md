@@ -8,9 +8,19 @@ Scope: planning only for Announcements/Internal Communications and Document Hub 
 - Existing Company News write services are now used from UI:
   - `createCompanyNews(...)`
   - `publishCompanyNews(...)`
+- Authenticated flow now supports:
+  - `Save Draft`
+  - `Create & Publish` (safe create->publish sequence)
+- Publish requires at least one target.
+- Target handling remains limited to `branch|role|profile`.
+- `class` target is not added in this milestone.
 - Company News create access:
   - HQ/admin: allowed,
   - branch supervisor/teacher: view-only for create.
+- Parent/student remain blocked from staff Announcements route.
+- Submit controls are loading/disabled while pending.
+- Success behavior refreshes data and selects created Company News where available.
+- Error behavior remains safe/generic (no raw SQL/RLS/env leakage).
 - Company News remains excluded from MyTasks default behavior.
 - No notification/email/live chat side effects were introduced.
 - No parent-facing announcements/events were added in this checkpoint.

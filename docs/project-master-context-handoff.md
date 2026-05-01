@@ -7,10 +7,19 @@ This master handoff preserves product direction, implemented milestones, archite
 - `Announcements` now wires authenticated HQ-only Company News create/publish UI using existing services:
   - `createCompanyNews(...)`
   - `publishCompanyNews(...)`
+- Flow behavior:
+  - `Save Draft` -> `createCompanyNews(...)`
+  - `Create & Publish` -> `createCompanyNews(...)` then `publishCompanyNews(...)`
+- Publish requires at least one target and validates target presence before publish call.
+- Supported target types remain `branch|role|profile`; class target is not added in this milestone.
 - Branch supervisor and teacher remain view-only for Company News create in authenticated mode.
+- Parent/student remain blocked from staff Announcements route.
 - Demo behavior remains local-only and preserves `demoRole` fallback:
   - HQ demo create is local-only,
   - supervisor/teacher demo do not create Company News.
+- Submit controls are disabled while pending.
+- Success path refreshes announcements, switches to Company News context, and selects created item when available.
+- Error copy remains safe and generic (no raw SQL/RLS/env leakage).
 - Company News remains excluded from MyTasks by default.
 - No notification/email/live chat side effects were added.
 - Parent-facing announcements/events remain future.

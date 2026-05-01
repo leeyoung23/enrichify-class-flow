@@ -14,7 +14,13 @@ Scope note:
   - Save Draft button loading/disabled state,
   - Create & Publish button loading/disabled state,
   - branch/role/profile target input clarity and wrapping on ~390px.
+- Include publish target validation behavior check (safe message when target is missing).
+- Include post-success behavior check:
+  - list refresh,
+  - Company News context active,
+  - created item selected when available.
 - Branch supervisor/teacher remain view-only for Company News create in authenticated mode.
+- Parent/student remain blocked from staff Announcements route.
 - Demo behavior remains local-only for HQ create; no Supabase create calls in demo.
 - Company News remains excluded from MyTasks by default.
 - No notifications/emails/live-chat behavior was added in this checkpoint.

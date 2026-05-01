@@ -228,6 +228,30 @@ Reminder: **Frontend filtering is not security. RLS must enforce access at datab
 - Request/reminder MyTasks behavior remains unchanged.
 - No SQL/RLS changes were required for this behavior fix.
 
+## HQ Company News create UI checkpoint note (2026-05-01)
+
+- Authenticated HQ/admin Company News create UI is now wired in `src/pages/Announcements.jsx`.
+- UI uses existing services:
+  - `createCompanyNews(...)` (Save Draft)
+  - `publishCompanyNews(...)` (Create & Publish via create->publish)
+- Publish path requires at least one target and validates before publish.
+- Supported target types remain `branch|role|profile`.
+- Branch supervisor/teacher remain view-only for create.
+- Parent/student remain blocked from staff Announcements route.
+- Demo mode remains local-only for HQ create and does not call Supabase create services.
+- Company News remains excluded from MyTasks by default.
+- No SQL/RLS changes were made in this UI checkpoint.
+- No notifications/emails/live chat/parent-facing announcements were added.
+- Validation snapshot for this milestone:
+  - `npm run build` PASS
+  - `npm run lint` PASS
+  - `npm run typecheck` PASS
+  - `npm run test:supabase:company-news:create` PASS
+  - `npm run test:supabase:company-news:popup` PASS
+    - first popup smoke had transient auth-session CHECK/FAIL; immediate rerun passed fully
+  - `npm run test:supabase:announcements:mytasks` PASS
+  - `npm run test:supabase:announcements:phase1` PASS
+
 ### Announcements attachments role checks (current proven state)
 
 - HQ can upload/list/open signed URL for internal attachments.

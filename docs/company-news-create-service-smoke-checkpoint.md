@@ -5,17 +5,18 @@ Scope: service + smoke only (`createCompanyNews` / `publishCompanyNews`), no UI/
 
 ## Checkpoint update (authenticated HQ create UI wiring)
 
-- Authenticated `Announcements` now wires HQ-only Company News creation UI using existing:
-  - `createCompanyNews(...)` for draft create
-  - `publishCompanyNews(...)` for publish action
-- Branch supervisor and teacher remain view-only for Company News create in authenticated mode.
-- Demo behavior is preserved:
-  - HQ demo create remains local-only,
-  - supervisor/teacher demo remain view-only,
-  - no Supabase Company News create call in demo.
+- Authenticated Company News create UI is now wired for HQ/admin only in `Announcements`.
+- UI flow uses existing services:
+  - `createCompanyNews(...)` (Save Draft)
+  - `publishCompanyNews(...)` (Create & Publish via safe create->publish sequence)
+- Branch supervisor/teacher remain view-only for Company News create.
+- Parent/student remain blocked from staff `Announcements`.
+- Target mapping supports `branch|role|profile`; publish early-validates target presence.
+- Post-success behavior refreshes queries, switches to Company News context, and selects created item when available.
+- Submit controls are disabled while pending and errors remain safe/generic (no raw SQL/RLS/env strings).
+- Demo behavior remains local-only for HQ create; no Supabase Company News create calls in demo.
 - Company News remains excluded from MyTasks by default.
-- No notifications/emails/live-chat side effects were added.
-- No parent-facing announcements/events were added.
+- No notifications/emails/live chat and no parent-facing announcements/events were added.
 - No SQL/RLS changes in this UI wiring checkpoint.
 
 ## Checkpoint update (MyTasks exclusion fix)
@@ -112,6 +113,9 @@ MyTasks note:
 
 ## 7) Future work
 
-- HQ authenticated Company News create UI wiring (currently preview-disabled).
-- Optional strict MyTasks exclusion rule for `company_news` if product confirms.
-- Parent-facing announcements/events planning and implementation remain future.
+- Parent-facing announcements/events planning/implementation.
+- Notification/email automation planning/implementation.
+- Company News class-target support only if later required.
+- Optional Company News-to-MyTasks opt-in model.
+- Runtime popup polish/tuning.
+- Reports/PDF/AI OCR and attendance email notification later.

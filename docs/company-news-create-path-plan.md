@@ -5,15 +5,27 @@ Scope: planning/review only for safe real HQ Company News create/publish path (n
 
 ## Checkpoint update (authenticated HQ create UI wired)
 
-- Authenticated HQ Company News create UI is now wired in `Announcements`.
-- Existing write services are used:
-  - `createCompanyNews(...)`
-  - `publishCompanyNews(...)`
-- Authenticated role behavior in this checkpoint:
-  - HQ/admin can create (draft and create+publish flow),
-  - branch supervisor and teacher are view-only for Company News create.
+- Authenticated HQ/admin Company News create UI is now wired in `Announcements`.
+- Flow behavior:
+  - `Save Draft` -> `createCompanyNews(...)`
+  - `Create & Publish` -> `createCompanyNews(...)` then `publishCompanyNews(...)`
+- Publish requires at least one target (`branch|role|profile`) and validates before publish call.
+- Submit buttons are disabled while pending.
+- Post-success:
+  - refresh announcement queries,
+  - switch to Company News context,
+  - select/open created item when available.
+- Access boundaries:
+  - HQ/admin can create in non-demo mode,
+  - branch supervisor/teacher are view-only for Company News create,
+  - parent/student remain blocked from staff Announcements.
+- Demo boundaries:
+  - HQ demo create is local-only,
+  - supervisor/teacher demo remain view-only,
+  - no Supabase create call in demo.
 - Company News remains excluded from MyTasks by default.
-- No notifications/emails side effects were introduced.
+- No notifications/emails/live chat side effects.
+- No SQL/RLS changes.
 - Parent-facing announcements/events remain future.
 
 ## Checkpoint update (MyTasks default exclusion enforced)

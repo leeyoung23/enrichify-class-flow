@@ -9,11 +9,18 @@ Scope: documentation checkpoint for Company News UI shell with demo parity only
 - Authenticated create flow uses existing services:
   - `createCompanyNews(...)` for draft save
   - `publishCompanyNews(...)` for publish
+- `Create & Publish` is implemented as safe two-step create then publish.
+- Publish path requires at least one target and early-validates target presence.
+- Target payload mapping follows existing pattern with supported types: `branch|role|profile`.
+- `class` target is intentionally not added in this milestone.
 - Branch supervisor and teacher remain view-only for Company News create in authenticated mode.
 - Demo parity remains preserved:
   - HQ demo create is local-only,
   - supervisor/teacher demo remain view-only,
   - no Supabase Company News write in demo path.
+- Parent/student remain blocked from staff `Announcements` route.
+- Submit buttons are disabled while pending; safe generic errors are shown.
+- Success path refreshes announcements, switches to Company News context, and selects created item when available.
 - Company News remains excluded from MyTasks by default.
 - No notifications/emails/live chat were added.
 - Parent-facing announcements/events remain future.
@@ -54,7 +61,7 @@ Scope: documentation checkpoint for Company News UI shell with demo parity only
 - Demo fake Company News data is included.
 - HQ demo local `Create Company News` shell is included.
 - Warm pop-up preview panel exists in Company News detail only.
-- Authenticated `Create Company News` remains disabled/preview-only.
+- Authenticated HQ create is now wired; branch supervisor/teacher remain view-only.
 
 ## 2) Files changed
 

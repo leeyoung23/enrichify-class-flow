@@ -10,7 +10,15 @@ Scope: runtime app-shell warm popup UI shell/wiring using existing popup service
 - Company News authoring now uses existing write services:
   - `createCompanyNews(...)`
   - `publishCompanyNews(...)`
+- Draft/publish path behavior:
+  - `Save Draft` -> `createCompanyNews(...)`
+  - `Create & Publish` -> `createCompanyNews(...)` then `publishCompanyNews(...)`
+- Publish requires at least one target and validates target presence before publish.
+- Supported create targets remain `branch|role|profile` only.
 - Branch supervisor and teacher remain view-only for Company News create in authenticated mode.
+- Parent/student remain blocked from staff `Announcements` route.
+- Submit controls are disabled while pending; error copy remains safe/generic.
+- Success path refreshes announcement queries, switches Company News context, and selects created item when available.
 - Company News remains excluded from MyTasks by default.
 - No notifications/emails/live chat behavior was added in this checkpoint.
 - Parent-facing announcements/events remain future.
@@ -29,7 +37,7 @@ Scope: runtime app-shell warm popup UI shell/wiring using existing popup service
   - no `parent_facing_media`,
   - no notifications/emails/live chat,
   - no service-role frontend usage.
-- Authenticated Company News create UI remains preview-disabled until service-layer create wrapper milestone.
+- Authenticated HQ Company News create UI is now available; no runtime popup service changes were required for that UI wiring.
 
 ## 1) What was implemented
 
