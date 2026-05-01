@@ -32,6 +32,20 @@
   - real provider integration,
   - report UI and PDF/export implementation.
 
+## Checkpoint update (AI parent reports 030 pre-apply review fixes)
+
+- `030` was reviewed before manual DEV apply and tightened in draft form.
+- Fixes applied in `supabase/sql/030_ai_parent_reports_foundation.sql`:
+  - same-report `current_version_id` FK hardening to prevent cross-report version pointer mistakes,
+  - stricter assigned-teacher insert guard (same branch + class assignment alignment when class is set),
+  - append-first history/audit posture by removing version/release-event update/delete policies.
+- Boundaries preserved:
+  - no SQL auto-apply,
+  - no production apply assumption,
+  - no UI/runtime/service/provider changes,
+  - parent remains released-only linked-child scoped.
+- Next manual step remains: DEV SQL editor review/apply only.
+
 ## Checkpoint update (final announcements/parent communication QA documented)
 
 - Final communication-module QA checkpoint is now documented:

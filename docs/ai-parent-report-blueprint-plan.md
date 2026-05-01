@@ -28,6 +28,19 @@ Scope: planning-only blueprint for AI-assisted parent progress reports before pr
   - real provider integration
   - report UI and PDF/export implementation.
 
+## Checkpoint update (030 pre-apply SQL/RLS review completed)
+
+- `supabase/sql/030_ai_parent_reports_foundation.sql` was reviewed before any manual Supabase apply.
+- Focused fixes were applied in draft to reduce lifecycle/RLS risk:
+  - strengthened `current_version_id` safety with same-report pair FK (`(id, current_version_id)` -> versions `(report_id, id)`),
+  - tightened `assigned_teacher_profile_id` insert helper checks to same-branch teacher and class-assigned teacher when class is set,
+  - made versions/release-events append-first in MVP by removing update/delete policies.
+- Remaining assumptions:
+  - versions are expected to be append-first (new row per meaningful edit/re-generation),
+  - release audit remains insert-first (corrections should use follow-up events, not row mutation).
+- No SQL was applied in this checkpoint.
+- No runtime/UI/service/provider/PDF changes were introduced.
+
 ## 1) Current state
 
 - Communication module is now a strong internal prototype with staff + parent-facing communication surfaces.

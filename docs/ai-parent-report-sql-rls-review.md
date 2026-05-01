@@ -28,6 +28,18 @@ Scope: planning/review only for safest SQL/RLS data model before implementation
   - mock/real provider wiring,
   - report UI/PDF runtime implementation.
 
+## Checkpoint update (030 pre-apply review fixes)
+
+- Review result: `030` is near-ready for manual DEV apply after focused hardening.
+- Issues found/fixed in draft:
+  - **Cross-report current-version pointer risk**: fixed by adding same-report pair FK from `ai_parent_reports(id, current_version_id)` to `ai_parent_report_versions(report_id, id)`.
+  - **Assigned-teacher scope looseness on insert**: fixed by requiring assigned teacher to be same-branch and class-assigned when `class_id` is set.
+  - **History/audit mutability risk**: fixed by removing update/delete policies for versions and release-events in MVP draft (append-first posture).
+- Remaining assumptions:
+  - report edits/regeneration should write new version rows,
+  - release/status history should be represented with additional event rows.
+- No SQL apply occurred in this review checkpoint.
+
 ## 1) Current state
 
 - AI parent report blueprint exists (`docs/ai-parent-report-blueprint-plan.md`).

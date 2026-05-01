@@ -228,6 +228,28 @@ begin
 end;
 $$;
 
+-- Pair-level FK safety: ensure current_version_id (when present) belongs to the same report row.
+-- This prevents cross-report pointer mistakes.
+create unique index if not exists ai_parent_report_versions_report_id_id_uniq_idx_030
+  on public.ai_parent_report_versions(report_id, id);
+
+do $$
+begin
+  if not exists (
+    select 1
+    from pg_constraint
+    where conname = 'ai_parent_reports_current_version_same_report_fk_030'
+      and conrelid = 'public.ai_parent_reports'::regclass
+  ) then
+    alter table public.ai_parent_reports
+      add constraint ai_parent_reports_current_version_same_report_fk_030
+      foreign key (id, current_version_id)
+      references public.ai_parent_report_versions(report_id, id)
+      on delete set null;
+  end if;
+end;
+$$;
+
 -- -----------------------------------------------------------------------------
 -- 3) Indexes
 -- -----------------------------------------------------------------------------
@@ -377,8 +399,20 @@ as $$
       or exists (
         select 1
         from public.profiles p
+        join public.teachers t on t.profile_id = p.id
         where p.id = assigned_teacher_uuid
           and p.role = 'teacher'
+          and t.branch_id = branch_uuid
+          and (
+            class_uuid is null
+            or exists (
+              select 1
+              from public.teacher_class_assignments tca
+              where tca.teacher_id = t.id
+                and tca.class_id = class_uuid
+                and tca.branch_id = branch_uuid
+            )
+          )
       )
     )
     and (
@@ -429,7 +463,7 @@ comment on function public.can_manage_ai_parent_report(uuid) is
 comment on function public.can_access_ai_parent_report(uuid) is
   '030 draft helper. Parent access is released-only and linked-child scoped. Drafts remain staff-only.';
 comment on function public.can_insert_ai_parent_report_row_030(uuid, uuid, uuid, uuid, uuid) is
-  '030 draft helper. Insert is self-creator only with branch/student alignment; teacher scope constrained to assigned class/student.';
+  '030 draft helper. Insert is self-creator only with branch/student alignment; assigned teacher must be same-branch teacher (and class-assigned when class is set).';
 comment on function public.can_access_ai_parent_report_version(uuid) is
   '030 draft helper. Parent version reads are further constrained by table policy to released current_version rows only.';
 
@@ -517,23 +551,10 @@ with check (
 );
 
 drop policy if exists ai_parent_report_versions_update_030 on public.ai_parent_report_versions;
-create policy ai_parent_report_versions_update_030
-on public.ai_parent_report_versions
-for update
-using (
-  public.can_manage_ai_parent_report_version(report_id)
-)
-with check (
-  public.can_manage_ai_parent_report_version(report_id)
-);
-
 drop policy if exists ai_parent_report_versions_delete_030 on public.ai_parent_report_versions;
-create policy ai_parent_report_versions_delete_030
-on public.ai_parent_report_versions
-for delete
-using (
-  public.can_manage_ai_parent_report_version(report_id)
-);
+
+comment on table public.ai_parent_report_versions is
+  '030 manual/dev-first draft. Append-oriented versions; insert-first history model (no update/delete policies in MVP).';
 
 -- -----------------------------------------------------------------------------
 -- 9) ai_parent_report_evidence_links policies (staff-only by default)
@@ -594,22 +615,9 @@ with check (
 );
 
 drop policy if exists ai_parent_report_release_events_update_030 on public.ai_parent_report_release_events;
-create policy ai_parent_report_release_events_update_030
-on public.ai_parent_report_release_events
-for update
-using (
-  public.can_manage_ai_parent_report(report_id)
-)
-with check (
-  public.can_manage_ai_parent_report(report_id)
-);
-
 drop policy if exists ai_parent_report_release_events_delete_030 on public.ai_parent_report_release_events;
-create policy ai_parent_report_release_events_delete_030
-on public.ai_parent_report_release_events
-for delete
-using (
-  public.can_manage_ai_parent_report(report_id)
-);
+
+comment on table public.ai_parent_report_release_events is
+  '030 manual/dev-first draft. Staff-facing append-only release/status audit events in MVP (no update/delete policies).';
 
 -- End of 030 manual/dev-first SQL draft.

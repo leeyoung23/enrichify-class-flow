@@ -29,6 +29,20 @@
   - `ai_parent_report_templates`
   - report UI/service wiring and PDF/export implementation
 
+## Checkpoint update (AI parent reports 030 reviewed before apply)
+
+- `030` review status: pre-apply SQL/RLS/security review completed (no apply in this checkpoint).
+- Fixes now present in draft:
+  - same-report `current_version_id` pair FK safety,
+  - stricter assigned-teacher insert validation for branch/class alignment,
+  - append-first versions/release-events (no update/delete policies in MVP draft).
+- RLS expectations after manual DEV apply:
+  - parent can read only released + linked-child reports,
+  - parent version read limited to released current version,
+  - parent cannot directly read evidence links/release events in MVP,
+  - teacher/supervisor scope remains constrained to class/branch rules.
+- Continue fake/dev data only and manual DEV SQL editor workflow only.
+
 ## Checkpoint update (final communication-module QA consolidation)
 
 - Final communication-module QA checkpoint now exists:
