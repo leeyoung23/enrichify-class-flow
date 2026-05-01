@@ -1,5 +1,36 @@
 # Mobile-first QA checkpoint
 
+## Checkpoint update (ParentView announcements/events UI checkpoint documented)
+
+- ParentView `Announcements & Events` UI shell milestone is now documented as complete.
+- Key status:
+  - read-only parent viewing surface is implemented,
+  - no creation/publish/archive/delete/upload controls,
+  - no SQL/RLS changes,
+  - no notifications/emails,
+  - no live chat.
+- Behavior confirmation:
+  - mobile-first featured/list/detail cards with type badges and event metadata,
+  - demo mode uses local fake announcement/event data only,
+  - authenticated mode uses existing parent-facing read/media/read-receipt services.
+- Security/safety confirmation:
+  - RLS-bound parent visibility only,
+  - released-media signed URL path only,
+  - no internal `internal_staff` announcement exposure,
+  - no internal `announcement_attachments` exposure,
+  - no `storage_path` display,
+  - no service-role frontend usage.
+- Validation snapshot retained:
+  - `build/lint/typecheck` PASS,
+  - parent-facing announcement/media smokes PASS,
+  - phase1 regression PASS,
+  - expected fixture CHECK notes remain non-blocking.
+- Canonical UI checkpoint doc:
+  - `docs/parent-view-announcements-events-ui-checkpoint.md`
+- Recommended next milestone now:
+  - **A. Parent-facing creation UI planning** (planning only).
+
+
 ## Checkpoint update (ParentView announcements/events shell with demo parity)
 
 - ParentView now includes a read-only `Announcements & Events` shell near parent communication surfaces.

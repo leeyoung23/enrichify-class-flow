@@ -1,33 +1,35 @@
 # ParentView Announcements and Events UI Checkpoint
 
-Date: 2026-05-01  
-Scope: ParentView announcements/events shell with demo parity only
+Date: 2026-05-02  
+Scope: ParentView `Announcements & Events` UI shell with demo parity only
 
-## 1) Checkpoint summary
+## 1) Key checkpoint notes
 
-- ParentView now includes an `Announcements & Events` display shell for parent/student portal context.
-- Scope is read-only viewing only; no creation/publish/archive/delete/upload controls.
-- No SQL/RLS changes.
-- No notification/email behavior.
-- No live chat behavior.
+- ParentView `Announcements & Events` section is now added.
+- It is a read-only parent viewing surface.
+- No create/publish/archive/delete/upload controls are present.
+- No SQL/RLS changes were made in this milestone.
+- No notification/email behavior was added.
+- No live chat behavior was added.
 
 ## 2) ParentView UI behavior
 
-- New section placement is near parent communication areas and Memories context.
-- Includes:
-  - featured/latest card
-  - announcement/event list cards
-  - selectable detail card
-  - event window and location display when available
-  - type badges (`Event`, `Reminder`, `Holiday Closure`, etc.)
-- Mobile-first card layout preserved (stacked cards, compact badges, no table dependency).
+- Placement is near existing parent communication/Memories flow.
+- Shell includes:
+  - featured/latest card,
+  - mobile-first list cards,
+  - selectable detail card,
+  - type badges,
+  - event date/time/location when available.
+- Safe loading/empty/error states are included.
 
-## 3) Demo parity behavior
+## 3) demoRole behavior
 
 In demo parent/student mode:
 
-- uses local fake announcement/event rows only (no Supabase reads for demo list/detail)
-- includes varied fake types:
+- uses local fake announcements/events only,
+- does not call Supabase for demo announcements/events,
+- includes fake types:
   - `event`
   - `activity`
   - `centre_notice`
@@ -35,48 +37,128 @@ In demo parent/student mode:
   - `reminder`
   - `celebration`
   - `parent_workshop`
-- includes demo released-media placeholders only (no real file access)
-- no upload/create/publish controls
-- no notifications/emails/live chat
+- demo media is placeholder-style only,
+- no upload/open real files in demo.
 
 ## 4) Authenticated parent read behavior
 
 In authenticated non-demo mode:
 
-- list uses `listParentAnnouncements({ status: 'published', includeArchived: false })`
-- detail uses `getParentAnnouncementDetail({ parentAnnouncementId })`
-- released media list uses `listParentAnnouncementMedia({ parentAnnouncementId })`
-- media open uses `getParentAnnouncementMediaSignedUrl({ mediaId, expiresIn: 300 })`
-- read receipt is non-blocking on detail selection via `markParentAnnouncementRead({ parentAnnouncementId })`
-- safe loading/empty/error states are provided
+- list read:
+  - `listParentAnnouncements({ status: 'published', includeArchived: false })`
+- detail read:
+  - `getParentAnnouncementDetail({ parentAnnouncementId })`
+- visibility remains RLS-bound.
+- No internal `internal_staff` announcement exposure.
+- No internal `announcement_attachments` exposure.
+- No raw SQL/RLS/env leakage in parent-facing UI copy.
 
-## 5) Safety boundaries
+## 5) Media/read receipt behavior
+
+- released media list read:
+  - `listParentAnnouncementMedia({ parentAnnouncementId })`
+- released media open:
+  - `getParentAnnouncementMediaSignedUrl({ mediaId, expiresIn: 300 })`
+- Signed URL only.
+- No `storage_path` display in UI.
+- No public URL model.
+- Released-only media access remains RLS/service mediated.
+- read receipt call on detail open:
+  - `markParentAnnouncementRead({ parentAnnouncementId })`
+- read receipt failure is intentionally non-blocking.
+
+## 6) Safety boundaries
 
 - no parent-facing creation UI
-- no parent-facing media upload UI
+- no parent media upload UI
 - no staff controls in ParentView
-- no internal `announcement_attachments` exposure
-- no `storage_path` display
-- no internal `internal_staff` announcement exposure in parent section
-- no service-role frontend usage
+- no notifications/emails
+- no live chat
+- no service-role frontend
+- no internal `parent_facing_media`
+- no internal attachments bucket reuse
+- parent-facing model remains separate from internal announcements
 
-## 6) Validation and regressions
+## 7) Validation result
 
-Validation run includes:
+- `git diff --name-only` ran before tests.
+- `npm run build` PASS.
+- `npm run lint` PASS.
+- `npm run typecheck` PASS.
+- `npm run test:supabase:parent-announcements` PASS.
+- `npm run test:supabase:parent-announcements:media` PASS.
+- `npm run test:supabase:announcements:phase1` PASS.
+- Expected CHECK notes:
+  - unrelated parent credentials missing/invalid,
+  - `ANNOUNCEMENTS_TEST_OTHER_BRANCH_ID` missing for optional phase1 cross-branch check,
+  - npm `devdir` warning is non-blocking.
 
-- `git diff --name-only` before tests
-- `npm run build`
-- `npm run lint`
-- `npm run typecheck`
-- `npm run test:supabase:parent-announcements`
-- `npm run test:supabase:parent-announcements:media`
-- `npm run test:supabase:announcements:phase1`
+## 8) What remains future
 
-Expected safe CHECK notes may remain fixture-dependent (unrelated parent credential fixture and optional phase1 cross-branch env var).
+- parent-facing creation UI
+- parent-facing media upload UI
+- notification/email planning and rollout
+- additional parent interactions beyond read-only
+- reports/PDF/AI OCR (separate track)
+- attendance arrival email (separate track)
 
-## 7) Next milestone suggestion
+## 9) Recommended next milestone
 
-After this read-only shell:
+Recommendation: **A. Parent-facing creation UI planning** first (planning-only).
 
-- next: parent-facing creation UI planning/implementation in a separate milestone,
-- keep SQL/RLS unchanged unless a new reviewed policy need appears.
+Why:
+
+- parent viewing surface now exists,
+- service/RLS/media boundaries are proven,
+- next step should safely plan HQ/supervisor creation workflow before implementation,
+- notification/email should wait until creation workflow shape is finalized,
+- media upload UI can be handled inside creation planning or as a follow-up.
+
+## 10) Next implementation prompt (copy-paste)
+
+```text
+Continue this same project only.
+
+Project folder:
+~/Desktop/enrichify-class-flow
+
+Branch:
+cursor/safe-lint-typecheck-486d
+
+Latest expected commit:
+Document ParentView announcements events UI
+
+Before doing anything, verify:
+- git branch --show-current
+- git log --oneline -12
+- git status --short
+
+Task:
+Parent-facing creation UI planning only.
+
+Hard constraints:
+- Planning/docs only in this milestone.
+- Do not change app UI runtime behavior.
+- Do not change Supabase SQL.
+- Do not change RLS policies.
+- Do not apply SQL.
+- Do not add services.
+- Do not add notifications/emails.
+- Do not add live chat.
+- Do not add real AI/provider keys.
+- Do not use service role key in frontend.
+- Keep demoRole and local/demo fallback.
+- Use fake/dev data only.
+
+Please deliver:
+1) Safe HQ/supervisor parent-facing creation workflow proposal.
+2) Draft validation/permission matrix for create->target->media release sequencing.
+3) Non-goals and risk controls (no parent/staff leakage).
+4) Phased plan for creation UI and media upload UI follow-up.
+
+Validation efficiency rule:
+Docs-only checkpoint.
+Run:
+- git diff --name-only
+Do not run build/lint/typecheck/smoke suite unless runtime files change.
+```
