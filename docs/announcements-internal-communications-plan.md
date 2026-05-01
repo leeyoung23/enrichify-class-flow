@@ -76,6 +76,10 @@ Scope: planning only for Announcements/Internal Communications and Document Hub 
 - No parent-facing announcements/events in this slice.
 - Checkpoint doc:
   - `docs/company-news-popup-service-smoke-checkpoint.md`
+- Additional checkpoint notes:
+  - direct HQ `company_news` insert remains CHECK-blocked by current request-first create-path policy shape (expected),
+  - phase1 optional cross-branch negative fixture remains CHECK-skipped when `ANNOUNCEMENTS_TEST_OTHER_BRANCH_ID` is missing,
+  - npm `devdir` warning is non-blocking.
 
 ## Checkpoint update (completion overview read service + smoke)
 

@@ -173,3 +173,8 @@ Validation efficiency rule:
   - no notifications/emails,
   - no parent-facing announcements/events,
   - no `parent_facing_media`.
+- Service smoke test quality notes:
+  - PASS: popup service smoke, phase1 smoke, mytasks smoke, and completion smoke,
+  - CHECK: direct HQ `company_news` insert blocked by request-first create-path policy (expected currently),
+  - CHECK: optional phase1 cross-branch negative fixture still skipped when `ANNOUNCEMENTS_TEST_OTHER_BRANCH_ID` is not configured,
+  - WARNING: npm `devdir` env config warning is non-blocking.

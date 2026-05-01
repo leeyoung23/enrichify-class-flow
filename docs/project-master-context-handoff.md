@@ -568,6 +568,11 @@ Current status note:
   - no SQL/RLS changes in this milestone,
   - no notifications/emails/live-chat behavior,
   - no parent-facing announcements/events and no `parent_facing_media`.
+- Service checkpoint validation notes:
+  - `build`/`lint`/`typecheck` PASS,
+  - popup smoke PASS with expected CHECK for direct HQ `company_news` create block under request-first create-path policy,
+  - phase1/mytasks/completion announcement smokes PASS (optional cross-branch CHECK still possible without fixture env),
+  - npm `devdir` warning is non-blocking.
 
 ## 12) Next immediate milestone prompt (copy-paste)
 

@@ -59,6 +59,10 @@ Scope: planning/review only for safest runtime warm pop-up strategy and data mod
 - No parent-facing announcements/events were added.
 - Service/smoke checkpoint doc:
   - `docs/company-news-popup-service-smoke-checkpoint.md`
+- Checkpoint notes:
+  - expected CHECK: direct HQ `company_news` insert remains blocked by current request-first create-path policy shape,
+  - expected CHECK: optional phase1 cross-branch negative fixture may remain skipped without `ANNOUNCEMENTS_TEST_OTHER_BRANCH_ID`,
+  - non-blocking npm warning about unknown env config `devdir` may appear in local runs.
 
 ## Documentation-only note
 

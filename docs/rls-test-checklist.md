@@ -139,6 +139,9 @@ Reminder: **Frontend filtering is not security. RLS must enforce access at datab
 - Current checkpoint notes:
   - direct HQ `company_news` create remains CHECK-blocked by current request-first create-path policy shape (expected),
   - fixture conversion path still validates popup service behavior safely without SQL/RLS changes.
+- Additional observed notes:
+  - phase1 optional cross-branch negative fixture remains CHECK when `ANNOUNCEMENTS_TEST_OTHER_BRANCH_ID` is missing,
+  - npm warning about unknown env config `devdir` is non-blocking.
 - Boundaries unchanged:
   - no runtime app-shell popup UI,
   - no SQL/RLS changes,

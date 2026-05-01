@@ -51,6 +51,10 @@ Scope: planning-only checkpoint for Company News / Big News mode and warm portal
 - No SQL/RLS changes in this checkpoint.
 - No notifications/emails in this checkpoint.
 - No parent-facing announcements/events in this checkpoint.
+- CHECK/WARNING notes for this checkpoint:
+  - direct HQ `company_news` insert remains CHECK-blocked by current request-first create-path policy (expected),
+  - optional phase1 cross-branch negative fixture remains CHECK when `ANNOUNCEMENTS_TEST_OTHER_BRANCH_ID` is missing,
+  - npm `devdir` warning is non-blocking.
 
 ## Checkpoint update (Company News UI shell now added)
 
