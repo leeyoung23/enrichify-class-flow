@@ -2,6 +2,33 @@
 
 This master handoff preserves product direction, implemented milestones, architecture constraints, and safe continuation priorities for future ChatGPT/Cursor sessions.
 
+## Checkpoint update (028 parent-facing announcements SQL/RLS draft)
+
+- New manual/dev-first SQL draft now exists:
+  - `supabase/sql/028_parent_announcements_foundation.sql`
+- `028` status:
+  - draft-only,
+  - not auto-applied,
+  - no production apply assumption.
+- `028` uses separate parent-facing model (not mixed into internal `announcements` path):
+  - `parent_announcements`
+  - `parent_announcement_targets`
+  - `parent_announcement_read_receipts`
+  - `parent_announcement_media`
+- `028` drafts private media bucket/policies:
+  - `parent-announcements-media` (`public=false`, signed-URL model expected later).
+- `028` keeps current boundaries:
+  - no parent-facing UI/services in this milestone,
+  - no internal `announcement_attachments` reuse,
+  - no enabling of internal `parent_facing_media`,
+  - no notification/email automation.
+- `028` privacy-first role stance in draft:
+  - HQ global manage,
+  - branch supervisor own-branch manage,
+  - teacher blocked from parent-facing management in MVP,
+  - parent published targeted linked-child read path,
+  - student blocked in MVP.
+
 ## Checkpoint update (authenticated HQ Company News create UI wired)
 
 - `Announcements` now wires authenticated HQ-only Company News create/publish UI using existing services:

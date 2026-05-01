@@ -6,6 +6,29 @@ Reminder: **Frontend filtering is not security. RLS must enforce access at datab
 
 ---
 
+## Parent-facing announcements SQL draft note (028)
+
+- Draft patch reference: `supabase/sql/028_parent_announcements_foundation.sql` (manual/dev-first, review-first only).
+- `028` is not auto-applied and assumes fake/dev data only.
+- `028` drafts separate parent-facing entities:
+  - `parent_announcements`
+  - `parent_announcement_targets`
+  - `parent_announcement_read_receipts`
+  - `parent_announcement_media`
+- `028` drafts private storage bucket and object policies:
+  - `parent-announcements-media` (`public=false`)
+- `028` keeps internal boundary explicit:
+  - no exposure of internal `announcements` rows to parent-facing path,
+  - no exposure/reuse of internal `announcement_attachments`,
+  - no enabling of internal `parent_facing_media`.
+- `028` role-policy intent:
+  - HQ: global manage,
+  - branch supervisor: own-branch manage only,
+  - teacher: blocked from parent-facing management in MVP,
+  - parent: published + targeted + linked-child scoped read; own read-receipt write only,
+  - student: blocked in MVP.
+- No parent-facing UI/services or notification/email automation are added in this checkpoint.
+
 ## Announcements completion overview read-service checkpoint note (2026-05-01)
 
 - Full checkpoint (implementation summary, read behavior, metrics, per-person fields, semantics, smoke, tests, boundaries, future, recommended next milestone, copy-paste UI prompt):

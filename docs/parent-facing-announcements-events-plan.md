@@ -3,6 +3,24 @@
 Date: 2026-05-01  
 Scope: planning-only checkpoint for parent-facing announcements/events next layer (no implementation in this milestone)
 
+## Checkpoint update (028 parent-facing SQL/RLS foundation draft)
+
+- New manual/dev-first SQL draft is now added:
+  - `supabase/sql/028_parent_announcements_foundation.sql`
+- `028` is draft-only and is not auto-applied.
+- `028` introduces a separate parent-facing model:
+  - `parent_announcements`
+  - `parent_announcement_targets`
+  - `parent_announcement_read_receipts`
+  - `parent_announcement_media`
+- `028` includes private parent-facing storage bucket draft:
+  - `parent-announcements-media` (`public=false`)
+- `028` keeps boundaries explicit:
+  - no UI/runtime/service implementation in this milestone,
+  - no internal `announcement_attachments` reuse,
+  - no enabling of internal `parent_facing_media`,
+  - no notifications/emails automation.
+
 ## 1) Current state
 
 - Staff `Announcements` is now a strong internal prototype:

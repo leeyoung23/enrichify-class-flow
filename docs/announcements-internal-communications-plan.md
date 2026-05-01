@@ -2,6 +2,26 @@
 
 Scope: planning only for Announcements/Internal Communications and Document Hub rollout (no UI/runtime/service/SQL changes in this milestone).
 
+## Checkpoint update (028 parent-facing announcements SQL draft)
+
+- Separate parent-facing SQL/RLS draft is now added:
+  - `supabase/sql/028_parent_announcements_foundation.sql`
+- `028` is manual/dev-first and draft-only:
+  - no auto-apply,
+  - no production apply assumption,
+  - fake/dev data only.
+- `028` introduces parent-facing model isolation from internal `announcements`:
+  - `parent_announcements`
+  - `parent_announcement_targets`
+  - `parent_announcement_read_receipts`
+  - `parent_announcement_media`
+- `028` includes private bucket draft for parent-facing media:
+  - `parent-announcements-media` (`public=false`)
+- Internal boundary remains unchanged:
+  - internal `announcement_attachments.parent_facing_media` remains disabled/reserved,
+  - no parent-facing UI/service implementation in this checkpoint,
+  - no notification/email/live chat behavior.
+
 ## Checkpoint update (authenticated HQ Company News create UI)
 
 - Authenticated HQ Company News create UI is now wired in `src/pages/Announcements.jsx`.

@@ -3,6 +3,28 @@
 Date: 2026-05-01  
 Scope: planning/review only for safest SQL/RLS direction before implementation (no UI/runtime/service/SQL changes in this milestone)
 
+## Checkpoint update (028 SQL draft prepared)
+
+- Manual/dev-first parent-facing SQL draft is now prepared at:
+  - `supabase/sql/028_parent_announcements_foundation.sql`
+- Draft status:
+  - not auto-applied,
+  - no production apply assumption,
+  - fake/dev data only.
+- Draft model follows recommended separate boundary:
+  - `parent_announcements`
+  - `parent_announcement_targets`
+  - `parent_announcement_read_receipts`
+  - `parent_announcement_media`
+- Private storage bucket draft added:
+  - `parent-announcements-media` (`public=false`) with storage policy draft.
+- Privacy-first RLS direction in `028`:
+  - HQ global manage,
+  - branch supervisor own-branch manage,
+  - teacher blocked from parent-facing management in MVP,
+  - parent read scoped to published targeted rows for linked child context,
+  - student blocked in MVP.
+
 ## 1) Current state
 
 - Staff-facing `Announcements` internal module exists and is a strong internal prototype.
