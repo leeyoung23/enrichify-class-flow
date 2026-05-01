@@ -33,6 +33,7 @@ import AuthPreview from '@/pages/AuthPreview';
 import Login from '@/pages/Login';
 import SalesKit from '@/pages/SalesKit';
 import StaffTimeClock from '@/pages/StaffTimeClock';
+import AiParentReports from '@/pages/AiParentReports';
 import { SupabaseAuthStateProvider, useSupabaseAuthState } from '@/hooks/useSupabaseAuthState';
 import { getSelectedDemoRole } from '@/services/authService';
 import { sanitizeReturnUrlForRedirect } from '@/lib/supabaseAuthReturnUrl';
@@ -122,6 +123,7 @@ const AuthenticatedApp = () => {
         <Route path="/parent-updates" element={<ParentUpdates />} />
         <Route path="/homework" element={<Homework />} />
         <Route path="/announcements" element={<Announcements />} />
+        <Route path="/ai-parent-reports" element={<AiParentReports />} />
         <Route path="/leads" element={<Leads />} />
         <Route path="/class-session" element={<ClassSession />} />
         <Route path="/observations" element={<Observations />} />

@@ -1,5 +1,20 @@
 # Mobile-first QA checkpoint
 
+## Checkpoint update (AI parent report staff UI shell)
+
+- New staff page added: `AI Parent Reports` at `/ai-parent-reports`.
+- Mobile QA additions for this page at ~390px and ~768px:
+  - report list card wrapping (type/status/period/current-version labels),
+  - draft form field stack and date input readability,
+  - version editor textarea density and action-button spacing,
+  - lifecycle actions row wrapping (`Submit`, `Approve`, `Release`, `Archive`),
+  - detail sections (`Current Version`, `Version History`, `Evidence Links`) readable without clipping.
+- Boundary checks to preserve during mobile QA:
+  - page is staff-only (teacher/supervisor/HQ),
+  - no ParentView staff controls,
+  - no real AI/provider controls,
+  - no PDF/export controls.
+
 ## Checkpoint update (final communication-module QA baseline)
 
 - Communication module scope is now broad enough to require a dedicated final phone-first pass across:

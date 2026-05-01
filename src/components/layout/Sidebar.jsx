@@ -42,6 +42,7 @@ const ICONS = {
   salesKit: Briefcase,
   staffTimeClock: Timer,
   announcements: Megaphone,
+  parentReports: FileText,
 };
 
 function withDemoRole(path, selectedDemoRole) {

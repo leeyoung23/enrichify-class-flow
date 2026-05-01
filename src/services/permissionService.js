@@ -18,6 +18,7 @@ export const ROLE_NAVIGATION = {
   [ROLES.HQ_ADMIN]: [
     { label: 'Dashboard', icon: 'dashboard', path: '/' },
     { label: 'Announcements', icon: 'announcements', path: '/announcements' },
+    { label: 'AI Parent Reports', icon: 'parentReports', path: '/ai-parent-reports' },
     { label: 'Branches', icon: 'branches', path: '/branches' },
     { label: 'Classes', icon: 'classes', path: '/classes' },
     { label: 'Teachers', icon: 'teachers', path: '/teachers' },
@@ -40,6 +41,7 @@ export const ROLE_NAVIGATION = {
   [ROLES.BRANCH_SUPERVISOR]: [
     { label: 'Dashboard', icon: 'dashboard', path: '/' },
     { label: 'Announcements', icon: 'announcements', path: '/announcements' },
+    { label: 'AI Parent Reports', icon: 'parentReports', path: '/ai-parent-reports' },
     { label: 'Classes', icon: 'classes', path: '/classes' },
     { label: 'Teachers', icon: 'teachers', path: '/teachers' },
     { label: 'Students', icon: 'students', path: '/students' },
@@ -58,6 +60,7 @@ export const ROLE_NAVIGATION = {
   [ROLES.TEACHER]: [
     { label: 'Dashboard', icon: 'dashboard', path: '/' },
     { label: 'Announcements', icon: 'announcements', path: '/announcements' },
+    { label: 'AI Parent Reports', icon: 'parentReports', path: '/ai-parent-reports' },
     { label: 'Class Session', icon: 'classSession', path: '/class-session' },
     { label: 'My Classes', icon: 'classes', path: '/classes' },
     { label: 'My Students', icon: 'students', path: '/students' },

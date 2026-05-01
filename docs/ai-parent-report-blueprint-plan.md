@@ -3,6 +3,28 @@
 Date: 2026-05-02  
 Scope: planning-only blueprint for AI-assisted parent progress reports before provider integration
 
+## Checkpoint update (AI parent report staff UI shell added)
+
+- Staff-side AI parent report page is now added at `/ai-parent-reports`:
+  - `src/pages/AiParentReports.jsx`
+- Scope is UI shell only:
+  - demo/manual data in demo mode,
+  - existing services in authenticated mode,
+  - no real AI provider wiring,
+  - no PDF/export.
+- ParentView remains parent-facing only:
+  - no staff report controls moved into ParentView.
+- Workflow visibility now includes:
+  - draft creation shell,
+  - manual/mock version creation shell (`manual`/`mock_ai` only),
+  - submit/approve/release/archive action controls.
+- Boundaries preserved:
+  - no SQL/RLS changes,
+  - no auto-release,
+  - no notification/email side effects.
+- Recommended next milestone:
+  - optional mock draft-assist UX polish inside staff UI shell before parent-side report display.
+
 ## Checkpoint update (030 manually applied in Supabase DEV)
 
 - `supabase/sql/030_ai_parent_reports_foundation.sql` is now manually applied in Supabase DEV.

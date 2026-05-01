@@ -1,5 +1,30 @@
 # Project Master Context Handoff
 
+## Checkpoint update (AI parent report UI shell milestone)
+
+- Added staff-side AI parent report UI shell:
+  - route: `/ai-parent-reports`
+  - page: `src/pages/AiParentReports.jsx`
+  - staff navigation wired for HQ/supervisor/teacher.
+- Workflow visibility now present in UI shell:
+  - report list + detail,
+  - manual draft create form,
+  - manual/mock version create panel,
+  - submit/approve/release/archive controls (release requires selected version).
+- Demo behavior:
+  - local fake/dev-only report rows and local lifecycle simulation,
+  - no Supabase report calls in demo mode.
+- Authenticated behavior:
+  - existing AI parent report services via anon+JWT+RLS only.
+- Boundaries preserved:
+  - no SQL/RLS changes,
+  - no provider integration,
+  - no PDF/export,
+  - no notification/email side effects,
+  - ParentView remains parent-facing only.
+- Checkpoint doc:
+  - `docs/ai-parent-report-ui-shell-checkpoint.md`
+
 ## Checkpoint update (AI parent reports 030 manual DEV apply completed)
 
 - Manual apply target:

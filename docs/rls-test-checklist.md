@@ -1,5 +1,20 @@
 # RLS Test Checklist
 
+## Checkpoint update (AI parent report UI shell alignment)
+
+- New staff UI shell route exists:
+  - `/ai-parent-reports` (teacher/supervisor/HQ navigation only).
+- RLS-aligned expectations for this UI shell:
+  - staff report list/detail uses existing AI parent report read services,
+  - lifecycle actions use existing AI parent report write services,
+  - parent/student do not access this route via role navigation.
+- Demo mode expectation:
+  - local fake/dev rows only; no Supabase report calls in demo mode.
+- Boundary confirmation:
+  - no SQL/RLS policy changes in this milestone,
+  - no widening of parent/student report visibility,
+  - no service-role frontend usage.
+
 ## Checkpoint update (AI parent reports 030 manual DEV apply confirmed)
 
 - Manual apply target:
