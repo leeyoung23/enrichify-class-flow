@@ -21,6 +21,10 @@ Scope: planning-only blueprint for AI-assisted parent progress reports before pr
   - no PDF/export.
 - Checkpoint reference:
   - `docs/mock-ai-parent-report-draft-service-smoke-checkpoint.md`
+- Final pass checkpoint reference:
+  - `docs/mock-ai-parent-report-draft-service-pass-checkpoint.md`
+- Next recommended milestone update:
+  - **A. Mock AI draft UI button wiring**.
 
 ## Checkpoint update (AI parent report staff UI shell added)
 

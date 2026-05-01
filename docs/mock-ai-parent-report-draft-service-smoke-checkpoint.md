@@ -3,6 +3,21 @@
 Date: 2026-05-02  
 Scope: service + smoke checkpoint for deterministic mock AI parent report draft generation (no UI wiring)
 
+## Final docs-only alignment update
+
+- Final pass checkpoint:
+  - `docs/mock-ai-parent-report-draft-service-pass-checkpoint.md`
+- Key pass posture:
+  - smoke PASS confirmed,
+  - no provider wiring/key/Edge Function path,
+  - no service-role frontend usage,
+  - no UI button yet,
+  - no PDF/export,
+  - no notification/email side effects,
+  - no auto-release.
+- Recommended next milestone now:
+  - **A. Mock AI draft UI button wiring**.
+
 ## 1) Milestone summary
 
 - Added service helper:

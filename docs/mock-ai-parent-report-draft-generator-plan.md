@@ -22,6 +22,8 @@ Scope: planning-only milestone for mock AI parent report draft generation before
   - no PDF/export.
 - Service checkpoint doc:
   - `docs/mock-ai-parent-report-draft-service-smoke-checkpoint.md`
+- Final pass checkpoint:
+  - `docs/mock-ai-parent-report-draft-service-pass-checkpoint.md`
 
 ## 1) Current state
 
@@ -30,7 +32,7 @@ Scope: planning-only milestone for mock AI parent report draft generation before
 - ParentView released-report display exists and is release-bound/current-version-bound.
 - AI parent report service + smoke path is passing with expected fixture CHECK notes.
 - Real AI provider is not wired.
-- Mock draft generator is not implemented yet.
+- Mock draft generator helper is implemented.
 - PDF/export is not implemented.
 
 ## 2) Product purpose
@@ -180,19 +182,19 @@ Future staff UI integration (after service proof):
 
 Choose:
 
-- A. Mock AI parent report draft service + smoke test
-- B. Mock AI draft UI button
-- C. Real AI provider integration planning
-- D. PDF/export planning
-- E. Notification/email planning
+- A. Mock AI draft UI button wiring
+- B. Real AI provider integration planning
+- C. PDF/export planning
+- D. Notification/email planning
+- E. Final AI report manual/mock QA checkpoint
 
 Recommendation: **A first**.
 
 Why:
 
-- service proof should come before UI wiring,
-- mock contract should be stable before real provider planning/implementation,
-- teacher approval + release boundary is safest when service behavior is validated first.
+- service helper + smoke are now proven,
+- staff UI shell already exists and can safely expose mock generation action,
+- release approval boundary remains explicit and unchanged.
 
 ## 12) Next implementation prompt (copy-paste)
 

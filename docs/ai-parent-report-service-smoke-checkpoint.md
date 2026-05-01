@@ -19,6 +19,10 @@
   - no PDF/export.
 - Detailed checkpoint:
   - `docs/mock-ai-parent-report-draft-service-smoke-checkpoint.md`
+- Final pass checkpoint:
+  - `docs/mock-ai-parent-report-draft-service-pass-checkpoint.md`
+- Updated recommendation after service-smoke pass:
+  - **A. Mock AI draft UI button wiring**.
 
 ## 0) UI shell follow-up status
 

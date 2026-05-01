@@ -19,6 +19,10 @@
 - No SQL/RLS changes, no PDF/export, and no notification/email side effects in this milestone.
 - Checkpoint doc:
   - `docs/mock-ai-parent-report-draft-service-smoke-checkpoint.md`
+- Final pass checkpoint:
+  - `docs/mock-ai-parent-report-draft-service-pass-checkpoint.md`
+- Recommended next milestone:
+  - **A. Mock AI draft UI button wiring** (no real provider, no auto-release).
 
 ## Checkpoint update (AI parent report UI shell milestone)
 

@@ -22,6 +22,10 @@
   - no PDF/export.
 - Checkpoint reference:
   - `docs/mock-ai-parent-report-draft-service-smoke-checkpoint.md`
+- Final pass checkpoint reference:
+  - `docs/mock-ai-parent-report-draft-service-pass-checkpoint.md`
+- Next milestone recommendation:
+  - **A. Mock AI draft UI button wiring** while preserving draft block + explicit release boundary.
 
 ## Checkpoint update (AI parent report UI shell alignment)
 
