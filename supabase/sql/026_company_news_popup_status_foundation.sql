@@ -77,5 +77,43 @@ create index if not exists announcement_statuses_profile_popup_idx
 --
 -- Note:
 -- - No helper function is added in 026. Current additive fields are sufficient for this foundation draft.
+--
+-- Review hardening (added in 026 pre-apply review):
+-- - Existing 020 update policy allows HQ/supervisor to update managed status rows.
+-- - To prevent accidental cross-user popup dismissal updates, popup_* column writes are restricted
+--   to self-row updates only via trigger guard below.
+-- - This does not change existing read/done/undone field semantics.
+
+-- -----------------------------------------------------------------------------
+-- 5) Popup-field self-update guard (prevents cross-user popup field writes)
+-- -----------------------------------------------------------------------------
+create or replace function public.guard_announcement_statuses_popup_self_update_026()
+returns trigger
+language plpgsql
+security definer
+set search_path = public
+as $$
+begin
+  if (
+    old.popup_seen_at is distinct from new.popup_seen_at
+    or old.popup_dismissed_at is distinct from new.popup_dismissed_at
+    or old.popup_last_shown_at is distinct from new.popup_last_shown_at
+  ) then
+    if auth.uid() is null or auth.uid() <> new.profile_id then
+      raise exception 'popup status fields can only be updated for own profile row';
+    end if;
+  end if;
+
+  return new;
+end;
+$$;
+
+drop trigger if exists trg_guard_announcement_statuses_popup_self_update_026 on public.announcement_statuses;
+create trigger trg_guard_announcement_statuses_popup_self_update_026
+before update on public.announcement_statuses
+for each row execute function public.guard_announcement_statuses_popup_self_update_026();
+
+comment on function public.guard_announcement_statuses_popup_self_update_026() is
+  '026 review hardening: popup_* fields on announcement_statuses are self-row update only to prevent cross-user dismissal writes.';
 
 -- End of 026 manual/dev-first SQL draft.

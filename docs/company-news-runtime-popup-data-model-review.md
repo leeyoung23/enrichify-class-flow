@@ -12,6 +12,10 @@ Scope: planning/review only for safest runtime warm pop-up strategy and data mod
   - `popup_dismissed_at`
   - `popup_last_shown_at`
 - `026` adds popup-status indexes only; no destructive operations and no data deletes.
+- `026` pre-apply review hardening adds popup-field self-update guard:
+  - `guard_announcement_statuses_popup_self_update_026()`
+  - `trg_guard_announcement_statuses_popup_self_update_026`
+  - purpose: prevent cross-user popup dismissal/seen updates through broad manager update paths.
 - Existing `read_at`, `last_seen_at`, and `done_status` behavior remains unchanged.
 - RLS posture remains conservative: no policy weakening, no parent/student access opening, no cross-branch widening.
 - Optional announcement-level popup config fields (`popup_style`, `popup_duration_seconds`, `display_until`) are intentionally deferred in `026`.

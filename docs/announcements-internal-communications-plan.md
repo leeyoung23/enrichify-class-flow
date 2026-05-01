@@ -37,6 +37,7 @@ Scope: planning only for Announcements/Internal Communications and Document Hub 
   - `popup_seen_at`
   - `popup_dismissed_at`
   - `popup_last_shown_at`
+- `026` pre-apply review hardening now adds popup self-update guard trigger/function to prevent cross-user popup-field writes.
 - `026` keeps existing `announcement_statuses` read/done semantics unchanged.
 - `026` adds popup-focused indexes only and does not weaken existing RLS policies.
 - Parent-facing announcements/events remain a later phase, and `parent_facing_media` remains out of scope.

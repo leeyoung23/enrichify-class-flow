@@ -534,6 +534,7 @@ Current status note:
     - `popup_seen_at`
     - `popup_dismissed_at`
     - `popup_last_shown_at`,
+  - pre-apply review hardening added popup self-update guard function/trigger to block cross-user popup field writes,
   - popup-focused indexes added for future runtime lookup/update paths,
   - existing `read_at`/`last_seen_at`/`done_status` behavior is unchanged,
   - no RLS policy weakening and no parent/student access widening,

@@ -85,6 +85,10 @@ Reminder: **Frontend filtering is not security. RLS must enforce access at datab
   - `announcement_statuses_popup_dismissed_at_idx`
   - `announcement_statuses_popup_last_shown_at_idx`
   - `announcement_statuses_profile_popup_idx`
+- `026` pre-apply review hardening adds popup self-update guard:
+  - function: `guard_announcement_statuses_popup_self_update_026()`
+  - trigger: `trg_guard_announcement_statuses_popup_self_update_026`
+  - expected behavior: popup_* fields can only be updated when `auth.uid() = announcement_statuses.profile_id`.
 - `026` does not modify or weaken existing `announcement_statuses` RLS policies.
 - `026` does not open parent/student access and does not widen cross-branch access.
 - Existing `read_at`, `last_seen_at`, and `done_status` behavior remains unchanged.

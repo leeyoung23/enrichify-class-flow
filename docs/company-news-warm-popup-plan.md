@@ -11,6 +11,10 @@ Scope: planning-only checkpoint for Company News / Big News mode and warm portal
   - `popup_seen_at`
   - `popup_dismissed_at`
   - `popup_last_shown_at`
+- `026` pre-apply review hardening now includes popup self-update guard:
+  - `guard_announcement_statuses_popup_self_update_026()`
+  - `trg_guard_announcement_statuses_popup_self_update_026`
+  - this prevents accidental cross-user popup status writes while keeping existing status semantics.
 - `read_at` / `last_seen_at` / `done_status` behavior remains unchanged.
 - Optional announcement popup config fields are deferred for now:
   - `popup_style`
