@@ -48,6 +48,10 @@
   - no notification/email side effects.
 - Checkpoint doc:
   - `docs/parent-view-ai-report-display-ui-checkpoint.md`
+- Final docs-only checkpoint:
+  - `docs/parent-view-ai-report-display-final-checkpoint.md`
+- Roadmap update:
+  - next recommended milestone is now **A. Mock AI draft generator planning**.
 
 ## Checkpoint update (AI parent reports 030 manual DEV apply completed)
 

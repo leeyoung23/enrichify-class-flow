@@ -16,12 +16,14 @@ Scope: planning only for parent-side released AI parent report display
 - No SQL/RLS/provider/notification side-effect changes were introduced.
 - UI checkpoint reference:
   - `docs/parent-view-ai-report-display-ui-checkpoint.md`
+- Final checkpoint reference:
+  - `docs/parent-view-ai-report-display-final-checkpoint.md`
 
 ## 1) Current state
 
 - Staff AI Parent Reports UI exists at `/ai-parent-reports`.
 - Report service + RLS + evidence traceability paths are smoke-proven.
-- ParentView released-report display is not implemented yet.
+- ParentView released-report display is implemented.
 - Real AI provider is not wired.
 - PDF/export is not implemented.
 - Notification/email side effects are not implemented.
@@ -194,8 +196,8 @@ Rationale:
 
 Choose:
 
-- A. ParentView released-report display UI wiring
-- B. Mock AI draft generator planning
+- A. Mock AI draft generator planning
+- B. Mock AI draft service
 - C. Real AI provider integration
 - D. PDF/export planning
 - E. Notification/email planning
@@ -204,10 +206,10 @@ Recommendation: **A first**.
 
 Why:
 
-- staff release path now exists,
-- parent output boundary is the primary gap,
-- UI must stay released-only/current-version-only,
-- no evidence links/raw AI/PDF exposure in parent surface.
+- staff and parent report surfaces now exist,
+- release loop is visible end-to-end,
+- mock AI should be planned before real provider wiring,
+- planning must preserve teacher approval and no auto-release.
 
 ## 13) Next implementation prompt (copy-paste)
 

@@ -14,6 +14,10 @@ Scope: docs-only checkpoint for AI parent report evidence-link smoke hardening
 - No real AI provider and no PDF/export were added.
 - ParentView released-report display was deferred in this evidence checkpoint and is now delivered in a follow-up milestone.
 - Follow-up: ParentView released-report display UI is now wired with released/current-version-only boundaries and still does not expose evidence links.
+- Finalized follow-up checkpoint:
+  - `docs/parent-view-ai-report-display-final-checkpoint.md`.
+- Next recommendation after parent display completion:
+  - **A. Mock AI draft generator planning**.
 
 ## 1) Key checkpoint notes
 

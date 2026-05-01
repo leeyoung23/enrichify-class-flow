@@ -3,6 +3,29 @@
 Date: 2026-05-02  
 Scope: ParentView released-report display UI wiring only
 
+## Final docs-only alignment update
+
+- Canonical final checkpoint doc:
+  - `docs/parent-view-ai-report-display-final-checkpoint.md`
+- ParentView released display boundary is confirmed:
+  - released-only list/history,
+  - released current-version detail only,
+  - no draft/unreleased visibility,
+  - no staff controls in ParentView.
+- Parent-safe exclusion list remains explicit:
+  - no evidence links,
+  - no release events,
+  - no raw version history,
+  - no `ai_model_label`,
+  - no `generation_source`,
+  - no provider/debug metadata,
+  - no storage paths,
+  - no PDF/export.
+- Demo mode remains local fake released reports only; no Supabase report calls in demo.
+- No SQL/RLS/provider/notification/email/live-chat changes in this docs-only pass.
+- Next milestone recommendation now shifts to:
+  - **A. Mock AI draft generator planning**.
+
 ## 1) Milestone summary
 
 - ParentView now includes a parent-safe `Progress Reports` section.

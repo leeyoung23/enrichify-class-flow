@@ -18,6 +18,12 @@
   - ParentView released-report display card/list readability for released-current-version-only scope.
 - Status update:
   - ParentView `Progress Reports` released/current-version-only section is now wired; include manual QA at ~390px/~768px for card stacking, section expansion readability, and no admin-control bleed.
+  - docs-only final checkpoint reference:
+    - `docs/parent-view-ai-report-display-final-checkpoint.md`
+  - preserve parent-safe visibility boundary in QA:
+    - no drafts/unreleased rows,
+    - no evidence links/raw metadata,
+    - no PDF/export/staff controls in ParentView.
 
 ## Checkpoint update (final communication-module QA baseline)
 

@@ -23,6 +23,15 @@
   - no evidence-link visibility,
   - no draft/unreleased visibility,
   - no raw AI/provider metadata exposure.
+- Final docs-only checkpoint reference:
+  - `docs/parent-view-ai-report-display-final-checkpoint.md`
+- ParentView strict non-exposure list reminder:
+  - no `ai_model_label`,
+  - no `generation_source`,
+  - no provider/debug metadata,
+  - no storage paths,
+  - no PDF/export links,
+  - no staff edit/release/archive controls.
 
 ## Checkpoint update (AI parent reports 030 manual DEV apply confirmed)
 

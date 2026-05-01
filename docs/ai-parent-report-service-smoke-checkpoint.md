@@ -10,6 +10,10 @@
 - Recommended next milestone is now parent-side released-report display planning before mock AI draft-assist UX.
 - Parent-side released-report display follow-up is now wired:
   - see `docs/parent-view-ai-report-display-ui-checkpoint.md`.
+- Parent-side final docs-only checkpoint:
+  - `docs/parent-view-ai-report-display-final-checkpoint.md`.
+- Current recommendation after parent display completion:
+  - **A. Mock AI draft generator planning**.
 
 ## 1) Scope and status
 

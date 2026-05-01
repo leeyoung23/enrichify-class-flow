@@ -37,3 +37,8 @@ Reason:
 - ParentView released-report display UI is now implemented in a dedicated parent-safe section.
 - Follow-up checkpoint:
   - `docs/parent-view-ai-report-display-ui-checkpoint.md`
+- Finalized docs-only checkpoint:
+  - `docs/parent-view-ai-report-display-final-checkpoint.md`
+- ParentView strict boundary reminder:
+  - released/current-version only,
+  - no evidence links/raw metadata/PDF/export/staff actions in parent surface.
