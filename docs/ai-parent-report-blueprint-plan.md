@@ -1,0 +1,303 @@
+# AI Parent Report Blueprint Plan
+
+Date: 2026-05-02  
+Scope: planning-only blueprint for AI-assisted parent progress reports before provider integration
+
+## 1) Current state
+
+- Communication module is now a strong internal prototype with staff + parent-facing communication surfaces.
+- Parent portal communication surface exists via read-only parent-safe `ParentView` announcements/events.
+- Homework human workflow exists (task/submission/feedback/release patterns).
+- AI homework/provider work exists only as planning + stub + smoke/regression boundary work.
+- Real AI provider integration is not wired in runtime.
+- PDF/export for parent reports is not implemented.
+- Teacher approval remains required before any parent-visible release boundary.
+
+## 2) Product purpose
+
+The AI parent report feature should:
+
+- produce parent-friendly student progress reports from trusted operational evidence,
+- combine attendance/homework/learning context into one clear report structure,
+- reduce repetitive teacher writing load while preserving quality,
+- keep teacher professional judgement as the final authority,
+- support multiple report scenarios:
+  - monthly reports,
+  - parent-requested reports,
+  - graduation/end-of-term reports,
+  - future PDF/export delivery.
+
+## 3) Report types
+
+Planned report types:
+
+- monthly progress report,
+- weekly brief report,
+- parent-requested progress report,
+- graduation/end-of-term report,
+- homework feedback report,
+- behaviour/participation note (when appropriate and policy-safe).
+
+## 4) Core report sections
+
+Core sections for blueprint v1:
+
+- student/class/programme summary,
+- report period,
+- attendance and punctuality,
+- lesson progression and topics covered,
+- curriculum/school learning focus,
+- homework completion,
+- homework/assessment performance,
+- strengths,
+- areas for improvement,
+- learning gaps,
+- teacher observations,
+- next-step recommendations,
+- parent support suggestions,
+- selected evidence/media references,
+- teacher final comment,
+- optional supervisor/HQ note for formal report modes.
+
+## 5) Data-source mapping
+
+Planned section-to-source mapping:
+
+- `student/class/programme summary` -> student profile + class assignment + school/curriculum profile context.
+- `report period` -> teacher-selected period metadata + report config dates.
+- `attendance and punctuality` -> attendance records and summary counters.
+- `lesson progression/topics covered` -> teacher class notes, weekly report inputs, curriculum progression markers.
+- `curriculum/school learning focus` -> class curriculum assignment + student school profile + learning goals.
+- `homework completion` -> homework tasks + submissions + completion statuses.
+- `homework/assessment performance` -> released homework feedback + reviewed outcomes + future assessment records.
+- `strengths` -> teacher observations + released feedback summaries + curriculum-aligned evidence tags.
+- `areas for improvement` -> teacher observations + homework patterns + attendance/punctuality patterns.
+- `learning gaps` -> teacher-confirmed gaps and evidence-backed indicators (not diagnosis claims).
+- `teacher observations` -> manual teacher input field (primary source).
+- `next-step recommendations` -> AI draft + teacher revision + curriculum context.
+- `parent support suggestions` -> AI parent-friendly rewrite from approved evidence + teacher edit.
+- `selected evidence/media references` -> approved/released parent-safe references only (no internal-only notes).
+- `announcements/events context (optional)` -> relevant parent-facing announcement/event context when teacher opts in.
+- `AI homework draft hints (optional)` -> only teacher-approved and policy-safe extracted summary usage.
+- `manual teacher input` -> always available override and source-of-truth path.
+- `future assessment records` -> reserved for future schema/service integration.
+
+## 6) AI-generated vs teacher-written fields
+
+### AI can draft
+
+- summary wording from structured evidence,
+- strengths and improvement wording from approved data,
+- next-step recommendation drafts,
+- parent-friendly language rewrite,
+- consistency/clarity checks across sections.
+
+### Teacher must supply or approve
+
+- sensitive behaviour comments,
+- final judgement,
+- learning gap confirmation,
+- parent-facing release decision,
+- correction of AI mistakes and nuance adjustments.
+
+### Never auto-generate or auto-release
+
+- diagnosis-like claims,
+- sensitive family/health/personal claims,
+- unsupported negative labels,
+- any parent-visible report without explicit teacher approval.
+
+## 7) Approval workflow
+
+Planned workflow:
+
+1. Data aggregation preview (staff-only evidence snapshot).
+2. AI draft generation (draft-only).
+3. Teacher review/edit/approval.
+4. Optional supervisor/HQ approval for formal report types.
+5. Release to parent portal.
+6. Optional PDF/export after release (future).
+7. Audit trail records who generated/edited/approved/released and when.
+
+## 8) Input -> process -> output integrity
+
+For each parent-visible section:
+
+- `staff input path` -> identify source records + manual teacher fields used.
+- `AI draft path` -> generate from minimum structured evidence.
+- `approval gate` -> teacher required; optional supervisor/HQ for formal modes.
+- `RLS/privacy boundary` -> staff scope rules for draft access; parent not allowed before release.
+- `parent release boundary` -> only released report rows become parent-visible.
+
+Integrity rules:
+
+- no parent-visible content without explicit human approval,
+- each generated section should remain traceable to source evidence domains,
+- insufficient evidence should produce explicit “insufficient data” markers instead of fabricated text.
+
+## 9) AI prompt/data minimization
+
+Planned minimization rules:
+
+- send only necessary structured data to provider,
+- never send raw storage paths,
+- exclude private internal notes unless explicitly approved for inclusion,
+- avoid unnecessary direct identifiers where possible,
+- no secrets/env logging in request/response logs,
+- provider calls must be server-side only (Edge/server boundary),
+- no provider key in frontend.
+
+## 10) Report tone and style
+
+Style goals:
+
+- warm, parent-friendly, specific, constructive,
+- not robotic and not generic filler,
+- no overclaiming beyond evidence,
+- clear structure: what improved, what needs practice, how parents can help,
+- English-first output with optional bilingual support later,
+- always teacher-editable before release.
+
+## 11) PDF/export contract (future)
+
+Future printable/exportable contract:
+
+- report header:
+  - centre
+  - class
+  - student
+  - report period
+- section-card layout for core narrative blocks,
+- attendance/homework summary table block,
+- strengths + improvements block,
+- next steps block,
+- teacher final comment block,
+- optional evidence thumbnails (parent-safe only),
+- footer/disclaimer block,
+- export PDF action added later,
+- export availability gated by release boundary.
+
+## 12) RLS/privacy model
+
+Planned report visibility model:
+
+- teacher: assigned students/classes only,
+- branch supervisor: own-branch scope,
+- HQ/admin: global scope where intended,
+- parent: released reports for linked child only,
+- no cross-family leakage,
+- AI drafts are staff-only and never parent-visible,
+- future PDF objects remain private with signed-URL access only.
+
+## 13) Testing plan (future)
+
+Future smoke/regression targets:
+
+- generate report draft from fake/dev data only,
+- teacher can view/edit draft,
+- parent cannot view draft,
+- release makes report visible only to linked parent,
+- unrelated parent blocked,
+- PDF export private/signed only if implemented,
+- no provider secret logging,
+- no auto-release behavior.
+
+## 14) Risks and safeguards
+
+Key risks:
+
+- inaccurate AI summaries,
+- unsupported claims,
+- over-negative language,
+- data leakage,
+- missing-data distortion,
+- teacher overreliance on AI drafts,
+- privacy issues around evidence/media references,
+- PDF sharing risk once export exists.
+
+Safeguards:
+
+- strict teacher approval gate,
+- source-traceable section mapping,
+- confidence/insufficient-data flags,
+- explicit safe templates and forbidden-claim guardrails,
+- audit logs for generate/edit/release actors and timestamps.
+
+## 15) Recommended implementation sequence
+
+Options:
+
+- A. AI parent report data model / SQL review
+- B. AI report draft service with mock provider
+- C. Report UI shell with demo data
+- D. Real provider integration
+- E. PDF/export planning
+
+Recommendation: **A first**.
+
+Why A first:
+
+- report workflow needs draft/release/audit/RLS table design before real provider use,
+- AI must not generate parent-visible outputs without explicit storage + approval model,
+- mock provider phase should come before real provider wiring,
+- PDF/export should follow only after report data-flow and approval boundaries are stable.
+
+## 16) Next implementation prompt (copy-paste)
+
+```text
+Continue this same project only.
+
+Project folder:
+~/Desktop/enrichify-class-flow
+
+Branch:
+cursor/safe-lint-typecheck-486d
+
+Latest expected commit:
+Add AI parent report blueprint plan
+
+Before doing anything, verify:
+- git branch --show-current
+- git log --oneline -12
+- git status --short
+
+Task:
+AI parent report data model / SQL review only.
+
+Hard constraints:
+- Planning/docs only in this milestone.
+- Do not change app UI.
+- Do not change runtime logic.
+- Do not add services.
+- Do not change Supabase SQL.
+- Do not change RLS policies.
+- Do not apply SQL.
+- Do not call real AI APIs.
+- Do not add provider keys.
+- Do not expose env values or passwords.
+- Do not commit .env.local.
+- Do not upload files.
+- Do not use real student/parent/teacher/school/curriculum/homework/payment/attendance/communication data.
+- Use fake/dev data only.
+- Do not use service role key in frontend.
+- Do not remove demoRole.
+- Do not remove demo/local fallback.
+- Do not auto-send emails or notifications.
+- Do not start live chat.
+- Do not implement AI provider wiring yet.
+- Do not implement PDF/export yet.
+- Do not auto-release AI-generated content to parents.
+
+Please deliver:
+1) Proposed report entity model (draft/review/released/audit).
+2) Role/RLS matrix for teacher/supervisor/HQ/parent access.
+3) Release boundary and revision lifecycle rules.
+4) Parent visibility and linked-child scoping safeguards.
+5) Non-goals and migration notes for future provider and PDF/export phases.
+
+Validation efficiency rule:
+Docs-only checkpoint.
+Run:
+- git diff --name-only
+Do not run build/lint/typecheck/smoke suite unless runtime files change.
+```
