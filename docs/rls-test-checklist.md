@@ -1,5 +1,9 @@
 # RLS Test Checklist
 
+## Checkpoint update (Homework UI polish — 2026-05-02)
+
+- **`src/pages/Homework.jsx`** — **copy/layout only**; **no** DDL. When touching homework reads/writes later, re-run e.g. **`npm run test:supabase:homework:tracker:read`**, **`npm run test:supabase:homework:feedback`**, and related homework smokes. **Checkpoint:** **`docs/homework-teacher-upload-step-ui-polish-checkpoint.md`**.
+
 ## Checkpoint update (manual visual QA — navigation clarity, 2026-05-02)
 
 - **Human runbook (no automated RLS assert):** **`docs/manual-qa-navigation-clickability-simplicity-checkpoint.md`** — confirms parent-facing **published-only** boundaries **by inspection** on ParentView; **no** DDL; **fake/dev data only**. Does **not** replace **`npm run test:supabase:parent-announcements`** when **`src/`** touches parent announcements — complements automation.

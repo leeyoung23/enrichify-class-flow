@@ -1,5 +1,9 @@
 # Project Master Context Handoff
 
+## Checkpoint update (Homework teacher upload/review UI polish — 2026-05-02)
+
+- **`src/pages/Homework.jsx`** — staff-oriented intro; **By Task / By Student** helper copy; **Create homework task** with Steps 1–3; plain submission statuses; **Student submission files** / **Open student submission**; **Teacher-marked work** + share wording; **Share feedback with family** + parent-visibility helper; technical IDs in collapsible **Staff reference**; mobile-friendly button widths. **Doc:** **`docs/homework-teacher-upload-step-ui-polish-checkpoint.md`**. **`docs/teacher-upload-step-simplification-plan.md`** — milestone **B** noted implemented. **No** SQL/RLS/ParentView/provider/email/PDF/`real_ai`.
+
 ## Checkpoint update (manual QA — navigation clarity pass, 2026-05-02)
 
 - **Docs-only:** **`docs/manual-qa-navigation-clickability-simplicity-checkpoint.md`** — screenshot-oriented QA before next implementation: ParentView history UX, My Tasks grouping, setup card affordances; **§6** safety/privacy visual audit; **§8** decision rule (targeted UI fixes vs **Teacher upload-step simplification** before real provider smoke). UI baseline **`74a71bf`**; cross-ref **`docs/navigation-clickability-simplicity-fixes-final-checkpoint.md`**. **No** runtime changes in this doc milestone.

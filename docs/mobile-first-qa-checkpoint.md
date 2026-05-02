@@ -1,5 +1,9 @@
 # Mobile-first QA checkpoint
 
+## Checkpoint update (Homework staff review UI polish — 2026-05-02)
+
+- **`docs/homework-teacher-upload-step-ui-polish-checkpoint.md`** — **`Homework.jsx`**: step-labelled **Create homework task**, **Submissions to review**, **Teacher-marked work**, **Share feedback with family** / **Share marked work with family**; IDs under **Staff reference**; full-width primary buttons on narrow widths. Re-QA **~390px**: toggle row, create flow, submission/marked/feedback cards.
+
 ## Checkpoint update (manual visual QA — navigation / ParentView / My Tasks / setup cards, 2026-05-02)
 
 - **Runbook:** **`docs/manual-qa-navigation-clickability-simplicity-checkpoint.md`** — ParentView **Latest** + **More announcements** + **View more history** / **Show less**, **My Tasks** four groups, Branches/Classes/Teachers/Students **directory preview** cards; **desktop + ~390px**; safety/privacy §6; decision rule §8 (fix UI/copy vs proceed to **upload-step simplification**). **QA/checkpoint only** — **no** `src/` changes in this milestone.

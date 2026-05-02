@@ -46,8 +46,36 @@ const SUBMISSION_STATUS_OPTIONS = [
   { value: 'under_review', label: 'Under review' },
   { value: 'reviewed', label: 'Reviewed' },
   { value: 'returned_for_revision', label: 'Returned for revision' },
-  { value: 'approved_for_parent', label: 'Approved for parent' },
+  { value: 'approved_for_parent', label: 'Feedback released' },
 ];
+
+function formatTeacherSubmissionStatus(status) {
+  const labels = {
+    submitted: 'Submitted',
+    under_review: 'Under review',
+    reviewed: 'Reviewed',
+    returned_for_revision: 'Returned for revision',
+    approved_for_parent: 'Feedback released',
+  };
+  if (!status) return '—';
+  return labels[status] || String(status).replace(/_/g, ' ');
+}
+
+function formatTeacherFeedbackRecordStatus(status) {
+  const labels = {
+    draft: 'Draft',
+    released_to_parent: 'Shared with family',
+  };
+  if (!status) return 'No feedback yet';
+  return labels[status] || String(status).replace(/_/g, ' ');
+}
+
+function shortenStaffReference(id) {
+  if (!id || typeof id !== 'string') return '';
+  const trimmed = id.trim();
+  if (trimmed.length <= 10) return trimmed;
+  return `…${trimmed.slice(-8)}`;
+}
 
 const SUBMISSION_STATUS_BADGE = {
   submitted: 'bg-blue-100 text-blue-700 border-blue-200',
@@ -95,6 +123,20 @@ const DEMO_HOMEWORK_STUDENTS = [
   { id: 'demo-student-02', name: 'Student Demo B', school: 'School B', stream: 'Year 5 Mixed Support' },
   { id: 'demo-student-03', name: 'Student Demo C', school: 'School C', stream: 'Year 5 Extension' },
 ];
+
+function getSubmissionStudentLabel(studentId) {
+  if (!studentId) return 'Student';
+  const demo = DEMO_HOMEWORK_STUDENTS.find((s) => s.id === studentId);
+  if (demo) return demo.name;
+  return `Student (${shortenStaffReference(studentId)})`;
+}
+
+const ASSIGNMENT_SCOPE_LABELS = {
+  class: 'Whole class',
+  selected_students: 'Selected students',
+  individual: 'One student',
+};
+
 const DEMO_HOMEWORK_CLASSES = [
   { id: 'demo-class-1', label: 'Demo Class A - Year 5 Mixed Group' },
 ];
@@ -860,7 +902,7 @@ export default function Homework() {
       return result.data;
     },
     onSuccess: () => {
-      toast.success('Feedback released to parent.');
+      toast.success('Feedback shared with family.');
       refreshReviewData();
     },
     onError: (error) => {
@@ -956,7 +998,7 @@ export default function Homework() {
       return result.data || null;
     },
     onSuccess: () => {
-      toast.success('Marked file released to parent.');
+      toast.success('Marked work shared with family.');
       void queryClient.invalidateQueries({ queryKey: ['homework-review-marked-files'] });
     },
     onError: (error) => {
@@ -1102,8 +1144,8 @@ export default function Homework() {
   return (
     <div>
       <PageHeader
-        title={role === ROLES.TEACHER ? 'My Homework Review' : 'Homework Review'}
-        description="Teacher/staff homework review workflow. Parent-facing homework UI remains a separate future milestone."
+        title={role === ROLES.TEACHER ? 'Homework review (staff)' : 'Homework review (staff)'}
+        description="For teachers and staff: check submissions, open student files, add teacher-marked work, and draft feedback here. Families only see homework feedback and marked files after you release them—nothing sends automatically. The parent homework view is separate and shows released work only."
       />
 
       {!isStaffRole ? (
@@ -1115,7 +1157,7 @@ export default function Homework() {
       ) : !isDemoMode && !canUseSupabaseHomework ? (
         <Card className="p-5 border-dashed">
           <p className="text-sm text-muted-foreground">
-            Supabase authenticated staff session is required to use homework review.
+            Sign in with your staff account to review homework from your centre. Demo mode below shows a safe preview without saving to the server.
           </p>
         </Card>
       ) : (
@@ -1126,7 +1168,7 @@ export default function Homework() {
                 <Button
                   type="button"
                   variant={activeViewMode === 'by_task' ? 'default' : 'outline'}
-                  className="min-h-10"
+                  className="min-h-10 w-full sm:w-auto"
                   onClick={() => setActiveViewMode('by_task')}
                 >
                   <BookOpen className="h-4 w-4 mr-1" />
@@ -1135,14 +1177,14 @@ export default function Homework() {
                 <Button
                   type="button"
                   variant={activeViewMode === 'by_student' ? 'default' : 'outline'}
-                  className="min-h-10"
+                  className="min-h-10 w-full sm:w-auto"
                   onClick={() => setActiveViewMode('by_student')}
                 >
                   <Users className="h-4 w-4 mr-1" />
                   By Student
                 </Button>
               </div>
-              <div className="flex flex-wrap gap-2">
+              <div className="flex flex-wrap gap-2 w-full sm:w-auto justify-end">
                 {isDemoMode && activeViewMode === 'by_student' ? (
                   <Button
                     type="button"
@@ -1155,165 +1197,185 @@ export default function Homework() {
                 ) : null}
                 <Button
                   type="button"
-                  className="min-h-10"
+                  className="min-h-10 w-full sm:w-auto"
                   onClick={() => openCreateHomeworkShell('class')}
                 >
-                  Create Homework
+                  Create homework task
                 </Button>
               </div>
             </div>
+            <p className="text-sm text-muted-foreground px-1 pt-3 border-t mt-3">
+              {activeViewMode === 'by_task'
+                ? 'By Task: check each homework assignment and who has submitted, is waiting for review, or has feedback released.'
+                : 'By Student: check each child’s homework status across assignments.'}
+            </p>
           </Card>
 
           {createHomeworkOpen ? (
-            <Card className="p-4 sm:p-5">
+            <Card className="p-4 sm:p-5 space-y-6">
               <div className="flex flex-wrap items-center justify-between gap-2">
-                <p className="font-medium">Create Homework</p>
+                <p className="font-semibold text-lg">Create homework task</p>
                 <Badge variant="outline">
-                  assignment_scope = {createForm.assignmentType}
+                  {ASSIGNMENT_SCOPE_LABELS[createForm.assignmentType] || 'Assignment'}
                 </Badge>
               </div>
-              <p className="text-xs text-muted-foreground mt-1">
+              <p className="text-sm text-muted-foreground">
                 {isDemoMode
-                  ? 'Demo-only shell: local fake create simulation. No Supabase write or provider call is made.'
-                  : 'Authenticated staff mode uses guarded create wiring with RLS. Save stays draft-safe and does not affect review/release actions.'}
+                  ? 'Demo-only simulation: creating a task runs in the browser only. No real upload to the server.'
+                  : 'Creates a homework assignment for your class or selected students. Saving does not email families or send feedback to parents.'}
+                {' '}
+                When signed in, this uses your staff account. It only creates the task—review and release still happen below.
               </p>
-              <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2">
-                <div className="space-y-2">
-                  <Label>Assignment type</Label>
-                  <Select value={createForm.assignmentType} onValueChange={setAssignmentType}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select assignment type" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="class">Whole class</SelectItem>
-                      <SelectItem value="selected_students">Selected students</SelectItem>
-                      <SelectItem value="individual">Individual student</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="space-y-2">
-                  <Label>Class</Label>
-                  <Select
-                    value={createForm.classId}
-                    onValueChange={(value) => setCreateForm((prev) => ({ ...prev, classId: value }))}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select class" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {createClassOptions.map((option) => (
-                        <SelectItem key={option.id} value={option.id}>
-                          {option.label}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="space-y-2 sm:col-span-2">
-                  <Label>Title</Label>
-                  <Input
-                    value={createForm.title}
-                    onChange={(event) => setCreateForm((prev) => ({ ...prev, title: event.target.value }))}
-                    placeholder="Homework title"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label>Subject</Label>
-                  <Input
-                    value={createForm.subject}
-                    onChange={(event) => setCreateForm((prev) => ({ ...prev, subject: event.target.value }))}
-                    placeholder="Subject"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label>Due date</Label>
-                  <Input
-                    type="date"
-                    value={createForm.dueDate}
-                    onChange={(event) => setCreateForm((prev) => ({ ...prev, dueDate: event.target.value }))}
-                  />
-                </div>
-                <div className="space-y-2 sm:col-span-2">
-                  <Label>Instructions</Label>
-                  <Textarea
-                    className="min-h-[96px]"
-                    value={createForm.instructions}
-                    onChange={(event) => setCreateForm((prev) => ({ ...prev, instructions: event.target.value }))}
-                    placeholder="Assignment instructions"
-                  />
-                </div>
-                <div className="space-y-2 sm:col-span-2">
-                  <Label>Notes (optional)</Label>
-                  <Textarea
-                    className="min-h-[84px]"
-                    value={createForm.notes}
-                    onChange={(event) => setCreateForm((prev) => ({ ...prev, notes: event.target.value }))}
-                    placeholder="Optional teacher notes"
-                  />
-                </div>
-              </div>
 
-              {createForm.assignmentType !== 'class' ? (
-                <div className="mt-4 space-y-2">
-                  <div className="flex flex-wrap items-center justify-between gap-2">
-                    <p className="text-sm font-medium">
-                      Select students {createForm.assignmentType === 'individual' ? '(exactly one)' : '(one or more)'}
-                    </p>
-                    <div className="flex items-center gap-2">
-                      <Badge variant="outline">Selected {createForm.studentIds.length}</Badge>
-                      <Button type="button" size="sm" variant="outline" onClick={clearSelectedStudents}>
-                        Clear selected
-                      </Button>
+              <div>
+                <p className="text-sm font-semibold text-primary mb-3">Step 1 · Choose who receives this homework</p>
+                <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                  <div className="space-y-2">
+                    <Label>Who is it for?</Label>
+                    <Select value={createForm.assignmentType} onValueChange={setAssignmentType}>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select assignment type" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="class">Whole class</SelectItem>
+                        <SelectItem value="selected_students">Selected students</SelectItem>
+                        <SelectItem value="individual">One student</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Class</Label>
+                    <Select
+                      value={createForm.classId}
+                      onValueChange={(value) => setCreateForm((prev) => ({ ...prev, classId: value }))}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select class" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {createClassOptions.map((option) => (
+                          <SelectItem key={option.id} value={option.id}>
+                            {option.label}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+
+                {createForm.assignmentType !== 'class' ? (
+                  <div className="mt-4 space-y-2">
+                    <div className="flex flex-wrap items-center justify-between gap-2">
+                      <p className="text-sm font-medium">
+                        Select students {createForm.assignmentType === 'individual' ? '(pick one)' : '(pick one or more)'}
+                      </p>
+                      <div className="flex items-center gap-2">
+                        <Badge variant="outline">Selected {createForm.studentIds.length}</Badge>
+                        <Button type="button" size="sm" variant="outline" onClick={clearSelectedStudents}>
+                          Clear selected
+                        </Button>
+                      </div>
+                    </div>
+                    <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+                      {createStudentOptions.map((student) => {
+                        const selected = createForm.studentIds.includes(student.id);
+                        return (
+                          <button
+                            key={student.id}
+                            type="button"
+                            onClick={() => toggleCreateStudent(student.id)}
+                            className={`rounded-lg border p-3 text-left ${selected ? 'border-primary bg-primary/5' : 'border-border'}`}
+                          >
+                            <p className="text-sm font-medium">{student.name}</p>
+                            {student.school || student.stream ? (
+                              <p className="text-xs text-muted-foreground">
+                                {[student.school, student.stream].filter(Boolean).join(' · ')}
+                              </p>
+                            ) : null}
+                          </button>
+                        );
+                      })}
                     </div>
                   </div>
-                  <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
-                    {createStudentOptions.map((student) => {
-                      const selected = createForm.studentIds.includes(student.id);
-                      return (
-                        <button
-                          key={student.id}
-                          type="button"
-                          onClick={() => toggleCreateStudent(student.id)}
-                          className={`rounded-lg border p-3 text-left ${selected ? 'border-primary bg-primary/5' : 'border-border'}`}
-                        >
-                          <p className="text-sm font-medium">{student.name}</p>
-                          {student.school || student.stream ? (
-                            <p className="text-xs text-muted-foreground">
-                              {[student.school, student.stream].filter(Boolean).join(' · ')}
-                            </p>
-                          ) : null}
-                        </button>
-                      );
-                    })}
+                ) : null}
+              </div>
+
+              <div>
+                <p className="text-sm font-semibold text-primary mb-3">Step 2 · Add homework details</p>
+                <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                  <div className="space-y-2 sm:col-span-2">
+                    <Label>Title</Label>
+                    <Input
+                      value={createForm.title}
+                      onChange={(event) => setCreateForm((prev) => ({ ...prev, title: event.target.value }))}
+                      placeholder="Homework title"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Subject</Label>
+                    <Input
+                      value={createForm.subject}
+                      onChange={(event) => setCreateForm((prev) => ({ ...prev, subject: event.target.value }))}
+                      placeholder="Subject"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Due date</Label>
+                    <Input
+                      type="date"
+                      value={createForm.dueDate}
+                      onChange={(event) => setCreateForm((prev) => ({ ...prev, dueDate: event.target.value }))}
+                    />
+                  </div>
+                  <div className="space-y-2 sm:col-span-2">
+                    <Label>Instructions</Label>
+                    <Textarea
+                      className="min-h-[96px]"
+                      value={createForm.instructions}
+                      onChange={(event) => setCreateForm((prev) => ({ ...prev, instructions: event.target.value }))}
+                      placeholder="What should students do?"
+                    />
+                  </div>
+                  <div className="space-y-2 sm:col-span-2">
+                    <Label>Notes (optional, staff only)</Label>
+                    <Textarea
+                      className="min-h-[84px]"
+                      value={createForm.notes}
+                      onChange={(event) => setCreateForm((prev) => ({ ...prev, notes: event.target.value }))}
+                      placeholder="Optional notes for your team—not shown to families"
+                    />
                   </div>
                 </div>
-              ) : null}
-
-              <div className="mt-4 rounded-lg border border-dashed p-3 text-xs text-muted-foreground">
-                Summary: {createForm.assignmentType} assignment
-                {createForm.dueDate ? ` · due ${createForm.dueDate}` : ''}.
-                {' '}No auto-release and no auto-save. Create uses existing write service only when class/branch context is valid.
               </div>
-              <div className="mt-4 flex flex-wrap gap-2">
-                <Button
-                  type="button"
-                  className="min-h-10"
-                  onClick={saveCreateHomeworkShell}
-                  disabled={!isDemoMode && createHomeworkMutation.isPending}
-                >
-                  {!isDemoMode && createHomeworkMutation.isPending ? 'Saving...' : 'Save'}
-                </Button>
-                <Button
-                  type="button"
-                  className="min-h-10"
-                  variant="outline"
-                  onClick={() => {
-                    setCreateHomeworkOpen(false);
-                    resetCreateForm('class');
-                  }}
-                >
-                  Cancel
-                </Button>
+
+              <div>
+                <p className="text-sm font-semibold text-primary mb-3">Step 3 · Save homework task</p>
+                <div className="rounded-lg border border-dashed p-3 text-sm text-muted-foreground">
+                  You are creating a <span className="font-medium text-foreground">{ASSIGNMENT_SCOPE_LABELS[createForm.assignmentType] || 'homework'}</span>
+                  {createForm.dueDate ? ` · due ${createForm.dueDate}` : ''}.
+                  {' '}This step only saves the assignment. It does not release marked work or feedback to parents.
+                </div>
+                <div className="mt-4 flex flex-col sm:flex-row flex-wrap gap-2">
+                  <Button
+                    type="button"
+                    className="min-h-10 w-full sm:w-auto"
+                    onClick={saveCreateHomeworkShell}
+                    disabled={!isDemoMode && createHomeworkMutation.isPending}
+                  >
+                    {!isDemoMode && createHomeworkMutation.isPending ? 'Saving...' : 'Save homework task'}
+                  </Button>
+                  <Button
+                    type="button"
+                    className="min-h-10 w-full sm:w-auto"
+                    variant="outline"
+                    onClick={() => {
+                      setCreateHomeworkOpen(false);
+                      resetCreateForm('class');
+                    }}
+                  >
+                    Cancel
+                  </Button>
+                </div>
               </div>
             </Card>
           ) : null}
@@ -1367,8 +1429,11 @@ export default function Homework() {
 
                 {isDemoMode ? (
                   <Card className="p-4">
-                    <div className="flex items-center justify-between mb-3">
-                      <p className="font-medium">By Task tracker (demo)</p>
+                    <div className="flex flex-wrap items-start justify-between gap-2 mb-2">
+                      <div>
+                        <p className="font-medium">By Task tracker (demo)</p>
+                        <p className="text-xs text-muted-foreground mt-1">Tap a task to filter submissions and counts.</p>
+                      </div>
                       <Badge variant="outline">{demoTaskTrackerRows.length}</Badge>
                     </div>
                     <div className="space-y-2 max-h-[360px] overflow-y-auto pr-1">
@@ -1403,8 +1468,11 @@ export default function Homework() {
                   </Card>
                 ) : (
                   <Card className="p-4">
-                    <div className="flex items-center justify-between mb-3">
-                      <p className="font-medium">By Task tracker</p>
+                    <div className="flex flex-wrap items-start justify-between gap-2 mb-2">
+                      <div>
+                        <p className="font-medium">By Task tracker</p>
+                        <p className="text-xs text-muted-foreground mt-1">Tap a task to filter submissions and counts.</p>
+                      </div>
                       <Badge variant="outline">{trackerByClassRows.length}</Badge>
                     </div>
                     {!isUuidLike(resolvedTrackerClassId) ? (
@@ -1453,8 +1521,11 @@ export default function Homework() {
                 )}
 
                 <Card className="p-4">
-                  <div className="flex items-center justify-between mb-3">
-                    <p className="font-medium">Submission queue</p>
+                  <div className="flex flex-wrap items-start justify-between gap-2 mb-2">
+                    <div>
+                      <p className="font-medium">Submissions to review</p>
+                      <p className="text-xs text-muted-foreground mt-1">Pick a student submission to open files and feedback.</p>
+                    </div>
                     <Badge variant="outline">{submissionRows.length}</Badge>
                   </div>
                   {submissionsBusy ? (
@@ -1474,13 +1545,14 @@ export default function Homework() {
                             className={`w-full text-left rounded-lg border p-3 ${selected ? 'border-primary bg-primary/5' : 'border-border'}`}
                           >
                             <div className="flex items-center justify-between gap-2 mb-1">
-                              <p className="text-sm font-medium truncate">{submission.student_id}</p>
+                              <p className="text-sm font-medium truncate">{getSubmissionStudentLabel(submission.student_id)}</p>
                               <Badge variant="outline" className={statusClass}>
-                                {submission.status}
+                                {formatTeacherSubmissionStatus(submission.status)}
                               </Badge>
                             </div>
-                            <p className="text-xs text-muted-foreground truncate">Submission: {submission.id}</p>
-                            <p className="text-xs text-muted-foreground truncate">Task: {submission.homework_task_id}</p>
+                            <p className="text-xs text-muted-foreground truncate">
+                              Task ref. {shortenStaffReference(submission.homework_task_id)}
+                            </p>
                           </button>
                         );
                       })}
@@ -1512,7 +1584,7 @@ export default function Homework() {
                     </Select>
                     {!isDemoMode ? (
                       <p className="text-xs text-muted-foreground">
-                        By Student tracker uses selected student UUID from visible homework data in this phase.
+                        Uses students from homework you can already see in this class—pick one to load their tasks.
                       </p>
                     ) : null}
                   </div>
@@ -1520,8 +1592,11 @@ export default function Homework() {
 
                 {isDemoMode ? (
                   <Card className="p-4">
-                    <div className="flex items-center justify-between mb-3">
-                      <p className="font-medium">By Student tracker (demo)</p>
+                    <div className="flex flex-wrap items-start justify-between gap-2 mb-2">
+                      <div>
+                        <p className="font-medium">By Student tracker (demo)</p>
+                        <p className="text-xs text-muted-foreground mt-1">Tap a student to see their homework tasks.</p>
+                      </div>
                       <Badge variant="outline">{DEMO_HOMEWORK_STUDENTS.length}</Badge>
                     </div>
                     <div className="space-y-2 max-h-[420px] overflow-y-auto pr-1">
@@ -1570,8 +1645,11 @@ export default function Homework() {
                   </Card>
                 ) : (
                   <Card className="p-4">
-                    <div className="flex items-center justify-between mb-3">
-                      <p className="font-medium">By Student tracker</p>
+                    <div className="flex flex-wrap items-start justify-between gap-2 mb-2">
+                      <div>
+                        <p className="font-medium">By Student tracker</p>
+                        <p className="text-xs text-muted-foreground mt-1">Tap a task to load submission and review tools.</p>
+                      </div>
                       <Badge variant="outline">{selectedRealStudentItems.length}</Badge>
                     </div>
                     <div className="space-y-2 max-h-[420px] overflow-y-auto pr-1">
@@ -1604,7 +1682,7 @@ export default function Homework() {
                               Due {task.due_date || '—'} · Scope {task.assignment_scope || 'class'}
                             </p>
                             <p className="text-xs text-muted-foreground">
-                              {item?.submission?.id ? `Submission ${item.submission.id}` : 'No submission yet'}
+                              {item?.submission?.id ? `Submission ref. ${shortenStaffReference(item.submission.id)}` : 'No submission yet'}
                             </p>
                           </button>
                         );
@@ -1621,19 +1699,24 @@ export default function Homework() {
               <Card className="p-5">
                 <p className="text-sm text-muted-foreground">
                   {activeViewMode === 'by_student' && !isDemoMode && selectedRealStudentItem && !selectedRealStudentItem?.submission?.id
-                    ? 'No submission yet for this assigned task. Select an item with a submission or wait for upload.'
-                    : 'Select a submission to review details and feedback actions.'}
+                    ? 'No submission yet for this homework—choose another task or wait until the family uploads work.'
+                    : 'Choose a submission from the list on the left to open student files, teacher-marked work, and feedback.'}
                 </p>
               </Card>
             ) : (
               <>
                 <Card className="p-5">
-                  <div className="flex flex-wrap items-center justify-between gap-2 mb-3">
-                    <p className="font-medium">
-                      {activeViewMode === 'by_student' ? 'Student detail + review' : 'Submission detail'}
-                    </p>
+                  <div className="flex flex-wrap items-start justify-between gap-2 mb-2">
+                    <div>
+                      <p className="font-medium">
+                        {activeViewMode === 'by_student' ? 'Review this student’s submission' : 'Review this submission'}
+                      </p>
+                      <p className="text-sm text-muted-foreground mt-1">
+                        Files and feedback below belong to the selected student and homework task. Nothing here is visible to parents until you release it.
+                      </p>
+                    </div>
                     <Badge variant="outline" className={SUBMISSION_STATUS_BADGE[selectedSubmission.status] || ''}>
-                      {selectedSubmission.status}
+                      {formatTeacherSubmissionStatus(selectedSubmission.status)}
                     </Badge>
                   </div>
                   {isDemoMode && activeViewMode === 'by_task' && selectedDemoTaskTracker ? (
@@ -1691,7 +1774,7 @@ export default function Homework() {
                               </Badge>
                             </div>
                             <p className="text-[11px] text-muted-foreground">
-                              {item.submission ? `Submission ${item.submission.id}` : 'Assigned but not yet submitted'}
+                              {item.submission ? `Submission ref. ${shortenStaffReference(item.submission.id)}` : 'Assigned but not yet submitted'}
                             </p>
                           </button>
                         ))}
@@ -1714,19 +1797,23 @@ export default function Homework() {
                           </Badge>
                         ) : null}
                         <Badge variant="outline">
-                          {selectedRealStudentItem?.submission?.id ? `Submission ${selectedRealStudentItem.submission.id}` : 'No submission yet'}
+                          {selectedRealStudentItem?.submission?.id ? `Submission ref. ${shortenStaffReference(selectedRealStudentItem.submission.id)}` : 'No submission yet'}
                         </Badge>
                       </div>
                     </div>
                   ) : null}
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm">
-                    <p><span className="text-muted-foreground">Submission ID:</span> {selectedSubmission.id}</p>
-                    <p><span className="text-muted-foreground">Task ID:</span> {selectedSubmission.homework_task_id}</p>
-                    <p><span className="text-muted-foreground">Student ID:</span> {selectedSubmission.student_id}</p>
-                    <p><span className="text-muted-foreground">Submitted:</span> {selectedSubmission.submitted_at ? new Date(selectedSubmission.submitted_at).toLocaleString('en-AU') : '—'}</p>
-                  </div>
+                  <details className="rounded-lg border bg-muted/30 p-3 text-xs text-muted-foreground mt-3">
+                    <summary className="cursor-pointer font-medium text-foreground">Staff reference (optional)</summary>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 mt-2">
+                      <p><span className="text-muted-foreground">Student:</span> {getSubmissionStudentLabel(selectedSubmission.student_id)}</p>
+                      <p><span className="text-muted-foreground">Submitted:</span> {selectedSubmission.submitted_at ? new Date(selectedSubmission.submitted_at).toLocaleString('en-AU') : '—'}</p>
+                      <p className="sm:col-span-2 break-all"><span className="text-muted-foreground">Submission ref.:</span> {selectedSubmission.id}</p>
+                      <p className="sm:col-span-2 break-all"><span className="text-muted-foreground">Task ref.:</span> {selectedSubmission.homework_task_id}</p>
+                    </div>
+                  </details>
                   <div className="mt-4 space-y-2">
-                    <p className="text-sm font-medium">Uploaded files</p>
+                    <p className="text-sm font-medium">Student submission files</p>
+                    <p className="text-xs text-muted-foreground">Files the family uploaded for this homework.</p>
                     {filesBusy ? (
                       <p className="text-sm text-muted-foreground">Loading files...</p>
                     ) : submissionFileRows.length === 0 ? (
@@ -1739,9 +1826,9 @@ export default function Homework() {
                               <p className="text-sm font-medium">{fileRow.file_name || 'Unnamed file'}</p>
                               <p className="text-xs text-muted-foreground">{fileRow.content_type || 'unknown type'}</p>
                             </div>
-                            <Button size="sm" variant="outline" className="min-h-10" onClick={() => openFile(fileRow.id)}>
+                            <Button size="sm" variant="outline" className="min-h-10 w-full sm:w-auto" onClick={() => openFile(fileRow.id)}>
                               <ExternalLink className="h-4 w-4 mr-1" />
-                              View uploaded file
+                              Open student submission
                             </Button>
                           </div>
                         ))}
@@ -1752,12 +1839,14 @@ export default function Homework() {
 
                 <Card className="p-5 space-y-3">
                   <div className="flex flex-wrap items-center justify-between gap-2">
-                    <p className="font-medium">Marked work</p>
-                    <Badge variant="outline">Staff process layer</Badge>
+                    <div>
+                      <p className="font-medium">Teacher-marked work</p>
+                      <p className="text-xs text-muted-foreground mt-1">
+                        Upload corrected sheets or scans here. Marked work stays staff-only until you share it—parents do not see it automatically.
+                      </p>
+                    </div>
+                    <Badge variant="outline">Staff only until shared</Badge>
                   </div>
-                  <p className="text-xs text-muted-foreground">
-                    Marked work remains internal until released to parent. Parent display is a later milestone.
-                  </p>
                   {isDemoMode ? (
                     <div className="rounded-lg border border-dashed p-3 space-y-3 bg-muted/20">
                       <p className="text-sm font-medium">Demo marked-file controls (local only)</p>
@@ -1787,23 +1876,23 @@ export default function Homework() {
                           />
                         </div>
                       </div>
-                      <div className="flex flex-wrap gap-2">
-                        <Button type="button" className="min-h-10" onClick={handleDemoMarkedUpload}>
+                      <div className="flex flex-col sm:flex-row flex-wrap gap-2">
+                        <Button type="button" className="min-h-10 w-full sm:w-auto" onClick={handleDemoMarkedUpload}>
                           <Upload className="h-4 w-4 mr-1" />
-                          Upload marked file
+                          Upload teacher-marked work
                         </Button>
                         <Button
                           type="button"
                           variant="outline"
-                          className="min-h-10"
+                          className="min-h-10 w-full sm:w-auto"
                           disabled
                         >
                           <Eye className="h-4 w-4 mr-1" />
-                          View file
+                          Open marked work
                         </Button>
                       </div>
                       <p className="text-xs text-muted-foreground">
-                        Demo-only simulation. No Supabase writes/uploads/signed URL calls are made here.
+                        Demo-only simulation: nothing is uploaded and no server calls run.
                       </p>
                     </div>
                   ) : (
@@ -1813,9 +1902,10 @@ export default function Homework() {
                         Upload and release are staff-only actions. Marked files stay internal until explicitly released.
                       </p>
                       <div className="space-y-1">
-                        <Label className="text-xs">Upload marked file</Label>
+                        <Label className="text-xs">Upload teacher-marked work</Label>
                         <Input
                           type="file"
+                          className="min-h-10"
                           onChange={(event) => setMarkedUploadFile(event.target.files?.[0] || null)}
                           disabled={!selectedSubmissionId || uploadMarkedFileMutation.isPending}
                         />
@@ -1829,15 +1919,15 @@ export default function Homework() {
                           disabled={uploadMarkedFileMutation.isPending}
                         />
                       </div>
-                      <div className="flex flex-wrap gap-2">
+                      <div className="flex flex-col sm:flex-row flex-wrap gap-2">
                         <Button
                           type="button"
-                          className="min-h-10"
+                          className="min-h-10 w-full sm:w-auto"
                           onClick={() => uploadMarkedFileMutation.mutate()}
                           disabled={!selectedSubmissionId || uploadMarkedFileMutation.isPending}
                         >
                           <Upload className="h-4 w-4 mr-1" />
-                          {uploadMarkedFileMutation.isPending ? 'Uploading...' : 'Upload marked file'}
+                          {uploadMarkedFileMutation.isPending ? 'Uploading...' : 'Upload teacher-marked work'}
                         </Button>
                         {!canReleaseFeedback ? (
                           <p className="text-xs text-muted-foreground self-center">
@@ -1865,7 +1955,7 @@ export default function Homework() {
                               variant="outline"
                               className={fileRow.released_to_parent ? 'bg-emerald-100 text-emerald-700 border-emerald-200' : 'bg-slate-100 text-slate-700 border-slate-200'}
                             >
-                              {fileRow.released_to_parent ? 'Released to parent' : 'Internal'}
+                              {fileRow.released_to_parent ? 'Shared with family' : 'Staff only'}
                             </Badge>
                           </div>
                           <p className="text-xs text-muted-foreground">
@@ -1884,22 +1974,22 @@ export default function Homework() {
                               type="button"
                               size="sm"
                               variant="outline"
-                              className="min-h-10"
+                              className="min-h-10 w-full sm:w-auto"
                               onClick={() => (isDemoMode ? handleDemoMarkedView(fileRow.id) : openMarkedFile(fileRow.id))}
                             >
                               <Eye className="h-4 w-4 mr-1" />
-                              View file
+                              Open marked work
                             </Button>
                             <Button
                               type="button"
                               size="sm"
                               variant="outline"
-                              className="min-h-10"
+                              className="min-h-10 w-full sm:w-auto"
                               onClick={() => (isDemoMode ? handleDemoMarkedRelease(fileRow.id) : releaseMarkedFileMutation.mutate(fileRow.id))}
                               disabled={fileRow.released_to_parent || (!isDemoMode && (releaseMarkedFileMutation.isPending || !canReleaseFeedback))}
                             >
                               <Send className="h-4 w-4 mr-1" />
-                              {releaseMarkedFileMutation.isPending && !isDemoMode ? 'Releasing...' : 'Release to parent'}
+                              {releaseMarkedFileMutation.isPending && !isDemoMode ? 'Sharing...' : 'Share marked work with family'}
                             </Button>
                           </div>
                         </div>
@@ -1912,7 +2002,7 @@ export default function Homework() {
                   <div className="flex items-center justify-between gap-2">
                     <p className="font-medium">Feedback draft</p>
                     <Badge variant="outline">
-                      {feedbackBusy ? 'Loading...' : (selectedFeedback?.status || 'no feedback yet')}
+                      {feedbackBusy ? 'Loading...' : formatTeacherFeedbackRecordStatus(selectedFeedback?.status)}
                     </Badge>
                   </div>
                   {isDemoMode ? (
@@ -1935,7 +2025,7 @@ export default function Homework() {
                       </Button>
                     </div>
                     <p className="text-xs text-muted-foreground">
-                      Generates a mock AI draft from safe metadata/context only. Teacher review and edit are required before save/release.
+                      Generates a mock AI draft from safe metadata/context only. You must review and edit before saving or sharing with families.
                     </p>
                     {aiDraftSafetyNote ? (
                       <p className="text-xs text-amber-700">{aiDraftSafetyNote}</p>
@@ -1968,10 +2058,10 @@ export default function Homework() {
                       placeholder="Internal coaching/review notes only."
                     />
                   </div>
-                  <div className="flex flex-wrap gap-2">
+                  <div className="flex flex-col sm:flex-row flex-wrap gap-2">
                     <Button
                       type="button"
-                      className="min-h-10"
+                      className="min-h-10 w-full sm:w-auto"
                       onClick={() => {
                         if (isDemoMode) {
                           updateDemoSubmissionStatus('under_review');
@@ -1988,7 +2078,7 @@ export default function Homework() {
                     <Button
                       type="button"
                       variant="outline"
-                      className="min-h-10"
+                      className="min-h-10 w-full sm:w-auto"
                       onClick={() => {
                         if (isDemoMode) {
                           updateDemoSubmissionStatus('reviewed');
@@ -2005,7 +2095,7 @@ export default function Homework() {
                     <Button
                       type="button"
                       variant="outline"
-                      className="min-h-10"
+                      className="min-h-10 w-full sm:w-auto"
                       onClick={() => {
                         if (isDemoMode) {
                           updateDemoSubmissionStatus('returned_for_revision');
@@ -2023,11 +2113,11 @@ export default function Homework() {
                       <Button
                         type="button"
                         variant="outline"
-                        className="min-h-10"
+                        className="min-h-10 w-full sm:w-auto"
                         onClick={() => {
                           if (isDemoMode) {
                             updateDemoSubmissionStatus('approved_for_parent');
-                            toast.success('Demo mode: release action simulated locally.');
+                            toast.success('Demo mode: share action simulated locally.');
                             return;
                           }
                           releaseMutation.mutate();
@@ -2035,14 +2125,17 @@ export default function Homework() {
                         disabled={isDemoMode ? !selectedFeedback?.id : (releaseMutation.isPending || !selectedFeedback?.id)}
                       >
                         <Send className="h-4 w-4 mr-1" />
-                        Release to parent
+                        Share feedback with family
                       </Button>
                     ) : (
                       <p className="text-xs text-muted-foreground self-center">
-                        Release remains supervisor/HQ action in this phase.
+                        Sharing feedback with families may require an administrator in your centre—ask your supervisor if you do not see this button.
                       </p>
                     )}
                   </div>
+                  <p className="text-xs text-muted-foreground mt-3 max-w-prose">
+                    Parents only see feedback after you share it. Saving a draft does not notify families.
+                  </p>
                 </Card>
               </>
             )}

@@ -5,6 +5,8 @@ Type: **planning only** — defines principles, maps current flows, proposes ste
 
 **Foundation:** `docs/teacher-simplicity-navigation-clickability-audit.md`, `docs/navigation-clickability-simplicity-fixes-final-checkpoint.md`, `docs/manual-qa-navigation-clickability-simplicity-checkpoint.md`.
 
+**Milestone B (Homework UI polish) implemented:** `docs/homework-teacher-upload-step-ui-polish-checkpoint.md` — **`src/pages/Homework.jsx`** copy/layout only; **no** SQL/backend changes.
+
 **Code references (read-only for this plan):** `src/pages/Homework.jsx`, `src/pages/ParentUpdates.jsx`, `src/pages/Announcements.jsx`, `src/pages/MyTasks.jsx`, `src/pages/AiParentReports.jsx`, `src/pages/Attendance.jsx`, `src/pages/Observations.jsx`.
 
 ---
