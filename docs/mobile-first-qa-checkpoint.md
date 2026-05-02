@@ -1,5 +1,9 @@
 # Mobile-first QA checkpoint
 
+## Checkpoint update (manual visual QA — Homework teacher upload/review, 2026-05-02)
+
+- **Runbook:** **`docs/manual-qa-homework-teacher-upload-review-checkpoint.md`** — desktop + **~390px** for **`Homework.jsx`** after polish **`6fe18bc`**: intro, **Create homework task** steps, trackers, submission detail, **Teacher-marked work**, **Share feedback with family**; safety §8; decision rule §10 (fix Homework vs proceed to **Parent Communication** polish). **QA/checkpoint only** — **no** `src/` changes in this milestone.
+
 ## Checkpoint update (Homework staff review UI polish — 2026-05-02)
 
 - **`docs/homework-teacher-upload-step-ui-polish-checkpoint.md`** — **`Homework.jsx`**: step-labelled **Create homework task**, **Submissions to review**, **Teacher-marked work**, **Share feedback with family** / **Share marked work with family**; IDs under **Staff reference**; full-width primary buttons on narrow widths. Re-QA **~390px**: toggle row, create flow, submission/marked/feedback cards.

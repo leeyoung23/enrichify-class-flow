@@ -3,7 +3,8 @@
 Date: 2026-05-02  
 Scope: **`src/pages/Homework.jsx`** — copy, labels, step framing, mobile-friendly button layout, and staff-reference collapsing. **No** SQL/RLS/schema changes; **no** new persistence; **no** ParentView changes; **no** email/PDF/`real_ai`; **no** provider keys.
 
-**Planning reference:** `docs/teacher-upload-step-simplification-plan.md`
+**Planning reference:** `docs/teacher-upload-step-simplification-plan.md`  
+**Manual visual QA runbook:** `docs/manual-qa-homework-teacher-upload-review-checkpoint.md`
 
 ---
 

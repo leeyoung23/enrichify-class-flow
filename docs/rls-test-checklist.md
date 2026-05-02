@@ -1,5 +1,9 @@
 # RLS Test Checklist
 
+## Checkpoint update (manual visual QA — Homework teacher upload/review, 2026-05-02)
+
+- **Human runbook (no automated RLS assert):** **`docs/manual-qa-homework-teacher-upload-review-checkpoint.md`** — inspection-only confirmation that UI does not expose paths/keys/env (`§8`); **no** DDL. Does **not** replace homework smokes when **`src/`** or homework services change — see **`docs/homework-teacher-upload-step-ui-polish-checkpoint.md`** §Validation.
+
 ## Checkpoint update (Homework UI polish — 2026-05-02)
 
 - **`src/pages/Homework.jsx`** — **copy/layout only**; **no** DDL. When touching homework reads/writes later, re-run e.g. **`npm run test:supabase:homework:tracker:read`**, **`npm run test:supabase:homework:feedback`**, and related homework smokes. **Checkpoint:** **`docs/homework-teacher-upload-step-ui-polish-checkpoint.md`**.

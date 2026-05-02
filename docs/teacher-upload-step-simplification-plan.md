@@ -7,6 +7,8 @@ Type: **planning only** — defines principles, maps current flows, proposes ste
 
 **Milestone B (Homework UI polish) implemented:** `docs/homework-teacher-upload-step-ui-polish-checkpoint.md` — **`src/pages/Homework.jsx`** copy/layout only; **no** SQL/backend changes.
 
+**Manual QA (Homework flow):** `docs/manual-qa-homework-teacher-upload-review-checkpoint.md` — desktop + **~390px** before milestone **C** (Parent Communication polish).
+
 **Code references (read-only for this plan):** `src/pages/Homework.jsx`, `src/pages/ParentUpdates.jsx`, `src/pages/Announcements.jsx`, `src/pages/MyTasks.jsx`, `src/pages/AiParentReports.jsx`, `src/pages/Attendance.jsx`, `src/pages/Observations.jsx`.
 
 ---
