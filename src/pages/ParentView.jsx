@@ -874,14 +874,21 @@ function ParentAnnouncementsEventsSection({
   mediaError,
   onOpenMedia,
 }) {
+  const [showFullHistory, setShowFullHistory] = useState(false);
   const selectedAnnouncement = announcements.find((row) => row.id === selectedAnnouncementId) || null;
   const featured = announcements[0] || null;
+  const historyItems = announcements.slice(1);
+  const COLLAPSED_COUNT = 3;
+  const visibleHistory = showFullHistory
+    ? historyItems
+    : historyItems.slice(0, COLLAPSED_COUNT);
+  const hasMoreHistory = historyItems.length > COLLAPSED_COUNT;
 
   if (loading) {
     return (
       <Card id="parent-announcements-events">
         <CardHeader className="pb-3">
-          <CardTitle className="text-base">Announcements & Events</CardTitle>
+          <CardTitle className="text-base">Latest announcements and events</CardTitle>
         </CardHeader>
         <CardContent className="text-sm text-muted-foreground">Loading announcements and events...</CardContent>
       </Card>
@@ -892,7 +899,7 @@ function ParentAnnouncementsEventsSection({
     return (
       <Card id="parent-announcements-events" className="border-dashed">
         <CardHeader className="pb-3">
-          <CardTitle className="text-base">Announcements & Events</CardTitle>
+          <CardTitle className="text-base">Latest announcements and events</CardTitle>
         </CardHeader>
         <CardContent className="text-sm text-muted-foreground">{error}</CardContent>
       </Card>
@@ -903,7 +910,7 @@ function ParentAnnouncementsEventsSection({
     return (
       <Card id="parent-announcements-events" className="border-dashed">
         <CardHeader className="pb-3">
-          <CardTitle className="text-base">Announcements & Events</CardTitle>
+          <CardTitle className="text-base">Latest announcements and events</CardTitle>
         </CardHeader>
         <CardContent className="text-sm text-muted-foreground">
           No parent announcements are available right now.
@@ -915,7 +922,7 @@ function ParentAnnouncementsEventsSection({
   return (
     <Card id="parent-announcements-events">
       <CardHeader className="pb-3">
-        <CardTitle className="text-base">Announcements & Events</CardTitle>
+        <CardTitle className="text-base">Latest announcements and events</CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
         <p className="text-sm text-muted-foreground">
@@ -927,7 +934,7 @@ function ParentAnnouncementsEventsSection({
         {featured ? (
           <div className="rounded-lg border bg-muted/20 p-3 space-y-2">
             <div className="flex items-center justify-between gap-2">
-              <Badge variant="outline" className="bg-amber-50 text-amber-700 border-amber-200">Featured</Badge>
+              <Badge variant="outline" className="bg-amber-50 text-amber-700 border-amber-200">Latest</Badge>
               <Badge variant="outline">
                 {PARENT_ANNOUNCEMENT_TYPE_LABELS[featured.announcementType] || 'Announcement'}
               </Badge>
@@ -946,34 +953,50 @@ function ParentAnnouncementsEventsSection({
           </div>
         ) : null}
 
-        <div className="space-y-2">
-          {announcements.map((item) => {
-            const isSelected = selectedAnnouncementId === item.id;
-            return (
-              <button
-                key={item.id}
+        {historyItems.length > 0 ? (
+          <div className="space-y-2">
+            <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">More announcements</p>
+            <div className="space-y-2">
+              {visibleHistory.map((item) => {
+                const isSelected = selectedAnnouncementId === item.id;
+                return (
+                  <button
+                    key={item.id}
+                    type="button"
+                    onClick={() => onSelectAnnouncement(item.id)}
+                    className={`w-full text-left rounded-lg border p-3 space-y-1.5 transition-colors ${
+                      isSelected ? 'border-primary bg-primary/5' : 'hover:bg-muted/30'
+                    }`}
+                  >
+                    <div className="flex flex-wrap items-center justify-between gap-2">
+                      <p className="text-sm font-medium">{item.title}</p>
+                      <Badge variant="outline">
+                        {PARENT_ANNOUNCEMENT_TYPE_LABELS[item.announcementType] || 'Announcement'}
+                      </Badge>
+                    </div>
+                    <p className="text-xs text-muted-foreground line-clamp-2">{item.bodyPreview}</p>
+                    {item.publishedAt ? (
+                      <p className="text-[11px] text-muted-foreground">
+                        Published: {formatParentAnnouncementDateTime(item.publishedAt)}
+                      </p>
+                    ) : null}
+                  </button>
+                );
+              })}
+            </div>
+            {hasMoreHistory ? (
+              <Button
                 type="button"
-                onClick={() => onSelectAnnouncement(item.id)}
-                className={`w-full text-left rounded-lg border p-3 space-y-1.5 transition-colors ${
-                  isSelected ? 'border-primary bg-primary/5' : 'hover:bg-muted/30'
-                }`}
+                variant="outline"
+                size="sm"
+                className="w-full sm:w-auto"
+                onClick={() => setShowFullHistory((prev) => !prev)}
               >
-                <div className="flex flex-wrap items-center justify-between gap-2">
-                  <p className="text-sm font-medium">{item.title}</p>
-                  <Badge variant="outline">
-                    {PARENT_ANNOUNCEMENT_TYPE_LABELS[item.announcementType] || 'Announcement'}
-                  </Badge>
-                </div>
-                <p className="text-xs text-muted-foreground line-clamp-2">{item.bodyPreview}</p>
-                {item.publishedAt ? (
-                  <p className="text-[11px] text-muted-foreground">
-                    Published: {formatParentAnnouncementDateTime(item.publishedAt)}
-                  </p>
-                ) : null}
-              </button>
-            );
-          })}
-        </div>
+                {showFullHistory ? 'Show less' : 'View more history'}
+              </Button>
+            ) : null}
+          </div>
+        ) : null}
 
         <div className="rounded-lg border p-3 space-y-2">
           <p className="text-sm font-medium">
@@ -2490,7 +2513,7 @@ export default function ParentView() {
                 </Button>
                 <Button variant="outline" className="justify-start gap-2" onClick={() => document.getElementById('parent-announcements-events')?.scrollIntoView({ behavior: 'smooth' })}>
                   <FileText className="h-4 w-4" />
-                  View Announcements & Events
+                  View latest announcements
                 </Button>
                 <Button variant="outline" className="justify-start gap-2" onClick={() => document.getElementById('parent-progress-reports')?.scrollIntoView({ behavior: 'smooth' })}>
                   <FileText className="h-4 w-4" />

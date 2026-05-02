@@ -1,5 +1,9 @@
 # Project Master Context Handoff
 
+## Checkpoint update (navigation clickability + My Tasks + ParentView — 2026-05-02)
+
+- **`src/pages/ParentView.jsx`** — **Latest announcements and events**: latest card + **3** more by default, **View more history** / **Show less**; no change to published-only data. **`src/pages/MyTasks.jsx`** — announcement tasks grouped **Upload / Reply / Other / Completed**; intro copy. **`Branches` / `Classes` / `Teachers` / `Students`** — **directory preview** copy; static cards no longer use heavy hover-shadow. **No** SQL/RLS; **no** parent rule change. Doc: **`docs/navigation-clickability-simplicity-fixes-checkpoint.md`**.
+
 ## Checkpoint update (teacher simplicity + navigation clickability audit — 2026-05-02)
 
 - **Docs-only:** **`docs/teacher-simplicity-navigation-clickability-audit.md`** — product principles for non-technical teachers; navigation map by role (**`ROLE_NAVIGATION`**); clickability / placeholder risks (e.g. branch cards **hover** without drill-down); teacher-flow priorities; upload/receiving step template; terminology suggestions; UX risk register; recommended sequence **B → C → D** before real AI smoke; copy-paste implementation prompt. **No** SQL/RLS; **no** runtime changes in this milestone.

@@ -40,6 +40,29 @@ const ANNOUNCEMENT_PRIORITY_STYLES = {
   low: 'bg-slate-100 text-slate-700 border-slate-200',
 };
 
+function partitionAnnouncementTasksForDisplay(tasks) {
+  const uploadNeeded = [];
+  const replyNeeded = [];
+  const needsAction = [];
+  const completed = [];
+  for (const task of tasks) {
+    if (task.status === 'done') {
+      completed.push(task);
+      continue;
+    }
+    if (task.requiresUpload && !task.uploadProvided) {
+      uploadNeeded.push(task);
+      continue;
+    }
+    if (task.requiresResponse && !task.responseProvided) {
+      replyNeeded.push(task);
+      continue;
+    }
+    needsAction.push(task);
+  }
+  return { uploadNeeded, replyNeeded, needsAction, completed };
+}
+
 const DEMO_ANNOUNCEMENT_TASKS = [
   {
     taskId: 'demo-ann-task-1',
@@ -219,6 +242,11 @@ export default function MyTasks() {
     done: announcementTasks.filter((item) => item.status === 'done').length,
   }), [announcementTasks]);
 
+  const announcementGroups = useMemo(
+    () => partitionAnnouncementTasksForDisplay(announcementTasks),
+    [announcementTasks]
+  );
+
   const handleMarkComplete = useCallback(async (item) => {
     if (demoRole) {
       setFeedback({ type: 'info', text: 'Demo preview mode stays local and does not write to Supabase.' });
@@ -272,8 +300,17 @@ export default function MyTasks() {
     <div>
       <PageHeader
         title="My Tasks"
-        description={role === 'teacher' ? 'See your pending, completed, and overdue teacher tasks using demo data only.' : 'Demo-only task reminders and completion tracking.'}
+        description={
+          role === 'teacher'
+            ? 'What you need to do next — grouped so uploads and replies are easy to spot. Demo/local only unless you are signed in.'
+            : 'Staff task overview — demo/local preview where noted.'
+        }
       />
+      <p className="text-sm text-muted-foreground mb-4">
+        Start with <span className="font-medium text-foreground">Upload needed</span> and{' '}
+        <span className="font-medium text-foreground">Reply needed</span>, then other requests, and check{' '}
+        <span className="font-medium text-foreground">Completed</span> when you need history.
+      </p>
       {feedback && (
         <p className={`text-sm mb-4 ${feedback.type === 'error' ? 'text-destructive' : 'text-muted-foreground'}`} role="status">
           {feedback.text}
@@ -338,9 +375,9 @@ export default function MyTasks() {
         <Card className="p-4 sm:p-5">
           <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
             <div>
-              <p className="font-semibold">Announcement Requests</p>
+              <p className="font-semibold">From announcements</p>
               <p className="text-xs text-muted-foreground">
-                Read-only announcement obligations from staff announcements.
+                Requests tied to Announcements — open one to upload, reply, or finish what HQ asked for.
               </p>
             </div>
             <div className="flex flex-wrap gap-2">
@@ -371,60 +408,97 @@ export default function MyTasks() {
         ) : null}
 
         {!announcementTasksLoading && !announcementTasksError && announcementTasks.length > 0 ? (
-          <div className="space-y-3 mt-3">
-            {announcementTasks.map((task) => (
-              <Card key={task.taskId || task.announcementId} className="p-4 sm:p-5">
-                <div className="flex flex-col gap-3">
-                  <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
-                    <div className="min-w-0">
-                      <p className="font-medium">{task.title || 'Announcement request'}</p>
-                      {task.bodyPreview ? (
-                        <p className="text-sm text-muted-foreground mt-1 line-clamp-2">{task.bodyPreview}</p>
-                      ) : null}
-                    </div>
-                    <div className="flex flex-wrap gap-2">
-                      <Badge variant="outline">Announcement</Badge>
-                      <Badge variant="outline" className={ANNOUNCEMENT_PRIORITY_STYLES[task.priority] || ANNOUNCEMENT_PRIORITY_STYLES.normal}>
-                        {task.priority || 'normal'}
-                      </Badge>
-                      <Badge variant="outline" className={ANNOUNCEMENT_STATUS_STYLES[task.status] || ANNOUNCEMENT_STATUS_STYLES.pending}>
-                        {task.status || 'pending'}
-                      </Badge>
-                    </div>
-                  </div>
-
-                  <div className="flex flex-wrap gap-2 text-xs text-muted-foreground">
-                    {task.dueDate ? <Badge variant="outline">Due {task.dueDate}</Badge> : null}
-                    {task.requiresResponse ? (
-                      <Badge variant="outline">{task.responseProvided ? 'Response provided' : 'Response missing'}</Badge>
-                    ) : null}
-                    {task.requiresUpload ? (
-                      <Badge variant="outline">{task.uploadProvided ? 'Upload provided' : 'Upload missing'}</Badge>
-                    ) : null}
-                    <Badge variant="outline">Replies {task.replyCount || 0}</Badge>
-                    <Badge variant="outline">Attachments {task.attachmentCount || 0}</Badge>
-                  </div>
-
-                  <div className="flex flex-wrap items-center gap-2">
-                    {task.requiresResponse ? <span className="text-xs text-muted-foreground">Requires response</span> : null}
-                    {task.requiresUpload ? <span className="text-xs text-muted-foreground">Requires upload</span> : null}
-                    {task.isOverdue ? <span className="text-xs text-red-700">Overdue</span> : null}
-                  </div>
-
+          <div className="space-y-8 mt-3">
+            {[
+              {
+                key: 'upload',
+                title: 'Upload needed',
+                subtitle: 'Attach the file HQ asked for before moving on.',
+                items: announcementGroups.uploadNeeded,
+              },
+              {
+                key: 'reply',
+                title: 'Reply needed',
+                subtitle: 'Add your comment or confirmation.',
+                items: announcementGroups.replyNeeded,
+              },
+              {
+                key: 'action',
+                title: 'Other requests',
+                subtitle: 'Read or complete these next.',
+                items: announcementGroups.needsAction,
+              },
+              {
+                key: 'done',
+                title: 'Completed',
+                subtitle: 'Finished requests — for your records.',
+                items: announcementGroups.completed,
+              },
+            ].map((section) => (
+              section.items.length ? (
+                <div key={section.key} className="space-y-3">
                   <div>
-                    <Button
-                      size="sm"
-                      className="min-h-10"
-                      onClick={() => {
-                        const targetUrl = typeof task.actionUrl === 'string' && task.actionUrl.trim() ? task.actionUrl : '/announcements';
-                        navigate(targetUrl, { state: { announcementId: task.announcementId || null } });
-                      }}
-                    >
-                      Open Announcement
-                    </Button>
+                    <p className="text-sm font-semibold">{section.title}</p>
+                    <p className="text-xs text-muted-foreground">{section.subtitle}</p>
+                  </div>
+                  <div className="space-y-3">
+                    {section.items.map((task) => (
+                      <Card key={`${section.key}-${task.taskId || task.announcementId}`} className="p-4 sm:p-5 border-muted">
+                        <div className="flex flex-col gap-3">
+                          <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
+                            <div className="min-w-0">
+                              <p className="font-medium">{task.title || 'Announcement request'}</p>
+                              {task.bodyPreview ? (
+                                <p className="text-sm text-muted-foreground mt-1 line-clamp-2">{task.bodyPreview}</p>
+                              ) : null}
+                            </div>
+                            <div className="flex flex-wrap gap-2">
+                              <Badge variant="outline">Announcement</Badge>
+                              <Badge variant="outline" className={ANNOUNCEMENT_PRIORITY_STYLES[task.priority] || ANNOUNCEMENT_PRIORITY_STYLES.normal}>
+                                {task.priority || 'normal'}
+                              </Badge>
+                              <Badge variant="outline" className={ANNOUNCEMENT_STATUS_STYLES[task.status] || ANNOUNCEMENT_STATUS_STYLES.pending}>
+                                {task.status || 'pending'}
+                              </Badge>
+                            </div>
+                          </div>
+
+                          <div className="flex flex-wrap gap-2 text-xs text-muted-foreground">
+                            {task.dueDate ? <Badge variant="outline">Due {task.dueDate}</Badge> : null}
+                            {task.requiresResponse ? (
+                              <Badge variant="outline">{task.responseProvided ? 'Reply done' : 'Reply needed'}</Badge>
+                            ) : null}
+                            {task.requiresUpload ? (
+                              <Badge variant="outline">{task.uploadProvided ? 'Upload done' : 'Upload needed'}</Badge>
+                            ) : null}
+                            <Badge variant="outline">Replies {task.replyCount || 0}</Badge>
+                            <Badge variant="outline">Attachments {task.attachmentCount || 0}</Badge>
+                          </div>
+
+                          <div className="flex flex-wrap items-center gap-2">
+                            {task.requiresResponse ? <span className="text-xs text-muted-foreground">Reply needed</span> : null}
+                            {task.requiresUpload ? <span className="text-xs text-muted-foreground">Upload needed</span> : null}
+                            {task.isOverdue ? <span className="text-xs text-red-700">Overdue</span> : null}
+                          </div>
+
+                          <div>
+                            <Button
+                              size="sm"
+                              className="min-h-10"
+                              onClick={() => {
+                                const targetUrl = typeof task.actionUrl === 'string' && task.actionUrl.trim() ? task.actionUrl : '/announcements';
+                                navigate(targetUrl, { state: { announcementId: task.announcementId || null } });
+                              }}
+                            >
+                              Open Announcement
+                            </Button>
+                          </div>
+                        </div>
+                      </Card>
+                    ))}
                   </div>
                 </div>
-              </Card>
+              ) : null
             ))}
           </div>
         ) : null}

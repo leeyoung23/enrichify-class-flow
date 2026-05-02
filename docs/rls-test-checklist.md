@@ -1,5 +1,9 @@
 # RLS Test Checklist
 
+## Checkpoint update (navigation clickability fixes — 2026-05-02)
+
+- **`docs/navigation-clickability-simplicity-fixes-checkpoint.md`** — UI-only; **no** RLS DDL. Regression: **`npm run test:supabase:parent-announcements`** · **`npm run test:supabase:announcements:phase1`** when ParentView / announcement flows touched.
+
 ## Checkpoint update (teacher simplicity + navigation clickability audit — 2026-05-02)
 
 - **Docs-only:** **`docs/teacher-simplicity-navigation-clickability-audit.md`** — no RLS/SQL change; complements manual QA by listing **UX risks** that can look like “broken product” (dead-click cards, technical labels). Regression smokes unchanged; run when touching **`permissionService`** nav or directory pages.

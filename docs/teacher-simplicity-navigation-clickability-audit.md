@@ -212,8 +212,13 @@ Validate: build, lint, typecheck; smoke tests if services touched.
 
 ---
 
+## Implementation note (2026-05-02)
+
+Partial alignment: **`docs/navigation-clickability-simplicity-fixes-checkpoint.md`** — ParentView announcement **compact + expand history**; **My Tasks** **grouped sections**; setup pages **static card** affordance reduced + **directory preview** copy. Further work (detail routes, tab nav) remains future.
+
 ## Related checkpoints
 
+- `docs/navigation-clickability-simplicity-fixes-checkpoint.md`
 - `docs/manual-qa-ai-report-hybrid-source-preview-checkpoint.md`
 - `docs/ai-parent-report-workflow-ux-polish-checkpoint.md`
 - `docs/manual-preview-product-direction-corrections.md`

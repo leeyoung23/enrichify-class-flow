@@ -234,7 +234,11 @@ export default function Students() {
     <div>
       <PageHeader
         title={isTeacher ? "My Students" : "Students"}
-        description={isTeacher ? 'See your assigned students only using demo data only.' : 'Manage student records.'}
+        description={
+          isTeacher
+            ? 'Your class list — cards help you scan names; deep edit-from-card is a future step. Demo/local where noted.'
+            : 'Student directory — cards preview records; use Add Student or row actions to manage.'
+        }
         action={canManageStudents(user) && (
           <Button onClick={() => setDialogOpen(true)} className="gap-2">
             <Plus className="h-4 w-4" /> Add Student
@@ -252,7 +256,7 @@ export default function Students() {
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
           {classStudents.map((student) => (
-            <Card key={student.id} className="p-5 hover:shadow-lg transition-shadow duration-300">
+            <Card key={student.id} className="p-5 border-muted/80">
               <div className="flex items-center gap-3 mb-3">
                 <div className="h-10 w-10 rounded-full bg-accent flex items-center justify-center text-accent-foreground font-bold">
                   {student.name[0].toUpperCase()}

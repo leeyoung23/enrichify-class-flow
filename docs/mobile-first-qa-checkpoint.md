@@ -1,5 +1,9 @@
 # Mobile-first QA checkpoint
 
+## Checkpoint update (navigation clarity + ParentView history — 2026-05-02)
+
+- **Reference:** **`docs/navigation-clickability-simplicity-fixes-checkpoint.md`** — ParentView **View more history**; My Tasks **grouped** blocks; setup pages less “fake clickable”. Re-QA ~390px: announcement toggle, task section headings, directory cards.
+
 ## Checkpoint update (teacher simplicity + clickability audit — 2026-05-02)
 
 - **Reference:** **`docs/teacher-simplicity-navigation-clickability-audit.md`** — maps **Sidebar** nav by role, flags **non-clickable cards that look clickable** (e.g. **Branches**), teacher **Homework** / **Parent Communication** as highest simplification priority, **hash-based ParentView** section risks on small screens. Use for the next **~390px** pass and before **B/C** implementation (affordance fixes + upload step labels). **Docs-only** milestone.

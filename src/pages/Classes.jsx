@@ -229,7 +229,11 @@ export default function Classes() {
     <div>
       <PageHeader
         title={isTeacher ? "My Classes" : "Classes"}
-        description={isTeacher ? 'See your assigned classes only using demo data only.' : 'Manage classes and assignments.'}
+        description={
+          isTeacher
+            ? 'See your assigned classes — cards are a quick directory (no drill-down yet). Demo/local where noted.'
+            : 'Manage classes — directory preview until detail/edit from a card ships. Use Add Class to create.'
+        }
         action={isAdmin && (
           <Button onClick={() => setDialogOpen(true)} className="gap-2">
             <Plus className="h-4 w-4" /> Add Class
@@ -252,7 +256,7 @@ export default function Classes() {
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
           {classes.map((cls) => (
-            <Card key={cls.id} className="p-5 hover:shadow-lg transition-shadow duration-300">
+            <Card key={cls.id} className="p-5 border-muted/80">
               <div className="flex items-start justify-between mb-3">
                 <div className="p-2 rounded-xl bg-accent">
                   <BookOpen className="h-5 w-5 text-accent-foreground" />
