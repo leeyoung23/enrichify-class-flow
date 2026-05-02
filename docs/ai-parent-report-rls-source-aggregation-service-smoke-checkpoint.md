@@ -25,7 +25,7 @@ Scope: **`collectAiParentReportSourceEvidence`** gains **`rls`** and **`hybrid`*
 | SQL / RLS policy changes | **None** |
 | Service-role frontend | **None** |
 | ParentView | **Unchanged** |
-| UI wiring for `rls` mode | **Deferred** (preview still uses **fake** only) |
+| UI wiring | **Hybrid + fake** on **`AiParentReports`** — **`rls`-only** not exposed; see **`docs/ai-parent-report-source-preview-hybrid-ui-checkpoint.md`** |
 | `real_ai` | **Still blocked** |
 | Provider HTTP | **None** |
 

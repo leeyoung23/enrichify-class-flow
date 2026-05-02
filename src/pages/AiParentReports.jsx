@@ -36,6 +36,7 @@ import {
   buildMockDraftInputFromSourceEvidence,
   collectAiParentReportSourceEvidence,
   EVIDENCE_CLASSIFICATION,
+  SOURCE_AGGREGATION_MODES,
 } from '@/services/aiParentReportSourceAggregationService';
 
 const REPORT_TYPE_OPTIONS = [
@@ -144,6 +145,28 @@ function isStaffRole(role) {
   return role === ROLES.TEACHER || role === ROLES.BRANCH_SUPERVISOR || role === ROLES.HQ_ADMIN;
 }
 
+function isReportIdUuid(id) {
+  return (
+    typeof id === 'string' &&
+    /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id.trim())
+  );
+}
+
+function evidenceClassificationBadgeLabel(classification) {
+  switch (classification) {
+    case EVIDENCE_CLASSIFICATION.NEVER_SEND_TO_PROVIDER:
+      return 'Not sent to provider';
+    case EVIDENCE_CLASSIFICATION.SENSITIVE_REQUIRES_CONFIRMATION:
+      return 'Requires teacher confirmation';
+    case EVIDENCE_CLASSIFICATION.STAFF_ONLY_REQUIRES_SELECTION:
+      return 'Staff selection required';
+    case EVIDENCE_CLASSIFICATION.SAFE_FOR_AI_SUMMARY:
+      return 'Safe for summary';
+    default:
+      return typeof classification === 'string' ? classification : '—';
+  }
+}
+
 export default function AiParentReports() {
   const { user } = useOutletContext();
   const { appUser } = useSupabaseAuthState();
@@ -213,6 +236,40 @@ export default function AiParentReports() {
     () => reports.find((item) => item.id === selectedReportId) || null,
     [reports, selectedReportId]
   );
+
+  const reportMetadataGaps = useMemo(() => {
+    if (!selectedReport) return [];
+    const gaps = [];
+    if (!String(selectedReport.studentId || '').trim()) gaps.push('student');
+    if (!String(selectedReport.classId || '').trim()) gaps.push('class');
+    if (!String(selectedReport.branchId || '').trim()) gaps.push('branch');
+    if (!selectedReport.reportPeriodStart) gaps.push('period start');
+    if (!selectedReport.reportPeriodEnd) gaps.push('period end');
+    return gaps;
+  }, [selectedReport]);
+
+  const fetchSourceEvidenceBundle = useCallback(async () => {
+    if (!selectedReport || !selectedReportId) return null;
+    const periodStart = selectedReport.reportPeriodStart
+      ? String(selectedReport.reportPeriodStart).slice(0, 10)
+      : '';
+    const periodEnd = selectedReport.reportPeriodEnd
+      ? String(selectedReport.reportPeriodEnd).slice(0, 10)
+      : '';
+    const mode =
+      inDemoMode || !canUseSupabase
+        ? SOURCE_AGGREGATION_MODES.FAKE
+        : SOURCE_AGGREGATION_MODES.HYBRID;
+    return collectAiParentReportSourceEvidence({
+      studentId: selectedReport.studentId || '',
+      classId: selectedReport.classId || '',
+      branchId: selectedReport.branchId || '',
+      periodStart,
+      periodEnd,
+      reportId: isReportIdUuid(selectedReportId) ? selectedReportId : '',
+      mode,
+    });
+  }, [selectedReport, selectedReportId, inDemoMode, canUseSupabase]);
 
   const loadReports = useCallback(async () => {
     if (!canAccess) {
@@ -355,22 +412,7 @@ export default function AiParentReports() {
       setSourceEvidenceError(false);
 
       try {
-        const periodStart = selectedReport.reportPeriodStart
-          ? String(selectedReport.reportPeriodStart).slice(0, 10)
-          : '';
-        const periodEnd = selectedReport.reportPeriodEnd
-          ? String(selectedReport.reportPeriodEnd).slice(0, 10)
-          : '';
-
-        const data = await collectAiParentReportSourceEvidence({
-          studentId: selectedReport.studentId || '',
-          classId: selectedReport.classId || '',
-          branchId: selectedReport.branchId || '',
-          periodStart,
-          periodEnd,
-          mode: 'fake',
-        });
-
+        const data = await fetchSourceEvidenceBundle();
         if (!cancelled) {
           setSourceEvidencePreview(data);
           setSourceEvidenceLoading(false);
@@ -388,7 +430,7 @@ export default function AiParentReports() {
     return () => {
       cancelled = true;
     };
-  }, [selectedReport, selectedReportId]);
+  }, [selectedReport, selectedReportId, fetchSourceEvidenceBundle]);
 
   const resetVersionForm = () => {
     setCreateVersionForm({
@@ -475,21 +517,18 @@ export default function AiParentReports() {
 
     let fromEvidence = {};
     try {
-      const periodStart = selectedReport.reportPeriodStart
-        ? String(selectedReport.reportPeriodStart).slice(0, 10)
-        : '';
-      const periodEnd = selectedReport.reportPeriodEnd
-        ? String(selectedReport.reportPeriodEnd).slice(0, 10)
-        : '';
-      const agg = await collectAiParentReportSourceEvidence({
-        studentId: selectedReport.studentId || '',
-        classId: selectedReport.classId || '',
-        branchId: selectedReport.branchId || '',
-        periodStart,
-        periodEnd,
-        mode: 'fake',
-      });
-      fromEvidence = buildMockDraftInputFromSourceEvidence(agg);
+      let agg = null;
+      if (!sourceEvidenceLoading && sourceEvidencePreview && !sourceEvidenceError) {
+        agg = sourceEvidencePreview;
+      } else {
+        agg = await fetchSourceEvidenceBundle();
+      }
+      if (!agg) {
+        toast.message('Source evidence could not be prepared for this report. Some fields may be incomplete.');
+        fromEvidence = {};
+      } else {
+        fromEvidence = buildMockDraftInputFromSourceEvidence(agg);
+      }
     } catch {
       toast.error('Source evidence could not be prepared. Check the report and try again.');
       return;
@@ -909,10 +948,14 @@ export default function AiParentReports() {
         <div className="space-y-1">
           <div className="flex flex-wrap items-center gap-2">
             <h2 className="font-semibold">Source Evidence Preview</h2>
-            <Badge variant="outline">Fake/dev preview</Badge>
+            <Badge variant="outline">
+              {inDemoMode ? 'Demo/fallback evidence' : 'System evidence preview'}
+            </Badge>
           </div>
           <p className="text-xs text-muted-foreground">
-            No real student data — deterministic demo summaries only. Future: this will come from RLS-bound attendance, homework, worksheets, observations, and released media.
+            {inDemoMode
+              ? 'Demo and fallback wording only — no live system reads in this mode.'
+              : 'System evidence is used where available. Missing sources use safe fallback wording until the evidence pipeline is complete.'}
           </p>
         </div>
 
@@ -921,13 +964,25 @@ export default function AiParentReports() {
         ) : null}
 
         {selectedReportId && sourceEvidenceLoading ? (
-          <p className="text-sm text-muted-foreground">Loading fake source evidence preview…</p>
+          <p className="text-sm text-muted-foreground">
+            {inDemoMode ? 'Loading demo source evidence…' : 'Loading system source evidence…'}
+          </p>
         ) : null}
 
         {selectedReportId && !sourceEvidenceLoading && sourceEvidenceError ? (
           <p className="text-sm text-muted-foreground">
             Source evidence preview is temporarily unavailable. Try reselecting a report.
           </p>
+        ) : null}
+
+        {selectedReportId && !sourceEvidenceLoading && !sourceEvidenceError && reportMetadataGaps.length > 0 ? (
+          <div className="rounded-lg border border-sky-200/80 bg-sky-50/50 dark:bg-sky-950/20 p-3 text-sm text-muted-foreground">
+            <p className="text-xs font-medium text-foreground">Scope note</p>
+            <p>
+              This report is missing: {reportMetadataGaps.join(', ')}. The preview still runs with safe
+              placeholders where needed.
+            </p>
+          </div>
         ) : null}
 
         {selectedReportId && !sourceEvidenceLoading && !sourceEvidenceError && sourceEvidencePreview ? (
@@ -968,11 +1023,15 @@ export default function AiParentReports() {
             </div>
 
             {Array.isArray(sourceEvidencePreview.warnings) && sourceEvidencePreview.warnings.length > 0 ? (
-              <div className="rounded-lg border border-amber-200 bg-amber-50/60 dark:bg-amber-950/20 p-3 space-y-1">
-                <p className="text-xs font-medium">Warnings</p>
-                <ul className="text-sm list-disc pl-5 space-y-0.5">
+              <div className="rounded-lg border border-amber-200/80 bg-amber-50/50 dark:bg-amber-950/20 p-3 space-y-2">
+                <p className="text-xs font-medium text-amber-900 dark:text-amber-200">Heads-up</p>
+                <ul className="flex flex-wrap gap-2 list-none p-0 m-0">
                   {sourceEvidencePreview.warnings.map((w) => (
-                    <li key={w}>{w}</li>
+                    <li key={w}>
+                      <Badge variant="outline" className="font-normal text-xs border-amber-300/80 bg-white/60 dark:bg-amber-950/40">
+                        {w}
+                      </Badge>
+                    </li>
                   ))}
                 </ul>
               </div>
@@ -980,7 +1039,7 @@ export default function AiParentReports() {
 
             {Array.isArray(sourceEvidencePreview.missingEvidence) && sourceEvidencePreview.missingEvidence.length > 0 ? (
               <div className="rounded-lg border p-3 space-y-1">
-                <p className="text-xs font-medium text-muted-foreground">Missing / not connected (expected in MVP)</p>
+                <p className="text-xs font-medium text-muted-foreground">Fallback / missing evidence</p>
                 <ul className="text-sm list-disc pl-5 text-muted-foreground space-y-0.5">
                   {sourceEvidencePreview.missingEvidence.map((m) => (
                     <li key={m}>{m}</li>
@@ -992,7 +1051,8 @@ export default function AiParentReports() {
             <div className="space-y-2">
               <p className="text-sm font-medium">Evidence items (staff-only classification)</p>
               <p className="text-xs text-muted-foreground">
-                Items marked “not for provider” are internal markers and must never be sent to an external AI service. Nothing here is visible to parents until a report is explicitly released.
+                Items marked “not sent to provider” stay internal and must never be sent to an external AI service.
+                Nothing here is visible to parents until a report is explicitly released.
               </p>
               <div className="max-h-80 overflow-y-auto space-y-2 pr-1">
                 {(sourceEvidencePreview.evidenceItems || []).map((item, idx) => {
@@ -1010,10 +1070,10 @@ export default function AiParentReports() {
                         <span className="font-medium">{item.label}</span>
                         <Badge variant="outline" className="text-[10px] font-mono">{item.sourceType}</Badge>
                         <Badge variant={isNever ? 'destructive' : 'secondary'} className="text-[10px]">
-                          {item.classification}
+                          {evidenceClassificationBadgeLabel(item.classification)}
                         </Badge>
                         {isNever ? (
-                          <span className="text-xs text-destructive">Not for external providers</span>
+                          <span className="text-xs text-destructive">Not sent to provider</span>
                         ) : null}
                       </div>
                       <p className="text-muted-foreground">{item.summary}</p>
@@ -1022,7 +1082,9 @@ export default function AiParentReports() {
                         <span>Visibility: {item.visibility}</span>
                         <span>Teacher confirm: {item.requiresTeacherConfirmation ? 'yes' : 'no'}</span>
                         <span>Default in draft: {item.includedInDraftByDefault ? 'yes' : 'no'}</span>
-                        {isSensitive ? <span className="text-amber-700 dark:text-amber-400">Sensitive — confirm before parent-facing use</span> : null}
+                        {isSensitive ? (
+                          <span className="text-amber-700 dark:text-amber-400">Requires teacher confirmation</span>
+                        ) : null}
                         {isStaffPick && !isNever ? (
                           <span>Staff selection required before inclusion</span>
                         ) : null}

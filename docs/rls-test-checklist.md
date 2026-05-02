@@ -1,15 +1,20 @@
 # RLS Test Checklist
 
+## Checkpoint update (AI parent report Source Evidence Preview hybrid UI — 2026-05-02)
+
+- **UI (`AiParentReports.jsx`):** **demo** → **`mode: 'fake'`**; **authenticated staff** → **`mode: 'hybrid'`** (JWT-scoped reads via existing service — **no** DDL). **Generate Mock Draft** aligned with same bundle path; missing evidence **informational** only. **No** ParentView change; **no** `real_ai`. Doc: **`docs/ai-parent-report-source-preview-hybrid-ui-checkpoint.md`**.
+- Smokes: **`source-aggregation`**, **`rls-source-aggregation`**, **`mock-draft`**, **`ai-parent-reports`** — regression awareness when touching aggregation or page.
+
 ## Checkpoint update (fake AI parent report source aggregation smoke — 2026-05-02)
 
-- New smoke: **`npm run test:supabase:ai-parent-report:source-aggregation`** — in-process **fake** data only; **no** SQL/RLS change; **no** `real_ai` unlock; **no** parent access change.
+- Smoke: **`npm run test:supabase:ai-parent-report:source-aggregation`** — in-process **fake** data path; **no** SQL/RLS DDL; **no** `real_ai` unlock; **no** parent access change.
 - Service: `src/services/aiParentReportSourceAggregationService.js`. Docs: **`docs/ai-parent-report-source-aggregation-service-smoke-checkpoint.md`**, pass seal **`docs/ai-parent-report-source-aggregation-service-pass-checkpoint.md`**.
-- **UI:** **`docs/ai-parent-report-source-preview-ui-checkpoint.md`** — staff preview uses **fake** aggregation only (no new source reads).
+- **UI:** **`docs/ai-parent-report-source-preview-ui-checkpoint.md`** — demo uses **fake**; auth uses **hybrid** (see hybrid checkpoint above).
 
 ## Checkpoint update (RLS AI parent report source aggregation — 2026-05-02)
 
 - Smoke: **`npm run test:supabase:ai-parent-report:rls-source-aggregation`** — **`mode: 'rls'`** / **`hybrid`**; existing read helpers + JWT only; **no** DDL.
-- Doc: **`docs/ai-parent-report-rls-source-aggregation-service-smoke-checkpoint.md`**. UI still **fake** preview until explicit wiring.
+- Doc: **`docs/ai-parent-report-rls-source-aggregation-service-smoke-checkpoint.md`**. Staff preview uses **hybrid** when authenticated (not **`rls`-only**).
 
 ## Checkpoint update (product direction — docs/copy only, 2026-05-02)
 

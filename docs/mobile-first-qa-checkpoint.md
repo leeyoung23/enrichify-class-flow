@@ -1,8 +1,13 @@
 # Mobile-first QA checkpoint
 
+## Checkpoint update (Source Evidence Preview hybrid — 2026-05-02)
+
+- **Source Evidence Preview** on **`AiParentReports.jsx`**: **demo** → **fake** mode; **authenticated** → **hybrid** (system evidence where available, safe fallback for gaps). Labels **Demo/fallback evidence** vs **System evidence preview**; missing sources **informational**, not fatal. **`Generate Mock Draft`** uses current preview bundle or re-collects with same mode. See **`docs/ai-parent-report-source-preview-hybrid-ui-checkpoint.md`**. Manual QA ~390px: badge wrap, **Heads-up** warning chips, **Fallback / missing evidence** list, classification badges (**Not sent to provider**, **Requires teacher confirmation**).
+- **Regression awareness:** aggregation + mock-draft smokes in **`docs/ai-parent-report-source-preview-hybrid-ui-checkpoint.md`**.
+
 ## Checkpoint update (fake source aggregation service — 2026-05-02)
 
-- **Source Evidence Preview** on **`AiParentReports.jsx`** loads **fake** aggregation when a report is selected — see **`docs/ai-parent-report-source-preview-ui-checkpoint.md`**. **`rls`** mode exists on the **service** only until UI wiring — **`docs/ai-parent-report-rls-source-aggregation-service-smoke-checkpoint.md`**. Manual QA ~390px: preview card scroll, evidence item badges, Generate Mock Draft merge copy.
+- **Supersedes UI slice:** hybrid wiring above; service still supports **`fake` / `rls` / `hybrid`** — **`docs/ai-parent-report-rls-source-aggregation-service-smoke-checkpoint.md`**.
 - **Regression awareness:** `npm run test:supabase:ai-parent-report:source-aggregation` — detail in `docs/ai-parent-report-source-aggregation-service-smoke-checkpoint.md`.
 
 ## Checkpoint update (product direction — parent communication + AI source copy, 2026-05-02)

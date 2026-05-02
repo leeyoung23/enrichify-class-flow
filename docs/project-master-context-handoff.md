@@ -1,5 +1,10 @@
 # Project Master Context Handoff
 
+## Checkpoint update (Source Evidence Preview hybrid UI — 2026-05-02)
+
+- **`src/pages/AiParentReports.jsx`** — **`demoRole` / local demo:** `collectAiParentReportSourceEvidence` **`mode: 'fake'`**; **authenticated staff:** **`mode: 'hybrid'`** (same **`fetchSourceEvidenceBundle`** used for preview + mock-draft re-collect). **`Generate Mock Draft`** prefers loaded **`sourceEvidencePreview`**; **manual/source notes** override non-empty evidence fields per merge helper. **No** SQL/RLS changes; **no** `real_ai`; ParentView unchanged.
+- **Docs:** **`docs/ai-parent-report-source-preview-hybrid-ui-checkpoint.md`**; plan **`docs/ai-parent-report-source-preview-hybrid-ui-plan.md`** updated; preview UI checkpoint **`docs/ai-parent-report-source-preview-ui-checkpoint.md`**; RLS aggregation checkpoint cross-ref updated.
+
 ## Checkpoint update (fake AI parent report source aggregation — 2026-05-02)
 
 - **`src/services/aiParentReportSourceAggregationService.js`** — `collectAiParentReportSourceEvidence` (**`fake`** mode only); **`buildMockDraftInputFromSourceEvidence`** for mock draft bridge; **no** persistence; **no** parent visibility change.

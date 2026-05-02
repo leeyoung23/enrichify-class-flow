@@ -1,9 +1,9 @@
 # AI Parent Report — Source Evidence Preview: fake → hybrid / RLS UI plan
 
 Date: 2026-05-02  
-Scope: **planning only** — no `AiParentReports.jsx` changes, no new services, no SQL/RLS, no provider keys, no `real_ai` unlock, **no UI wiring in this document**.
+Scope: **plan** + **reference** for staff Source Evidence Preview. **UI wiring** for **B + D** (hybrid for auth, fake for demo; mock draft aligned) is implemented — see **`docs/ai-parent-report-source-preview-hybrid-ui-checkpoint.md`**. **No** SQL/RLS DDL, no provider keys, no `real_ai` unlock in this track.
 
-**Related:** `docs/ai-parent-report-rls-source-aggregation-service-smoke-checkpoint.md`, `docs/ai-parent-report-rls-source-aggregation-plan.md`, `docs/ai-parent-report-source-preview-ui-checkpoint.md`, `docs/ai-parent-report-source-aggregation-service-pass-checkpoint.md`, `docs/ai-parent-report-source-aggregation-evidence-intake-plan.md`
+**Related:** `docs/ai-parent-report-source-preview-hybrid-ui-checkpoint.md`, `docs/ai-parent-report-rls-source-aggregation-service-smoke-checkpoint.md`, `docs/ai-parent-report-rls-source-aggregation-plan.md`, `docs/ai-parent-report-source-preview-ui-checkpoint.md`, `docs/ai-parent-report-source-aggregation-service-pass-checkpoint.md`, `docs/ai-parent-report-source-aggregation-evidence-intake-plan.md`
 
 ---
 
@@ -11,9 +11,9 @@ Scope: **planning only** — no `AiParentReports.jsx` changes, no new services, 
 
 | Topic | Status |
 |-------|--------|
-| **Source Evidence Preview (UI)** | Calls **`collectAiParentReportSourceEvidence({ mode: 'fake' })`** when a report is selected |
+| **Source Evidence Preview (UI)** | **`demoRole` → `mode: 'fake'`**; **authenticated staff → `mode: 'hybrid'`** when Supabase session available; otherwise **fake** (safe fallback) |
 | **Service** | **`fake`**, **`rls`**, **`hybrid`** implemented in `aiParentReportSourceAggregationService.js` |
-| **UI + rls/hybrid** | **Not wired** — preview remains **fake-only** on purpose until this plan is implemented |
+| **UI + hybrid** | **Wired** — see **`docs/ai-parent-report-source-preview-hybrid-ui-checkpoint.md`**; **`rls`-only** not exposed in UI |
 | **Smokes** | `source-aggregation`, `rls-source-aggregation`, `mock-draft`, `ai-parent-reports` — expected to pass at last checkpoint |
 | **SQL / RLS** | **Unchanged** in aggregation milestone |
 | **Real provider** | **None** |
@@ -113,13 +113,13 @@ Scope: **planning only** — no `AiParentReports.jsx` changes, no new services, 
 
 | Phase | Content |
 |-------|---------|
-| **A** | **This plan** (docs only) |
-| **B** | Wire **authenticated** preview to **`hybrid`**; **`demoRole`** stays **`fake`** |
-| **C** | Optional **manual mode toggle** (advanced) |
-| **D** | Align **Generate Mock Draft** merge input with **same** aggregation call as preview (`hybrid` vs `fake`) |
+| **A** | **This plan** (docs) |
+| **B** | Wire **authenticated** preview to **`hybrid`**; **`demoRole`** stays **`fake`** — **done** |
+| **C** | Optional **manual mode toggle** (advanced) — **future** |
+| **D** | Align **Generate Mock Draft** with **same** aggregation mode/params as preview — **done** |
 | **E** | **SQL/RLS gap review** only after documented misses—not speculative DDL |
 
-**Recommendation:** ship **B + D** in **one** small PR if risk stays low: single source of truth for “what evidence bundle we’re using” per selected report + auth/demo branch—**no new services**, **no SQL**.
+**Shipped:** **B + D** in **`docs/ai-parent-report-source-preview-hybrid-ui-checkpoint.md`** — single **`fetchSourceEvidenceBundle`** path for preview + mock-draft re-collect; **no new services**, **no SQL**.
 
 ---
 
@@ -167,4 +167,4 @@ Validate: build, lint, typecheck, aggregation smokes, mock-draft, ai-parent-repo
 
 ## Validation (this document)
 
-- **Docs-only:** `git diff --name-only` lists this file; **no** build/lint/typecheck/smoke unless code ships.
+- When code ships alongside this plan: run **`build`**, **`lint`**, **`typecheck`**, and the AI parent report smokes listed in §11; see **`docs/ai-parent-report-source-preview-hybrid-ui-checkpoint.md`** for the sealed checkpoint.
