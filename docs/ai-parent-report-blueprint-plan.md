@@ -10,7 +10,12 @@ Scope: planning-only blueprint for AI-assisted parent progress reports before pr
 - Smoke: **`npm run test:supabase:ai-parent-report:source-aggregation`** (no DB, no provider).
 - Docs: **`docs/ai-parent-report-source-aggregation-service-smoke-checkpoint.md`**, final pass **`docs/ai-parent-report-source-aggregation-service-pass-checkpoint.md`**.
 - **No** SQL/RLS change; **no** `real_ai` unlock; **no** UI change in that milestone.
-- **Recommended next:** milestone **A** — wire **AI Parent Reports** source evidence preview UI to **fake** aggregation (see pass doc prompt).
+
+## Checkpoint update (Source Evidence Preview UI — fake aggregation — 2026-05-02)
+
+- **`src/pages/AiParentReports.jsx`** — **Source Evidence Preview** calls **`collectAiParentReportSourceEvidence`** (`fake`); **no** new Supabase reads for aggregation; **Generate Mock Draft** merges form + **`buildMockDraftInputFromSourceEvidence`**.
+- Doc: **`docs/ai-parent-report-source-preview-ui-checkpoint.md`**.
+- **Recommended next:** milestone **B** — RLS-bound aggregation (same output shape).
 
 ## Checkpoint update (product direction — copy only, 2026-05-02)
 

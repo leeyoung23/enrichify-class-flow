@@ -31,6 +31,12 @@ import {
   releaseAiParentReport,
   submitAiParentReportForReview,
 } from '@/services/supabaseWriteService';
+import { buildMockAiParentReportStructuredSections } from '@/services/aiParentReportMockDraftCore';
+import {
+  buildMockDraftInputFromSourceEvidence,
+  collectAiParentReportSourceEvidence,
+  EVIDENCE_CLASSIFICATION,
+} from '@/services/aiParentReportSourceAggregationService';
 
 const REPORT_TYPE_OPTIONS = [
   'weekly_brief',
@@ -199,6 +205,9 @@ export default function AiParentReports() {
     teacherFinalComment: '',
     evidenceSummaries: '',
   });
+  const [sourceEvidencePreview, setSourceEvidencePreview] = useState(null);
+  const [sourceEvidenceLoading, setSourceEvidenceLoading] = useState(false);
+  const [sourceEvidenceError, setSourceEvidenceError] = useState(false);
 
   const selectedReport = useMemo(
     () => reports.find((item) => item.id === selectedReportId) || null,
@@ -331,6 +340,56 @@ export default function AiParentReports() {
     void loadDetail();
   }, [loadDetail]);
 
+  useEffect(() => {
+    let cancelled = false;
+
+    async function loadSourceEvidencePreview() {
+      if (!selectedReportId || !selectedReport) {
+        setSourceEvidencePreview(null);
+        setSourceEvidenceLoading(false);
+        setSourceEvidenceError(false);
+        return;
+      }
+
+      setSourceEvidenceLoading(true);
+      setSourceEvidenceError(false);
+
+      try {
+        const periodStart = selectedReport.reportPeriodStart
+          ? String(selectedReport.reportPeriodStart).slice(0, 10)
+          : '';
+        const periodEnd = selectedReport.reportPeriodEnd
+          ? String(selectedReport.reportPeriodEnd).slice(0, 10)
+          : '';
+
+        const data = await collectAiParentReportSourceEvidence({
+          studentId: selectedReport.studentId || '',
+          classId: selectedReport.classId || '',
+          branchId: selectedReport.branchId || '',
+          periodStart,
+          periodEnd,
+          mode: 'fake',
+        });
+
+        if (!cancelled) {
+          setSourceEvidencePreview(data);
+          setSourceEvidenceLoading(false);
+        }
+      } catch {
+        if (!cancelled) {
+          setSourceEvidencePreview(null);
+          setSourceEvidenceError(true);
+          setSourceEvidenceLoading(false);
+        }
+      }
+    }
+
+    void loadSourceEvidencePreview();
+    return () => {
+      cancelled = true;
+    };
+  }, [selectedReport, selectedReportId]);
+
   const resetVersionForm = () => {
     setCreateVersionForm({
       generationSource: 'manual',
@@ -378,13 +437,65 @@ export default function AiParentReports() {
     evidenceSummaries: mockDraftForm.evidenceSummaries.trim(),
   });
 
+  const mergeMockDraftFormWithEvidence = (formInput, evidenceInput) => {
+    const keys = [
+      'studentSummary',
+      'attendanceSummary',
+      'lessonProgression',
+      'homeworkCompletion',
+      'homeworkPerformance',
+      'strengths',
+      'improvementAreas',
+      'learningGaps',
+      'teacherObservations',
+      'nextRecommendations',
+      'parentSupportSuggestions',
+      'teacherFinalComment',
+      'evidenceSummaries',
+    ];
+    const out = {};
+    keys.forEach((key) => {
+      const formStr = typeof formInput[key] === 'string' ? formInput[key].trim() : '';
+      const evStr = typeof evidenceInput[key] === 'string' ? evidenceInput[key].trim() : '';
+      out[key] = formStr || evStr || '';
+    });
+    return out;
+  };
+
   const handleGenerateMockDraft = async () => {
     if (!selectedReportId) {
       toast.message('Select a report first.');
       return;
     }
 
-    const input = buildMockDraftInput();
+    if (!selectedReport) {
+      toast.message('Select a report first.');
+      return;
+    }
+
+    let fromEvidence = {};
+    try {
+      const periodStart = selectedReport.reportPeriodStart
+        ? String(selectedReport.reportPeriodStart).slice(0, 10)
+        : '';
+      const periodEnd = selectedReport.reportPeriodEnd
+        ? String(selectedReport.reportPeriodEnd).slice(0, 10)
+        : '';
+      const agg = await collectAiParentReportSourceEvidence({
+        studentId: selectedReport.studentId || '',
+        classId: selectedReport.classId || '',
+        branchId: selectedReport.branchId || '',
+        periodStart,
+        periodEnd,
+        mode: 'fake',
+      });
+      fromEvidence = buildMockDraftInputFromSourceEvidence(agg);
+    } catch {
+      toast.error('Source evidence could not be prepared. Check the report and try again.');
+      return;
+    }
+
+    const input = mergeMockDraftFormWithEvidence(buildMockDraftInput(), fromEvidence);
     const hasUnsafe = Object.values(input).some((value) => hasUnsafeMockInput(value));
     if (hasUnsafe) {
       toast.error('Mock draft source notes contain blocked private/provider-style patterns.');
@@ -399,30 +510,21 @@ export default function AiParentReports() {
       const nextVersionNumber = existing.length + 1;
       const newVersionId = `${selectedReportId}-v${nextVersionNumber}`;
       const fallback = 'More evidence is needed before making a detailed judgement in this area.';
+      const structuredSections = buildMockAiParentReportStructuredSections(input);
       const newVersion = {
         id: newVersionId,
         reportId: selectedReportId,
         versionNumber: nextVersionNumber,
         generationSource: 'mock_ai',
         structuredSections: {
-          summary: input.studentSummary || fallback,
-          attendance_punctuality: input.attendanceSummary || fallback,
-          lesson_progression: input.lessonProgression || fallback,
-          homework_completion: input.homeworkCompletion || fallback,
-          homework_assessment_performance: input.homeworkPerformance || fallback,
-          strengths: input.strengths || fallback,
-          areas_for_improvement: input.improvementAreas || fallback,
-          learning_gaps: input.learningGaps || fallback,
-          next_recommendations: input.nextRecommendations || fallback,
-          parent_support_suggestions: input.parentSupportSuggestions || fallback,
-          teacher_final_comment: input.teacherFinalComment || fallback,
+          ...structuredSections,
         },
         teacherEdits: {
-          mock_generation_note: 'deterministic local demo mock draft',
+          mock_generation_note: 'deterministic local demo mock draft (merged form + fake source evidence)',
           selected_evidence_summary: input.evidenceSummaries || fallback,
         },
         finalText: {
-          teacher_final_comment: input.teacherFinalComment || fallback,
+          teacher_final_comment: input.teacherFinalComment || structuredSections.teacher_final_comment || fallback,
         },
         aiModelLabel: 'mock_ui_shell',
         aiGeneratedAt: nowIso,
@@ -803,19 +905,135 @@ export default function AiParentReports() {
         </Card>
       </div>
 
-      <Card className="p-4 space-y-3">
-        <h2 className="font-semibold">Report source data preview</h2>
-        <p className="text-sm text-muted-foreground">
-          Current mock mode uses safe demo or manual source notes. Future AI drafts should be generated from approved system evidence, not typing alone. The Observations area elsewhere is planned to feed evidence over time. Future teachers may upload homework, worksheets, or photos as evidence—AI may analyse later; staff review and explicit release remain required before parents see anything.
-        </p>
-        <ul className="text-sm space-y-2 text-muted-foreground border rounded-lg divide-y">
-          <li className="px-3 py-2"><span className="font-medium text-foreground">Attendance</span> — will be analysed from attendance records (preview: demo labels only).</li>
-          <li className="px-3 py-2"><span className="font-medium text-foreground">Homework</span> — will be analysed from homework tasks, submissions, and feedback (preview: not wired).</li>
-          <li className="px-3 py-2"><span className="font-medium text-foreground">Worksheets</span> — future upload or scan evidence source (not implemented).</li>
-          <li className="px-3 py-2"><span className="font-medium text-foreground">Observations</span> — future teacher observation evidence source (planned).</li>
-          <li className="px-3 py-2"><span className="font-medium text-foreground">Lesson progression</span> — future class or session curriculum progress source (not wired).</li>
-          <li className="px-3 py-2"><span className="font-medium text-foreground">Memories / media</span> — future selected or released learning evidence source (release-gated).</li>
-        </ul>
+      <Card className="p-4 space-y-4 border-dashed">
+        <div className="space-y-1">
+          <div className="flex flex-wrap items-center gap-2">
+            <h2 className="font-semibold">Source Evidence Preview</h2>
+            <Badge variant="outline">Fake/dev preview</Badge>
+          </div>
+          <p className="text-xs text-muted-foreground">
+            No real student data — deterministic demo summaries only. Future: this will come from RLS-bound attendance, homework, worksheets, observations, and released media.
+          </p>
+        </div>
+
+        {!selectedReportId ? (
+          <p className="text-sm text-muted-foreground">Select a report to preview source evidence.</p>
+        ) : null}
+
+        {selectedReportId && sourceEvidenceLoading ? (
+          <p className="text-sm text-muted-foreground">Loading fake source evidence preview…</p>
+        ) : null}
+
+        {selectedReportId && !sourceEvidenceLoading && sourceEvidenceError ? (
+          <p className="text-sm text-muted-foreground">
+            Source evidence preview is temporarily unavailable. Try reselecting a report.
+          </p>
+        ) : null}
+
+        {selectedReportId && !sourceEvidenceLoading && !sourceEvidenceError && sourceEvidencePreview ? (
+          <div className="space-y-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm">
+              <div className="rounded-lg border bg-muted/20 p-3 space-y-1">
+                <p className="text-xs font-medium text-muted-foreground">Attendance summary</p>
+                <p>{sourceEvidencePreview.attendanceSummary}</p>
+              </div>
+              <div className="rounded-lg border bg-muted/20 p-3 space-y-1">
+                <p className="text-xs font-medium text-muted-foreground">Homework summary</p>
+                <p>{sourceEvidencePreview.homeworkSummary}</p>
+              </div>
+              <div className="rounded-lg border bg-muted/20 p-3 space-y-1">
+                <p className="text-xs font-medium text-muted-foreground">Worksheet evidence</p>
+                <p>{sourceEvidencePreview.worksheetEvidenceSummary}</p>
+              </div>
+              <div className="rounded-lg border bg-muted/20 p-3 space-y-1">
+                <p className="text-xs font-medium text-muted-foreground">Lesson progression</p>
+                <p>{sourceEvidencePreview.lessonProgressionSummary}</p>
+              </div>
+              <div className="rounded-lg border bg-muted/20 p-3 space-y-1">
+                <p className="text-xs font-medium text-muted-foreground">Observations</p>
+                <p>{sourceEvidencePreview.observationSummary}</p>
+              </div>
+              <div className="rounded-lg border bg-muted/20 p-3 space-y-1">
+                <p className="text-xs font-medium text-muted-foreground">Parent Communication</p>
+                <p>{sourceEvidencePreview.parentCommunicationSummary}</p>
+              </div>
+              <div className="rounded-lg border bg-muted/20 p-3 space-y-1">
+                <p className="text-xs font-medium text-muted-foreground">Memories / media</p>
+                <p>{sourceEvidencePreview.memoriesEvidenceSummary}</p>
+              </div>
+              <div className="rounded-lg border bg-muted/20 p-3 space-y-1 md:col-span-2">
+                <p className="text-xs font-medium text-muted-foreground">Curriculum context</p>
+                <p>{sourceEvidencePreview.curriculumContext}</p>
+              </div>
+            </div>
+
+            {Array.isArray(sourceEvidencePreview.warnings) && sourceEvidencePreview.warnings.length > 0 ? (
+              <div className="rounded-lg border border-amber-200 bg-amber-50/60 dark:bg-amber-950/20 p-3 space-y-1">
+                <p className="text-xs font-medium">Warnings</p>
+                <ul className="text-sm list-disc pl-5 space-y-0.5">
+                  {sourceEvidencePreview.warnings.map((w) => (
+                    <li key={w}>{w}</li>
+                  ))}
+                </ul>
+              </div>
+            ) : null}
+
+            {Array.isArray(sourceEvidencePreview.missingEvidence) && sourceEvidencePreview.missingEvidence.length > 0 ? (
+              <div className="rounded-lg border p-3 space-y-1">
+                <p className="text-xs font-medium text-muted-foreground">Missing / not connected (expected in MVP)</p>
+                <ul className="text-sm list-disc pl-5 text-muted-foreground space-y-0.5">
+                  {sourceEvidencePreview.missingEvidence.map((m) => (
+                    <li key={m}>{m}</li>
+                  ))}
+                </ul>
+              </div>
+            ) : null}
+
+            <div className="space-y-2">
+              <p className="text-sm font-medium">Evidence items (staff-only classification)</p>
+              <p className="text-xs text-muted-foreground">
+                Items marked “not for provider” are internal markers and must never be sent to an external AI service. Nothing here is visible to parents until a report is explicitly released.
+              </p>
+              <div className="max-h-80 overflow-y-auto space-y-2 pr-1">
+                {(sourceEvidencePreview.evidenceItems || []).map((item, idx) => {
+                  const isNever = item.classification === EVIDENCE_CLASSIFICATION.NEVER_SEND_TO_PROVIDER;
+                  const isSensitive = item.classification === EVIDENCE_CLASSIFICATION.SENSITIVE_REQUIRES_CONFIRMATION;
+                  const isStaffPick = item.classification === EVIDENCE_CLASSIFICATION.STAFF_ONLY_REQUIRES_SELECTION;
+                  return (
+                    <div
+                      key={`${item.sourceType}-${idx}`}
+                      className={`rounded-lg border p-3 text-sm space-y-1 ${
+                        isNever ? 'border-destructive/40 bg-destructive/5' : ''
+                      }`}
+                    >
+                      <div className="flex flex-wrap items-center gap-2">
+                        <span className="font-medium">{item.label}</span>
+                        <Badge variant="outline" className="text-[10px] font-mono">{item.sourceType}</Badge>
+                        <Badge variant={isNever ? 'destructive' : 'secondary'} className="text-[10px]">
+                          {item.classification}
+                        </Badge>
+                        {isNever ? (
+                          <span className="text-xs text-destructive">Not for external providers</span>
+                        ) : null}
+                      </div>
+                      <p className="text-muted-foreground">{item.summary}</p>
+                      <div className="flex flex-wrap gap-2 text-xs text-muted-foreground">
+                        <span>Confidence: {item.confidence}</span>
+                        <span>Visibility: {item.visibility}</span>
+                        <span>Teacher confirm: {item.requiresTeacherConfirmation ? 'yes' : 'no'}</span>
+                        <span>Default in draft: {item.includedInDraftByDefault ? 'yes' : 'no'}</span>
+                        {isSensitive ? <span className="text-amber-700 dark:text-amber-400">Sensitive — confirm before parent-facing use</span> : null}
+                        {isStaffPick && !isNever ? (
+                          <span>Staff selection required before inclusion</span>
+                        ) : null}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          </div>
+        ) : null}
       </Card>
 
       <Card className="p-4 space-y-4">
@@ -971,7 +1189,7 @@ export default function AiParentReports() {
         <Card className="p-4 space-y-3">
           <h2 className="font-semibold">Generate Mock Draft</h2>
           <p className="text-sm text-muted-foreground">
-            Staff-side mock draft generation only—fills sections from your safe demo inputs, not from live Supabase feeds yet. Treat fields as stand-in source notes; long term they should mirror automatic pulls from attendance, homework, uploads, observations, and progression data. This does not send anything to parents. Submit, approve, and release remain manual and required.
+            Staff-side mock draft generation only—fills sections from your safe demo inputs, not from live Supabase feeds yet. Empty fields below are filled from the fake Source Evidence Preview when you generate (you can still type overrides first). Treat fields as stand-in source notes; long term they should mirror automatic pulls from attendance, homework, uploads, observations, and progression data. This does not send anything to parents. Submit, approve, and release remain manual and required.
           </p>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div className="space-y-1.5 sm:col-span-2">

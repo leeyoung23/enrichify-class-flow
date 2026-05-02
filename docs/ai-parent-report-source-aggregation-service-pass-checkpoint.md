@@ -33,15 +33,15 @@ Re-run when touching aggregation, mock draft, or AI report services.
 
 ---
 
-## Recommended next milestone
+## Milestone A — implemented (2026-05-02)
 
-**A — Wire AI Parent Reports “Source Evidence Preview” UI to the fake aggregation service** (first).
+**Source Evidence Preview** is wired to **`collectAiParentReportSourceEvidence`** (`fake` only). See **`docs/ai-parent-report-source-preview-ui-checkpoint.md`**.
 
-**Why:** The service and smoke **prove the pipeline shape**. Staff UI already describes a **report source data preview** concept (`AiParentReports.jsx`); calling **`collectAiParentReportSourceEvidence`** (fake mode) when a report is selected validates **workflow and copy** before **RLS-bound reads** (B) or **real AI** (D/E).
+**Generate Mock Draft** merges manual fields with **`buildMockDraftInputFromSourceEvidence`** (non-empty manual overrides win).
 
 | Option | Milestone |
 |--------|-----------|
-| **A** | UI preview ↔ **fake** aggregation (recommended next) |
+| ~~**A**~~ | ~~UI preview ↔ **fake** aggregation~~ **Done** |
 | **B** | RLS-bound source aggregation real reads |
 | **C** | Worksheet/OCR evidence intake planning |
 | **D** | Real provider smoke (staging/key-gated) |
@@ -49,21 +49,12 @@ Re-run when touching aggregation, mock draft, or AI report services.
 
 ---
 
-## Next implementation prompt (copy-paste)
+## Next implementation prompt (copy-paste) — milestone B
 
 ```text
-Wire AI Parent Reports Source Evidence Preview UI to the fake aggregation service only.
+Add authenticated mode for collectAiParentReportSourceEvidence that performs RLS-bound reads via existing supabaseReadService helpers only—same output shape as fake mode; redact/minimise strings; no new tables/SQL in this milestone unless approved; real_ai stays blocked; ParentView unchanged.
 
-Constraints:
-- Project: enrichify-class-flow. Branch: ask user.
-- Call collectAiParentReportSourceEvidence from src/services/aiParentReportSourceAggregationService.js with mode 'fake' only.
-- Use selected report's studentId, classId, branchId, reportPeriodStart/End when available; otherwise safe fake UUIDs/dates consistent with demo mode.
-- Render summaries + evidenceItems in the existing "Report source data preview" / detail area (staff-only). No ParentView changes.
-- Do not add Supabase reads in this milestone unless explicitly approved.
-- Do not unlock real_ai. Do not add provider keys. No SQL/RLS changes.
-- Optional: show buildMockDraftInputFromSourceEvidence output collapsed/debug-staff-only — must not leak storage paths or secrets.
-
-Validation: npm run build, lint, typecheck; npm run test:supabase:ai-parent-report:source-aggregation; regression AI parent report smokes.
+Validation: extend or add smoke with existing RLS fixtures; full regression AI parent report smokes.
 ```
 
 ---
