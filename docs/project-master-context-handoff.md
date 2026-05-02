@@ -1,5 +1,10 @@
 # Project Master Context Handoff
 
+## Checkpoint update (real AI Edge HTTP skeleton — docs finalization)
+
+- **Docs-only:** `docs/real-ai-parent-report-edge-http-final-checkpoint.md` — seals milestone **`b89239c`** (real OpenAI-compatible HTTP in `_shared`; **no** persistence; **`real_ai`** blocked; optional smoke **CHECK** without secrets).
+- **Recommended next:** planning milestone **A** — provisional provider/model + dev/staging secret procedure before **`real_ai`** unlock or UI wiring.
+
 ## Checkpoint update (real AI parent report Edge HTTP — no persistence)
 
 - OpenAI-compatible **real** provider HTTP in `supabase/functions/_shared/aiParentReportRealProviderHttp.ts` + `src/services/aiParentReportRealProviderHttp.js`; **`provider_not_configured`** without `AI_PARENT_REPORT_PROVIDER_API_KEY` + `AI_PARENT_REPORT_PROVIDER_MODEL`.

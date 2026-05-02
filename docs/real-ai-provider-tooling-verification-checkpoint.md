@@ -101,6 +101,7 @@ Commands run with **`PATH=/opt/homebrew/bin:…`** (Apple Silicon Homebrew layou
 ## 7b) Edge HTTP implementation (after this doc)
 
 - **`docs/real-ai-parent-report-edge-http-checkpoint.md`** documents the OpenAI-compatible **real** provider path in `_shared` + Node mirror; **`generateAiParentReportDraft`** is async; **no** persistence; **`real_ai`** still blocked.
+- **Final docs checkpoint:** **`docs/real-ai-parent-report-edge-http-final-checkpoint.md`** — completes Edge HTTP skeleton documentation (**`b89239c`**).
 
 ---
 

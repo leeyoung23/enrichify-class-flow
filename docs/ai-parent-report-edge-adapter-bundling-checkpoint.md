@@ -1,7 +1,9 @@
 # AI Parent Report Edge Adapter Bundling Checkpoint
 
 Date: 2026-05-02  
-Scope: **Edge-compatible fake/disabled adapter** under `supabase/functions/_shared/`; **no** real provider HTTP; **no** provider keys; **no** `real_ai` unlock
+Scope: **`supabase/functions/_shared/`** bundle — fake/disabled + **real HTTP when secrets exist**; **no** keys in repo; **no** `real_ai` unlock via this path
+
+**Final Edge HTTP docs:** `docs/real-ai-parent-report-edge-http-final-checkpoint.md` (skeleton milestone **`b89239c`**).
 
 ## Checkpoint update (tooling verification — docs only)
 

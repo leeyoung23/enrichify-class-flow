@@ -20,6 +20,11 @@ Related checkpoints and context:
 - Services: `src/services/supabaseWriteService.js`, `src/services/supabaseReadService.js`
 - Smoke commands: `package.json` → `test:supabase:ai-parent-reports`, `test:supabase:ai-parent-report:mock-draft`, `test:supabase:ai-parent-report:provider-adapter`
 
+## Implementation update (Edge HTTP skeleton — real mode when configured)
+
+- OpenAI-compatible **real** HTTP lives in `_shared` (`aiParentReportRealProviderHttp.ts`); **`provider_not_configured`** without Edge secrets; **no** persistence; **`real_ai`** version rows still blocked at **`createAiParentReportVersion`**.
+- Docs: `docs/real-ai-parent-report-edge-http-checkpoint.md`, **`docs/real-ai-parent-report-edge-http-final-checkpoint.md`**.
+
 ## Implementation update (adapter skeleton, fake/disabled only)
 
 - Canonical adapter module: `src/services/aiParentReportProviderAdapter.js` (`generateAiParentReportDraft`).

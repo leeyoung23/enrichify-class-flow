@@ -1,5 +1,9 @@
 # RLS Test Checklist
 
+## Checkpoint update (real AI Edge HTTP skeleton — docs final)
+
+- **`docs/real-ai-parent-report-edge-http-final-checkpoint.md`** — **no** SQL/RLS change; **`real_ai`** inserts still blocked; parent released-only posture unchanged; optional provider HTTP remains staging/key-gated.
+
 ## Checkpoint update (real AI parent report Edge HTTP)
 
 - Server-side **real** provider path exists; **no** SQL/RLS change; **`real_ai`** inserts still blocked at **`createAiParentReportVersion`**; no auto-release. Doc: `docs/real-ai-parent-report-edge-http-checkpoint.md`.

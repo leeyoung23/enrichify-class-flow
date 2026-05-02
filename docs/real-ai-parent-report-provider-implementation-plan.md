@@ -7,6 +7,8 @@ Scope: **planning only** — defines how to implement a **real** AI provider for
 
 **Edge HTTP checkpoint:** `docs/real-ai-parent-report-edge-http-checkpoint.md` — OpenAI-compatible **real** path in `_shared` + Node mirror; **`provider_not_configured`** without secrets; **no** persistence; **`real_ai`** still blocked.
 
+**Edge HTTP final checkpoint (docs):** `docs/real-ai-parent-report-edge-http-final-checkpoint.md` — summarizes skeleton milestone **`b89239c`**; next recommended step **A** (secret/model planning + dev/staging smoke planning).
+
 **Related documents (read first):**
 
 - `docs/real-ai-parent-report-provider-boundary-plan.md` — architecture, data rules, contract sketch

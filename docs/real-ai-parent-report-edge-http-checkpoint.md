@@ -3,6 +3,8 @@
 Date: 2026-05-02  
 Scope: **OpenAI-compatible real provider HTTP** in **`supabase/functions/_shared/`** + canonical **`src/services/`** mirror; **no** DB persistence; **no** `real_ai` unlock; **no** UI changes; **no** production deploy in this milestone
 
+**Docs final checkpoint:** `docs/real-ai-parent-report-edge-http-final-checkpoint.md` (milestone **`b89239c`**).
+
 ---
 
 ## 1) What was implemented
