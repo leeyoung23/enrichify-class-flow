@@ -1,5 +1,10 @@
 # Mobile-first QA checkpoint
 
+## Checkpoint update (manual mobile QA — AI report + parent communication)
+
+- **Runbook:** **`docs/manual-mobile-qa-ai-report-parent-communication-checkpoint.md`** — staff **`AI Parent Reports`**, **ParentView Progress Reports**, parent comms/announcements/memories; **~390px** + desktop; **no** code changes in this doc milestone.
+- Complements **`docs/ai-parent-report-mvp-final-qa-checkpoint.md`**. Log findings; follow **A** (fix issues) or **B** (staging provider smoke) per doc §10.
+
 ## Checkpoint update (AI parent report MVP final QA)
 
 - Cross-reference: **`docs/ai-parent-report-mvp-final-qa-checkpoint.md`** — MVP freeze before paid AI; recommends **manual mobile QA** (~390px / ~768px) on **`AI Parent Reports`** + **ParentView Progress Reports** when pausing before secrets.

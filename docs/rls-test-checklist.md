@@ -1,5 +1,9 @@
 # RLS Test Checklist
 
+## Checkpoint update (manual mobile QA — AI report + parent communication)
+
+- QA runbook: **`docs/manual-mobile-qa-ai-report-parent-communication-checkpoint.md`** — confirms parent **released-only** display and **no** draft/metadata leak **by inspection**; complements automated smokes.
+
 ## Checkpoint update (AI parent report MVP final QA)
 
 - Docs-only: **`docs/ai-parent-report-mvp-final-qa-checkpoint.md`** — parent released-only + **`real_ai`** blocked unchanged; no SQL/RLS edits in this milestone; smoke snapshot listed for regression awareness.

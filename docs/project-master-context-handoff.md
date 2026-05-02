@@ -1,5 +1,10 @@
 # Project Master Context Handoff
 
+## Checkpoint update (manual mobile QA checklist — AI report + parent comms)
+
+- **`docs/manual-mobile-qa-ai-report-parent-communication-checkpoint.md`** — human QA before real provider keys; surfaces: staff **`AiParentReports`**, **`ParentView`** Progress Reports, **`Announcements`**, **`Sidebar`** nav; safety/privacy visual checks; recommended next **A** (UX fixes) vs **B** (staging smoke).
+- No runtime changes in checkpoint milestone.
+
 ## Checkpoint update (AI parent report MVP final QA — docs only)
 
 - **`docs/ai-parent-report-mvp-final-qa-checkpoint.md`** — summarizes MVP scope (SQL/RLS, staff/parent flows, mock AI, adapters, Edge HTTP skeleton); validation snapshot; **CHECK** notes; gaps before production real AI; decision **B** (manual mobile QA) vs **A** (staging secret + real smoke) when budget allows.
