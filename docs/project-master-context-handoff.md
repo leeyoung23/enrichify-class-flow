@@ -1,5 +1,9 @@
 # Project Master Context Handoff
 
+## Checkpoint update (navigation clarity — docs sealed, 2026-05-02)
+
+- **Docs-only:** **`docs/navigation-clickability-simplicity-fixes-final-checkpoint.md`** — ParentView latest/history (**slice(1)**, **3** older cap, expand/collapse), My Tasks groups (**Upload / Reply / Other / Completed**), setup directory preview + reduced fake-click affordance, teacher simplicity §5, validation snapshot **`74a71bf`**, future work, **recommended next A → B**, copy-paste manual QA prompt §9. Cross-updates: **`docs/navigation-clickability-simplicity-fixes-checkpoint.md`**, **`docs/teacher-simplicity-navigation-clickability-audit.md`**, **`docs/mobile-first-qa-checkpoint.md`**, **`docs/rls-test-checklist.md`**. **No** `src/` in this doc milestone.
+
 ## Checkpoint update (navigation clickability + My Tasks + ParentView — 2026-05-02)
 
 - **`src/pages/ParentView.jsx`** — **Latest announcements and events**: latest card + **3** more by default, **View more history** / **Show less**; no change to published-only data. **`src/pages/MyTasks.jsx`** — announcement tasks grouped **Upload / Reply / Other / Completed**; intro copy. **`Branches` / `Classes` / `Teachers` / `Students`** — **directory preview** copy; static cards no longer use heavy hover-shadow. **No** SQL/RLS; **no** parent rule change. Doc: **`docs/navigation-clickability-simplicity-fixes-checkpoint.md`**.

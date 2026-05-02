@@ -19,13 +19,17 @@ Scope: **UI copy and layout only** — **no** Supabase SQL/RLS, **no** new persi
 
 ## Related
 
+- **Canonical sealed reference:** `docs/navigation-clickability-simplicity-fixes-final-checkpoint.md`
 - `docs/teacher-simplicity-navigation-clickability-audit.md`
 - `docs/ai-parent-report-workflow-ux-polish-checkpoint.md`
 
-## Validation (when `src/` changes)
+## Validation (recorded at UI commit `74a71bf`)
 
-`npm run build` · `npm run lint` · `npm run typecheck`  
-If ParentView or MyTasks: `npm run test:supabase:parent-announcements` · `npm run test:supabase:announcements:phase1`
+When **`src/`** changes for this surface, re-run: `npm run build` · `npm run lint` · `npm run typecheck` · `npm run test:supabase:parent-announcements` · `npm run test:supabase:announcements:phase1`.
+
+**Snapshot at `74a71bf`:** all **PASS** (expected **CHECK** lines in parent-announcements and announcements:phase1 when optional fixtures absent).
+
+**Docs-only rule:** do **not** re-run build/lint/typecheck unless **`src/`** or tooling changes.
 
 ## Future
 

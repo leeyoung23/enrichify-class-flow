@@ -1,5 +1,9 @@
 # RLS Test Checklist
 
+## Checkpoint update (navigation clarity — sealed doc, 2026-05-02)
+
+- **`docs/navigation-clickability-simplicity-fixes-final-checkpoint.md`** — validation snapshot **`74a71bf`**; **docs-only** edits **after** that commit **do not** require smokes unless **`src/`** changes. UI milestone **no** DDL.
+
 ## Checkpoint update (navigation clickability fixes — 2026-05-02)
 
 - **`docs/navigation-clickability-simplicity-fixes-checkpoint.md`** — UI-only; **no** RLS DDL. Regression: **`npm run test:supabase:parent-announcements`** · **`npm run test:supabase:announcements:phase1`** when ParentView / announcement flows touched.

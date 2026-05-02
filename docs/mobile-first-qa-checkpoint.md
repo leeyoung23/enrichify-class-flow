@@ -1,5 +1,9 @@
 # Mobile-first QA checkpoint
 
+## Checkpoint update (navigation clarity — sealed doc, 2026-05-02)
+
+- **Canonical:** **`docs/navigation-clickability-simplicity-fixes-final-checkpoint.md`** — §9 manual QA prompt (ParentView history + My Tasks + setup cards; desktop + **~390px**). **Docs-only** seal; UI baseline **`74a71bf`**.
+
 ## Checkpoint update (navigation clarity + ParentView history — 2026-05-02)
 
 - **Reference:** **`docs/navigation-clickability-simplicity-fixes-checkpoint.md`** — ParentView **View more history**; My Tasks **grouped** blocks; setup pages less “fake clickable”. Re-QA ~390px: announcement toggle, task section headings, directory cards.

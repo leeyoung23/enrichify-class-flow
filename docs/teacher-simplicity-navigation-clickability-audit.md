@@ -32,7 +32,7 @@ Routes come from `src/services/permissionService.js` → `ROLE_NAVIGATION`. **As
 | Dashboard | `/` | Overview, stats, alerts | Functional / mixed data source | Links/buttons generally explicit |
 | Announcements | `/announcements` | Requests, Company News, Parent Notices | Functional (demo + auth paths) | Many tabs — **medium** cognitive load |
 | AI Parent Reports | `/ai-parent-reports` | Evidence → draft → lifecycle | Functional | Improved workflow copy (**31bd0ee**); still dense — **medium** |
-| Branches | `/branches` | List branches; HQ adds branch | Functional | Branch **cards** hover but **no drill-down** — **high** dead-click risk |
+| Branches | `/branches` | List branches; HQ adds branch | Functional | Static grid cards — **hover-shadow removed**, directory-preview copy (**`74a71bf`**); **still no** drill-down route |
 | Classes | `/classes` | List/create classes; curriculum assign | Functional | Cards interactive for curriculum; complexity — **medium** |
 | Teachers | `/teachers` | Staff list | Partial / data-dependent | Same card affordance risk |
 | Students | `/students` | Student records | Partial / data-dependent | Same |
@@ -214,10 +214,11 @@ Validate: build, lint, typecheck; smoke tests if services touched.
 
 ## Implementation note (2026-05-02)
 
-Partial alignment: **`docs/navigation-clickability-simplicity-fixes-checkpoint.md`** — ParentView announcement **compact + expand history**; **My Tasks** **grouped sections**; setup pages **static card** affordance reduced + **directory preview** copy. Further work (detail routes, tab nav) remains future.
+Sealed reference: **`docs/navigation-clickability-simplicity-fixes-final-checkpoint.md`** — ParentView **slice(1)** history list, **3**-item cap + expand/collapse, **My Tasks** **Upload / Reply / Other / Completed**, setup **directory preview** + reduced hover affordance; validation **`74a71bf`**; **recommended next A → B**. Shorter index: **`docs/navigation-clickability-simplicity-fixes-checkpoint.md`**. Further work (detail routes, ParentView tabs) remains future.
 
 ## Related checkpoints
 
+- `docs/navigation-clickability-simplicity-fixes-final-checkpoint.md`
 - `docs/navigation-clickability-simplicity-fixes-checkpoint.md`
 - `docs/manual-qa-ai-report-hybrid-source-preview-checkpoint.md`
 - `docs/ai-parent-report-workflow-ux-polish-checkpoint.md`
