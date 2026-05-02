@@ -1,5 +1,12 @@
 # RLS Test Checklist
 
+## Checkpoint update (AI parent report Edge `_shared` adapter — fake/disabled only)
+
+- Edge Function **`generate-ai-parent-report-draft`** uses **`supabase/functions/_shared/`** only (no repo `src/` import); behavior aligned with `src/services/aiParentReportProviderAdapter.js` for fake/disabled/real-stub.
+- Smoke: `npm run test:supabase:ai-parent-report:edge-adapter` (+ existing `test:supabase:ai-parent-report:provider-adapter`).
+- No SQL/RLS change; **`real_ai`** inserts still blocked at service layer; no provider keys; no external AI HTTP.
+- Docs: `docs/ai-parent-report-edge-adapter-bundling-checkpoint.md`.
+
 ## Checkpoint update (AI parent report provider adapter skeleton)
 
 - Adapter module (server-side, fake/disabled only): `src/services/aiParentReportProviderAdapter.js`.

@@ -30,9 +30,10 @@ Prior checkpoint: `docs/ai-parent-report-provider-adapter-skeleton-checkpoint.md
 | Canonical adapter | `src/services/aiParentReportProviderAdapter.js` | `generateAiParentReportDraft({ reportId, providerMode, input })` |
 | Shared deterministic mock core | `src/services/aiParentReportMockDraftCore.js` | Section text + unsafe-input guards; used by mock draft write path and adapter **fake** mode |
 | Write service | `src/services/supabaseWriteService.js` | Imports shared mock core for `generateMockAiParentReportDraft` (`mock_ai`) |
-| Edge Function scaffold | `supabase/functions/generate-ai-parent-report-draft/index.ts` | POST handler delegates to adapter; **no secrets** |
+| Edge Function | `supabase/functions/generate-ai-parent-report-draft/index.ts` | POST handler uses **`../_shared/`** adapter only (**no** `../../../src` import) |
+| Edge-compatible adapter copy | `supabase/functions/_shared/aiParentReportProviderAdapter.ts`, `.../aiParentReportMockDraftCore.ts` | Same fake/disabled/real-stub behavior as `src/services`; **deploy-safe** bundle path |
 
-**Deploy note:** Edge bundling may **not** include repo `src/` on deploy. If `supabase functions deploy` fails to resolve `../../../src/services/aiParentReportProviderAdapter.js`, relocate or copy shared code under `supabase/functions/_shared/` in a **future** milestone (still fake-only until real provider work).
+**Deploy note (resolved):** Shared logic is copied under **`supabase/functions/_shared/`** so Supabase Edge bundle does not depend on repo `src/`. Keep **`src/services`** and **`_shared`** aligned when changing mock core or adapter behavior. Checkpoint: `docs/ai-parent-report-edge-adapter-bundling-checkpoint.md`.
 
 ---
 
@@ -70,17 +71,18 @@ Prior checkpoint: `docs/ai-parent-report-provider-adapter-skeleton-checkpoint.md
 ## 6) Edge Function scaffold
 
 - File: `supabase/functions/generate-ai-parent-report-draft/index.ts`
+- Imports **`../_shared/aiParentReportProviderAdapter.ts`** (no `src/` path).
 - **Fake / disabled / safe real-stub only**; **no** real provider secret; **no** provider HTTP.
 - **Do not** use for real provider traffic until a dedicated implementation milestone (keys, auth, scope, smokes).
-- **Bundling:** confirm local `supabase functions serve` / deploy resolves `src/` imports; otherwise plan `_shared` relocation **before** real provider wiring.
+- **Bundling:** `_shared` relocation **done** — optional **`deno check`** / **`supabase functions serve`** when CLI/Deno available (`docs/ai-parent-report-edge-adapter-bundling-checkpoint.md`).
 
 ---
 
 ## 7) Smoke test coverage
 
-- **Script:** `scripts/supabase-ai-parent-report-provider-adapter-smoke-test.mjs`
-- **Command:** `npm run test:supabase:ai-parent-report:provider-adapter`
-- **Covers:** fake `structuredSections` PASS; disabled safe error PASS; real not-implemented PASS; invalid UUID PASS; unsafe input blocked PASS; required section keys PASS; no external provider call PASS; optional integration — **`real_ai` still blocked** in `createAiParentReportVersion` when Supabase env present PASS; no PDF/export / no notification side effects documented as PASS-by-design for adapter-only scope.
+- **Canonical adapter:** `scripts/supabase-ai-parent-report-provider-adapter-smoke-test.mjs` → `npm run test:supabase:ai-parent-report:provider-adapter`
+- **Edge `_shared` adapter + parity:** `scripts/supabase-ai-parent-report-edge-adapter-smoke-test.mjs` → `npm run test:supabase:ai-parent-report:edge-adapter`
+- **Covers:** fake `structuredSections` PASS; disabled safe error PASS; real not-implemented PASS; invalid UUID PASS; unsafe input blocked PASS; required section keys PASS; no external provider call PASS; optional integration — **`real_ai` still blocked** in `createAiParentReportVersion` when Supabase env present PASS (provider-adapter script only); Edge script adds **parity** with canonical `structuredSections`; optional **CHECK** if `deno` / `supabase` CLI missing for full runtime checks.
 
 ---
 
@@ -112,7 +114,7 @@ Prior checkpoint: `docs/ai-parent-report-provider-adapter-skeleton-checkpoint.md
 
 - Real provider **model selection** and planning
 - Real provider **secret** configuration (Supabase Edge secrets only; never frontend)
-- **Edge Function deployment/bundling** verification or **`_shared`** adapter relocation
+- **Edge Function deployment** smoke against a linked project (optional; `_shared` bundling path **done** — see `docs/ai-parent-report-edge-adapter-bundling-checkpoint.md`)
 - Real provider **HTTP** implementation (server-side only)
 - **`real_ai` version creation unlock** + dedicated smokes
 - Real AI **fake/dev** smoke against staging project (when ready)
@@ -130,13 +132,7 @@ Choose:
 - **D.** PDF/export planning  
 - **E.** Final mock/manual AI report QA checkpoint  
 
-**Recommendation: B first.**
-
-Why:
-
-- Adapter skeleton and Edge scaffold already exist; **confirm deploy/serve bundling** (or `_shared` path) **before** real keys and real HTTP.
-- Still **no** real AI call and **no** provider secret in this step.
-- Reduces risk that real provider work fails for **import/path** reasons unrelated to AI quality.
+**B (bundling) status:** `_shared` Edge adapter copy + `npm run test:supabase:ai-parent-report:edge-adapter` address **import/bundling** risk without real keys.
 
 ---
 

@@ -1,13 +1,20 @@
 # Project Master Context Handoff
 
+## Checkpoint update (AI parent report Edge adapter bundling — fake/disabled only)
+
+- Edge-compatible adapter copy under **`supabase/functions/_shared/`** (`aiParentReportMockDraftCore.ts`, `aiParentReportProviderAdapter.ts`); **`generate-ai-parent-report-draft`** imports `_shared` only (no `../../../src`).
+- Smoke: `npm run test:supabase:ai-parent-report:edge-adapter` (parity vs canonical `src/services` fake output); optional **CHECK** if `deno` / `supabase` CLI absent for full runtime validation.
+- No real provider HTTP; no provider keys; no `real_ai` unlock; no persistence/auto-release from Edge scaffold.
+- Docs: `docs/ai-parent-report-edge-adapter-bundling-checkpoint.md`; updated skeleton final + boundary plan + RLS checklist entries.
+
 ## Checkpoint update (AI parent report provider adapter skeleton — docs finalization)
 
 - Docs-only final checkpoint:
   - `docs/ai-parent-report-provider-adapter-skeleton-final-checkpoint.md`
 - Implementation milestone remains:
   - adapter + mock core + Edge scaffold + smoke (`9f8ca6b` baseline).
-- Recommended next milestone:
-  - **B. Edge Function deployment/bundling check with fake provider only** (prove serve/deploy resolves adapter imports or plan `supabase/functions/_shared`; still no real HTTP, no keys, no `real_ai` unlock).
+- Next optional step:
+  - linked-project **`supabase functions serve` / deploy** smoke when CLI available (bundling path via `_shared` is already mitigated).
 
 ## Checkpoint update (AI parent report provider adapter skeleton)
 

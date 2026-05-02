@@ -1,15 +1,12 @@
 // @ts-nocheck
 /* eslint-disable no-undef */
 /**
- * Edge Function scaffold for AI parent report draft generation.
- * Delegates to src/services/aiParentReportProviderAdapter.js (fake/disabled/real-stub only).
- * No provider API keys; no external HTTP calls in fake/disabled modes.
- *
- * Deploy/import path note: local `supabase functions serve` must resolve ../../../src;
- * if deployment bundling excludes repo src, move shared adapter into supabase/functions/_shared.
+ * Edge Function for AI parent report draft generation (fake / disabled / real-stub only).
+ * Uses `supabase/functions/_shared/` adapter — deploy-safe (no ../../../src imports).
+ * No provider API keys; no external HTTP; no persistence; no auto-release.
  */
 
-import { generateAiParentReportDraft } from "../../../src/services/aiParentReportProviderAdapter.js";
+import { generateAiParentReportDraft } from "../_shared/aiParentReportProviderAdapter.ts";
 
 function jsonResponse(body: Record<string, unknown>, status = 200): Response {
   return new Response(JSON.stringify(body), {
@@ -26,21 +23,46 @@ Deno.serve(async (req: Request) => {
     return jsonResponse({ error: "Method not allowed", expected_method: "POST" }, 405);
   }
 
-  let payload: { reportId?: string; providerMode?: string; input?: Record<string, unknown> };
+  let payload: unknown;
   try {
-    payload = (await req.json()) as typeof payload;
+    payload = await req.json();
   } catch {
     return jsonResponse({ error: "Invalid JSON body" }, 400);
   }
 
-  const result = generateAiParentReportDraft({
-    reportId: payload.reportId ?? "",
-    providerMode: payload.providerMode,
-    input: payload.input && typeof payload.input === "object" ? payload.input : {},
-  });
+  if (payload == null || typeof payload !== "object" || Array.isArray(payload)) {
+    return jsonResponse({ error: "Request body must be a JSON object" }, 400);
+  }
+
+  const body = payload as {
+    reportId?: string;
+    providerMode?: string;
+    input?: Record<string, unknown>;
+  };
+
+  let result;
+  try {
+    result = generateAiParentReportDraft({
+      reportId: body.reportId ?? "",
+      providerMode: body.providerMode,
+      input: body.input,
+    });
+  } catch {
+    return jsonResponse(
+      {
+        ok: false,
+        error: { code: "internal_error", message: "Draft generation could not be completed." },
+        data: null,
+        external_provider_call: false,
+      },
+      500
+    );
+  }
 
   const status =
-    result.error?.code === "invalid_report_id" || result.error?.code === "unsafe_input"
+    result.error?.code === "invalid_report_id" ||
+    result.error?.code === "unsafe_input" ||
+    result.error?.code === "invalid_input"
       ? 400
       : 200;
 
@@ -50,6 +72,6 @@ Deno.serve(async (req: Request) => {
       ...result,
       external_provider_call: false,
     },
-    status,
+    status
   );
 });
