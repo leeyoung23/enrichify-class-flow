@@ -2,8 +2,8 @@
 
 ## Checkpoint update (AI parent report Source Evidence Preview hybrid UI — 2026-05-02)
 
-- **UI (`AiParentReports.jsx`):** **demo** → **`mode: 'fake'`**; **authenticated staff** → **`mode: 'hybrid'`** (JWT-scoped reads via existing service — **no** DDL). **Generate Mock Draft** aligned with same bundle path; missing evidence **informational** only. **No** ParentView change; **no** `real_ai`. Doc: **`docs/ai-parent-report-source-preview-hybrid-ui-checkpoint.md`**.
-- Smokes: **`source-aggregation`**, **`rls-source-aggregation`**, **`mock-draft`**, **`ai-parent-reports`** — regression awareness when touching aggregation or page.
+- **UI (`AiParentReports.jsx`):** **demo** → **`mode: 'fake'`**; **authenticated staff** → **`mode: 'hybrid'`** (JWT-scoped reads via existing service — **no** DDL). **Generate Mock Draft** aligned with same bundle path; missing evidence **informational** only. **No** ParentView change; **no** `real_ai`. **Canonical reference:** **`docs/ai-parent-report-source-preview-hybrid-ui-final-checkpoint.md`** (shorter index: **`docs/ai-parent-report-source-preview-hybrid-ui-checkpoint.md`**).
+- Smokes: **`source-aggregation`**, **`rls-source-aggregation`**, **`mock-draft`**, **`ai-parent-reports`** — results recorded **§8** in final hybrid UI doc (**`d235344`**). **Docs-only** edits do not require re-running unless **`src/`** changes.
 
 ## Checkpoint update (fake AI parent report source aggregation smoke — 2026-05-02)
 

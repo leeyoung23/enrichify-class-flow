@@ -3,7 +3,7 @@
 Date: 2026-05-02  
 Scope: **plan** + **reference** for staff Source Evidence Preview. **UI wiring** for **B + D** (hybrid for auth, fake for demo; mock draft aligned) is implemented — see **`docs/ai-parent-report-source-preview-hybrid-ui-checkpoint.md`**. **No** SQL/RLS DDL, no provider keys, no `real_ai` unlock in this track.
 
-**Related:** `docs/ai-parent-report-source-preview-hybrid-ui-checkpoint.md`, `docs/ai-parent-report-rls-source-aggregation-service-smoke-checkpoint.md`, `docs/ai-parent-report-rls-source-aggregation-plan.md`, `docs/ai-parent-report-source-preview-ui-checkpoint.md`, `docs/ai-parent-report-source-aggregation-service-pass-checkpoint.md`, `docs/ai-parent-report-source-aggregation-evidence-intake-plan.md`
+**Related:** `docs/ai-parent-report-source-preview-hybrid-ui-final-checkpoint.md`, `docs/ai-parent-report-source-preview-hybrid-ui-checkpoint.md`, `docs/ai-parent-report-rls-source-aggregation-service-smoke-checkpoint.md`, `docs/ai-parent-report-rls-source-aggregation-plan.md`, `docs/ai-parent-report-source-preview-ui-checkpoint.md`, `docs/ai-parent-report-source-aggregation-service-pass-checkpoint.md`, `docs/ai-parent-report-source-aggregation-evidence-intake-plan.md`
 
 ---
 
@@ -58,7 +58,7 @@ Scope: **plan** + **reference** for staff Source Evidence Preview. **UI wiring**
 | **missingEvidence** | **“Not available for this period or scope”** — not an error state |
 | **warnings** | Short **checklist** (“RLS read checks”, “gap list”) — informational |
 | Low confidence / **staff_only** / **sensitive** | **“Requires teacher confirmation”** (badge) |
-| **never_send_to_provider** | **“Not for external providers”** / **“Staff metadata only”** (existing pattern can extend) |
+| **never_send_to_provider** (implemented staff label) | **“Not sent to provider”** (badge + inline; staff-only) |
 
 ---
 
@@ -72,7 +72,7 @@ Scope: **plan** + **reference** for staff Source Evidence Preview. **UI wiring**
 
 ---
 
-## 6. Generate Mock Draft behavior (planned)
+## 6. Generate Mock Draft behavior (implemented in `d235344`)
 
 | Context | Source for merge (with `buildMockDraftInputFromSourceEvidence` + manual override) |
 |---------|--------------------------------------------------|
@@ -138,33 +138,35 @@ When UI is wired:
 
 ## 12. Recommended next milestone
 
+**B + D shipped** in **`d235344`**. Sealed documentation: **`docs/ai-parent-report-source-preview-hybrid-ui-final-checkpoint.md`**.
+
 | Option | Topic |
 |--------|--------|
-| **A** | **Wire Source Evidence Preview + mock-draft source input to hybrid for authenticated staff** — **recommended first** |
+| **A** | **Manual visual QA** — hybrid Source Evidence Preview on **desktop + ~390px** (**recommended next**) |
 | **B** | Real provider smoke (staging/key-gated) |
 | **C** | Worksheet/OCR planning |
 | **D** | Email automation |
 | **E** | PDF/export |
+
+Prefer **A** before real provider work so hybrid badges, scope note, Heads-up / Fallback sections, and mock-draft layout are verified on real devices.
 
 ---
 
 ## 13. Next implementation prompt (copy-paste)
 
 ```text
-Implement docs/ai-parent-report-source-preview-hybrid-ui-plan.md for AiParentReports.jsx only.
+Manual visual QA only — see docs/ai-parent-report-source-preview-hybrid-ui-final-checkpoint.md §11.
 
-Rules:
-- demoRole / local demo: collectAiParentReportSourceEvidence mode 'fake' (unchanged behavior).
-- Authenticated staff with Supabase session: mode 'hybrid'; pass report UUID as reportId when selectedReportId is UUID for evidence links.
-- UI: label System vs Demo/fallback per plan §4; show missingEvidence and warnings per §5.
-- Generate Mock Draft: use the same mode + params as preview when merging buildMockDraftInputFromSourceEvidence + manual fields.
-- No SQL/RLS DDL; no real_ai; no ParentView changes; no provider keys.
+Scope: AI Parent Reports Source Evidence Preview after d235344 (hybrid for auth, fake for demo).
+No runtime changes unless a blocking bug is filed separately.
 
-Validate: build, lint, typecheck, aggregation smokes, mock-draft, ai-parent-reports smokes.
+Check: demo vs system badges/loading copy; Scope note; Heads-up vs Fallback / missing evidence;
+classification labels (Not sent to provider, Requires teacher confirmation); Generate Mock Draft at ~390px.
+ParentView out of scope.
 ```
 
 ---
 
 ## Validation (this document)
 
-- When code ships alongside this plan: run **`build`**, **`lint`**, **`typecheck`**, and the AI parent report smokes listed in §11; see **`docs/ai-parent-report-source-preview-hybrid-ui-checkpoint.md`** for the sealed checkpoint.
+- Implementation validation is recorded under **`d235344`** — see **`docs/ai-parent-report-source-preview-hybrid-ui-final-checkpoint.md`** §8 and **`docs/ai-parent-report-source-preview-hybrid-ui-checkpoint.md`**. **Docs-only** edits do not require re-running builds/smokes unless **`src/`** changes.

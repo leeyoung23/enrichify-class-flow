@@ -1,48 +1,53 @@
 # AI parent report — Source Evidence Preview hybrid UI checkpoint
 
 Date: 2026-05-02  
-Scope: **`src/pages/AiParentReports.jsx`** only — **no** Supabase SQL/RLS changes, **no** `real_ai` unlock, **no** ParentView change, **no** provider keys or real provider calls.
+Implements: commit **`d235344`** (*Wire AI report source preview hybrid mode*).  
+**Full sealed documentation:** **`docs/ai-parent-report-source-preview-hybrid-ui-final-checkpoint.md`**.
 
-## Summary
+## Summary (short)
 
-- **Demo / `demoRole`:** `collectAiParentReportSourceEvidence` uses **`mode: 'fake'`** (predictable demo/fallback text).
-- **Authenticated staff** (staff role, Supabase session, not demo): **`mode: 'hybrid'`** — RLS-backed reads where available, **fake** fill for empty string fields; **`reportId`** passed when `selectedReportId` is a UUID (evidence-link aggregation).
-- **No manual mode toggle** and **no** `rls`-only UI path in this milestone.
-- **Source Evidence Preview** labels: demo badge **“Demo/fallback evidence”**; authenticated **“System evidence preview”**; missing/fallback list **“Fallback / missing evidence”**; classification copy **“Not sent to provider”** / **“Requires teacher confirmation”** where applicable.
-- **Generate Mock Draft** uses **current `sourceEvidencePreview`** when loaded and not in error; otherwise **re-collects** with the **same mode and params** as the preview. **`buildMockDraftInputFromSourceEvidence`** + **`mergeMockDraftFormWithEvidence`** — **non-empty manual fields override** evidence-derived strings.
-- **Demo** mock draft remains **local-only**; **authenticated** path still calls **`generateMockAiParentReportDraft({ reportId, input })`** only.
+- **Demo / `demoRole`:** `collectAiParentReportSourceEvidence` — **`mode: 'fake'`**.
+- **Authenticated staff** with session: **`mode: 'hybrid'`** (RLS where available + fake fill); **`reportId`** when `selectedReportId` is UUID.
+- **No** manual mode toggle; **no** `rls`-only UI.
+- **Preview labels:** **Demo/fallback evidence** | **System evidence preview**; **Fallback / missing evidence**; **Heads-up** warnings; classification **Not sent to provider** / **Requires teacher confirmation** (see code).
+- **Generate Mock Draft:** prefers **`sourceEvidencePreview`**; else **`fetchSourceEvidenceBundle()`**; **`buildMockDraftInputFromSourceEvidence`** + **`mergeMockDraftFormWithEvidence`** (manual non-empty wins).
+- **Demo** mock draft **local-only**; **auth** calls **`generateMockAiParentReportDraft`** only.
 
 ## Metadata / gaps
 
-- **`studentId`**, **`classId`**, **`branchId`**, **`periodStart`**, **`periodEnd`** passed from the selected report when present; missing values use **empty strings** to the service (supported). **Informational “Scope note”** when key report fields are missing — **no** raw errors, **no** crashes.
+Empty ids/dates passed as **empty strings** where needed; **Scope note** when report rows lack student/class/branch/period — **no** raw errors.
 
 ## Safety
 
 | Topic | Status |
 |-------|--------|
 | SQL / RLS DDL | **None** |
-| ParentView | **Unchanged** (released/current-version-only) |
-| Service role in frontend | **None** |
-| Raw storage paths / private URLs in preview | **Still sanitized at service**; UI avoids exposing rows |
-| `real_ai` | **Still blocked** |
+| ParentView | **Unchanged** |
+| Service role / provider keys (frontend) | **None** |
+| `real_ai` | **Blocked** |
 | Email / notification / PDF | **None** |
 
 ## Related docs
 
+- **Final (canonical detail):** **`docs/ai-parent-report-source-preview-hybrid-ui-final-checkpoint.md`**
 - Plan: **`docs/ai-parent-report-source-preview-hybrid-ui-plan.md`**
 - Service: **`docs/ai-parent-report-rls-source-aggregation-service-smoke-checkpoint.md`**
-- Prior preview UI: **`docs/ai-parent-report-source-preview-ui-checkpoint.md`**
+- UI milestone: **`docs/ai-parent-report-source-preview-ui-checkpoint.md`**
 
-## Validation (post-change)
+## Validation (recorded at `d235344`)
 
-- `npm run build` · `npm run lint` · `npm run typecheck`
-- `npm run test:supabase:ai-parent-report:source-aggregation`
-- `npm run test:supabase:ai-parent-report:rls-source-aggregation`
-- `npm run test:supabase:ai-parent-report:mock-draft`
-- `npm run test:supabase:ai-parent-reports`
+| Step | Result |
+|------|--------|
+| `npm run build` | PASS |
+| `npm run lint` | PASS |
+| `npm run typecheck` | PASS |
+| `npm run test:supabase:ai-parent-report:source-aggregation` | PASS |
+| `npm run test:supabase:ai-parent-report:rls-source-aggregation` | PASS (parent fixture **CHECK** possible) |
+| `npm run test:supabase:ai-parent-report:mock-draft` | PASS |
+| `npm run test:supabase:ai-parent-reports` | PASS (unrelated-parent **CHECK** possible) |
+
+**Docs-only updates** after `d235344` do **not** require re-running these unless **`src/`** changes.
 
 ## Future
 
-- Optional **manual mode toggle** (e.g. `rls` for debugging) if product needs it.
-- Per-field **“demo vs system”** chips when the service exposes field-level provenance.
-- Tighter **minimum evidence** policy for mock draft (if product requires).
+See §9 in **`docs/ai-parent-report-source-preview-hybrid-ui-final-checkpoint.md`**.

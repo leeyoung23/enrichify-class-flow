@@ -2,8 +2,8 @@
 
 ## Checkpoint update (Source Evidence Preview hybrid — 2026-05-02)
 
-- **Source Evidence Preview** on **`AiParentReports.jsx`**: **demo** → **fake** mode; **authenticated** → **hybrid** (system evidence where available, safe fallback for gaps). Labels **Demo/fallback evidence** vs **System evidence preview**; missing sources **informational**, not fatal. **`Generate Mock Draft`** uses current preview bundle or re-collects with same mode. See **`docs/ai-parent-report-source-preview-hybrid-ui-checkpoint.md`**. Manual QA ~390px: badge wrap, **Heads-up** warning chips, **Fallback / missing evidence** list, classification badges (**Not sent to provider**, **Requires teacher confirmation**).
-- **Regression awareness:** aggregation + mock-draft smokes in **`docs/ai-parent-report-source-preview-hybrid-ui-checkpoint.md`**.
+- **Source Evidence Preview** on **`AiParentReports.jsx`**: **demo** → **fake** mode; **authenticated** → **hybrid** (system evidence where available, safe fallback for gaps). Labels **Demo/fallback evidence** vs **System evidence preview**; missing sources **informational**, not fatal. **`Generate Mock Draft`** uses current preview bundle or re-collects with same mode. **Runbook + validation snapshot:** **`docs/ai-parent-report-source-preview-hybrid-ui-final-checkpoint.md`**. **Recommended next:** **manual visual QA** (desktop + ~390px) before real provider work — see final doc §10–§11.
+- **Regression awareness:** aggregation + mock-draft smokes listed in **`docs/ai-parent-report-source-preview-hybrid-ui-final-checkpoint.md`** §8 (**`d235344`**).
 
 ## Checkpoint update (fake source aggregation service — 2026-05-02)
 

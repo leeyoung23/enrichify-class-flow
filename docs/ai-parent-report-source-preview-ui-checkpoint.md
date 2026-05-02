@@ -3,6 +3,8 @@
 Date: 2026-05-02  
 Scope: **staff UI** — **`demoRole` → fake** aggregation; **authenticated staff → hybrid** (RLS where available + fake fill); **no** SQL/RLS DDL, no `real_ai` unlock, no ParentView change.
 
+**Canonical detail + validation snapshot:** **`docs/ai-parent-report-source-preview-hybrid-ui-final-checkpoint.md`** (seals **`d235344`**).
+
 ## Summary
 
 - **`src/pages/AiParentReports.jsx`** calls **`collectAiParentReportSourceEvidence`** with **`mode: 'fake'`** in **demo / `demoRole`** and **`mode: 'hybrid'`** for **authenticated** staff with a Supabase session (**fake** if session unavailable). Passes **`reportId`** when the selected id is a UUID. See **`docs/ai-parent-report-source-preview-hybrid-ui-checkpoint.md`**.
@@ -23,12 +25,11 @@ Scope: **staff UI** — **`demoRole` → fake** aggregation; **authenticated sta
 | Parent visibility | **Unchanged** |
 | Notifications / PDF | **None** |
 
-## Validation (run after UI changes)
+## Validation
 
-- `npm run build` · `npm run lint` · `npm run typecheck`
-- `npm run test:supabase:ai-parent-report:source-aggregation`
-- `npm run test:supabase:ai-parent-report:mock-draft`
-- `npm run test:supabase:ai-parent-reports`
+Full command list and **PASS** / **CHECK** notes: **`docs/ai-parent-report-source-preview-hybrid-ui-final-checkpoint.md`** §8 (recorded at **`d235344`**). Includes **`rls-source-aggregation`** smoke.
+
+**Docs-only** doc edits **after** `d235344` — **do not** re-run build/lint/typecheck/smokes unless **`src/`** changes.
 
 ## Future
 

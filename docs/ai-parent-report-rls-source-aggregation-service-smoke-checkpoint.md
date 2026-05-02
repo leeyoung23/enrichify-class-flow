@@ -1,7 +1,7 @@
 # AI parent report — RLS source aggregation service + smoke checkpoint
 
 Date: 2026-05-02  
-Scope: **`collectAiParentReportSourceEvidence`** gains **`rls`** and **`hybrid`** modes using existing read helpers + scoped Supabase queries only — **no SQL/RLS DDL**, **no UI changes**, **no** `real_ai` unlock.
+Scope: **`collectAiParentReportSourceEvidence`** — **`rls`** and **`hybrid`** modes using existing read helpers + scoped Supabase queries only — **no SQL/RLS DDL** in this track, **no** `real_ai` unlock. *(Original service milestone had **no** consumer UI; staff **`AiParentReports`** now calls **`hybrid`** / **`fake`** per **`docs/ai-parent-report-source-preview-hybrid-ui-final-checkpoint.md`**.)*
 
 ## Implementation
 
@@ -25,7 +25,7 @@ Scope: **`collectAiParentReportSourceEvidence`** gains **`rls`** and **`hybrid`*
 | SQL / RLS policy changes | **None** |
 | Service-role frontend | **None** |
 | ParentView | **Unchanged** |
-| UI wiring | **Hybrid + fake** on **`AiParentReports`** — **`rls`-only** not exposed; see **`docs/ai-parent-report-source-preview-hybrid-ui-checkpoint.md`** |
+| UI wiring | **Hybrid + fake** on **`AiParentReports`** — **`rls`-only** not exposed; see **`docs/ai-parent-report-source-preview-hybrid-ui-checkpoint.md`** and **`docs/ai-parent-report-source-preview-hybrid-ui-final-checkpoint.md`** |
 | `real_ai` | **Still blocked** |
 | Provider HTTP | **None** |
 
