@@ -1,5 +1,16 @@
 # Project Master Context Handoff
 
+## Checkpoint update (AI parent report provider adapter skeleton)
+
+- Added fake/disabled-only provider boundary:
+  - `src/services/aiParentReportProviderAdapter.js`
+  - `src/services/aiParentReportMockDraftCore.js` (shared with mock draft path)
+  - `supabase/functions/generate-ai-parent-report-draft/index.ts` (scaffold)
+  - smoke: `npm run test:supabase:ai-parent-report:provider-adapter`
+- No real AI HTTP calls; no provider keys; no UI changes; ParentView unchanged.
+- `createAiParentReportVersion` still blocks `generationSource='real_ai'`.
+- Checkpoint: `docs/ai-parent-report-provider-adapter-skeleton-checkpoint.md`.
+
 ## Checkpoint update (mock AI parent report draft UI docs finalization)
 
 - Final docs-only milestone checkpoint added:

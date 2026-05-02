@@ -1,5 +1,13 @@
 # RLS Test Checklist
 
+## Checkpoint update (AI parent report provider adapter skeleton)
+
+- Adapter module (server-side, fake/disabled only): `src/services/aiParentReportProviderAdapter.js`.
+- No change to parent visibility; no `real_ai` inserts enabled.
+- Smoke: `npm run test:supabase:ai-parent-report:provider-adapter`.
+- Optional integration assertion: `createAiParentReportVersion` still rejects `real_ai` before DB writes when env present.
+- Checkpoint: `docs/ai-parent-report-provider-adapter-skeleton-checkpoint.md`.
+
 ## Checkpoint update (mock AI draft UI docs finalization)
 
 - Final checkpoint reference:

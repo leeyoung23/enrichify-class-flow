@@ -3,13 +3,19 @@
 Date: 2026-05-02  
 Scope: docs-only finalization for staff `Generate Mock Draft` wiring milestone
 
+## Follow-up (provider adapter skeleton — no UI change)
+
+- Server-side adapter skeleton added (`fake`/`disabled` only); staff UI still calls `generateMockAiParentReportDraft` only.
+- See `docs/ai-parent-report-provider-adapter-skeleton-checkpoint.md`.
+- ParentView and release boundaries unchanged.
+
 ## 1) Key checkpoint notes
 
 - `Generate Mock Draft` UI is added.
 - Staff-side only.
 - No real AI provider.
 - No provider keys.
-- No Edge Function.
+- Staff UI does not call Edge Functions; a separate Edge scaffold exists for future wiring (`supabase/functions/generate-ai-parent-report-draft/`).
 - No PDF/export.
 - No notifications/emails.
 - No auto-release.

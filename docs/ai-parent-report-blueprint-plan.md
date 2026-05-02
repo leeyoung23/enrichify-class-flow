@@ -3,6 +3,15 @@
 Date: 2026-05-02  
 Scope: planning-only blueprint for AI-assisted parent progress reports before provider integration
 
+## Checkpoint update (provider adapter skeleton — fake/disabled only)
+
+- Server-side adapter module: `src/services/aiParentReportProviderAdapter.js`.
+- Shared deterministic section builder: `src/services/aiParentReportMockDraftCore.js`.
+- Edge scaffold: `supabase/functions/generate-ai-parent-report-draft/index.ts`.
+- Smoke: `npm run test:supabase:ai-parent-report:provider-adapter`.
+- No real provider wiring; `real_ai` persistence remains blocked in `createAiParentReportVersion`.
+- Checkpoint: `docs/ai-parent-report-provider-adapter-skeleton-checkpoint.md`.
+
 ## Checkpoint update (mock AI draft service + smoke path)
 
 - Mock draft service helper is now implemented in write service:

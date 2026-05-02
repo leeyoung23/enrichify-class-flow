@@ -18,7 +18,15 @@ Related checkpoints and context:
 - `docs/ai-homework-provider-adapter-plan.md` (adapter + Edge lessons)
 - Staff UI: `src/pages/AiParentReports.jsx`
 - Services: `src/services/supabaseWriteService.js`, `src/services/supabaseReadService.js`
-- Smoke commands: `package.json` → `test:supabase:ai-parent-reports`, `test:supabase:ai-parent-report:mock-draft`
+- Smoke commands: `package.json` → `test:supabase:ai-parent-reports`, `test:supabase:ai-parent-report:mock-draft`, `test:supabase:ai-parent-report:provider-adapter`
+
+## Implementation update (adapter skeleton, fake/disabled only)
+
+- Canonical adapter module: `src/services/aiParentReportProviderAdapter.js` (`generateAiParentReportDraft`).
+- Shared mock section core: `src/services/aiParentReportMockDraftCore.js` (used by mock write path + adapter fake mode).
+- Edge Function scaffold: `supabase/functions/generate-ai-parent-report-draft/index.ts` (no secrets; no real provider calls).
+- Checkpoint: `docs/ai-parent-report-provider-adapter-skeleton-checkpoint.md`.
+- `createAiParentReportVersion` **still blocks** `real_ai` until a later unlock milestone.
 
 ---
 
@@ -30,7 +38,7 @@ Related checkpoints and context:
 - **ParentView released-report display exists:** parents see **released** reports and **current released version** content only; no evidence links, no `generation_source`, no provider metadata.
 - **No real AI provider** is wired for parent reports.
 - **No provider keys** in repo or frontend for this feature.
-- **No dedicated Edge Function / HTTP endpoint** for parent-report real AI yet (homework Edge stub patterns exist elsewhere as precedent).
+- **Edge Function scaffold** exists at `supabase/functions/generate-ai-parent-report-draft/` (fake/disabled via shared adapter import; **no** real provider HTTP).
 - **No PDF/export** for parent reports.
 - **No auto-release** and no notification/email automation for AI drafts.
 - **Service guard today:** `createAiParentReportVersion` rejects `generationSource === 'real_ai'` with a milestone message — **real AI must be unblocked only after** server-side boundary + contract + tests are in place (not in this planning-only doc).
