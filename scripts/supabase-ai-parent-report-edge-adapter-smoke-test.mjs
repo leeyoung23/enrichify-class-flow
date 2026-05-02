@@ -1,7 +1,7 @@
 /**
  * Smoke: Edge-compatible AI parent report provider adapter under `supabase/functions/_shared/`.
  * Exercises the same contract as the canonical `src/services/aiParentReportProviderAdapter.js`
- * without deploying the Edge Function. No external HTTP; no provider keys.
+ * without deploying the Edge Function. No provider keys required for default PASS.
  *
  * Run: node --experimental-strip-types scripts/supabase-ai-parent-report-edge-adapter-smoke-test.mjs
  */
@@ -17,9 +17,7 @@ import {
   REQUIRED_STRUCTURED_SECTION_KEYS,
 } from "../supabase/functions/_shared/aiParentReportProviderAdapter.ts";
 
-import {
-  generateAiParentReportDraft as generateCanonical,
-} from "../src/services/aiParentReportProviderAdapter.js";
+import { generateAiParentReportDraft as generateCanonical } from "../src/services/aiParentReportProviderAdapter.js";
 
 const FAKE_REPORT_ID = "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee";
 
@@ -61,7 +59,10 @@ function tryDenoCheck() {
     execFileSync("deno", ["check", entry], { stdio: "pipe" });
     printResult("PASS", "deno check: generate-ai-parent-report-draft/index.ts");
   } catch {
-    printResult("CHECK", "deno check failed or Deno std incomplete — verify with `supabase functions serve` when ready");
+    printResult(
+      "CHECK",
+      "deno check failed or Deno std incomplete — verify with `supabase functions serve` when ready"
+    );
   }
 }
 
@@ -83,7 +84,7 @@ function trySupabaseFunctionsServeHint() {
 async function run() {
   let failed = false;
 
-  const fakeOk = generateAiParentReportDraft({
+  const fakeOk = await generateAiParentReportDraft({
     reportId: FAKE_REPORT_ID,
     providerMode: AI_PARENT_REPORT_PROVIDER_MODES.FAKE,
     input: {
@@ -115,8 +116,14 @@ async function run() {
       "fake mode: usage metadata is fake-only",
       "fake mode: usage metadata missing"
     ) || failed;
+  failed =
+    !assert(
+      fakeOk.externalProviderCall === false,
+      "fake mode: externalProviderCall is false",
+      "fake mode: externalProviderCall should be false"
+    ) || failed;
 
-  const canonicalFake = generateCanonical({
+  const canonicalFake = await generateCanonical({
     reportId: FAKE_REPORT_ID,
     providerMode: AI_PARENT_REPORT_PROVIDER_MODES.FAKE,
     input: {
@@ -131,7 +138,7 @@ async function run() {
       "parity mismatch vs src/services/aiParentReportProviderAdapter.js"
     ) || failed;
 
-  const disabled = generateAiParentReportDraft({
+  const disabled = await generateAiParentReportDraft({
     reportId: FAKE_REPORT_ID,
     providerMode: AI_PARENT_REPORT_PROVIDER_MODES.DISABLED,
     input: {},
@@ -143,19 +150,25 @@ async function run() {
       "disabled mode unexpected result"
     ) || failed;
 
-  const realMode = generateAiParentReportDraft({
+  const realMode = await generateAiParentReportDraft({
     reportId: FAKE_REPORT_ID,
     providerMode: AI_PARENT_REPORT_PROVIDER_MODES.REAL,
     input: {},
   });
   failed =
     !assert(
-      Boolean(realMode.error?.code === "real_provider_not_implemented"),
-      "real mode fails safely (not implemented)",
-      "real mode should not succeed"
+      Boolean(realMode.error?.code === "provider_not_configured"),
+      "real mode without provider env fails safely (provider_not_configured)",
+      "real mode should return provider_not_configured when unset"
+    ) || failed;
+  failed =
+    !assert(
+      realMode.externalProviderCall === false,
+      "real mode without key: externalProviderCall false",
+      "expected no external call without configuration"
     ) || failed;
 
-  const badId = generateAiParentReportDraft({
+  const badId = await generateAiParentReportDraft({
     reportId: "not-a-uuid",
     providerMode: AI_PARENT_REPORT_PROVIDER_MODES.FAKE,
     input: {},
@@ -167,7 +180,7 @@ async function run() {
       "invalid reportId should error"
     ) || failed;
 
-  const unsafe = generateAiParentReportDraft({
+  const unsafe = await generateAiParentReportDraft({
     reportId: FAKE_REPORT_ID,
     providerMode: AI_PARENT_REPORT_PROVIDER_MODES.FAKE,
     input: { studentSummary: "See https://evil.example/private" },
@@ -179,7 +192,7 @@ async function run() {
       "unsafe input should be blocked"
     ) || failed;
 
-  const badInputShape = generateAiParentReportDraft({
+  const badInputShape = await generateAiParentReportDraft({
     reportId: FAKE_REPORT_ID,
     providerMode: AI_PARENT_REPORT_PROVIDER_MODES.FAKE,
     input: [],
@@ -198,8 +211,8 @@ async function run() {
       "section key count mismatch"
     ) || failed;
 
-  printResult("PASS", "no external provider HTTP call (adapter is local-only)");
-  printResult("PASS", "no provider key required");
+  printResult("PASS", "default path: no external provider HTTP without configured real provider");
+  printResult("PASS", "no provider key required for core assertions");
   printResult("PASS", "no persistence / auto-release in Edge adapter path");
 
   tryDenoCheck();

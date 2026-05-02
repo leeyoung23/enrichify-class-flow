@@ -24,7 +24,7 @@ Related checkpoints and context:
 
 - Canonical adapter module: `src/services/aiParentReportProviderAdapter.js` (`generateAiParentReportDraft`).
 - Shared mock section core: `src/services/aiParentReportMockDraftCore.js` (used by mock write path + adapter fake mode).
-- Edge Function: `supabase/functions/generate-ai-parent-report-draft/index.ts` imports **`supabase/functions/_shared/aiParentReportProviderAdapter.ts`** (no `src/` path); fake/disabled/real-stub only; **no** secrets; **no** real provider HTTP.
+- Edge Function: `supabase/functions/generate-ai-parent-report-draft/index.ts` imports **`_shared/aiParentReportProviderAdapter.ts`**. **Real** mode: OpenAI-compatible HTTP when **Edge secrets** `AI_PARENT_REPORT_PROVIDER_API_KEY` + `AI_PARENT_REPORT_PROVIDER_MODEL` are set; otherwise **`provider_not_configured`**. **No** secrets in repo. **No** DB persistence from the function. Checkpoint: `docs/real-ai-parent-report-edge-http-checkpoint.md`.
 - Checkpoint: `docs/ai-parent-report-provider-adapter-skeleton-checkpoint.md`
 - Final docs checkpoint: `docs/ai-parent-report-provider-adapter-skeleton-final-checkpoint.md`
 - Edge bundling checkpoint: `docs/ai-parent-report-edge-adapter-bundling-checkpoint.md`
@@ -40,7 +40,7 @@ Related checkpoints and context:
 - **ParentView released-report display exists:** parents see **released** reports and **current released version** content only; no evidence links, no `generation_source`, no provider metadata.
 - **No real AI provider** is wired for parent reports.
 - **No provider keys** in repo or frontend for this feature.
-- **Edge Function** exists at `supabase/functions/generate-ai-parent-report-draft/` with **`_shared`** adapter (fake/disabled via function-local import; **no** `src/` bundling dependency; **no** real provider HTTP).
+- **Edge Function** at `supabase/functions/generate-ai-parent-report-draft/` uses **`_shared`** adapter (fake/disabled + **real** HTTP when configured via Edge env only). **No** `src/` import path.
 - **No PDF/export** for parent reports.
 - **No auto-release** and no notification/email automation for AI drafts.
 - **Service guard today:** `createAiParentReportVersion` rejects `generationSource === 'real_ai'` with a milestone message — **real AI must be unblocked only after** server-side boundary + contract + tests are in place (not in this planning-only doc).

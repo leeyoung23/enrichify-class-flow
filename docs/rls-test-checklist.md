@@ -1,5 +1,9 @@
 # RLS Test Checklist
 
+## Checkpoint update (real AI parent report Edge HTTP)
+
+- Server-side **real** provider path exists; **no** SQL/RLS change; **`real_ai`** inserts still blocked at **`createAiParentReportVersion`**; no auto-release. Doc: `docs/real-ai-parent-report-edge-http-checkpoint.md`.
+
 ## Checkpoint update (real AI provider tooling re-verification)
 
 - Docs-only: **`docs/real-ai-provider-tooling-verification-checkpoint.md`** — **re-verified:** Deno + Supabase CLI on PATH (`deno check` PASS; CLI help PASS); adapter smokes PASS; no SQL/RLS change; **`real_ai`** still blocked.

@@ -1,5 +1,11 @@
 # Project Master Context Handoff
 
+## Checkpoint update (real AI parent report Edge HTTP — no persistence)
+
+- OpenAI-compatible **real** provider HTTP in `supabase/functions/_shared/aiParentReportRealProviderHttp.ts` + `src/services/aiParentReportRealProviderHttp.js`; **`provider_not_configured`** without `AI_PARENT_REPORT_PROVIDER_API_KEY` + `AI_PARENT_REPORT_PROVIDER_MODEL`.
+- `generateAiParentReportDraft` is **async**; Edge handler returns **`external_provider_call`**; HTTP **503** / **502** / **400** per error code. **No** `real_ai` DB unlock; **no** UI change.
+- Smokes: `npm run test:supabase:ai-parent-report:edge-real-provider` (+ existing edge-adapter, provider-adapter). Doc: **`docs/real-ai-parent-report-edge-http-checkpoint.md`**.
+
 ## Checkpoint update (real AI provider tooling re-verification — docs only)
 
 - Doc: **`docs/real-ai-provider-tooling-verification-checkpoint.md`** — **Deno 2.7.14** + **Supabase CLI 2.95.4** on Homebrew PATH (`/opt/homebrew/bin`); **`deno check`** Edge entry **PASS**; **`supabase functions` / `serve --help`** **PASS**; edge + provider adapter smokes **PASS**; no secrets; no deploy; **`real_ai`** still blocked; **`.gitignore`** includes `supabase/.temp/` (CLI cache).

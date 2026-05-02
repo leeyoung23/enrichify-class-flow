@@ -1,13 +1,17 @@
 /**
- * Edge-compatible AI parent report provider adapter (fake / disabled / real stub only).
+ * Edge-compatible AI parent report provider adapter (fake / disabled / real HTTP).
  * Aligned with `src/services/aiParentReportProviderAdapter.js`.
- * No API keys; no external HTTP; safe for Supabase Edge bundling under `functions/_shared`.
+ * Secrets only via env (Edge/Node); never logged.
  */
 
 import {
   buildMockAiParentReportStructuredSections,
   containsUnsafeMockDraftValue,
 } from "./aiParentReportMockDraftCore.ts";
+import { callOpenAiCompatibleParentReport } from "./aiParentReportRealProviderHttp.ts";
+import { REQUIRED_STRUCTURED_SECTION_KEYS } from "./aiParentReportSectionKeys.ts";
+
+export { REQUIRED_STRUCTURED_SECTION_KEYS };
 
 export const AI_PARENT_REPORT_PROVIDER_MODES = {
   DISABLED: "disabled",
@@ -15,19 +19,7 @@ export const AI_PARENT_REPORT_PROVIDER_MODES = {
   REAL: "real",
 } as const;
 
-export const REQUIRED_STRUCTURED_SECTION_KEYS = [
-  "summary",
-  "attendance_punctuality",
-  "lesson_progression",
-  "homework_completion",
-  "homework_assessment_performance",
-  "strengths",
-  "areas_for_improvement",
-  "learning_gaps",
-  "next_recommendations",
-  "parent_support_suggestions",
-  "teacher_final_comment",
-] as const;
+const MAX_INPUT_SERIALIZED_CHARS = 24_000;
 
 function isUuidLike(value: unknown): boolean {
   return (
@@ -56,34 +48,51 @@ export type GenerateDraftError = {
   message: string;
 };
 
+type UsageBlock =
+  | {
+      fake: true;
+      promptTokens: null;
+      completionTokens: null;
+      note: string;
+    }
+  | {
+      fake: false;
+      promptTokens: number | null;
+      completionTokens: number | null;
+      note: string;
+    };
+
 export type GenerateDraftResult = {
   data: {
     structuredSections: Record<string, string>;
     providerLabel: string;
     modelLabel: string;
     warnings: string[];
-    usage: {
-      fake: boolean;
-      promptTokens: null;
-      completionTokens: null;
-      note: string;
-    };
+    usage: UsageBlock;
   } | null;
   error: GenerateDraftError | null;
+  externalProviderCall: boolean;
 };
+
+function inputPayloadSizeOk(input: Record<string, unknown>): boolean {
+  try {
+    return JSON.stringify(input).length <= MAX_INPUT_SERIALIZED_CHARS;
+  } catch {
+    return false;
+  }
+}
 
 /**
  * Planned contract: generateAiParentReportDraft({ reportId, providerMode, input })
  */
-export function generateAiParentReportDraft({
-  reportId,
-  providerMode,
-  input,
-}: GenerateDraftArgs = {}): GenerateDraftResult {
+export async function generateAiParentReportDraft(
+  { reportId, providerMode, input }: GenerateDraftArgs = {}
+): Promise<GenerateDraftResult> {
   if (!isUuidLike(reportId)) {
     return {
       data: null,
       error: { code: "invalid_report_id", message: "reportId must be a UUID" },
+      externalProviderCall: false,
     };
   }
 
@@ -93,6 +102,7 @@ export function generateAiParentReportDraft({
     return {
       data: null,
       error: { code: "invalid_input", message: "input must be a plain object when provided" },
+      externalProviderCall: false,
     };
   }
 
@@ -100,6 +110,17 @@ export function generateAiParentReportDraft({
     input && typeof input === "object" && !Array.isArray(input)
       ? (input as Record<string, unknown>)
       : {};
+
+  if (!inputPayloadSizeOk(safeInput)) {
+    return {
+      data: null,
+      error: {
+        code: "input_too_large",
+        message: "Input exceeds maximum allowed size for generation.",
+      },
+      externalProviderCall: false,
+    };
+  }
 
   if (containsUnsafeMockDraftValue(safeInput)) {
     return {
@@ -109,6 +130,7 @@ export function generateAiParentReportDraft({
         message:
           "input must not include private paths, URLs, provider/debug metadata, or secret-like values",
       },
+      externalProviderCall: false,
     };
   }
 
@@ -119,16 +141,23 @@ export function generateAiParentReportDraft({
         code: "provider_disabled",
         message: "AI parent report provider is disabled; no generation was performed.",
       },
+      externalProviderCall: false,
     };
   }
 
   if (mode === AI_PARENT_REPORT_PROVIDER_MODES.REAL) {
+    const res = await callOpenAiCompatibleParentReport(String(reportId), safeInput);
+    if ("error" in res) {
+      return {
+        data: null,
+        error: res.error,
+        externalProviderCall: res.externalProviderCall,
+      };
+    }
     return {
-      data: null,
-      error: {
-        code: "real_provider_not_implemented",
-        message: "Real AI provider mode is not implemented yet.",
-      },
+      data: res.data,
+      error: null,
+      externalProviderCall: res.externalProviderCall,
     };
   }
 
@@ -148,6 +177,7 @@ export function generateAiParentReportDraft({
       },
     },
     error: null,
+    externalProviderCall: false,
   };
 }
 

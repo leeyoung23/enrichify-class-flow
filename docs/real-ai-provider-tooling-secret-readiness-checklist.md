@@ -27,7 +27,7 @@ Scope: **documentation / checklist only** — readiness **before** real provider
 
 - **`docs/real-ai-parent-report-provider-implementation-plan.md`** exists and defines the implementation roadmap.
 - **Fake / disabled** Edge adapter exists under **`supabase/functions/_shared/`**; **`generate-ai-parent-report-draft`** imports **`_shared`** only (bundling-safe).
-- **No real provider HTTP** is implemented; **`real`** mode returns **`real_provider_not_implemented`** (safe stub).
+- **Real provider HTTP** exists in `_shared` when Edge secrets are set; otherwise **`real`** returns **`provider_not_configured`** (no outbound call). See `docs/real-ai-parent-report-edge-http-checkpoint.md`.
 - **No provider API key** is configured for this feature in repo, frontend, or committed env files.
 - **`createAiParentReportVersion`** still **blocks** `generationSource='real_ai'` (`supabaseWriteService.js`).
 - **PDF/export** remains deferred.
@@ -104,7 +104,7 @@ When tooling is ready, the team should perform (in **DEV/STAGING**):
 | 2 | `supabase functions serve generate-ai-parent-report-draft` | Function starts; POST accepted |
 | 3 | HTTP POST with **`providerMode: "fake"`** | `structuredSections` present; `external_provider_call: false` |
 | 4 | HTTP POST with **`providerMode: "disabled"`** | Safe `provider_disabled` |
-| 5 | HTTP POST with **`providerMode: "real"`** **without** secret configured | Still **`real_provider_not_implemented`** or equivalent safe failure — **no** crash, **no** key echo |
+| 5 | HTTP POST with **`providerMode: "real"`** **without** secret configured | **`provider_not_configured`** — **no** crash, **no** key echo |
 | 6 | Deploy function to **DEV/STAGING** only when above passes | Rollback plan documented |
 | 7 | **Never** use real student/parent/school data in prompts — **fake/dev payloads only** | Privacy gate |
 
@@ -191,9 +191,7 @@ Separate from first HTTP milestone. Do **not** unlock DB writes until:
 
 ### Recommendation
 
-- **As of `docs/real-ai-provider-tooling-verification-checkpoint.md` (re-verification):** **Deno** + **Supabase CLI** are **PASS** on Homebrew PATH; **`deno check`** + CLI help **PASS** → prefer **B next** (real Edge HTTP; **no** persistence; **no** `real_ai` unlock).
-- If **any** machine still lacks tools → **A** on that machine first (PATH / install).
-- **C** (staging secret) only after **B** contract is clear and never before ops agrees — keys without discipline increase leak risk.
+- **Edge HTTP** implemented — **`docs/real-ai-parent-report-edge-http-checkpoint.md`** (OpenAI-compatible path; **no** persistence; **`real_ai`** still blocked). **Next:** **C** (staging secrets + non-prod serve/deploy smoke) or **D** (`real_ai` unlock planning). If **any** machine still lacks **Deno** / **Supabase CLI** → **A** (PATH / install) first. **C** only with ops agreement — keys without discipline increase leak risk.
 
 ---
 

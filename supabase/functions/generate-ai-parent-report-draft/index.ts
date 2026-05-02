@@ -1,9 +1,10 @@
 // @ts-nocheck
 /* eslint-disable no-undef */
 /**
- * Edge Function for AI parent report draft generation (fake / disabled / real-stub only).
- * Uses `supabase/functions/_shared/` adapter — deploy-safe (no ../../../src imports).
- * No provider API keys; no external HTTP; no persistence; no auto-release.
+ * Edge Function for AI parent report draft generation (fake / disabled / real HTTP when configured).
+ * Uses `supabase/functions/_shared/` adapter — deploy-safe.
+ * Provider secrets: Supabase Edge secrets only (e.g. AI_PARENT_REPORT_PROVIDER_API_KEY).
+ * No persistence; no auto-release.
  */
 
 import { generateAiParentReportDraft } from "../_shared/aiParentReportProviderAdapter.ts";
@@ -16,6 +17,31 @@ function jsonResponse(body: Record<string, unknown>, status = 200): Response {
       "Cache-Control": "no-store",
     },
   });
+}
+
+function httpStatusForError(code: string | undefined): number {
+  if (
+    code === "invalid_report_id" ||
+    code === "unsafe_input" ||
+    code === "invalid_input" ||
+    code === "input_too_large"
+  ) {
+    return 400;
+  }
+  if (code === "provider_disabled" || code === "provider_not_configured") {
+    return 503;
+  }
+  if (
+    code === "provider_timeout" ||
+    code === "provider_request_failed" ||
+    code === "provider_response_invalid"
+  ) {
+    return 502;
+  }
+  if (code === "internal_error") {
+    return 500;
+  }
+  return 500;
 }
 
 Deno.serve(async (req: Request) => {
@@ -42,7 +68,7 @@ Deno.serve(async (req: Request) => {
 
   let result;
   try {
-    result = generateAiParentReportDraft({
+    result = await generateAiParentReportDraft({
       reportId: body.reportId ?? "",
       providerMode: body.providerMode,
       input: body.input,
@@ -59,18 +85,15 @@ Deno.serve(async (req: Request) => {
     );
   }
 
-  const status =
-    result.error?.code === "invalid_report_id" ||
-    result.error?.code === "unsafe_input" ||
-    result.error?.code === "invalid_input"
-      ? 400
-      : 200;
+  const err = result.error;
+  const status = err ? httpStatusForError(err.code) : 200;
 
   return jsonResponse(
     {
-      ok: !result.error,
-      ...result,
-      external_provider_call: false,
+      ok: !err,
+      data: result.data,
+      error: err,
+      external_provider_call: result.externalProviderCall,
     },
     status
   );

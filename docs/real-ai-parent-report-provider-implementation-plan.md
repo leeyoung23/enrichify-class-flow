@@ -5,6 +5,8 @@ Scope: **planning only** — defines how to implement a **real** AI provider for
 
 **Tooling verification checkpoint:** `docs/real-ai-provider-tooling-verification-checkpoint.md` — **re-verified:** Deno **2.7.14** + Supabase CLI **2.95.4** on Homebrew PATH; **`deno check`** PASS; CLI **`functions` / `serve --help`** PASS; adapter smokes PASS; no deploy/secrets; **`real_ai`** still blocked.
 
+**Edge HTTP checkpoint:** `docs/real-ai-parent-report-edge-http-checkpoint.md` — OpenAI-compatible **real** path in `_shared` + Node mirror; **`provider_not_configured`** without secrets; **no** persistence; **`real_ai`** still blocked.
+
 **Related documents (read first):**
 
 - `docs/real-ai-parent-report-provider-boundary-plan.md` — architecture, data rules, contract sketch
@@ -25,7 +27,7 @@ Scope: **planning only** — defines how to implement a **real** AI provider for
 
 ## 1) Current state
 
-- **Edge fake/disabled boundary exists:** `_shared` adapter returns deterministic **fake** sections, safe **disabled** error, and **`real_provider_not_implemented`** for **real** mode — **no external HTTP**, **no provider key**.
+- **Edge adapter:** `_shared` returns deterministic **fake** sections, safe **disabled** error, and for **real** mode either **`provider_not_configured`** (no API key/model) or OpenAI-compatible HTTP when env is set — **no provider key in repo**. **No** DB persistence from this path.
 - **Canonical app adapter** mirrors the same contract for Node/smoke tests (`src/services/aiParentReportProviderAdapter.js`).
 - **Bundling:** Edge imports **`../_shared/`** only (no `../../../src`), per `docs/ai-parent-report-edge-adapter-bundling-checkpoint.md`.
 - **No real provider call** is implemented anywhere for parent reports.

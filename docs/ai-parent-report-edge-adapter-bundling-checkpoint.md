@@ -30,7 +30,7 @@ Canonical app modules remain unchanged for Vite/Node:
 |------|--------|
 | **fake** | Deterministic `structuredSections`; `providerLabel` = `fake_adapter`; `modelLabel` = `fake_deterministic_v1`; **no external HTTP** |
 | **disabled** | Error `provider_disabled` |
-| **real** | Error `real_provider_not_implemented` (**no** real provider call) |
+| **real** | **`provider_not_configured`** if API key/model unset (**no** HTTP); otherwise OpenAI-compatible HTTP + validated `structuredSections` (see `docs/real-ai-parent-report-edge-http-checkpoint.md`) |
 | Invalid `reportId` | `invalid_report_id` |
 | Unsafe input (URL/path/bucket-style, forbidden keys) | `unsafe_input` |
 | Non-plain-object `input` | `invalid_input` |

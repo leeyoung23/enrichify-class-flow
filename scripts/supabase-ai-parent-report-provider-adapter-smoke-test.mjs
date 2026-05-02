@@ -56,7 +56,7 @@ async function optionalIntegrationChecks() {
 async function run() {
   let failed = false;
 
-  const fakeOk = generateAiParentReportDraft({
+  const fakeOk = await generateAiParentReportDraft({
     reportId: FAKE_REPORT_ID,
     providerMode: AI_PARENT_REPORT_PROVIDER_MODES.FAKE,
     input: {
@@ -89,7 +89,7 @@ async function run() {
       "fake mode: usage metadata missing"
     ) || failed;
 
-  const disabled = generateAiParentReportDraft({
+  const disabled = await generateAiParentReportDraft({
     reportId: FAKE_REPORT_ID,
     providerMode: AI_PARENT_REPORT_PROVIDER_MODES.DISABLED,
     input: {},
@@ -101,19 +101,25 @@ async function run() {
       "disabled mode unexpected result"
     ) || failed;
 
-  const realMode = generateAiParentReportDraft({
+  const realMode = await generateAiParentReportDraft({
     reportId: FAKE_REPORT_ID,
     providerMode: AI_PARENT_REPORT_PROVIDER_MODES.REAL,
     input: {},
   });
   failed =
     !assert(
-      Boolean(realMode.error?.code === "real_provider_not_implemented"),
-      "real mode fails safely (not implemented)",
-      "real mode should not succeed"
+      Boolean(realMode.error?.code === "provider_not_configured"),
+      "real mode without provider env fails safely (provider_not_configured)",
+      "real mode should return provider_not_configured when unset"
+    ) || failed;
+  failed =
+    !assert(
+      realMode.externalProviderCall === false,
+      "real mode without key: no externalProviderCall",
+      "externalProviderCall should be false without HTTP"
     ) || failed;
 
-  const badId = generateAiParentReportDraft({
+  const badId = await generateAiParentReportDraft({
     reportId: "not-a-uuid",
     providerMode: AI_PARENT_REPORT_PROVIDER_MODES.FAKE,
     input: {},
@@ -125,7 +131,7 @@ async function run() {
       "invalid reportId should error"
     ) || failed;
 
-  const unsafe = generateAiParentReportDraft({
+  const unsafe = await generateAiParentReportDraft({
     reportId: FAKE_REPORT_ID,
     providerMode: AI_PARENT_REPORT_PROVIDER_MODES.FAKE,
     input: { studentSummary: "See https://evil.example/private" },

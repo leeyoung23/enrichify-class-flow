@@ -92,9 +92,15 @@ Commands run with **`PATH=/opt/homebrew/bin:…`** (Apple Silicon Homebrew layou
 | Supabase `functions` / `serve` **--help** | **PASS** |
 | Edge adapter smoke | **PASS** |
 | Provider adapter smoke | **PASS** |
-| Real provider HTTP | **Not implemented** (unchanged) |
+| Real provider HTTP | **Implemented** in `_shared` (see `docs/real-ai-parent-report-edge-http-checkpoint.md`); **no** key in repo |
 | `real_ai` unlock | **Not done** (unchanged) |
 | Production deploy | **Not performed** |
+
+---
+
+## 7b) Edge HTTP implementation (after this doc)
+
+- **`docs/real-ai-parent-report-edge-http-checkpoint.md`** documents the OpenAI-compatible **real** provider path in `_shared` + Node mirror; **`generateAiParentReportDraft`** is async; **no** persistence; **`real_ai`** still blocked.
 
 ---
 
@@ -108,7 +114,7 @@ Commands run with **`PATH=/opt/homebrew/bin:…`** (Apple Silicon Homebrew layou
 | **D** | **`real_ai` DB unlock** + smokes |
 | **E** | PDF/export planning |
 
-**Recommendation:** **B next** — Deno and Supabase CLI are **available**, **`deno check`** and help output **PASS**, adapter smokes **PASS**. Proceed to **real provider HTTP** in `_shared` / Edge only when ready, still **without** version persistence and **without** `real_ai` unlock. Use **C** only when staging secret policy is agreed (keys never in repo). Use **A** only if a teammate’s environment still cannot resolve `deno`/`supabase`.
+**Recommendation (post–Edge HTTP milestone):** **C** or **D** next — **C** = staging **Edge secrets** + manual `functions serve` / non-prod deploy smoke; **D** = `real_ai` **unlock** planning (separate milestone). **B** (Edge HTTP) is **done** — see **`docs/real-ai-parent-report-edge-http-checkpoint.md`**. Use **A** only if a machine still cannot resolve `deno`/`supabase`.
 
 ---
 
