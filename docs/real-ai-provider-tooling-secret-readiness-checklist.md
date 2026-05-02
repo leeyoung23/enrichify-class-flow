@@ -3,6 +3,8 @@
 Date: 2026-05-02  
 Scope: **documentation / checklist only** — readiness **before** real provider keys, real HTTP implementation, or `real_ai` unlock
 
+**Tooling verification (local/safe checks):** `docs/real-ai-provider-tooling-verification-checkpoint.md`
+
 **Related documents:**
 
 - `docs/real-ai-parent-report-provider-implementation-plan.md`
@@ -29,7 +31,7 @@ Scope: **documentation / checklist only** — readiness **before** real provider
 - **No provider API key** is configured for this feature in repo, frontend, or committed env files.
 - **`createAiParentReportVersion`** still **blocks** `generationSource='real_ai'` (`supabaseWriteService.js`).
 - **PDF/export** remains deferred.
-- **Optional smoke CHECK:** `docs/ai-parent-report-edge-adapter-bundling-checkpoint.md` noted **Deno** and **Supabase CLI** could be **missing from PATH** on some machines — treat as a **tooling gap** until verified locally.
+- **Verified checkpoint:** `docs/real-ai-provider-tooling-verification-checkpoint.md` — in that run, **Deno** and **Supabase CLI** were **not** on `PATH`; edge/provider adapter smokes **PASS**; `deno check` / Supabase serve **CHECK** until tools installed. Re-run verification after installing tooling (milestone **A** from checklist §11).
 
 ---
 

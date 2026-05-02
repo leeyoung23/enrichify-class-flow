@@ -1,5 +1,9 @@
 # RLS Test Checklist
 
+## Checkpoint update (real AI provider tooling verification)
+
+- Docs-only: **`docs/real-ai-provider-tooling-verification-checkpoint.md`** — no SQL/RLS change; **`real_ai`** still blocked; adapter smokes PASS; Deno/Supabase CLI missing from PATH in that run (CHECK for static/serve validation).
+
 ## Checkpoint update (AI parent report Edge `_shared` adapter — fake/disabled only)
 
 - Edge Function **`generate-ai-parent-report-draft`** uses **`supabase/functions/_shared/`** only (no repo `src/` import); behavior aligned with `src/services/aiParentReportProviderAdapter.js` for fake/disabled/real-stub.

@@ -3,6 +3,8 @@
 Date: 2026-05-02  
 Scope: **planning only** — defines how to implement a **real** AI provider for parent-report drafts **before** code changes, secrets, SQL, or RLS work
 
+**Tooling verification checkpoint:** `docs/real-ai-provider-tooling-verification-checkpoint.md` — documents Deno/Supabase CLI availability (or CHECK), adapter smokes PASS, no deploy/secrets.
+
 **Related documents (read first):**
 
 - `docs/real-ai-parent-report-provider-boundary-plan.md` — architecture, data rules, contract sketch

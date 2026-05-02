@@ -3,6 +3,10 @@
 Date: 2026-05-02  
 Scope: **Edge-compatible fake/disabled adapter** under `supabase/functions/_shared/`; **no** real provider HTTP; **no** provider keys; **no** `real_ai` unlock
 
+## Checkpoint update (tooling verification — docs only)
+
+- See **`docs/real-ai-provider-tooling-verification-checkpoint.md`**: adapter smokes **PASS**; **`deno check`** / Supabase **`functions serve`** remain **CHECK** until Deno and Supabase CLI are on `PATH`. No production deploy; no real provider HTTP.
+
 ---
 
 ## 1) Bundling conclusion

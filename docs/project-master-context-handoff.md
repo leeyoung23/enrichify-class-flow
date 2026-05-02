@@ -1,5 +1,10 @@
 # Project Master Context Handoff
 
+## Checkpoint update (real AI provider tooling verification — docs only)
+
+- Doc: **`docs/real-ai-provider-tooling-verification-checkpoint.md`** — safe git + npm adapter smokes; **Deno** / **Supabase CLI** not on `PATH` in verification run (`which` / `--version` unavailable); **`deno check`** and CLI serve/help **CHECK**; edge + provider smokes **PASS**; no secrets logged; no deploy; **`real_ai`** still blocked.
+- Next: install tooling (**checklist milestone A**), re-verify; then optional **real provider Edge HTTP** without persistence (`real-ai-parent-report-provider-implementation-plan.md`).
+
 ## Checkpoint update (AI parent report Edge adapter bundling — fake/disabled only)
 
 - Edge-compatible adapter copy under **`supabase/functions/_shared/`** (`aiParentReportMockDraftCore.ts`, `aiParentReportProviderAdapter.ts`); **`generate-ai-parent-report-draft`** imports `_shared` only (no `../../../src`).
