@@ -3,7 +3,7 @@
 Date: 2026-05-02  
 Scope: **planning only** — defines how to implement a **real** AI provider for parent-report drafts **before** code changes, secrets, SQL, or RLS work
 
-**Tooling verification checkpoint:** `docs/real-ai-provider-tooling-verification-checkpoint.md` — documents Deno/Supabase CLI availability (or CHECK), adapter smokes PASS, no deploy/secrets.
+**Tooling verification checkpoint:** `docs/real-ai-provider-tooling-verification-checkpoint.md` — **re-verified:** Deno **2.7.14** + Supabase CLI **2.95.4** on Homebrew PATH; **`deno check`** PASS; CLI **`functions` / `serve --help`** PASS; adapter smokes PASS; no deploy/secrets; **`real_ai`** still blocked.
 
 **Related documents (read first):**
 

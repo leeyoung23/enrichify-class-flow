@@ -5,7 +5,18 @@ Scope: **documentation + safe local checks only** — no app changes, no real pr
 
 **Related:** `docs/real-ai-provider-tooling-secret-readiness-checklist.md`, `docs/real-ai-parent-report-provider-implementation-plan.md`, `docs/ai-parent-report-edge-adapter-bundling-checkpoint.md`
 
-**Repository state at verification (see §1 for exact commit):** branch `cursor/safe-lint-typecheck-486d`; Edge `_shared` adapter unchanged; **no** real provider HTTP; **`real_ai`** creation still blocked at service layer.
+**Repository state at this verification (see §1):** branch `cursor/safe-lint-typecheck-486d` at doc-update time; Edge `_shared` adapter unchanged; **no** real provider HTTP; **`real_ai`** creation still blocked at service layer.
+
+---
+
+## 0) Verification history (summary)
+
+| Run | Notes |
+|-----|--------|
+| **First** (documented in commit `c54fdd2`) | In the **automated verification environment**, `deno` and `supabase` were **not** on default `PATH`; `deno check` and Supabase help were **CHECK / deferred**; adapter smokes **PASS**. |
+| **This run (re-verification)** | **Deno** and **Supabase CLI** are installed (Homebrew on Apple Silicon). Commands use `PATH` including **`/opt/homebrew/bin`**. `deno check` **PASS**; `supabase functions` / `serve` **--help** **PASS**; adapter smokes **PASS**. **No** deploy, **no** secrets, **no** real provider calls. |
+
+**Homebrew / Xcode Command Line Tools:** occasional Homebrew warnings about Command Line Tools are **non-blocking** for these checks unless a future **compile** or **CLI subcommand** fails; fix by installing/updating CLT only if a command errors.
 
 ---
 
@@ -14,46 +25,38 @@ Scope: **documentation + safe local checks only** — no app changes, no real pr
 | Check | Result |
 |-------|--------|
 | `git branch --show-current` | `cursor/safe-lint-typecheck-486d` |
-| `git log --oneline -12` | HEAD `4133b88 Add real AI provider tooling secret readiness checklist`; prior: `a5ec63d`, `9b4454a`, … |
-| `git status --short` | clean working tree before doc edits |
+| `git log --oneline -12` | HEAD `c54fdd2 Document real AI provider tooling verification` at start of re-verification; prior commits include `4133b88`, `a5ec63d`, … |
+| `git status --short` | Clean except optional untracked **`supabase/.temp/`** (Supabase CLI cache) — added to **`.gitignore`** so it is not committed accidentally |
 
 ---
 
 ## 2) Tool availability checks
 
-Commands run in the verification environment:
+Commands run with **`PATH=/opt/homebrew/bin:…`** (Apple Silicon Homebrew layout). Align CI and developer shells with this `PATH` so `deno` / `supabase` resolve consistently.
 
 | Tool | Command | Result |
 |------|-----------|--------|
-| Deno | `which deno` | **not found** (exit non-zero) |
-| Deno | `deno --version` | **unavailable** — not on `PATH` |
-| Supabase CLI | `which supabase` | **not found** |
-| Supabase CLI | `supabase --version` | **unavailable** — not on `PATH` |
-
-**Interpretation:** This run did **not** treat missing tools as a test **failure** for adapter smokes (see §5). It **does** block optional `deno check` and `supabase functions serve` until tools are installed on a developer or CI image.
-
-**Recommended install (documentation only — not executed in this milestone):**
-
-- **Deno:** follow official install: [Deno — installation](https://docs.deno.com/runtime/getting_started/installation/) (e.g. `curl -fsSL https://deno.land/install.sh | sh` on macOS/Linux, or package manager; then ensure the install’s `deno` is on `PATH`).
-- **Supabase CLI:** [Supabase CLI](https://supabase.com/docs/guides/cli) (e.g. `brew install supabase/tap/supabase` on macOS, or `npx supabase` for ad-hoc use without global install).
-
-**Note:** Re-run `which` / `--version` on your own machine after install; PATH may differ from this verification environment.
+| Deno | `which deno` | `/opt/homebrew/bin/deno` |
+| Deno | `deno --version` | **deno 2.7.14** (stable, aarch64-apple-darwin); TypeScript **5.9.2** |
+| Supabase CLI | `which supabase` | `/opt/homebrew/bin/supabase` |
+| Supabase CLI | `supabase --version` | **2.95.4** |
 
 ---
 
-## 3) Optional static check — `deno check`
+## 3) Static check — `deno check`
 
 | Item | Result |
 |------|--------|
-| `deno check supabase/functions/generate-ai-parent-report-draft/index.ts` | **CHECK — deferred:** Deno not available on `PATH` in this run; run after Deno is installed. |
+| `deno check supabase/functions/generate-ai-parent-report-draft/index.ts` | **PASS** — `Check` completes with no errors (imports resolve via `_shared/*.ts`) |
 
 ---
 
-## 4) Optional Supabase CLI — help / serve readiness
+## 4) Supabase CLI — help / serve readiness
 
 | Item | Result |
 |------|--------|
-| `supabase functions --help` or `supabase functions serve --help` | **CHECK — deferred:** Supabase CLI not available on `PATH` in this run. |
+| `supabase functions --help` | **PASS** — subcommands listed (`serve`, `deploy`, `list`, …); no deploy executed |
+| `supabase functions serve --help` | **PASS** — flags documented (`--env-file`, `--no-verify-jwt`, …); **no** `serve` runtime started |
 
 **Guardrails observed:** no deploy, no `supabase link`, no secrets set, no provider HTTP.
 
@@ -63,19 +66,19 @@ Commands run in the verification environment:
 
 | Script | Result |
 |--------|--------|
-| `npm run test:supabase:ai-parent-report:edge-adapter` | **PASS** — fake/disabled/real-stub, parity vs canonical adapter, unsafe-input guards; script prints optional **CHECK** for missing `deno` / `supabase` (expected when tools absent) |
-| `npm run test:supabase:ai-parent-report:provider-adapter` | **PASS** — same contract; integration still blocks `real_ai` on `createAiParentReportVersion` |
+| `npm run test:supabase:ai-parent-report:edge-adapter` | **PASS** — fake/disabled/real-stub, parity, guards; script runs **`deno check`** when `deno` is on `PATH` → **PASS**; optional note that **`supabase functions serve`** needs linked project when used |
+| `npm run test:supabase:ai-parent-report:provider-adapter` | **PASS** — same contract; **`createAiParentReportVersion`** still blocks **`real_ai`** |
 
-**Confirmation:** No real provider API call; no provider key in smoke path; local-only adapter logic.
+**Confirmation:** No real provider API call; no provider key required for these scripts; local-only adapter logic.
 
 ---
 
 ## 6) Secret / safety status (no values printed)
 
-- **No provider API key** is required for the smokes above and **must not** be committed to the repo.
-- **`.env.local`** must remain **uncommitted** (gitignore); do not paste keys into docs or issues.
-- **Supabase Edge secrets** for a future real provider are **out of scope** for this checkpoint — set **manually** in project dashboard or CLI when the real-provider milestone starts, **dev/staging first**, never in client env.
-- This document **does not** list environment variable names with values, project refs, or keys.
+- **No provider API key** committed for this feature; smokes do not require one.
+- **`.env.local`** must remain **uncommitted**; never paste keys into docs or issues.
+- **Supabase Edge secrets** for a future real provider remain **manual**, **dev/staging first**, never in client env.
+- This document **does not** record env values, project refs, or keys.
 
 ---
 
@@ -83,10 +86,10 @@ Commands run in the verification environment:
 
 | Area | Status |
 |------|--------|
-| Deno on PATH | **Missing** in this verification run — install for `deno check` |
-| Supabase CLI on PATH | **Missing** in this run — install for `functions serve` / deploy workflows |
-| `deno check` (Edge entry) | **CHECK** — deferred |
-| Supabase `functions` help / serve | **CHECK** — deferred |
+| Deno on PATH (Homebrew) | **Available** — 2.7.14 at `/opt/homebrew/bin/deno` |
+| Supabase CLI on PATH | **Available** — 2.95.4 at `/opt/homebrew/bin/supabase` |
+| `deno check` (Edge entry) | **PASS** |
+| Supabase `functions` / `serve` **--help** | **PASS** |
 | Edge adapter smoke | **PASS** |
 | Provider adapter smoke | **PASS** |
 | Real provider HTTP | **Not implemented** (unchanged) |
@@ -99,16 +102,16 @@ Commands run in the verification environment:
 
 | Option | Milestone |
 |--------|-----------|
-| **A** | Install / fix **Deno** and **Supabase CLI** on **PATH** (manual or org standard), then **re-run** this verification (or re-run the checks in §2–4). |
-| **B** | **Real provider Edge HTTP** with **no persistence** and **no** `real_ai` unlock (only after tooling is at least available for local validation). |
-| **C** | Staging-only **provider key** in Edge secrets (operational; not in repo). |
-| **D** | **`real_ai` DB unlock** + smokes. |
-| **E** | PDF/export planning. |
+| **A** | Fix **PATH** / install tooling if any machine still lacks `deno` or `supabase` |
+| **B** | **Real provider Edge HTTP** — **no persistence**, **no** `real_ai` unlock, **no** prod deploy; optional staging secret later |
+| **C** | **Provider key** in Edge secrets (**staging** only; operational) |
+| **D** | **`real_ai` DB unlock** + smokes |
+| **E** | PDF/export planning |
 
-**Recommendation:** Because **Deno** and **Supabase CLI** were **not** on `PATH` in this run, choose **A first** — install tooling, then re-verify `deno check` and `supabase functions serve --help` locally. After both tools are available **and** §5 smokes still **PASS**, proceed toward **B** (still **no persistence**, **no** `real_ai` unlock, **no** production deploy).
+**Recommendation:** **B next** — Deno and Supabase CLI are **available**, **`deno check`** and help output **PASS**, adapter smokes **PASS**. Proceed to **real provider HTTP** in `_shared` / Edge only when ready, still **without** version persistence and **without** `real_ai` unlock. Use **C** only when staging secret policy is agreed (keys never in repo). Use **A** only if a teammate’s environment still cannot resolve `deno`/`supabase`.
 
 ---
 
 ## 9) Validation note
 
-Checkpoint produced by: git checks + shell tool availability + npm smoke scripts only. **No** build/lint/typecheck required for this docs milestone unless CI policy says otherwise.
+Re-verification used: git checks + `which` / `--version` + `deno check` + `supabase functions` help + npm adapter smokes only. **No** full app build/lint/typecheck required for this docs milestone unless CI policy requires it.

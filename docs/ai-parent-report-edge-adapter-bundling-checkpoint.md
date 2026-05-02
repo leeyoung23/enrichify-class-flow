@@ -5,7 +5,7 @@ Scope: **Edge-compatible fake/disabled adapter** under `supabase/functions/_shar
 
 ## Checkpoint update (tooling verification — docs only)
 
-- See **`docs/real-ai-provider-tooling-verification-checkpoint.md`**: adapter smokes **PASS**; **`deno check`** / Supabase **`functions serve`** remain **CHECK** until Deno and Supabase CLI are on `PATH`. No production deploy; no real provider HTTP.
+- See **`docs/real-ai-provider-tooling-verification-checkpoint.md`**: **re-verified** — **`deno check`** on `generate-ai-parent-report-draft/index.ts` **PASS**; **`supabase functions` / `serve --help`** **PASS**; adapter smokes **PASS**. Deno **2.7.14** / Supabase **2.95.4** at `/opt/homebrew/bin` when using Homebrew PATH. No production deploy; no real provider HTTP yet.
 
 ---
 

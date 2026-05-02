@@ -1,8 +1,12 @@
 # RLS Test Checklist
 
+## Checkpoint update (real AI provider tooling re-verification)
+
+- Docs-only: **`docs/real-ai-provider-tooling-verification-checkpoint.md`** — **re-verified:** Deno + Supabase CLI on PATH (`deno check` PASS; CLI help PASS); adapter smokes PASS; no SQL/RLS change; **`real_ai`** still blocked.
+
 ## Checkpoint update (real AI provider tooling verification)
 
-- Docs-only: **`docs/real-ai-provider-tooling-verification-checkpoint.md`** — no SQL/RLS change; **`real_ai`** still blocked; adapter smokes PASS; Deno/Supabase CLI missing from PATH in that run (CHECK for static/serve validation).
+- First run only: tools absent on default PATH in automated environment — see checkpoint doc history §0.
 
 ## Checkpoint update (AI parent report Edge `_shared` adapter — fake/disabled only)
 

@@ -1,9 +1,13 @@
 # Project Master Context Handoff
 
+## Checkpoint update (real AI provider tooling re-verification — docs only)
+
+- Doc: **`docs/real-ai-provider-tooling-verification-checkpoint.md`** — **Deno 2.7.14** + **Supabase CLI 2.95.4** on Homebrew PATH (`/opt/homebrew/bin`); **`deno check`** Edge entry **PASS**; **`supabase functions` / `serve --help`** **PASS**; edge + provider adapter smokes **PASS**; no secrets; no deploy; **`real_ai`** still blocked; **`.gitignore`** includes `supabase/.temp/` (CLI cache).
+- Next milestone **B:** real provider **Edge HTTP** with **no persistence** and **no** `real_ai` unlock (`docs/real-ai-parent-report-provider-implementation-plan.md`). Optional **C:** staging-only Edge secret when policy allows.
+
 ## Checkpoint update (real AI provider tooling verification — docs only)
 
-- Doc: **`docs/real-ai-provider-tooling-verification-checkpoint.md`** — safe git + npm adapter smokes; **Deno** / **Supabase CLI** not on `PATH` in verification run (`which` / `--version` unavailable); **`deno check`** and CLI serve/help **CHECK**; edge + provider smokes **PASS**; no secrets logged; no deploy; **`real_ai`** still blocked.
-- Next: install tooling (**checklist milestone A**), re-verify; then optional **real provider Edge HTTP** without persistence (`real-ai-parent-report-provider-implementation-plan.md`).
+- Superseded by re-verification above; first run (`c54fdd2`) documented missing CLI on default PATH in automated environment.
 
 ## Checkpoint update (AI parent report Edge adapter bundling — fake/disabled only)
 

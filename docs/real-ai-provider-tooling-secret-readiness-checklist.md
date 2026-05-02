@@ -31,7 +31,7 @@ Scope: **documentation / checklist only** — readiness **before** real provider
 - **No provider API key** is configured for this feature in repo, frontend, or committed env files.
 - **`createAiParentReportVersion`** still **blocks** `generationSource='real_ai'` (`supabaseWriteService.js`).
 - **PDF/export** remains deferred.
-- **Verified checkpoint:** `docs/real-ai-provider-tooling-verification-checkpoint.md` — in that run, **Deno** and **Supabase CLI** were **not** on `PATH`; edge/provider adapter smokes **PASS**; `deno check` / Supabase serve **CHECK** until tools installed. Re-run verification after installing tooling (milestone **A** from checklist §11).
+- **Verified checkpoint:** `docs/real-ai-provider-tooling-verification-checkpoint.md` — **re-verified** after Homebrew install: **Deno 2.7.14** (`/opt/homebrew/bin/deno`), **Supabase CLI 2.95.4** (`/opt/homebrew/bin/supabase`); **`deno check`** + **`supabase functions` / `serve --help`** **PASS**; edge/provider adapter smokes **PASS**. Prior run (`c54fdd2`) had tools missing on default PATH in the automated environment. Next milestone **B** (real Edge HTTP, no persistence / no `real_ai` unlock) when implementation starts.
 
 ---
 
@@ -191,10 +191,9 @@ Separate from first HTTP milestone. Do **not** unlock DB writes until:
 
 ### Recommendation
 
-- If **Deno / Supabase CLI** are **still missing** or unverified on developer machines → **A first** (manual install + PATH verification + optional “verified by” date in internal notes).
-- If tooling is **already** verified → **B next** (Edge HTTP only; **no** `createAiParentReportVersion` change; **no** production deploy until staging proves safe).
-
-**Do not** choose **C** before **A** is satisfied — keys without serve/deploy discipline increase leak and incident risk.
+- **As of `docs/real-ai-provider-tooling-verification-checkpoint.md` (re-verification):** **Deno** + **Supabase CLI** are **PASS** on Homebrew PATH; **`deno check`** + CLI help **PASS** → prefer **B next** (real Edge HTTP; **no** persistence; **no** `real_ai` unlock).
+- If **any** machine still lacks tools → **A** on that machine first (PATH / install).
+- **C** (staging secret) only after **B** contract is clear and never before ops agrees — keys without discipline increase leak risk.
 
 ---
 
