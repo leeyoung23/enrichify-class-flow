@@ -1,5 +1,9 @@
 # RLS Test Checklist
 
+## Checkpoint update (teacher simplicity + navigation clickability audit — 2026-05-02)
+
+- **Docs-only:** **`docs/teacher-simplicity-navigation-clickability-audit.md`** — no RLS/SQL change; complements manual QA by listing **UX risks** that can look like “broken product” (dead-click cards, technical labels). Regression smokes unchanged; run when touching **`permissionService`** nav or directory pages.
+
 ## Checkpoint update (AI Parent Reports workflow UX polish — 2026-05-02)
 
 - Doc: **`docs/ai-parent-report-workflow-ux-polish-checkpoint.md`** — staff-facing workflow copy and layout order; **no** RLS/SQL change; **`real_ai`** still blocked; ParentView unchanged. Re-run AI parent report smokes when touching `src/pages/AiParentReports.jsx`.

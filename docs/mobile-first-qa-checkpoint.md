@@ -1,5 +1,9 @@
 # Mobile-first QA checkpoint
 
+## Checkpoint update (teacher simplicity + clickability audit — 2026-05-02)
+
+- **Reference:** **`docs/teacher-simplicity-navigation-clickability-audit.md`** — maps **Sidebar** nav by role, flags **non-clickable cards that look clickable** (e.g. **Branches**), teacher **Homework** / **Parent Communication** as highest simplification priority, **hash-based ParentView** section risks on small screens. Use for the next **~390px** pass and before **B/C** implementation (affordance fixes + upload step labels). **Docs-only** milestone.
+
 ## Checkpoint update (AI Parent Reports workflow UX polish — 2026-05-02)
 
 - **`docs/ai-parent-report-workflow-ux-polish-checkpoint.md`** — shorter intro, evidence-first section order, optional overrides copy for mock draft, lifecycle release clarity; **AppLayout** Company News popup slightly compact (still bottom-right, **Dismiss** preserved). **No** SQL/RLS / ParentView / `real_ai`. Re-run ~390px pass on **AI Parent Reports** after this commit.
