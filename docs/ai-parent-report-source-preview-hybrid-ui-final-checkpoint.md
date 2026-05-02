@@ -4,7 +4,7 @@ Date: 2026-05-02
 Type: **documentation only** — seals milestone **`d235344`** (*Wire AI report source preview hybrid mode*). **No** app UI or runtime changes in this doc pass.
 
 **Canonical code reference:** `src/pages/AiParentReports.jsx` (as of commit **`d235344`**).  
-**Related:** `docs/ai-parent-report-source-preview-hybrid-ui-checkpoint.md`, `docs/ai-parent-report-source-preview-hybrid-ui-plan.md`, `docs/ai-parent-report-rls-source-aggregation-service-smoke-checkpoint.md`, **`docs/manual-qa-ai-report-hybrid-source-preview-checkpoint.md`** (desktop + ~390px visual QA runbook).
+**Related:** `docs/ai-parent-report-source-preview-hybrid-ui-checkpoint.md`, `docs/ai-parent-report-source-preview-hybrid-ui-plan.md`, `docs/ai-parent-report-rls-source-aggregation-service-smoke-checkpoint.md`, **`docs/manual-qa-ai-report-hybrid-source-preview-checkpoint.md`** (desktop + ~390px visual QA runbook), **`docs/ai-parent-report-workflow-ux-polish-checkpoint.md`** (staff workflow copy + section order).
 
 ---
 

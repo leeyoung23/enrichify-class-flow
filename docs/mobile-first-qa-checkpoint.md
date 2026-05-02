@@ -1,5 +1,9 @@
 # Mobile-first QA checkpoint
 
+## Checkpoint update (AI Parent Reports workflow UX polish — 2026-05-02)
+
+- **`docs/ai-parent-report-workflow-ux-polish-checkpoint.md`** — shorter intro, evidence-first section order, optional overrides copy for mock draft, lifecycle release clarity; **AppLayout** Company News popup slightly compact (still bottom-right, **Dismiss** preserved). **No** SQL/RLS / ParentView / `real_ai`. Re-run ~390px pass on **AI Parent Reports** after this commit.
+
 ## Checkpoint update (manual visual QA — hybrid source preview, 2026-05-02)
 
 - **Runbook:** **`docs/manual-qa-ai-report-hybrid-source-preview-checkpoint.md`** — desktop + **~390px** checklists for **AI Parent Reports** Source Evidence Preview (**demo** vs **system** badge, summaries, Heads-up / Fallback, evidence items, **Generate Mock Draft**, lifecycle, safety/privacy). **Use fake/dev data only**; **no** real provider calls. **Decision rule:** fix UI/copy issues before real provider smoke if they affect teacher understanding; else proceed to staging provider smoke or evidence planning.

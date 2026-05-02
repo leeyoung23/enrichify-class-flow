@@ -1,5 +1,9 @@
 # Project Master Context Handoff
 
+## Checkpoint update (AI Parent Reports workflow UX polish — 2026-05-02)
+
+- **`src/pages/AiParentReports.jsx`** — workflow-oriented copy: report shell, evidence preview emphasis, **Generate draft from source evidence** with optional overrides group, manual version reframed, lifecycle release boundary; **Report detail** moved **above** Source Evidence Preview. **`src/components/layout/AppLayout.jsx`** — Company News popup slightly less intrusive (layout/styling only). **Docs:** **`docs/ai-parent-report-workflow-ux-polish-checkpoint.md`**; cross-refs in **`docs/manual-preview-product-direction-corrections.md`**, **`docs/manual-qa-ai-report-hybrid-source-preview-checkpoint.md`**, **`docs/ai-parent-report-source-preview-hybrid-ui-final-checkpoint.md`**, **`docs/mobile-first-qa-checkpoint.md`**, **`docs/rls-test-checklist.md`**. **No** SQL/RLS; **no** `real_ai`; ParentView unchanged.
+
 ## Checkpoint update (manual visual QA runbook — hybrid source preview, 2026-05-02)
 
 - **Docs-only:** **`docs/manual-qa-ai-report-hybrid-source-preview-checkpoint.md`** — human QA for **Source Evidence Preview** (hybrid + demo) on **desktop** and **~390px**; surfaces, checklists, safety/privacy, known risks, next-milestone decision rule. **No** `src/` changes. Use before **real provider** key/call smoke; **no** ParentView change; **no** `real_ai` unlock.

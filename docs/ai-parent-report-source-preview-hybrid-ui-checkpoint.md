@@ -31,6 +31,7 @@ Empty ids/dates passed as **empty strings** where needed; **Scope note** when re
 
 - **Final (canonical detail):** **`docs/ai-parent-report-source-preview-hybrid-ui-final-checkpoint.md`**
 - **Manual visual QA (desktop + ~390px):** **`docs/manual-qa-ai-report-hybrid-source-preview-checkpoint.md`**
+- **Workflow UX copy:** **`docs/ai-parent-report-workflow-ux-polish-checkpoint.md`**
 - Plan: **`docs/ai-parent-report-source-preview-hybrid-ui-plan.md`**
 - Service: **`docs/ai-parent-report-rls-source-aggregation-service-smoke-checkpoint.md`**
 - UI milestone: **`docs/ai-parent-report-source-preview-ui-checkpoint.md`**

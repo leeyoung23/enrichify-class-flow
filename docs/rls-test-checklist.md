@@ -1,5 +1,9 @@
 # RLS Test Checklist
 
+## Checkpoint update (AI Parent Reports workflow UX polish — 2026-05-02)
+
+- Doc: **`docs/ai-parent-report-workflow-ux-polish-checkpoint.md`** — staff-facing workflow copy and layout order; **no** RLS/SQL change; **`real_ai`** still blocked; ParentView unchanged. Re-run AI parent report smokes when touching `src/pages/AiParentReports.jsx`.
+
 ## Checkpoint update (manual visual QA — AI report hybrid source preview, 2026-05-02)
 
 - **Human runbook (no automated RLS assert):** **`docs/manual-qa-ai-report-hybrid-source-preview-checkpoint.md`** — staff **AI Parent Reports** at **desktop** + **~390px**; confirms hybrid preview UX and **no** SQL/env/provider leak **by inspection** before real provider smoke. **Fake/dev data only**; **no** `real_ai` / ParentView change. Complements smokes in **`docs/ai-parent-report-source-preview-hybrid-ui-final-checkpoint.md`** §8.

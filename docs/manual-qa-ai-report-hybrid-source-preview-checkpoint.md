@@ -3,7 +3,7 @@
 Date: 2026-05-02  
 Type: **human QA / checkpoint only** — use **fake/dev** or non-production fixtures only. **No** real student, parent, school, or communication data. **No** app or SQL changes in this document.
 
-**Code reference (no edits here):** `src/pages/AiParentReports.jsx` (hybrid preview in **`d235344`**). **Aggregation service:** `src/services/aiParentReportSourceAggregationService.js`.  
+**Code reference (no edits here):** `src/pages/AiParentReports.jsx` (hybrid preview in **`d235344`**, workflow copy polish in later commit — see **`docs/ai-parent-report-workflow-ux-polish-checkpoint.md`**). **Aggregation service:** `src/services/aiParentReportSourceAggregationService.js`.  
 **Background:** `docs/ai-parent-report-source-preview-hybrid-ui-final-checkpoint.md`.
 
 ---

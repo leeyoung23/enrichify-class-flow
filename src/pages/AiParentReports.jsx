@@ -803,14 +803,24 @@ export default function AiParentReports() {
     <div className="space-y-6">
       <PageHeader
         title="AI Parent Reports"
-        description="Staff-only draft, review, and release workflow. Manual fields below are temporary source notes or overrides while the product matures. Long term, AI drafts should pull from approved system evidence (attendance, homework, worksheets, observations, lesson progression, memories, teacher-approved notes)—teachers refine, not rewrite everything from scratch. No report reaches parents without explicit staff release. No real AI provider in this MVP and no PDF/export."
+        description="Staff-only report drafting and release workflow. Start from source evidence, generate a draft, then review and release manually."
       />
 
-      <Card className="p-4">
+      <p className="text-xs text-muted-foreground border-l-2 border-muted pl-3 py-1 -mt-4 mb-2">
+        No report reaches parents until explicit staff release. Real AI provider and PDF/export are not enabled yet.
+      </p>
+
+      <p className="text-sm text-muted-foreground mb-4">
+        <span className="font-medium text-foreground">Workflow:</span>{' '}
+        Create or select a report shell → Review source evidence → Generate draft from evidence → Optional teacher
+        overrides → Submit / approve / release manually.
+      </p>
+
+      <Card className="p-3">
         <p className="text-sm text-muted-foreground">
           {inDemoMode
-            ? 'Demo mode is local-only for AI parent reports. No Supabase report reads/writes run in this mode.'
-            : 'Authenticated mode uses existing Supabase services with JWT + RLS only.'}
+            ? 'Demo mode is local-only — no live Supabase report reads/writes.'
+            : 'Signed-in staff use Supabase with your account (JWT + RLS).'}
         </p>
       </Card>
 
@@ -864,9 +874,10 @@ export default function AiParentReports() {
         </Card>
 
         <Card className="p-4 space-y-3 xl:col-span-2">
-          <h2 className="font-semibold">Create Draft (Manual/Demo Data)</h2>
+          <h2 className="font-semibold">Create report shell</h2>
           <p className="text-sm text-muted-foreground">
-            These fields identify a draft report for testing. They are not the long-term authoring surface—future versions should bind reports to real enrolment and pull narrative sections from system evidence plus teacher edits.
+            Set the reporting period and student/class context. Narrative sections should come from source evidence and
+            teacher review — not from typing every field by hand.
           </p>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div className="space-y-1.5">
@@ -939,12 +950,95 @@ export default function AiParentReports() {
             </div>
           </div>
           <Button onClick={() => { void handleCreateDraft(); }} disabled={creatingDraft}>
-            {creatingDraft ? 'Creating draft...' : 'Create Draft'}
+            {creatingDraft ? 'Creating…' : 'Create report shell'}
           </Button>
         </Card>
       </div>
 
-      <Card className="p-4 space-y-4 border-dashed">
+      <Card className="p-4 space-y-4">
+        <h2 className="font-semibold">Report detail</h2>
+        {detailLoading ? <p className="text-sm text-muted-foreground">Loading report detail...</p> : null}
+        {!detailLoading && detailError ? <p className="text-sm text-muted-foreground">{detailError}</p> : null}
+        {!detailLoading && !detailError && !detail ? (
+          <p className="text-sm text-muted-foreground">Select a report to view detail.</p>
+        ) : null}
+
+        {!detailLoading && !detailError && detail ? (
+          <div className="space-y-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm">
+              <p><span className="text-muted-foreground">Report ID:</span> {detail.id}</p>
+              <p><span className="text-muted-foreground">Status:</span> {detail.status}</p>
+              <p><span className="text-muted-foreground">Student:</span> {detail.studentId || '—'}</p>
+              <p><span className="text-muted-foreground">Class:</span> {detail.classId || '—'}</p>
+              <p><span className="text-muted-foreground">Branch:</span> {detail.branchId || '—'}</p>
+              <p><span className="text-muted-foreground">Report Type:</span> {detail.reportType}</p>
+              <p><span className="text-muted-foreground">Period:</span> {formatDateLabel(detail.reportPeriodStart)} - {formatDateLabel(detail.reportPeriodEnd)}</p>
+              <p><span className="text-muted-foreground">Current Version:</span> {detail.currentVersionId || 'none'}</p>
+            </div>
+
+            <div className="rounded-lg border p-3 space-y-2">
+              <p className="text-sm font-medium">Current Version</p>
+              {!currentVersion ? (
+                <p className="text-sm text-muted-foreground">No current version selected yet.</p>
+              ) : (
+                <div className="space-y-2">
+                  <p className="text-xs text-muted-foreground">
+                    v{currentVersion.versionNumber} · {currentVersion.generationSource} · created {formatDateTimeLabel(currentVersion.createdAt)}
+                  </p>
+                  <pre className="text-xs bg-muted/40 rounded-md p-2 overflow-auto whitespace-pre-wrap">
+                    {JSON.stringify(currentVersion.structuredSections || {}, null, 2)}
+                  </pre>
+                </div>
+              )}
+            </div>
+
+            <div className="rounded-lg border p-3 space-y-2">
+              <p className="text-sm font-medium">Version History</p>
+              {versions.length === 0 ? (
+                <p className="text-sm text-muted-foreground">No versions yet.</p>
+              ) : (
+                <div className="space-y-2">
+                  {versions.map((row) => (
+                    <label key={row.id} className="flex items-start gap-2 rounded-md border p-2 cursor-pointer">
+                      <input
+                        type="radio"
+                        name="release-version-id"
+                        checked={selectedReleaseVersionId === row.id}
+                        onChange={() => setSelectedReleaseVersionId(row.id)}
+                      />
+                      <div className="text-sm">
+                        <p className="font-medium">v{row.versionNumber} · {row.generationSource}</p>
+                        <p className="text-xs text-muted-foreground">id: {row.id} · {formatDateTimeLabel(row.createdAt)}</p>
+                      </div>
+                    </label>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            <div className="rounded-lg border p-3 space-y-2">
+              <p className="text-sm font-medium">Evidence Links (staff-facing)</p>
+              {evidenceLinks.length === 0 ? (
+                <p className="text-sm text-muted-foreground">No evidence links visible for this report.</p>
+              ) : (
+                <div className="space-y-2">
+                  {evidenceLinks.map((row) => (
+                    <div key={row.id} className="rounded-md border p-2">
+                      <p className="text-sm">{row.evidence_type || row.evidenceType || 'evidence'}</p>
+                      <p className="text-xs text-muted-foreground">
+                        source table: {row.source_table || row.sourceTable || 'manual'} · include in parent report:{' '}
+                        {String(row.include_in_parent_report ?? row.includeInParentReport ?? false)}
+                      </p>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+        ) : null}
+      </Card>
+
+      <Card className="p-4 space-y-4 border-dashed border-primary/20 bg-muted/10">
         <div className="space-y-1">
           <div className="flex flex-wrap items-center gap-2">
             <h2 className="font-semibold">Source Evidence Preview</h2>
@@ -956,6 +1050,9 @@ export default function AiParentReports() {
             {inDemoMode
               ? 'Demo and fallback wording only — no live system reads in this mode.'
               : 'System evidence is used where available. Missing sources use safe fallback wording until the evidence pipeline is complete.'}
+          </p>
+          <p className="text-sm text-foreground mt-2">
+            Read this before generating a draft — narrative sections should start from evidence, not blank forms.
           </p>
         </div>
 
@@ -1098,97 +1195,160 @@ export default function AiParentReports() {
         ) : null}
       </Card>
 
-      <Card className="p-4 space-y-4">
-        <h2 className="font-semibold">Report Detail</h2>
-        {detailLoading ? <p className="text-sm text-muted-foreground">Loading report detail...</p> : null}
-        {!detailLoading && detailError ? <p className="text-sm text-muted-foreground">{detailError}</p> : null}
-        {!detailLoading && !detailError && !detail ? (
-          <p className="text-sm text-muted-foreground">Select a report to view detail.</p>
-        ) : null}
-
-        {!detailLoading && !detailError && detail ? (
-          <div className="space-y-4">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm">
-              <p><span className="text-muted-foreground">Report ID:</span> {detail.id}</p>
-              <p><span className="text-muted-foreground">Status:</span> {detail.status}</p>
-              <p><span className="text-muted-foreground">Student:</span> {detail.studentId || '—'}</p>
-              <p><span className="text-muted-foreground">Class:</span> {detail.classId || '—'}</p>
-              <p><span className="text-muted-foreground">Branch:</span> {detail.branchId || '—'}</p>
-              <p><span className="text-muted-foreground">Report Type:</span> {detail.reportType}</p>
-              <p><span className="text-muted-foreground">Period:</span> {formatDateLabel(detail.reportPeriodStart)} - {formatDateLabel(detail.reportPeriodEnd)}</p>
-              <p><span className="text-muted-foreground">Current Version:</span> {detail.currentVersionId || 'none'}</p>
+      <div className="grid grid-cols-1 xl:grid-cols-2 gap-4">
+        <Card className="p-4 space-y-3 xl:col-span-2 border-primary/15 bg-muted/5">
+          <h2 className="font-semibold">Generate draft from source evidence</h2>
+          <p className="text-sm text-muted-foreground">
+            Mock mode only — pulls text from the Source Evidence Preview above and merges any notes you add below.
+            No real AI provider call. Nothing is sent to parents until you run lifecycle release later.
+          </p>
+          <div className="rounded-lg border bg-card p-3 space-y-2">
+            <p className="text-xs font-medium text-foreground">Optional teacher notes / overrides</p>
+            <p className="text-xs text-muted-foreground">
+              Leave fields blank to use source evidence where available. Fill only what you want to correct or
+              emphasise before generating.
+            </p>
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div className="space-y-1.5 sm:col-span-2">
+              <Label htmlFor="apr-mock-student-summary">Student Summary</Label>
+              <Textarea
+                id="apr-mock-student-summary"
+                value={mockDraftForm.studentSummary}
+                onChange={(event) => setMockDraftForm((prev) => ({ ...prev, studentSummary: event.target.value }))}
+                placeholder="Optional — leave blank to use evidence"
+              />
             </div>
-
-            <div className="rounded-lg border p-3 space-y-2">
-              <p className="text-sm font-medium">Current Version</p>
-              {!currentVersion ? (
-                <p className="text-sm text-muted-foreground">No current version selected yet.</p>
-              ) : (
-                <div className="space-y-2">
-                  <p className="text-xs text-muted-foreground">
-                    v{currentVersion.versionNumber} · {currentVersion.generationSource} · created {formatDateTimeLabel(currentVersion.createdAt)}
-                  </p>
-                  <pre className="text-xs bg-muted/40 rounded-md p-2 overflow-auto whitespace-pre-wrap">
-                    {JSON.stringify(currentVersion.structuredSections || {}, null, 2)}
-                  </pre>
-                </div>
-              )}
+            <div className="space-y-1.5">
+              <Label htmlFor="apr-mock-attendance-summary">Attendance Summary</Label>
+              <Textarea
+                id="apr-mock-attendance-summary"
+                value={mockDraftForm.attendanceSummary}
+                onChange={(event) => setMockDraftForm((prev) => ({ ...prev, attendanceSummary: event.target.value }))}
+                placeholder="Optional"
+              />
             </div>
-
-            <div className="rounded-lg border p-3 space-y-2">
-              <p className="text-sm font-medium">Version History</p>
-              {versions.length === 0 ? (
-                <p className="text-sm text-muted-foreground">No versions yet.</p>
-              ) : (
-                <div className="space-y-2">
-                  {versions.map((row) => (
-                    <label key={row.id} className="flex items-start gap-2 rounded-md border p-2 cursor-pointer">
-                      <input
-                        type="radio"
-                        name="release-version-id"
-                        checked={selectedReleaseVersionId === row.id}
-                        onChange={() => setSelectedReleaseVersionId(row.id)}
-                      />
-                      <div className="text-sm">
-                        <p className="font-medium">v{row.versionNumber} · {row.generationSource}</p>
-                        <p className="text-xs text-muted-foreground">id: {row.id} · {formatDateTimeLabel(row.createdAt)}</p>
-                      </div>
-                    </label>
-                  ))}
-                </div>
-              )}
+            <div className="space-y-1.5">
+              <Label htmlFor="apr-mock-lesson-progression">Lesson Progression</Label>
+              <Textarea
+                id="apr-mock-lesson-progression"
+                value={mockDraftForm.lessonProgression}
+                onChange={(event) => setMockDraftForm((prev) => ({ ...prev, lessonProgression: event.target.value }))}
+                placeholder="Optional"
+              />
             </div>
-
-            <div className="rounded-lg border p-3 space-y-2">
-              <p className="text-sm font-medium">Evidence Links (staff-facing)</p>
-              {evidenceLinks.length === 0 ? (
-                <p className="text-sm text-muted-foreground">No evidence links visible for this report.</p>
-              ) : (
-                <div className="space-y-2">
-                  {evidenceLinks.map((row) => (
-                    <div key={row.id} className="rounded-md border p-2">
-                      <p className="text-sm">{row.evidence_type || row.evidenceType || 'evidence'}</p>
-                      <p className="text-xs text-muted-foreground">
-                        source table: {row.source_table || row.sourceTable || 'manual'} · include in parent report:{' '}
-                        {String(row.include_in_parent_report ?? row.includeInParentReport ?? false)}
-                      </p>
-                    </div>
-                  ))}
-                </div>
-              )}
+            <div className="space-y-1.5">
+              <Label htmlFor="apr-mock-homework-completion">Homework Completion</Label>
+              <Textarea
+                id="apr-mock-homework-completion"
+                value={mockDraftForm.homeworkCompletion}
+                onChange={(event) => setMockDraftForm((prev) => ({ ...prev, homeworkCompletion: event.target.value }))}
+                placeholder="Optional"
+              />
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="apr-mock-homework-performance">Homework Performance</Label>
+              <Textarea
+                id="apr-mock-homework-performance"
+                value={mockDraftForm.homeworkPerformance}
+                onChange={(event) => setMockDraftForm((prev) => ({ ...prev, homeworkPerformance: event.target.value }))}
+                placeholder="Optional"
+              />
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="apr-mock-strengths">Strengths</Label>
+              <Textarea
+                id="apr-mock-strengths"
+                value={mockDraftForm.strengths}
+                onChange={(event) => setMockDraftForm((prev) => ({ ...prev, strengths: event.target.value }))}
+                placeholder="Optional"
+              />
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="apr-mock-improvement-areas">Improvement Areas</Label>
+              <Textarea
+                id="apr-mock-improvement-areas"
+                value={mockDraftForm.improvementAreas}
+                onChange={(event) => setMockDraftForm((prev) => ({ ...prev, improvementAreas: event.target.value }))}
+                placeholder="Optional"
+              />
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="apr-mock-learning-gaps">Learning Gaps</Label>
+              <Textarea
+                id="apr-mock-learning-gaps"
+                value={mockDraftForm.learningGaps}
+                onChange={(event) => setMockDraftForm((prev) => ({ ...prev, learningGaps: event.target.value }))}
+                placeholder="Optional"
+              />
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="apr-mock-teacher-observations">Teacher Observations</Label>
+              <Textarea
+                id="apr-mock-teacher-observations"
+                value={mockDraftForm.teacherObservations}
+                onChange={(event) => setMockDraftForm((prev) => ({ ...prev, teacherObservations: event.target.value }))}
+                placeholder="Optional"
+              />
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="apr-mock-next-recommendations">Next Recommendations</Label>
+              <Textarea
+                id="apr-mock-next-recommendations"
+                value={mockDraftForm.nextRecommendations}
+                onChange={(event) => setMockDraftForm((prev) => ({ ...prev, nextRecommendations: event.target.value }))}
+                placeholder="Optional"
+              />
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="apr-mock-parent-support">Parent Support Suggestions</Label>
+              <Textarea
+                id="apr-mock-parent-support"
+                value={mockDraftForm.parentSupportSuggestions}
+                onChange={(event) => setMockDraftForm((prev) => ({ ...prev, parentSupportSuggestions: event.target.value }))}
+                placeholder="Optional"
+              />
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="apr-mock-final-comment">Teacher Final Comment</Label>
+              <Textarea
+                id="apr-mock-final-comment"
+                value={mockDraftForm.teacherFinalComment}
+                onChange={(event) => setMockDraftForm((prev) => ({ ...prev, teacherFinalComment: event.target.value }))}
+                placeholder="Optional"
+              />
+            </div>
+            <div className="space-y-1.5 sm:col-span-2">
+              <Label htmlFor="apr-mock-evidence-summaries">Evidence Summaries</Label>
+              <Textarea
+                id="apr-mock-evidence-summaries"
+                value={mockDraftForm.evidenceSummaries}
+                onChange={(event) => setMockDraftForm((prev) => ({ ...prev, evidenceSummaries: event.target.value }))}
+                placeholder="Optional — fake/dev-safe notes only"
+              />
             </div>
           </div>
-        ) : null}
-      </Card>
+          <Button
+            onClick={() => {
+              void handleGenerateMockDraft();
+            }}
+            disabled={generatingMockDraft || !selectedReportId}
+          >
+            {generatingMockDraft ? 'Generating mock draft...' : 'Generate mock draft'}
+          </Button>
+          <p className="text-xs text-muted-foreground">
+            No real AI provider. No auto-submit, approve, or release. Parents only see content after explicit release.
+          </p>
+        </Card>
 
-      <div className="grid grid-cols-1 xl:grid-cols-2 gap-4">
         <Card className="p-4 space-y-3">
-          <h2 className="font-semibold">Create Version (manual/mock_ai only)</h2>
+          <h2 className="font-semibold">Manual version / override notes</h2>
           <p className="text-sm text-muted-foreground">
-            Text areas are temporary manual sections or overrides. In production vision, most content should synthesise from approved evidence; teachers validate and edit. No parent release from this panel—lifecycle actions below stay explicit.
+            Optional — use when you need a fully hand-written version or to correct evidence without regenerating the
+            mock draft. These fields are overrides only.
           </p>
           <div className="space-y-1.5">
-            <Label>generationSource</Label>
+            <Label>Version type</Label>
             <Select
               value={createVersionForm.generationSource}
               onValueChange={(value) => setCreateVersionForm((prev) => ({ ...prev, generationSource: value }))}
@@ -1244,140 +1404,16 @@ export default function AiParentReports() {
             />
           </div>
           <Button onClick={() => { void handleCreateVersion(); }} disabled={creatingVersion || !selectedReportId}>
-            {creatingVersion ? 'Creating version...' : 'Create Version'}
+            {creatingVersion ? 'Saving…' : 'Save manual version'}
           </Button>
         </Card>
 
         <Card className="p-4 space-y-3">
-          <h2 className="font-semibold">Generate Mock Draft</h2>
+          <h2 className="font-semibold">Lifecycle</h2>
           <p className="text-sm text-muted-foreground">
-            Staff-side mock draft generation only—fills sections from your safe demo inputs, not from live Supabase feeds yet. Empty fields below are filled from the fake Source Evidence Preview when you generate (you can still type overrides first). Treat fields as stand-in source notes; long term they should mirror automatic pulls from attendance, homework, uploads, observations, and progression data. This does not send anything to parents. Submit, approve, and release remain manual and required.
-          </p>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            <div className="space-y-1.5 sm:col-span-2">
-              <Label htmlFor="apr-mock-student-summary">Student Summary</Label>
-              <Textarea
-                id="apr-mock-student-summary"
-                value={mockDraftForm.studentSummary}
-                onChange={(event) => setMockDraftForm((prev) => ({ ...prev, studentSummary: event.target.value }))}
-                placeholder="Safe fake/dev summary only"
-              />
-            </div>
-            <div className="space-y-1.5">
-              <Label htmlFor="apr-mock-attendance-summary">Attendance Summary</Label>
-              <Textarea
-                id="apr-mock-attendance-summary"
-                value={mockDraftForm.attendanceSummary}
-                onChange={(event) => setMockDraftForm((prev) => ({ ...prev, attendanceSummary: event.target.value }))}
-              />
-            </div>
-            <div className="space-y-1.5">
-              <Label htmlFor="apr-mock-lesson-progression">Lesson Progression</Label>
-              <Textarea
-                id="apr-mock-lesson-progression"
-                value={mockDraftForm.lessonProgression}
-                onChange={(event) => setMockDraftForm((prev) => ({ ...prev, lessonProgression: event.target.value }))}
-              />
-            </div>
-            <div className="space-y-1.5">
-              <Label htmlFor="apr-mock-homework-completion">Homework Completion</Label>
-              <Textarea
-                id="apr-mock-homework-completion"
-                value={mockDraftForm.homeworkCompletion}
-                onChange={(event) => setMockDraftForm((prev) => ({ ...prev, homeworkCompletion: event.target.value }))}
-              />
-            </div>
-            <div className="space-y-1.5">
-              <Label htmlFor="apr-mock-homework-performance">Homework Performance</Label>
-              <Textarea
-                id="apr-mock-homework-performance"
-                value={mockDraftForm.homeworkPerformance}
-                onChange={(event) => setMockDraftForm((prev) => ({ ...prev, homeworkPerformance: event.target.value }))}
-              />
-            </div>
-            <div className="space-y-1.5">
-              <Label htmlFor="apr-mock-strengths">Strengths</Label>
-              <Textarea
-                id="apr-mock-strengths"
-                value={mockDraftForm.strengths}
-                onChange={(event) => setMockDraftForm((prev) => ({ ...prev, strengths: event.target.value }))}
-              />
-            </div>
-            <div className="space-y-1.5">
-              <Label htmlFor="apr-mock-improvement-areas">Improvement Areas</Label>
-              <Textarea
-                id="apr-mock-improvement-areas"
-                value={mockDraftForm.improvementAreas}
-                onChange={(event) => setMockDraftForm((prev) => ({ ...prev, improvementAreas: event.target.value }))}
-              />
-            </div>
-            <div className="space-y-1.5">
-              <Label htmlFor="apr-mock-learning-gaps">Learning Gaps</Label>
-              <Textarea
-                id="apr-mock-learning-gaps"
-                value={mockDraftForm.learningGaps}
-                onChange={(event) => setMockDraftForm((prev) => ({ ...prev, learningGaps: event.target.value }))}
-              />
-            </div>
-            <div className="space-y-1.5">
-              <Label htmlFor="apr-mock-teacher-observations">Teacher Observations</Label>
-              <Textarea
-                id="apr-mock-teacher-observations"
-                value={mockDraftForm.teacherObservations}
-                onChange={(event) => setMockDraftForm((prev) => ({ ...prev, teacherObservations: event.target.value }))}
-              />
-            </div>
-            <div className="space-y-1.5">
-              <Label htmlFor="apr-mock-next-recommendations">Next Recommendations</Label>
-              <Textarea
-                id="apr-mock-next-recommendations"
-                value={mockDraftForm.nextRecommendations}
-                onChange={(event) => setMockDraftForm((prev) => ({ ...prev, nextRecommendations: event.target.value }))}
-              />
-            </div>
-            <div className="space-y-1.5">
-              <Label htmlFor="apr-mock-parent-support">Parent Support Suggestions</Label>
-              <Textarea
-                id="apr-mock-parent-support"
-                value={mockDraftForm.parentSupportSuggestions}
-                onChange={(event) => setMockDraftForm((prev) => ({ ...prev, parentSupportSuggestions: event.target.value }))}
-              />
-            </div>
-            <div className="space-y-1.5">
-              <Label htmlFor="apr-mock-final-comment">Teacher Final Comment</Label>
-              <Textarea
-                id="apr-mock-final-comment"
-                value={mockDraftForm.teacherFinalComment}
-                onChange={(event) => setMockDraftForm((prev) => ({ ...prev, teacherFinalComment: event.target.value }))}
-              />
-            </div>
-            <div className="space-y-1.5 sm:col-span-2">
-              <Label htmlFor="apr-mock-evidence-summaries">Evidence Summaries</Label>
-              <Textarea
-                id="apr-mock-evidence-summaries"
-                value={mockDraftForm.evidenceSummaries}
-                onChange={(event) => setMockDraftForm((prev) => ({ ...prev, evidenceSummaries: event.target.value }))}
-                placeholder="Comma or sentence list, fake/dev-safe notes only"
-              />
-            </div>
-          </div>
-          <Button
-            onClick={() => {
-              void handleGenerateMockDraft();
-            }}
-            disabled={generatingMockDraft || !selectedReportId}
-          >
-            {generatingMockDraft ? 'Generating mock draft...' : 'Generate Mock Draft'}
-          </Button>
-          <p className="text-xs text-muted-foreground">
-            No real AI provider is used. No auto-submit/approve/release. No parent visibility until explicit release.
-          </p>
-        </Card>
-
-        <Card className="p-4 space-y-3">
-          <h2 className="font-semibold">Lifecycle Actions</h2>
-          <p className="text-sm text-muted-foreground">
-            Actions run manually. Release requires a selected version. No auto-release, no notifications, and no PDF/export.
+            Submit and approve stay internal. <span className="font-medium text-foreground">Release</span> is the step
+            that can make the selected version parent-visible — choose the correct version in Report detail first. No
+            auto-release, notifications, or PDF.
           </p>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
             <Button

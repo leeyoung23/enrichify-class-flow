@@ -253,9 +253,9 @@ export default function AppLayout() {
         </div>
       </main>
       {shouldRenderPopup ? (
-        <div className="fixed bottom-4 right-4 left-4 lg:left-auto lg:max-w-sm z-50">
+        <div className="fixed bottom-4 right-4 left-4 lg:left-auto lg:max-w-[17rem] z-50 pointer-events-none [&>*]:pointer-events-auto">
           <div
-            className="rounded-xl border bg-card shadow-lg p-4 space-y-3"
+            className="rounded-xl border bg-card shadow-md p-3 space-y-2"
             role="dialog"
             aria-label="Company News popup"
           >
@@ -265,13 +265,13 @@ export default function AppLayout() {
               </p>
             </div>
             {popupBodyPreview ? (
-              <p className="text-xs text-muted-foreground line-clamp-3">{popupBodyPreview}</p>
+              <p className="text-xs text-muted-foreground line-clamp-2">{popupBodyPreview}</p>
             ) : null}
             <div className="flex flex-wrap gap-2">
-              <Button size="sm" className="min-h-9" onClick={onPopupView}>
+              <Button size="sm" className="min-h-8 text-xs" onClick={onPopupView}>
                 View
               </Button>
-              <Button size="sm" variant="outline" className="min-h-9" onClick={onPopupDismiss}>
+              <Button size="sm" variant="outline" className="min-h-8 text-xs" onClick={onPopupDismiss}>
                 Dismiss
               </Button>
             </div>
