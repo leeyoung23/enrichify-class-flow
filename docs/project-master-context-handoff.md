@@ -1,5 +1,11 @@
 # Project Master Context Handoff
 
+## Checkpoint update (fake AI parent report source aggregation — 2026-05-02)
+
+- **`src/services/aiParentReportSourceAggregationService.js`** — `collectAiParentReportSourceEvidence` (**`fake`** mode only); **`buildMockDraftInputFromSourceEvidence`** for mock draft bridge; **no** persistence; **no** parent visibility change.
+- **Smoke:** `npm run test:supabase:ai-parent-report:source-aggregation` (no Supabase; no real data).
+- **Doc:** `docs/ai-parent-report-source-aggregation-service-smoke-checkpoint.md`. **No** SQL/RLS change. **real_ai** still blocked. Email/notification still deferred. Future: RLS-bound reads.
+
 ## Checkpoint update (manual mobile QA checklist — AI report + parent comms)
 
 - **`docs/manual-mobile-qa-ai-report-parent-communication-checkpoint.md`** — human QA before real provider keys; surfaces: staff **`AiParentReports`**, **`ParentView`** Progress Reports, **`Announcements`**, **`Sidebar`** nav; safety/privacy visual checks; recommended next **A** (UX fixes) vs **B** (staging smoke).

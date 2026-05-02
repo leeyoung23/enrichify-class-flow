@@ -1,5 +1,10 @@
 # Mobile-first QA checkpoint
 
+## Checkpoint update (fake source aggregation service — 2026-05-02)
+
+- **No UI change** in this milestone. Optional later: show aggregation output in staff **AI Parent Reports** preview.
+- **Regression awareness:** `npm run test:supabase:ai-parent-report:source-aggregation` — see `docs/ai-parent-report-source-aggregation-service-smoke-checkpoint.md`.
+
 ## Checkpoint update (product direction — parent communication + AI source copy, 2026-05-02)
 
 - **Reference:** `docs/manual-preview-product-direction-corrections.md`

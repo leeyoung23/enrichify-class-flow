@@ -1,5 +1,10 @@
 # RLS Test Checklist
 
+## Checkpoint update (fake AI parent report source aggregation smoke — 2026-05-02)
+
+- New smoke: **`npm run test:supabase:ai-parent-report:source-aggregation`** — in-process **fake** data only; **no** SQL/RLS change; **no** `real_ai` unlock; **no** parent access change.
+- Service: `src/services/aiParentReportSourceAggregationService.js`. Doc: `docs/ai-parent-report-source-aggregation-service-smoke-checkpoint.md`.
+
 ## Checkpoint update (product direction — docs/copy only, 2026-05-02)
 
 - **Reference:** `docs/manual-preview-product-direction-corrections.md` — **no** SQL/RLS edits; parent released-only and **`real_ai`** block unchanged.

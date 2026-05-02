@@ -5,6 +5,12 @@ Scope: **planning only** — no app UI changes, no runtime logic, no new service
 
 **Related:** `docs/manual-preview-product-direction-corrections.md`, `docs/ai-parent-report-blueprint-plan.md`, `docs/ai-parent-report-mvp-final-qa-checkpoint.md`, `docs/project-master-context-handoff.md`
 
+## Checkpoint (fake aggregation implemented — 2026-05-02)
+
+- **`src/services/aiParentReportSourceAggregationService.js`** — `mode: 'fake'` only; deterministic summaries; **`buildMockDraftInputFromSourceEvidence`** bridges to mock draft input shape.
+- **Smoke:** `npm run test:supabase:ai-parent-report:source-aggregation` — no Supabase; see **`docs/ai-parent-report-source-aggregation-service-smoke-checkpoint.md`**.
+- **No** SQL/RLS/UI/ParentView changes in this milestone; future milestone replaces fake summaries with RLS-bound reads.
+
 ---
 
 ## 1. Product purpose
@@ -188,29 +194,16 @@ collectAiParentReportSourceEvidence({ studentId, classId, branchId, periodStart,
 | **D** | Observations schema + UI upgrade for evidence | Sensitivity flags + confirmation path. |
 | **E** | Real provider smoke / staged **`real_ai`** unlock | Only after A–B proven; governance sign-off. |
 
-**Recommendation:** implement **B** next—a **fake/dev aggregation service** and **one smoke script** mirroring the JSON shape above, wired only in test/smoke or behind explicit dev flags—**no** UI requirement in the first cut if team prefers service-only.
+**Recommendation:** milestone **B** is implemented (fake service + smoke). **Next:** optional UI wiring to preview aggregation output, then RLS-bound aggregation behind a new mode (separate milestone).
 
 ---
 
 ## 14. Next implementation prompt (copy-paste)
 
-Use when starting the **fake aggregation service + smoke** milestone:
+Use when starting **RLS-bound aggregation** (future):
 
 ```text
-Implement planning milestone B from docs/ai-parent-report-source-aggregation-evidence-intake-plan.md only.
-
-Add a dev-only or test-only module (e.g. src/services/aiParentReportSourceAggregationFake.js) exporting:
-collectAiParentReportSourceEvidenceFake({ studentId, classId, branchId, periodStart, periodEnd })
-that returns the documented JSON shape with deterministic fake/dev strings and optional warnings/missingEvidence arrays.
-
-Add npm script test:supabase:ai-parent-report:source-aggregation-fake (or similar) running a small node smoke that:
-- uses fake UUIDs or existing smoke fixtures only,
-- never calls a real AI provider,
-- does not enable real_ai writes,
-- does not change RLS or SQL,
-- optionally imports read helpers only if they already exist and are safe in smoke context; prefer pure fake output if uncertain.
-
-Do not change AiParentReports.jsx UI unless explicitly requested in a follow-up. Do not add provider keys.
+Extend docs/ai-parent-report-source-aggregation-evidence-intake-plan.md collectAiParentReportSourceEvidence with a new mode (e.g. 'authenticated_read') that calls existing supabaseReadService helpers under JWT + RLS, returns the same output shape with redacted summaries, and adds smoke coverage using existing RLS test fixtures. Do not unlock real_ai. Do not change ParentView. No service-role frontend.
 ```
 
 ---
