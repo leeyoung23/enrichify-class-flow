@@ -5,6 +5,11 @@ Scope: **planning only** — no app UI changes, no new runtime implementation, n
 
 **Related:** `docs/ai-parent-report-source-aggregation-evidence-intake-plan.md`, `docs/ai-parent-report-source-preview-ui-checkpoint.md`, `docs/manual-preview-product-direction-corrections.md`
 
+## Checkpoint (RLS mode implemented — 2026-05-02)
+
+- Service + smoke: **`docs/ai-parent-report-rls-source-aggregation-service-smoke-checkpoint.md`**
+- **`mode: 'rls'`** and **`hybrid`** in `aiParentReportSourceAggregationService.js`; **no** DDL; **Source Evidence Preview UI** still uses **`fake`** only until a later UI milestone.
+
 ---
 
 ## 1. Current state

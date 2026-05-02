@@ -2,7 +2,7 @@
 
 ## Checkpoint update (fake source aggregation service — 2026-05-02)
 
-- **Source Evidence Preview** on **`AiParentReports.jsx`** now loads **fake** aggregation when a report is selected — see **`docs/ai-parent-report-source-preview-ui-checkpoint.md`**. Manual QA ~390px: preview card scroll, evidence item badges, Generate Mock Draft merge copy.
+- **Source Evidence Preview** on **`AiParentReports.jsx`** loads **fake** aggregation when a report is selected — see **`docs/ai-parent-report-source-preview-ui-checkpoint.md`**. **`rls`** mode exists on the **service** only until UI wiring — **`docs/ai-parent-report-rls-source-aggregation-service-smoke-checkpoint.md`**. Manual QA ~390px: preview card scroll, evidence item badges, Generate Mock Draft merge copy.
 - **Regression awareness:** `npm run test:supabase:ai-parent-report:source-aggregation` — detail in `docs/ai-parent-report-source-aggregation-service-smoke-checkpoint.md`.
 
 ## Checkpoint update (product direction — parent communication + AI source copy, 2026-05-02)

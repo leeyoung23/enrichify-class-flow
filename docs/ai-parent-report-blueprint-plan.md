@@ -15,7 +15,11 @@ Scope: planning-only blueprint for AI-assisted parent progress reports before pr
 
 - **`src/pages/AiParentReports.jsx`** — **Source Evidence Preview** calls **`collectAiParentReportSourceEvidence`** (`fake`); **no** new Supabase reads for aggregation; **Generate Mock Draft** merges form + **`buildMockDraftInputFromSourceEvidence`**.
 - Doc: **`docs/ai-parent-report-source-preview-ui-checkpoint.md`**.
-- **Recommended next:** milestone **B** — RLS-bound aggregation (same output shape).
+- **Recommended next (optional):** wire preview to **`rls`** / **`hybrid`** when product-ready.
+
+## Checkpoint update (RLS source aggregation service — 2026-05-02)
+
+- **`collectAiParentReportSourceEvidence`**: modes **`rls`**, **`hybrid`**; **`docs/ai-parent-report-rls-source-aggregation-service-smoke-checkpoint.md`**; smoke **`test:supabase:ai-parent-report:rls-source-aggregation`**. **No** SQL DDL; UI unchanged.
 
 ## Checkpoint update (product direction — copy only, 2026-05-02)
 

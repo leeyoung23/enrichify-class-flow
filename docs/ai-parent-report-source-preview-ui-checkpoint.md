@@ -5,7 +5,8 @@ Scope: **staff UI + fake aggregation only** — no new Supabase source reads, no
 
 ## Summary
 
-- **`src/pages/AiParentReports.jsx`** now calls **`collectAiParentReportSourceEvidence({ mode: 'fake' })`** when a report is selected (demo and authenticated UIs). **No** extra Supabase queries for aggregation.
+- **`src/pages/AiParentReports.jsx`** calls **`collectAiParentReportSourceEvidence({ mode: 'fake' })`** when a report is selected (demo and authenticated UIs). **No** extra Supabase queries for aggregation in the UI path.
+- **`mode: 'rls'`** / **`hybrid`** exist on the **service** for future wiring — see **`docs/ai-parent-report-rls-source-aggregation-service-smoke-checkpoint.md`**.
 - **Source Evidence Preview** card shows fake summaries, **warnings**, **missingEvidence**, and **evidenceItems** with **classification** (including **never_send_to_provider** as not for external providers).
 - **Generate Mock Draft** merges **manual form fields** with **`buildMockDraftInputFromSourceEvidence`** output — non-empty manual fields win.
 - Demo mock draft structured sections use **`buildMockAiParentReportStructuredSections`** for parity with the authenticated mock path.

@@ -10,8 +10,8 @@ Scope: **planning only** — no app UI changes, no runtime logic, no new service
 - **`src/services/aiParentReportSourceAggregationService.js`** — `mode: 'fake'` only; deterministic summaries; **`buildMockDraftInputFromSourceEvidence`** bridges to mock draft input shape.
 - **Smoke:** `npm run test:supabase:ai-parent-report:source-aggregation` — no Supabase; see **`docs/ai-parent-report-source-aggregation-service-smoke-checkpoint.md`**.
 - **Final pass (docs):** **`docs/ai-parent-report-source-aggregation-service-pass-checkpoint.md`** — milestone **A** done; UI checkpoint **`docs/ai-parent-report-source-preview-ui-checkpoint.md`**.
-- **Next:** milestone **B** — RLS-bound aggregation reads (same JSON shape).
-- **No** SQL/RLS/UI/ParentView changes in the implementation milestone; future work replaces fake summaries with RLS-bound reads.
+- **Next:** optional **`AiParentReports`** wiring to **`mode: 'rls'`** / **`hybrid`** — service + smoke: **`docs/ai-parent-report-rls-source-aggregation-service-smoke-checkpoint.md`**.
+- **No** SQL/RLS/UI/ParentView changes in the fake-preview milestone; RLS reads live on the **service** for staff callers.
 
 ---
 

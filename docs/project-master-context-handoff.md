@@ -4,7 +4,7 @@
 
 - **`src/services/aiParentReportSourceAggregationService.js`** — `collectAiParentReportSourceEvidence` (**`fake`** mode only); **`buildMockDraftInputFromSourceEvidence`** for mock draft bridge; **no** persistence; **no** parent visibility change.
 - **Smoke:** `npm run test:supabase:ai-parent-report:source-aggregation` (no Supabase; no real data).
-- **Docs:** `docs/ai-parent-report-source-aggregation-service-smoke-checkpoint.md` (detail), **`docs/ai-parent-report-source-aggregation-service-pass-checkpoint.md`**, UI **`docs/ai-parent-report-source-preview-ui-checkpoint.md`** (milestone **A** done: fake preview + mock-draft merge). **No** SQL/RLS change for aggregation. **real_ai** still blocked. Email/notification still deferred. **Next:** RLS-bound aggregation reads.
+- **Docs:** `docs/ai-parent-report-source-aggregation-service-smoke-checkpoint.md` (detail), **`docs/ai-parent-report-source-aggregation-service-pass-checkpoint.md`**, UI **`docs/ai-parent-report-source-preview-ui-checkpoint.md`** (milestone **A** done: fake preview + mock-draft merge). **RLS aggregation:** **`docs/ai-parent-report-rls-source-aggregation-service-smoke-checkpoint.md`**, plan **`docs/ai-parent-report-rls-source-aggregation-plan.md`** — **`mode: 'rls'`** / **`hybrid`** on service; **no** DDL; UI still **fake** preview. **real_ai** still blocked. Email/notification still deferred.
 
 ## Checkpoint update (manual mobile QA checklist — AI report + parent comms)
 

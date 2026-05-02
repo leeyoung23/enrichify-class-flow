@@ -4,7 +4,12 @@
 
 - New smoke: **`npm run test:supabase:ai-parent-report:source-aggregation`** — in-process **fake** data only; **no** SQL/RLS change; **no** `real_ai` unlock; **no** parent access change.
 - Service: `src/services/aiParentReportSourceAggregationService.js`. Docs: **`docs/ai-parent-report-source-aggregation-service-smoke-checkpoint.md`**, pass seal **`docs/ai-parent-report-source-aggregation-service-pass-checkpoint.md`**.
-- **UI:** **`docs/ai-parent-report-source-preview-ui-checkpoint.md`** — staff preview uses **fake** aggregation only (no new source reads). **Next:** RLS-bound aggregation.
+- **UI:** **`docs/ai-parent-report-source-preview-ui-checkpoint.md`** — staff preview uses **fake** aggregation only (no new source reads).
+
+## Checkpoint update (RLS AI parent report source aggregation — 2026-05-02)
+
+- Smoke: **`npm run test:supabase:ai-parent-report:rls-source-aggregation`** — **`mode: 'rls'`** / **`hybrid`**; existing read helpers + JWT only; **no** DDL.
+- Doc: **`docs/ai-parent-report-rls-source-aggregation-service-smoke-checkpoint.md`**. UI still **fake** preview until explicit wiring.
 
 ## Checkpoint update (product direction — docs/copy only, 2026-05-02)
 
