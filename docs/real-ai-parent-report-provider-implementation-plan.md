@@ -9,6 +9,8 @@ Scope: **planning only** — defines how to implement a **real** AI provider for
 
 **Edge HTTP final checkpoint (docs):** `docs/real-ai-parent-report-edge-http-final-checkpoint.md` — summarizes skeleton milestone **`b89239c`**; next recommended step **A** (secret/model planning + dev/staging smoke planning).
 
+**MVP final QA (docs):** `docs/ai-parent-report-mvp-final-qa-checkpoint.md` — end-to-end MVP posture before real keys; complements **`docs/real-ai-provider-secret-model-smoke-plan.md`**.
+
 **Related documents (read first):**
 
 - `docs/real-ai-parent-report-provider-boundary-plan.md` — architecture, data rules, contract sketch

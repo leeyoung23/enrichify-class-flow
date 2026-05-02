@@ -3,6 +3,8 @@
 Date: 2026-05-02  
 Scope: **planning only** — provisional provider/model choice, secret naming, safe setup procedure, and smoke workflow **before** setting keys or calling providers
 
+**MVP QA freeze reference:** `docs/ai-parent-report-mvp-final-qa-checkpoint.md` — decision **A vs B** before keys/paid AI.
+
 **Related:**
 
 - `docs/real-ai-parent-report-edge-http-final-checkpoint.md`

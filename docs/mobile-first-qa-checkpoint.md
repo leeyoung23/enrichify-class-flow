@@ -1,5 +1,10 @@
 # Mobile-first QA checkpoint
 
+## Checkpoint update (AI parent report MVP final QA)
+
+- Cross-reference: **`docs/ai-parent-report-mvp-final-qa-checkpoint.md`** — MVP freeze before paid AI; recommends **manual mobile QA** (~390px / ~768px) on **`AI Parent Reports`** + **ParentView Progress Reports** when pausing before secrets.
+- Preserve staff-only routes, parent released-only boundary, no PDF/export in parent UI.
+
 ## Checkpoint update (mock AI parent report draft UI finalization)
 
 - Staff `Generate Mock Draft` milestone is finalized in docs:

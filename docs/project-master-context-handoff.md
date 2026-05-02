@@ -1,5 +1,10 @@
 # Project Master Context Handoff
 
+## Checkpoint update (AI parent report MVP final QA — docs only)
+
+- **`docs/ai-parent-report-mvp-final-qa-checkpoint.md`** — summarizes MVP scope (SQL/RLS, staff/parent flows, mock AI, adapters, Edge HTTP skeleton); validation snapshot; **CHECK** notes; gaps before production real AI; decision **B** (manual mobile QA) vs **A** (staging secret + real smoke) when budget allows.
+- **`docs/real-ai-provider-secret-model-smoke-plan.md`** remains the pre-key planning reference.
+
 ## Checkpoint update (real AI Edge HTTP skeleton — docs finalization)
 
 - **Docs-only:** `docs/real-ai-parent-report-edge-http-final-checkpoint.md` — seals milestone **`b89239c`** (real OpenAI-compatible HTTP in `_shared`; **no** persistence; **`real_ai`** blocked; optional smoke **CHECK** without secrets).

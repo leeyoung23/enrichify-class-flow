@@ -1,5 +1,9 @@
 # RLS Test Checklist
 
+## Checkpoint update (AI parent report MVP final QA)
+
+- Docs-only: **`docs/ai-parent-report-mvp-final-qa-checkpoint.md`** — parent released-only + **`real_ai`** blocked unchanged; no SQL/RLS edits in this milestone; smoke snapshot listed for regression awareness.
+
 ## Checkpoint update (real AI Edge HTTP skeleton — docs final)
 
 - **`docs/real-ai-parent-report-edge-http-final-checkpoint.md`** — **no** SQL/RLS change; **`real_ai`** inserts still blocked; parent released-only posture unchanged; optional provider HTTP remains staging/key-gated.
