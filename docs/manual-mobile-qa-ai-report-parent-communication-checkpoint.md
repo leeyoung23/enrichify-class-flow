@@ -3,6 +3,8 @@
 Date: 2026-05-02  
 Scope: **QA checklist + checkpoint documentation only** — human preview pass **before** real provider keys, paid calls, PDF/export, or notification automation
 
+**Product direction (2026-05-02):** See **`docs/manual-preview-product-direction-corrections.md`**. Staff nav label **Parent Communication** (route `/parent-updates`); **Announcements** vs class learning updates distinction; AI reports long-term = system evidence + teacher review, manual fields = temporary; teacher parent-notice media = MVP view-only with future supervisor/HQ release path.
+
 **Related:** `docs/ai-parent-report-mvp-final-qa-checkpoint.md`, `docs/mobile-first-qa-checkpoint.md`, `docs/real-ai-provider-secret-model-smoke-plan.md`
 
 **Reference routes/components (inspect only; no code changes in this milestone):**  
@@ -61,6 +63,7 @@ Preview **`AI Parent Reports`** at desktop and ~390px width.
 | ☐ | **Generate Mock Draft** affordance clear (not confused with real AI) | |
 | ☐ | Lifecycle actions clear (**Submit**, **Approve**, **Release**, **Archive**) | |
 | ☐ | **Release** implies explicit parent visibility change — copy not misleading | |
+| ☐ | **Report source data preview** card readable; clearly **not** live data; no new network calls | |
 | ☐ | **No** `real_ai` option exposed to staff UI | |
 | ☐ | **No** provider keys, model IDs, or debug metadata shown | |
 | ☐ | **No** PDF/export buttons or promises | |

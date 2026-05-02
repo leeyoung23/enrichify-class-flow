@@ -26,7 +26,7 @@ export default function HqAlertsPanel({ missingReports, incompleteAttendance, pe
     <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
       <SimpleList title="Students with Missing Reports" items={missingReports} emptyText="All reports are up to date." />
       <SimpleList title="Classes with Incomplete Attendance" items={incompleteAttendance} emptyText="All attendance has been completed." />
-      <SimpleList title="Parent Updates Pending Approval" items={pendingApprovals} emptyText="No parent updates are waiting for approval." />
+      <SimpleList title="Parent Communication Pending Approval" items={pendingApprovals} emptyText="No parent communication items are waiting for approval." />
       <SimpleList title="Leads & Enrolment Summary" items={leadsSummary} emptyText="No lead activity available." />
     </div>
   );

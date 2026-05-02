@@ -1,5 +1,10 @@
 # RLS Test Checklist
 
+## Checkpoint update (product direction — docs/copy only, 2026-05-02)
+
+- **Reference:** `docs/manual-preview-product-direction-corrections.md` — **no** SQL/RLS edits; parent released-only and **`real_ai`** block unchanged.
+- Optional regression awareness: staff labels now say **Parent Communication**; routes unchanged (`/parent-updates`).
+
 ## Checkpoint update (manual mobile QA — AI report + parent communication)
 
 - QA runbook: **`docs/manual-mobile-qa-ai-report-parent-communication-checkpoint.md`** — confirms parent **released-only** display and **no** draft/metadata leak **by inspection**; complements automated smokes.

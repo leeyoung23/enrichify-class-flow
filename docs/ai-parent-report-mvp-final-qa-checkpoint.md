@@ -4,7 +4,7 @@ Date: 2026-05-02
 Scope: **documentation-only** — end-to-end **MVP** posture for AI parent reports **before** any real provider key, paid call, or **`real_ai`** unlock
 
 **Related checklists and plans:**  
-`docs/ai-parent-report-blueprint-plan.md`, `docs/real-ai-parent-report-provider-boundary-plan.md`, `docs/real-ai-parent-report-edge-http-final-checkpoint.md`, `docs/real-ai-provider-secret-model-smoke-plan.md`, `docs/project-master-context-handoff.md`, `docs/rls-test-checklist.md`, `docs/mobile-first-qa-checkpoint.md`
+`docs/manual-preview-product-direction-corrections.md`, `docs/ai-parent-report-blueprint-plan.md`, `docs/real-ai-parent-report-provider-boundary-plan.md`, `docs/real-ai-parent-report-edge-http-final-checkpoint.md`, `docs/real-ai-provider-secret-model-smoke-plan.md`, `docs/project-master-context-handoff.md`, `docs/rls-test-checklist.md`, `docs/mobile-first-qa-checkpoint.md`
 
 ---
 

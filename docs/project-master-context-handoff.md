@@ -597,6 +597,13 @@ This master handoff preserves product direction, implemented milestones, archite
 - Parent-facing announcements/events remain future.
 - No SQL/RLS changes were introduced in this milestone.
 
+## 0) Product language — Parent Communication vs Announcements (2026-05-02)
+
+- **Parent Communication** (staff route **`/parent-updates`**, formerly “Parent Updates” in copy): teacher-created **class updates**—memories, quick comments, weekly progress—not **official** centre notices or events.
+- **Announcements** module: **Requests** (internal tasks), **Company News** (internal), **Parent Notices** (official parent-facing). Do not conflate with Parent Communication.
+- **AI Parent Reports:** long term, drafts should use **system evidence** and **teacher review**; manual fields in MVP are **source notes**; see `docs/manual-preview-product-direction-corrections.md`.
+- **Email/notification automation:** still **deferred**.
+
 ## 1) Product identity and vision
 
 **Young’s Learners / Enrichify Class Flow** is not just an admin dashboard.  
@@ -626,7 +633,7 @@ Implemented milestones to preserve as "already done":
 - Supabase read/write service patterns (anon client + JWT model).
 - MyTasks write flow.
 - Attendance write flow.
-- Parent Updates Quick Comment draft/release flow.
+- Parent Communication (route `/parent-updates`) Quick Comment draft/release flow.
 - Weekly Progress Report draft/release flow.
 - Fee/payment proof exception workflow.
 - Staff Time Clock full vertical.

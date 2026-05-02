@@ -1500,7 +1500,7 @@ export default function Announcements() {
     <div>
       <PageHeader
         title="Announcements"
-        description="Internal requests, reminders, and company updates"
+        description="Requests: internal staff tasks and reminders. Company News: internal staff news. Parent Notices: official parent-facing centre notices and events. For teacher/class learning updates (memories, comments, weekly progress), use Parent Communication at /parent-updates—not a substitute for official notices."
         action={activeFilter === 'Parent Notices'
           ? (((isDemoMode && canCreateInDemo) || (!isDemoMode && canCreateInAuth)) ? (
             <Button className="min-h-10" onClick={() => setParentNoticeCreateOpen((prev) => !prev)}>
@@ -1531,6 +1531,16 @@ export default function Announcements() {
             </Button>
           ) : null))}
       />
+
+      <Card className="p-4 border-dashed mb-4">
+        <p className="text-sm font-medium mb-2">How this page fits together</p>
+        <ul className="text-sm text-muted-foreground space-y-1.5 list-disc pl-5">
+          <li><span className="text-foreground font-medium">Requests</span> — internal staff tasks and reminders.</li>
+          <li><span className="text-foreground font-medium">Company News</span> — internal staff news and HQ updates.</li>
+          <li><span className="text-foreground font-medium">Parent Notices</span> — official parent-facing centre notices and events.</li>
+          <li><span className="text-foreground font-medium">Parent Communication</span> (route <span className="font-mono text-xs">/parent-updates</span>) — teacher-created class learning evidence and weekly updates; not official notices.</li>
+        </ul>
+      </Card>
 
       {!isDemoMode && !canUseSupabaseAnnouncements ? (
         <Card className="p-5 border-dashed">
@@ -2087,7 +2097,7 @@ export default function Announcements() {
                 <p className="font-medium">Parent notices creation shell</p>
               </div>
               <p className="text-sm text-muted-foreground">
-                Parent notice draft/publish/archive flow is enabled here for allowed staff roles. Media controls are staff-side only in this detail panel, with explicit release required before parent visibility.
+                Parent notice draft/publish/archive flow is enabled here for allowed staff roles. Media controls are staff-side only in this detail panel, with explicit release required before parent visibility. Email and notification automation remain deferred.
               </p>
             </Card>
           ) : null}
@@ -2178,7 +2188,7 @@ export default function Announcements() {
 
                   {role === ROLES.TEACHER ? (
                     <p className="text-xs text-muted-foreground">
-                      Teacher role is view-only for parent-facing creation in this milestone.
+                      Teacher role is view-only for parent-facing creation in this MVP. Future: teachers may submit event or class content for supervisor/HQ review before parent release.
                     </p>
                   ) : null}
 
@@ -2200,7 +2210,7 @@ export default function Announcements() {
                     <div>
                       <p className="text-sm font-medium">Parent-facing media</p>
                       <p className="text-xs text-muted-foreground mt-1">
-                        Upload defaults to unreleased. Use "Release to Parents" only when approved. Signed URL preview only; no public URL.
+                        Upload defaults to unreleased. Use &quot;Release to Parents&quot; only when approved. Signed URL preview only; no public URL.
                       </p>
                     </div>
 
@@ -2253,7 +2263,7 @@ export default function Announcements() {
                       </div>
                     ) : (
                       <p className="text-xs text-muted-foreground">
-                        Teacher role is view-only for parent-facing media in this milestone.
+                        Teacher role is view-only in this MVP. Future: teachers may submit event/class photos for supervisor/HQ review before parent release.
                       </p>
                     )}
 

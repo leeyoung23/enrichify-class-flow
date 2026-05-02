@@ -1,5 +1,10 @@
 # Mobile-first QA checkpoint
 
+## Checkpoint update (product direction — parent communication + AI source copy, 2026-05-02)
+
+- **Reference:** `docs/manual-preview-product-direction-corrections.md`
+- Re-run spot checks on **~390px** for: **Parent Communication** page title/subtitle, **Announcements** “how this page fits” card, **AI Parent Reports** “Report source data preview” card + expanded manual/mock copy (readability, no cramped overflow).
+
 ## Checkpoint update (manual mobile QA — AI report + parent communication)
 
 - **Runbook:** **`docs/manual-mobile-qa-ai-report-parent-communication-checkpoint.md`** — staff **`AI Parent Reports`**, **ParentView Progress Reports**, parent comms/announcements/memories; **~390px** + desktop; **no** code changes in this doc milestone.

@@ -662,7 +662,7 @@ export default function AiParentReports() {
     <div className="space-y-6">
       <PageHeader
         title="AI Parent Reports"
-        description="Staff-only UI shell for draft/review/release workflow using manual/mock source only. No real AI provider and no PDF/export."
+        description="Staff-only draft, review, and release workflow. Manual fields below are temporary source notes or overrides while the product matures. Long term, AI drafts should pull from approved system evidence (attendance, homework, worksheets, observations, lesson progression, memories, teacher-approved notes)—teachers refine, not rewrite everything from scratch. No report reaches parents without explicit staff release. No real AI provider in this MVP and no PDF/export."
       />
 
       <Card className="p-4">
@@ -724,6 +724,9 @@ export default function AiParentReports() {
 
         <Card className="p-4 space-y-3 xl:col-span-2">
           <h2 className="font-semibold">Create Draft (Manual/Demo Data)</h2>
+          <p className="text-sm text-muted-foreground">
+            These fields identify a draft report for testing. They are not the long-term authoring surface—future versions should bind reports to real enrolment and pull narrative sections from system evidence plus teacher edits.
+          </p>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div className="space-y-1.5">
               <Label htmlFor="apr-student-id">studentId</Label>
@@ -799,6 +802,21 @@ export default function AiParentReports() {
           </Button>
         </Card>
       </div>
+
+      <Card className="p-4 space-y-3">
+        <h2 className="font-semibold">Report source data preview</h2>
+        <p className="text-sm text-muted-foreground">
+          Current mock mode uses safe demo or manual source notes. Future AI drafts should be generated from approved system evidence, not typing alone. The Observations area elsewhere is planned to feed evidence over time. Future teachers may upload homework, worksheets, or photos as evidence—AI may analyse later; staff review and explicit release remain required before parents see anything.
+        </p>
+        <ul className="text-sm space-y-2 text-muted-foreground border rounded-lg divide-y">
+          <li className="px-3 py-2"><span className="font-medium text-foreground">Attendance</span> — will be analysed from attendance records (preview: demo labels only).</li>
+          <li className="px-3 py-2"><span className="font-medium text-foreground">Homework</span> — will be analysed from homework tasks, submissions, and feedback (preview: not wired).</li>
+          <li className="px-3 py-2"><span className="font-medium text-foreground">Worksheets</span> — future upload or scan evidence source (not implemented).</li>
+          <li className="px-3 py-2"><span className="font-medium text-foreground">Observations</span> — future teacher observation evidence source (planned).</li>
+          <li className="px-3 py-2"><span className="font-medium text-foreground">Lesson progression</span> — future class or session curriculum progress source (not wired).</li>
+          <li className="px-3 py-2"><span className="font-medium text-foreground">Memories / media</span> — future selected or released learning evidence source (release-gated).</li>
+        </ul>
+      </Card>
 
       <Card className="p-4 space-y-4">
         <h2 className="font-semibold">Report Detail</h2>
@@ -886,6 +904,9 @@ export default function AiParentReports() {
       <div className="grid grid-cols-1 xl:grid-cols-2 gap-4">
         <Card className="p-4 space-y-3">
           <h2 className="font-semibold">Create Version (manual/mock_ai only)</h2>
+          <p className="text-sm text-muted-foreground">
+            Text areas are temporary manual sections or overrides. In production vision, most content should synthesise from approved evidence; teachers validate and edit. No parent release from this panel—lifecycle actions below stay explicit.
+          </p>
           <div className="space-y-1.5">
             <Label>generationSource</Label>
             <Select
@@ -950,8 +971,7 @@ export default function AiParentReports() {
         <Card className="p-4 space-y-3">
           <h2 className="font-semibold">Generate Mock Draft</h2>
           <p className="text-sm text-muted-foreground">
-            Staff-side mock draft generation only. This does not send anything to parents. Submit/approve/release
-            remains manual and required.
+            Staff-side mock draft generation only—fills sections from your safe demo inputs, not from live Supabase feeds yet. Treat fields as stand-in source notes; long term they should mirror automatic pulls from attendance, homework, uploads, observations, and progression data. This does not send anything to parents. Submit, approve, and release remain manual and required.
           </p>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div className="space-y-1.5 sm:col-span-2">

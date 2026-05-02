@@ -3,6 +3,13 @@
 Date: 2026-05-02  
 Scope: planning-only blueprint for AI-assisted parent progress reports before provider integration
 
+## Checkpoint update (product direction — copy only, 2026-05-02)
+
+- **Reference:** `docs/manual-preview-product-direction-corrections.md`
+- **UI copy** on `AiParentReports.jsx` clarifies: manual/mock inputs are **temporary**; long-term narrative should come from **approved system evidence** (attendance, homework, uploads, observations, progression, memories, teacher-approved notes) with **teacher review**; **no** parent release without explicit staff release.
+- **Report source data preview** card: static **demo** labels only—no new Supabase reads; no `real_ai` unlock.
+- **SQL/RLS:** unchanged in this checkpoint.
+
 ## Checkpoint update (provider adapter skeleton — fake/disabled only)
 
 - Server-side adapter module: `src/services/aiParentReportProviderAdapter.js`.

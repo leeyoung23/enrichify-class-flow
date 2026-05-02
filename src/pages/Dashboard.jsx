@@ -158,7 +158,7 @@ export default function Dashboard() {
                 </div>
                 <div className="flex gap-2 flex-wrap">
                   <Button asChild variant="outline">
-                    <Link to="/parent-updates">Open Parent Updates</Link>
+                    <Link to="/parent-updates">Open Parent Communication</Link>
                   </Button>
                   <Button asChild>
                     <Link to="/class-session">Start Class Session</Link>

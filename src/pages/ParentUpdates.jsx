@@ -671,15 +671,19 @@ export default function ParentUpdates() {
   return (
     <div>
       <PageHeader
-        title="Parent Updates"
-        description={isTeacher ? 'Manage quick parent comments and weekly progress reports for assigned demo students. Nothing is sent automatically.' : 'Review parent comments and weekly progress reports in demo mode only.'}
+        title="Parent Communication"
+        description={
+          isTeacher
+            ? 'Create teacher-approved class memories, quick comments, and weekly progress updates. Official notices and events live under Announcements. Nothing is sent automatically. Parents only see approved or released content.'
+            : 'Review teacher-created class memories, quick comments, and weekly progress. Official notices and events live under Announcements. Nothing is sent automatically. Parents only see approved or released content.'
+        }
       />
 
       {showNoClassesState ? (
         <EmptyState
           icon={MessageSquarePlus}
           title="No classes available"
-          description="Add or assign a class before creating parent updates."
+          description="Add or assign a class before using Parent Communication."
         />
       ) : (
         <div className="grid grid-cols-1 lg:grid-cols-5 gap-6">
@@ -770,8 +774,8 @@ export default function ParentUpdates() {
             )}
             {isTeacher && (
               <Card className="p-6">
-                <h3 className="font-semibold mb-2">Parent Updates</h3>
-                <p className="text-sm text-muted-foreground mb-4">Create teacher-approved quick comments after class, or prepare fixed weekly progress reports for parent review.</p>
+                <h3 className="font-semibold mb-2">Class updates & communication</h3>
+                <p className="text-sm text-muted-foreground mb-4">This is not the Announcements page—use Announcements for official centre notices and events. Here, create quick comments, weekly progress, and class memories for review. Future versions may add worksheet or photo evidence for AI context; parent visibility stays release-gated.</p>
 
                 <Card className="p-4 border-dashed mb-4">
                   <h4 className="font-medium mb-1">Add Memory</h4>
