@@ -6,7 +6,8 @@ Type: **documentation only** — seals UI milestone **`74a71bf`** (*Improve navi
 **Code reference:** `src/pages/ParentView.jsx`, `src/pages/MyTasks.jsx`, `src/pages/Branches.jsx`, `src/pages/Classes.jsx`, `src/pages/Teachers.jsx`, `src/pages/Students.jsx` (as of **`74a71bf`**).
 
 **Shorter index:** `docs/navigation-clickability-simplicity-fixes-checkpoint.md`  
-**Audit foundation:** `docs/teacher-simplicity-navigation-clickability-audit.md`
+**Audit foundation:** `docs/teacher-simplicity-navigation-clickability-audit.md`  
+**Manual visual QA runbook:** `docs/manual-qa-navigation-clickability-simplicity-checkpoint.md`
 
 ---
 
@@ -96,6 +97,8 @@ Runs were executed when **`src/`** changed for that commit; **docs-only** edits 
 
 **Recommendation:** **A** first (quick confirmation that clarity changes read well), then **B** before **C** — teachers should finish upload/review flows confidently before real AI wiring.
 
+**Full runbook:** **`docs/manual-qa-navigation-clickability-simplicity-checkpoint.md`** — desktop + **~390px** checklists, safety/privacy §6, known risks §7, decision rule §8.
+
 ---
 
 ## 9. Next implementation prompt (manual visual QA)
@@ -112,3 +115,5 @@ Viewports: desktop + ~390px. Fake/dev data only. No code changes unless blocking
 
 Report: pass/fail notes + screenshots optional.
 ```
+
+See **`docs/manual-qa-navigation-clickability-simplicity-checkpoint.md`** for expanded checklists and screenshot suggestions.

@@ -1,5 +1,9 @@
 # Project Master Context Handoff
 
+## Checkpoint update (manual QA — navigation clarity pass, 2026-05-02)
+
+- **Docs-only:** **`docs/manual-qa-navigation-clickability-simplicity-checkpoint.md`** — screenshot-oriented QA before next implementation: ParentView history UX, My Tasks grouping, setup card affordances; **§6** safety/privacy visual audit; **§8** decision rule (targeted UI fixes vs **Teacher upload-step simplification** before real provider smoke). UI baseline **`74a71bf`**; cross-ref **`docs/navigation-clickability-simplicity-fixes-final-checkpoint.md`**. **No** runtime changes in this doc milestone.
+
 ## Checkpoint update (navigation clarity — docs sealed, 2026-05-02)
 
 - **Docs-only:** **`docs/navigation-clickability-simplicity-fixes-final-checkpoint.md`** — ParentView latest/history (**slice(1)**, **3** older cap, expand/collapse), My Tasks groups (**Upload / Reply / Other / Completed**), setup directory preview + reduced fake-click affordance, teacher simplicity §5, validation snapshot **`74a71bf`**, future work, **recommended next A → B**, copy-paste manual QA prompt §9. Cross-updates: **`docs/navigation-clickability-simplicity-fixes-checkpoint.md`**, **`docs/teacher-simplicity-navigation-clickability-audit.md`**, **`docs/mobile-first-qa-checkpoint.md`**, **`docs/rls-test-checklist.md`**. **No** `src/` in this doc milestone.

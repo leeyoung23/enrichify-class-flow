@@ -1,5 +1,9 @@
 # RLS Test Checklist
 
+## Checkpoint update (manual visual QA — navigation clarity, 2026-05-02)
+
+- **Human runbook (no automated RLS assert):** **`docs/manual-qa-navigation-clickability-simplicity-checkpoint.md`** — confirms parent-facing **published-only** boundaries **by inspection** on ParentView; **no** DDL; **fake/dev data only**. Does **not** replace **`npm run test:supabase:parent-announcements`** when **`src/`** touches parent announcements — complements automation.
+
 ## Checkpoint update (navigation clarity — sealed doc, 2026-05-02)
 
 - **`docs/navigation-clickability-simplicity-fixes-final-checkpoint.md`** — validation snapshot **`74a71bf`**; **docs-only** edits **after** that commit **do not** require smokes unless **`src/`** changes. UI milestone **no** DDL.
