@@ -1,5 +1,9 @@
 # RLS Test Checklist
 
+## Checkpoint update (manual visual QA — AI report hybrid source preview, 2026-05-02)
+
+- **Human runbook (no automated RLS assert):** **`docs/manual-qa-ai-report-hybrid-source-preview-checkpoint.md`** — staff **AI Parent Reports** at **desktop** + **~390px**; confirms hybrid preview UX and **no** SQL/env/provider leak **by inspection** before real provider smoke. **Fake/dev data only**; **no** `real_ai` / ParentView change. Complements smokes in **`docs/ai-parent-report-source-preview-hybrid-ui-final-checkpoint.md`** §8.
+
 ## Checkpoint update (AI parent report Source Evidence Preview hybrid UI — 2026-05-02)
 
 - **UI (`AiParentReports.jsx`):** **demo** → **`mode: 'fake'`**; **authenticated staff** → **`mode: 'hybrid'`** (JWT-scoped reads via existing service — **no** DDL). **Generate Mock Draft** aligned with same bundle path; missing evidence **informational** only. **No** ParentView change; **no** `real_ai`. **Canonical reference:** **`docs/ai-parent-report-source-preview-hybrid-ui-final-checkpoint.md`** (shorter index: **`docs/ai-parent-report-source-preview-hybrid-ui-checkpoint.md`**).

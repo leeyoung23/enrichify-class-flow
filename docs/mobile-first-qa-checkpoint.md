@@ -1,5 +1,10 @@
 # Mobile-first QA checkpoint
 
+## Checkpoint update (manual visual QA — hybrid source preview, 2026-05-02)
+
+- **Runbook:** **`docs/manual-qa-ai-report-hybrid-source-preview-checkpoint.md`** — desktop + **~390px** checklists for **AI Parent Reports** Source Evidence Preview (**demo** vs **system** badge, summaries, Heads-up / Fallback, evidence items, **Generate Mock Draft**, lifecycle, safety/privacy). **Use fake/dev data only**; **no** real provider calls. **Decision rule:** fix UI/copy issues before real provider smoke if they affect teacher understanding; else proceed to staging provider smoke or evidence planning.
+- Complements **`docs/ai-parent-report-source-preview-hybrid-ui-final-checkpoint.md`** §10–§11.
+
 ## Checkpoint update (Source Evidence Preview hybrid — 2026-05-02)
 
 - **Source Evidence Preview** on **`AiParentReports.jsx`**: **demo** → **fake** mode; **authenticated** → **hybrid** (system evidence where available, safe fallback for gaps). Labels **Demo/fallback evidence** vs **System evidence preview**; missing sources **informational**, not fatal. **`Generate Mock Draft`** uses current preview bundle or re-collects with same mode. **Runbook + validation snapshot:** **`docs/ai-parent-report-source-preview-hybrid-ui-final-checkpoint.md`**. **Recommended next:** **manual visual QA** (desktop + ~390px) before real provider work — see final doc §10–§11.

@@ -1,5 +1,10 @@
 # Project Master Context Handoff
 
+## Checkpoint update (manual visual QA runbook — hybrid source preview, 2026-05-02)
+
+- **Docs-only:** **`docs/manual-qa-ai-report-hybrid-source-preview-checkpoint.md`** — human QA for **Source Evidence Preview** (hybrid + demo) on **desktop** and **~390px**; surfaces, checklists, safety/privacy, known risks, next-milestone decision rule. **No** `src/` changes. Use before **real provider** key/call smoke; **no** ParentView change; **no** `real_ai` unlock.
+- Cross-refs: **`docs/ai-parent-report-source-preview-hybrid-ui-final-checkpoint.md`**, **`docs/mobile-first-qa-checkpoint.md`**, **`docs/rls-test-checklist.md`**.
+
 ## Checkpoint update (Source Evidence Preview hybrid UI — docs finalization, 2026-05-02)
 
 - **Docs-only:** canonical sealed reference **`docs/ai-parent-report-source-preview-hybrid-ui-final-checkpoint.md`** — mode selection, preview/mock-draft behavior, safety, validation snapshot (**`d235344`**), future work, **recommended next A** (manual visual QA), copy-paste prompt §11. Cross-updates: **`docs/ai-parent-report-source-preview-hybrid-ui-checkpoint.md`**, **`docs/ai-parent-report-source-preview-hybrid-ui-plan.md`**, **`docs/ai-parent-report-source-preview-ui-checkpoint.md`**, **`docs/ai-parent-report-rls-source-aggregation-service-smoke-checkpoint.md`**, **`docs/mobile-first-qa-checkpoint.md`**, **`docs/rls-test-checklist.md`**. **No** `src/` changes in this doc milestone.
