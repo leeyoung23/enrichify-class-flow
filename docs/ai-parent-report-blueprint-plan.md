@@ -10,7 +10,9 @@ Scope: planning-only blueprint for AI-assisted parent progress reports before pr
 - Edge scaffold: `supabase/functions/generate-ai-parent-report-draft/index.ts`.
 - Smoke: `npm run test:supabase:ai-parent-report:provider-adapter`.
 - No real provider wiring; `real_ai` persistence remains blocked in `createAiParentReportVersion`.
-- Checkpoint: `docs/ai-parent-report-provider-adapter-skeleton-checkpoint.md`.
+- Checkpoint: `docs/ai-parent-report-provider-adapter-skeleton-checkpoint.md`
+- Final docs checkpoint: `docs/ai-parent-report-provider-adapter-skeleton-final-checkpoint.md`
+- Recommended next focus: **Edge deploy/bundling check (fake only)** before real provider keys.
 
 ## Checkpoint update (mock AI draft service + smoke path)
 

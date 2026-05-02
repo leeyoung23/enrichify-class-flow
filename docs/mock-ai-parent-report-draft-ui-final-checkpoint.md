@@ -6,8 +6,9 @@ Scope: docs-only finalization for staff `Generate Mock Draft` wiring milestone
 ## Follow-up (provider adapter skeleton — no UI change)
 
 - Server-side adapter skeleton added (`fake`/`disabled` only); staff UI still calls `generateMockAiParentReportDraft` only.
-- See `docs/ai-parent-report-provider-adapter-skeleton-checkpoint.md`.
-- ParentView and release boundaries unchanged.
+- Milestone checkpoint: `docs/ai-parent-report-provider-adapter-skeleton-checkpoint.md`
+- Final docs checkpoint: `docs/ai-parent-report-provider-adapter-skeleton-final-checkpoint.md`
+- ParentView and release boundaries unchanged; **no `real_ai`** unlock.
 
 ## 1) Key checkpoint notes
 

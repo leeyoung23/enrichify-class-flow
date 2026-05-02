@@ -25,7 +25,8 @@ Related checkpoints and context:
 - Canonical adapter module: `src/services/aiParentReportProviderAdapter.js` (`generateAiParentReportDraft`).
 - Shared mock section core: `src/services/aiParentReportMockDraftCore.js` (used by mock write path + adapter fake mode).
 - Edge Function scaffold: `supabase/functions/generate-ai-parent-report-draft/index.ts` (no secrets; no real provider calls).
-- Checkpoint: `docs/ai-parent-report-provider-adapter-skeleton-checkpoint.md`.
+- Checkpoint: `docs/ai-parent-report-provider-adapter-skeleton-checkpoint.md`
+- Final docs checkpoint: `docs/ai-parent-report-provider-adapter-skeleton-final-checkpoint.md`
 - `createAiParentReportVersion` **still blocks** `real_ai` until a later unlock milestone.
 
 ---

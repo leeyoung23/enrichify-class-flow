@@ -6,7 +6,9 @@
 - No change to parent visibility; no `real_ai` inserts enabled.
 - Smoke: `npm run test:supabase:ai-parent-report:provider-adapter`.
 - Optional integration assertion: `createAiParentReportVersion` still rejects `real_ai` before DB writes when env present.
-- Checkpoint: `docs/ai-parent-report-provider-adapter-skeleton-checkpoint.md`.
+- Checkpoint: `docs/ai-parent-report-provider-adapter-skeleton-checkpoint.md`
+- Final docs checkpoint: `docs/ai-parent-report-provider-adapter-skeleton-final-checkpoint.md`
+- Next focus: **Edge Function deploy/bundling check (fake only)** before real provider keys; `real_ai` unlock remains future.
 
 ## Checkpoint update (mock AI draft UI docs finalization)
 
@@ -22,8 +24,7 @@
   - no provider keys,
   - no real provider wiring,
   - no service-role frontend usage.
-- Next milestone recommendation:
-  - **A. Real AI provider-boundary planning** before provider implementation.
+- Roadmap note: provider-boundary plan and adapter skeleton exist; next safe step is **Edge deploy/bundling check (fake only)** — see `docs/ai-parent-report-provider-adapter-skeleton-final-checkpoint.md`.
 
 ## Checkpoint update (mock AI parent report draft service path)
 

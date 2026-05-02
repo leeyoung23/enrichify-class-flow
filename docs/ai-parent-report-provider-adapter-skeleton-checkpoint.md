@@ -3,6 +3,11 @@
 Date: 2026-05-02  
 Scope: server-side provider adapter skeleton with **fake** and **disabled** modes only
 
+## Final docs-only alignment
+
+- Finalized documentation: `docs/ai-parent-report-provider-adapter-skeleton-final-checkpoint.md`
+- Next roadmap focus: **Edge Function deployment/bundling check (fake provider only)** before real keys or `real_ai` unlock.
+
 ## 1) Summary
 
 - Added canonical adapter module:
@@ -38,5 +43,5 @@ Scope: server-side provider adapter skeleton with **fake** and **disabled** mode
 
 ## 4) Recommended next milestone
 
-- Edge Function bundling hardening (optional `_shared` copy) + wire authenticated invocation only after review.
-- Later: enable `real_ai` persistence path only with explicit milestone + smoke proofs.
+- **Edge Function deployment/bundling check** with **fake** provider only (confirm `src/` import resolves on serve/deploy or plan `supabase/functions/_shared` relocation).
+- Later: real provider secrets + HTTP only after bundling is proven; **`real_ai`** persistence unlock remains a separate gated milestone + smoke proofs.

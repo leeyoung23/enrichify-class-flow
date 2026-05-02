@@ -1,5 +1,14 @@
 # Project Master Context Handoff
 
+## Checkpoint update (AI parent report provider adapter skeleton — docs finalization)
+
+- Docs-only final checkpoint:
+  - `docs/ai-parent-report-provider-adapter-skeleton-final-checkpoint.md`
+- Implementation milestone remains:
+  - adapter + mock core + Edge scaffold + smoke (`9f8ca6b` baseline).
+- Recommended next milestone:
+  - **B. Edge Function deployment/bundling check with fake provider only** (prove serve/deploy resolves adapter imports or plan `supabase/functions/_shared`; still no real HTTP, no keys, no `real_ai` unlock).
+
 ## Checkpoint update (AI parent report provider adapter skeleton)
 
 - Added fake/disabled-only provider boundary:
@@ -9,7 +18,8 @@
   - smoke: `npm run test:supabase:ai-parent-report:provider-adapter`
 - No real AI HTTP calls; no provider keys; no UI changes; ParentView unchanged.
 - `createAiParentReportVersion` still blocks `generationSource='real_ai'`.
-- Checkpoint: `docs/ai-parent-report-provider-adapter-skeleton-checkpoint.md`.
+- Checkpoint: `docs/ai-parent-report-provider-adapter-skeleton-checkpoint.md`
+- Final docs checkpoint: `docs/ai-parent-report-provider-adapter-skeleton-final-checkpoint.md`
 
 ## Checkpoint update (mock AI parent report draft UI docs finalization)
 
@@ -19,12 +29,11 @@
   - staff-side `Generate Mock Draft` only,
   - demo generation remains local-only and does not call Supabase,
   - authenticated path calls `generateMockAiParentReportDraft({ reportId, input })`,
-  - no real provider/API wiring, no provider keys, no Edge Function,
+  - no real provider/API wiring, no provider keys; Edge scaffold is **non-production** until bundling is verified,
   - no PDF/export, no notification/email/live-chat side effects,
   - no auto submit/approve/release,
   - ParentView remains released/current-version-only.
-- Recommended next milestone is now:
-  - **A. Real AI provider-boundary planning first** (planning docs only).
+- Roadmap alignment (current): provider-boundary plan + adapter skeleton are done; next **Edge deploy/bundling check (fake only)** — `docs/ai-parent-report-provider-adapter-skeleton-final-checkpoint.md`.
 
 ## Checkpoint update (mock AI parent report draft service + smoke)
 
