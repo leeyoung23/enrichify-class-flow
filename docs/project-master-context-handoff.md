@@ -1,5 +1,9 @@
 # Project Master Context Handoff
 
+## Checkpoint update (ParentView printable report preview — final seal, docs-only, 2026-05-03)
+
+- **Doc:** **`docs/parent-view-printable-report-preview-final-checkpoint.md`** — seals **ParentView** printable **HTML** preview (commit **`8d4ef4b`**): released/current-version only, **no** Download PDF / storage / SQL / provider / email; records **PASS** smokes; **recommends next:** **Parent Communication** step-label simplification (copy-paste prompt in doc §7). Parked: Download PDF, **real_ai**, notifications, attendance alerts, worksheet/OCR. **No** runtime edits in this milestone.
+
 ## Checkpoint update (ParentView printable report preview visual polish — 2026-05-03)
 
 - **`src/pages/ParentView.jsx`** — **Progress Reports** preview: framed chrome, **`min(88vh, 900px)`** iframe height floor, scroll-inside hint, **`listBranches(viewer)`** + **`cls.branch_id`** for centre name (else class·programme, else **Learning Centre**). **No** Download PDF, **no** print button, **no** storage/SQL. **`src/services/aiParentReportPdfTemplate.js`** — **`formatReleasedAtForParentPdfDisplay`** so parent HTML never shows raw ISO **releasedAt**; **`scripts/ai-parent-report-pdf-template-smoke-test.mjs`** — formatter assert + **no** `.000Z` in HTML. **Doc:** **`docs/parent-view-printable-report-preview-visual-polish-checkpoint.md`**. AI/email automation planning docs **unchanged** (parked). Cross-refs: **`docs/parent-view-printable-report-preview-checkpoint.md`**, **`docs/manual-qa-parent-view-printable-report-preview-checkpoint.md`**, **`docs/mobile-first-qa-checkpoint.md`**, **`docs/rls-test-checklist.md`**.

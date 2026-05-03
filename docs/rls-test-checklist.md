@@ -8,6 +8,10 @@
 
 - **`listBranches(viewer)`** is JWT-scoped demo/read — **no** service role; does **not** widen parent data access (branch **name** only for label). **`aiParentReportPdfTemplate.js`** — display-only date formatting; **no** DDL. **Doc:** **`docs/parent-view-printable-report-preview-visual-polish-checkpoint.md`**.
 
+## Checkpoint update (ParentView printable report preview — final seal, docs-only, 2026-05-03)
+
+- **Doc:** **`docs/parent-view-printable-report-preview-final-checkpoint.md`** — **no** new RLS surface; restates boundaries + regression commands from **`docs/parent-view-printable-report-preview-checkpoint.md`**. **No** DDL.
+
 ## Checkpoint update (manual QA — ParentView printable report preview — 2026-05-03)
 
 - **Human runbook (no automated RLS assert):** **`docs/manual-qa-parent-view-printable-report-preview-checkpoint.md`** §6 — confirm **no** URLs/paths/provider/sql/service-role wording, **no** evidence/version metadata; **fake/dev** only; **no** DDL. Does **not** replace **`npm run test:supabase:ai-parent-reports`** when **`ParentView.jsx`** or AI report services change.

@@ -4,6 +4,7 @@
 
 - **Reference:** **`docs/parent-view-printable-report-preview-checkpoint.md`** — re-QA **~390px**: **Preview printable report** button, preview chrome, iframe scroll; **no** download control.
 - **Visual polish ref:** **`docs/parent-view-printable-report-preview-visual-polish-checkpoint.md`** — taller iframe, scroll-inside copy, **no** page-level horizontal overflow from preview chrome.
+- **Final seal (docs):** **`docs/parent-view-printable-report-preview-final-checkpoint.md`** — polish milestone closed; next product focus **Parent Communication** step-labels per §6.
 - **Manual visual QA runbook:** **`docs/manual-qa-parent-view-printable-report-preview-checkpoint.md`** — canonical desktop + **~390px** checklist for ParentView printable preview (**preview**, not download); safety §6; decision rule §8 (**A–E**).
 
 ## Checkpoint update (AI Parent Report PDF template visual polish — 2026-05-03)

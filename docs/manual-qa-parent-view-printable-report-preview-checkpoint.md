@@ -3,6 +3,7 @@
 Date: 2026-05-03  
 Type: **QA / checkpoint only** — human screenshot pass for **ParentView → Progress Reports → Preview printable report** before any real **Download PDF**, storage, signed URLs, or export persistence. **No** code changes implied unless issues are filed separately.
 
+**Milestone seal:** `docs/parent-view-printable-report-preview-final-checkpoint.md` (polish + tests at **`8d4ef4b`**)  
 **Implementation reference:** `docs/parent-view-printable-report-preview-checkpoint.md` · **`docs/parent-view-printable-report-preview-visual-polish-checkpoint.md`** (iframe/container + formatted release date + branch label)  
 **Related:** `docs/parent-view-ai-report-display-final-checkpoint.md`, `docs/ai-parent-report-pdf-template-visual-polish-checkpoint.md`, `docs/mobile-first-qa-checkpoint.md`
 

@@ -1,6 +1,6 @@
 # ParentView — printable report preview (checkpoint)
 
-Date: 2026-05-03 (visual polish **2026-05-03** — **`docs/parent-view-printable-report-preview-visual-polish-checkpoint.md`**)  
+Date: 2026-05-03 (visual polish **2026-05-03** — **`docs/parent-view-printable-report-preview-visual-polish-checkpoint.md`** · **final seal** **`docs/parent-view-printable-report-preview-final-checkpoint.md`**)  
 Scope: **`ParentView.jsx`** — **`Progress Reports`** adds optional **Preview printable report** (toggle) showing **`renderReleasedReportPdfHtml`** output in a **sandboxed iframe**. **Client-side preview only** — **no** binary PDF, **no** download button, **no** storage, **no** SQL/RLS changes, **no** provider/email/notifications.
 
 ## Behavior
@@ -25,6 +25,7 @@ Scope: **`ParentView.jsx`** — **`Progress Reports`** adds optional **Preview p
 
 ## Related
 
+- **`docs/parent-view-printable-report-preview-final-checkpoint.md`** — **sealed** polish milestone + tests + next steps
 - **`docs/parent-view-printable-report-preview-visual-polish-checkpoint.md`** — container + iframe + date + branch polish (**2026-05-03**)
 - **`docs/manual-qa-parent-view-printable-report-preview-checkpoint.md`** — **canonical manual visual QA** (desktop + **~390px**)
 - **`docs/ai-parent-report-pdf-template-visual-polish-checkpoint.md`**
@@ -32,8 +33,9 @@ Scope: **`ParentView.jsx`** — **`Progress Reports`** adds optional **Preview p
 
 ## Recommended next
 
-1. **Manual visual QA** per **`docs/manual-qa-parent-view-printable-report-preview-checkpoint.md`** before **Download PDF** / storage planning.  
-2. Re-run **`docs/mobile-first-qa-checkpoint.md`** entry for ParentView after QA.
+1. **Product / teacher clarity:** **Parent Communication** step-label simplification — see **`docs/parent-view-printable-report-preview-final-checkpoint.md`** §6–§7 and **`docs/teacher-upload-step-simplification-plan.md`** §5.  
+2. **Optional manual visual QA** per **`docs/manual-qa-parent-view-printable-report-preview-checkpoint.md`** when validating parent UI.  
+3. **Download PDF / storage** only after policy + design — **`docs/released-ai-parent-report-export-strategy-plan.md`**.
 
 ## Validation
 

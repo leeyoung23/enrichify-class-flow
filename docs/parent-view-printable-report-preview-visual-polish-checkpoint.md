@@ -1,6 +1,7 @@
 # ParentView printable report preview — visual polish (checkpoint)
 
 Date: 2026-05-03  
+**Sealed (docs):** **`docs/parent-view-printable-report-preview-final-checkpoint.md`** — milestone summary, tests from **`8d4ef4b`**, recommended next (**Parent Communication** step-label).  
 Scope: **Parent-facing** printable **HTML preview** only — **no** Download PDF, **no** binary PDF, **no** storage, **no** SQL/RLS, **no** provider/email/notification wiring. Future AI automation and email lanes remain **unchanged** (parked per existing strategy docs).
 
 ## What changed
@@ -21,6 +22,7 @@ Scope: **Parent-facing** printable **HTML preview** only — **no** Download PDF
 
 ## Related
 
+- **`docs/parent-view-printable-report-preview-final-checkpoint.md`** — **final seal** (docs-only)
 - **`docs/parent-view-printable-report-preview-checkpoint.md`**
 - **`docs/manual-qa-parent-view-printable-report-preview-checkpoint.md`** — re-run after this polish
 - **`docs/ai-parent-report-pdf-template-visual-polish-checkpoint.md`**
