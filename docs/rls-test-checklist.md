@@ -1,5 +1,9 @@
 # RLS Test Checklist
 
+## Checkpoint update (PDF preview navigation clarity — 2026-05-03)
+
+- **UI/nav only:** **`permissionService.js`** sidebar entry removed for PDF preview — **no** DDL; ParentView boundaries unchanged. Regression: **`npm run test:supabase:ai-parent-reports`** when touching **`AiParentReports.jsx`** / **`AiParentReportPdfPreview.jsx`** / **`permissionService.js`** per checkpoint.
+
 ## Checkpoint update (manual QA — AI Parent Report PDF internal preview — 2026-05-03)
 
 - **Human runbook (no automated RLS assert):** **`docs/manual-qa-ai-parent-report-pdf-internal-preview-checkpoint.md`** §6 — confirm **no** URLs/paths/provider/sql wording in **rendered demo HTML** by inspection; **fake/dev** only; **no** DDL. Does **not** replace **`npm run test:ai-parent-report:pdf-template`** when **`aiParentReportPdfTemplate.js`** changes.

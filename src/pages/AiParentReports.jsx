@@ -807,16 +807,31 @@ export default function AiParentReports() {
       />
 
       <p className="text-xs text-muted-foreground border-l-2 border-muted pl-3 py-1 -mt-4 mb-2">
-        No report reaches parents until explicit staff release. Real AI provider and PDF/export are not enabled yet.{' '}
-        <Link
-          to="/ai-parent-report-pdf-preview"
-          className="font-medium text-primary underline-offset-4 hover:underline"
-        >
-          Internal PDF HTML preview (dev)
-        </Link>
-        {' '}
-        — fake fixtures only; not parent-facing.
+        No report reaches parents until explicit staff release. Real AI provider and PDF/export are not enabled yet.
       </p>
+
+      <Card className="p-4 border-dashed border-muted-foreground/35 bg-muted/15">
+        <p className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
+          Optional — not part of the release workflow
+        </p>
+        <h2 className="text-sm font-semibold text-foreground mt-1.5">Internal PDF preview</h2>
+        <ul className="mt-2 text-sm text-muted-foreground space-y-1 list-disc pl-5">
+          <li>For layout checking only</li>
+          <li>Fake/dev data only</li>
+          <li>Parents do not see this</li>
+        </ul>
+        <p className="mt-3">
+          <Link
+            to="/ai-parent-report-pdf-preview"
+            className="text-sm font-medium text-primary underline-offset-4 hover:underline"
+          >
+            Open internal PDF HTML preview
+          </Link>
+          <span className="text-xs text-muted-foreground block mt-1">
+            Parents will download from ParentView after release when that feature ships — not here.
+          </span>
+        </p>
+      </Card>
 
       <p className="text-sm text-muted-foreground mb-4">
         <span className="font-medium text-foreground">Workflow:</span>{' '}

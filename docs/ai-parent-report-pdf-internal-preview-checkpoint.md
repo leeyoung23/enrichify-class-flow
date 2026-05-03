@@ -1,6 +1,6 @@
 # AI Parent Report PDF — internal HTML preview (checkpoint)
 
-Date: 2026-05-03  
+Date: 2026-05-03 (navigation clarity **2026-05-03** — **`docs/pdf-preview-navigation-clarity-fix-checkpoint.md`**)  
 Scope: **staff/dev-only** visual preview of **`renderReleasedReportPdfHtml`** output using **`buildDemoReleasedReportPdfInput`** — **no** binary PDF, **no** storage, **no** SQL/RLS, **no** ParentView download button, **no** parent-facing export controls.
 
 ## Delivered
@@ -9,11 +9,11 @@ Scope: **staff/dev-only** visual preview of **`renderReleasedReportPdfHtml`** ou
 |------|--------|
 | **Route** | **`/ai-parent-report-pdf-preview`** — **`src/pages/AiParentReportPdfPreview.jsx`** |
 | **Access** | Teacher, branch supervisor, HQ (**same gate as** **`AiParentReports`**); parent/student see **Access restricted** if URL is opened manually |
-| **Navigation** | Sidebar **`PDF preview (internal)`** for staff roles only (**`ROLE_NAVIGATION`**); **not** in parent/student nav |
+| **Navigation** | **Not** a default sidebar item — **removed** from normal staff nav (**`ROLE_NAVIGATION`**) to avoid “everyday workflow” confusion. Entry from **`AiParentReports`** optional card + direct URL. **not** in parent/student nav |
 | **Data** | **Fake/dev fixtures only** — variant selector: **`monthly_progress`**, **`weekly_brief`**, **`long_text`**, **`sparse_optional_fields`** |
 | **Rendering** | **`renderReleasedReportPdfHtml(buildDemoReleasedReportPdfInput({ variant }))`** — iframe with **`sandbox=""`** (no scripts), **`referrerPolicy="no-referrer"`** |
-| **Labelling** | Banner: internal preview, fake/dev only, not visible to parents, no file stored |
-| **Staff shortcut** | Link from **`AiParentReports.jsx`** intro strip (“Internal PDF HTML preview (dev)”) |
+| **Labelling** | Banner: internal preview, **not a parent download**, fake/dev only, no file stored, parents do not see this page |
+| **Staff shortcut** | Optional dashed **card** on **`AiParentReports.jsx`** (“Internal PDF preview” — layout checking only) |
 
 ## Explicit non-goals (preserved)
 
@@ -39,3 +39,4 @@ Scope: **staff/dev-only** visual preview of **`renderReleasedReportPdfHtml`** ou
 - **`docs/manual-qa-ai-parent-report-pdf-internal-preview-checkpoint.md`** — **canonical manual QA** for this route  
 - **`docs/ai-parent-report-pdf-helper-fixture-final-checkpoint.md`** — helper module reference  
 - **`docs/ai-parent-report-pdf-template-contract-plan.md`** — content contract  
+- **`docs/pdf-preview-navigation-clarity-fix-checkpoint.md`** — sidebar removal + optional card  

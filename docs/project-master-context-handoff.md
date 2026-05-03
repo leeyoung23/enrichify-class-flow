@@ -1,5 +1,9 @@
 # Project Master Context Handoff
 
+## Checkpoint update (PDF internal preview navigation clarity — 2026-05-03)
+
+- **`docs/pdf-preview-navigation-clarity-fix-checkpoint.md`** — **removed** sidebar **`PDF preview (internal)`** from **`ROLE_NAVIGATION`** (HQ/supervisor/teacher); route **`/ai-parent-report-pdf-preview`** unchanged; entry via **`AiParentReports`** optional dashed card + direct URL; preview page copy: **not a parent download**, **no file stored**, **fake/dev fixture only**, **no download/print/export**. **No** ParentView/export/SQL/storage/provider/email changes.
+
 ## Checkpoint update (manual QA — AI Parent Report PDF internal preview — 2026-05-03)
 
 - **Doc:** **`docs/manual-qa-ai-parent-report-pdf-internal-preview-checkpoint.md`** — desktop + **~390px** screenshot runbook for **`/ai-parent-report-pdf-preview`**: surfaces §2, desktop/mobile/print/safety checklists §3–§6, risks §7, decision rule §8 (**A–E** options). **QA/checkpoint only** — **no** UI/runtime edits unless issues are filed separately. Cross-ref **`docs/ai-parent-report-pdf-internal-preview-checkpoint.md`**, **`docs/mobile-first-qa-checkpoint.md`**, **`docs/rls-test-checklist.md`**, **`docs/released-ai-parent-report-export-strategy-plan.md`**, **`docs/notification-system-sql-rls-review-plan.md`** (parked). ParentView Download PDF **not** in scope until QA clean.

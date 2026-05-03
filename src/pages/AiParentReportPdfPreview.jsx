@@ -51,18 +51,19 @@ export default function AiParentReportPdfPreview() {
     <div className="space-y-6">
       <PageHeader
         title="Internal PDF preview"
-        description="Staff and dev-only HTML preview of the released-report PDF template. Uses demo fixtures only."
+        description="Staff/dev QA only — not a parent download. HTML from fake fixtures; no file created."
       />
 
       <div className="rounded-lg border border-amber-200/80 bg-amber-50/60 dark:bg-amber-950/25 px-4 py-3 space-y-2 text-sm">
         <p className="font-medium text-foreground">Internal PDF preview</p>
         <ul className="list-disc pl-5 space-y-1 text-muted-foreground">
-          <li>Fake/dev data only — no live reports or Supabase reads.</li>
-          <li>Not visible to parents — no ParentView surface.</li>
-          <li>No file is generated or stored yet — HTML preview only.</li>
+          <li>Not a parent download — parents use ParentView after reports are released.</li>
+          <li>No file is generated or stored — browser preview only.</li>
+          <li>Fake/dev fixture only — no live reports or Supabase reads.</li>
+          <li>Parents do not see this page.</li>
         </ul>
         <p className="text-xs text-muted-foreground pt-1">
-          No download, no storage upload, no AI/provider calls.{' '}
+          No download, print, export, storage upload, or AI/provider calls.{' '}
           <Link to="/ai-parent-reports" className="text-primary underline-offset-4 hover:underline font-medium">
             Back to AI Parent Reports
           </Link>

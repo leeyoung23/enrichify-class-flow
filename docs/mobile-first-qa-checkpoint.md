@@ -1,5 +1,9 @@
 # Mobile-first QA checkpoint
 
+## Checkpoint update (PDF preview navigation clarity — 2026-05-03)
+
+- **Reference:** **`docs/pdf-preview-navigation-clarity-fix-checkpoint.md`** — re-QA **~390px**: optional **AI Parent Reports** PDF preview card (readable, clearly optional); **sidebar** must not show PDF preview item.
+
 ## Checkpoint update (manual QA — AI Parent Report PDF internal preview — 2026-05-03)
 
 - **Runbook:** **`docs/manual-qa-ai-parent-report-pdf-internal-preview-checkpoint.md`** — staff route **`/ai-parent-report-pdf-preview`**; **desktop + ~390px**; variants **monthly_progress**, **weekly_brief**, **long_text**, **sparse_optional_fields**; iframe readability; **no** parent export UI. **Checkpoint only** — **no** `src/` changes in this doc milestone.

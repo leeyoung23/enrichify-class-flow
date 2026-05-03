@@ -24,14 +24,15 @@ Capture **desktop** (typical staff width, e.g. 1280px+) and **~390px** mobile:
 
 | Area | What to capture |
 |------|-----------------|
-| **Staff sidebar** | Nav item **PDF preview (internal)** (staff roles only — not parent nav) |
+| **Staff sidebar** | **No** “PDF preview” item — confirm it does **not** appear as a routine workflow link (**post–navigation clarity fix**) |
+| **AI Parent Reports** | Optional dashed **Internal PDF preview** card + link (layout QA only; fake/dev; parents do not see) |
 | **Page header** | Title **Internal PDF preview** + staff/dev-only description |
 | **Safety banner** | Amber-style strip: fake/dev, not visible to parents, no file stored |
 | **Variant selector** | Label **Demo fixture variant** + **Select** for four variants |
 | **Variants** | **`monthly_progress`**, **`weekly_brief`**, **`long_text`**, **`sparse_optional_fields`** — one screenshot each after switching |
 | **Iframe / report** | Sandboxed preview of rendered HTML (progress report body, sections, footer) |
 
-Optional: screenshot **AI Parent Reports** intro link **Internal PDF HTML preview (dev)** for traceability.
+Optional: screenshot **AI Parent Reports** optional **Internal PDF preview** card for traceability (**`docs/pdf-preview-navigation-clarity-fix-checkpoint.md`**).
 
 ---
 
