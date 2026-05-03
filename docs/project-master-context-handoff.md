@@ -1,5 +1,9 @@
 # Project Master Context Handoff
 
+## Checkpoint update (manual QA — AI Parent Report PDF internal preview — 2026-05-03)
+
+- **Doc:** **`docs/manual-qa-ai-parent-report-pdf-internal-preview-checkpoint.md`** — desktop + **~390px** screenshot runbook for **`/ai-parent-report-pdf-preview`**: surfaces §2, desktop/mobile/print/safety checklists §3–§6, risks §7, decision rule §8 (**A–E** options). **QA/checkpoint only** — **no** UI/runtime edits unless issues are filed separately. Cross-ref **`docs/ai-parent-report-pdf-internal-preview-checkpoint.md`**, **`docs/mobile-first-qa-checkpoint.md`**, **`docs/rls-test-checklist.md`**, **`docs/released-ai-parent-report-export-strategy-plan.md`**, **`docs/notification-system-sql-rls-review-plan.md`** (parked). ParentView Download PDF **not** in scope until QA clean.
+
 ## Checkpoint update (notification system SQL/RLS review plan — planning only, 2026-05-03)
 
 - **Doc:** **`docs/notification-system-sql-rls-review-plan.md`** — safety-critical output layer; conceptual tables (**notification_events**, **notifications**, **notification_recipients**, **notification_delivery_attempts**, **notification_preferences**, optional **notification_templates**); event/notification/recipient rules; delivery logging constraints; preferences; **RLS** by role; trigger-specific access implications; safety gates + **idempotency**; email vs in-app sequencing; **§17** prompts (**A** draft DDL foundation vs **B** park + PDF QA / Parent Communication polish). **No** `supabase/sql` changes in this milestone. Cross-ref **`docs/notification-email-automation-trigger-matrix-plan.md`**, **`docs/mobile-first-qa-checkpoint.md`**, **`docs/rls-test-checklist.md`**.

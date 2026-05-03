@@ -112,7 +112,7 @@ Recorded at **`2cfab48`**:
 
 ## 9. What remains future
 
-- **Done (internal):** staff-only **`/ai-parent-report-pdf-preview`** — **`docs/ai-parent-report-pdf-internal-preview-checkpoint.md`**. Next: **manual visual QA** before parent export work.
+- **Done (internal):** staff-only **`/ai-parent-report-pdf-preview`** — **`docs/ai-parent-report-pdf-internal-preview-checkpoint.md`**. Next: **manual visual QA** — **`docs/manual-qa-ai-parent-report-pdf-internal-preview-checkpoint.md`** — before parent export work.
 - **ParentView Download PDF** button — product milestone.
 - **Browser print** / client PDF library — after preview approval.
 - **Private storage + signed URL** + optional DDL.
@@ -127,7 +127,7 @@ Recorded at **`2cfab48`**:
 
 | Option | Topic |
 |--------|--------|
-| **A** | **Internal/dev PDF HTML preview** — **implemented** (`/ai-parent-report-pdf-preview`); proceed to **manual QA** |
+| **A** | **Internal/dev PDF HTML preview** — **implemented**; proceed to **manual QA** (**`docs/manual-qa-ai-parent-report-pdf-internal-preview-checkpoint.md`**) |
 | **B** | ParentView **Download PDF** |
 | **C** | PDF storage **SQL/RLS** review |
 | **D** | PNG summary planning |

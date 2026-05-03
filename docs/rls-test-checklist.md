@@ -1,5 +1,9 @@
 # RLS Test Checklist
 
+## Checkpoint update (manual QA — AI Parent Report PDF internal preview — 2026-05-03)
+
+- **Human runbook (no automated RLS assert):** **`docs/manual-qa-ai-parent-report-pdf-internal-preview-checkpoint.md`** §6 — confirm **no** URLs/paths/provider/sql wording in **rendered demo HTML** by inspection; **fake/dev** only; **no** DDL. Does **not** replace **`npm run test:ai-parent-report:pdf-template`** when **`aiParentReportPdfTemplate.js`** changes.
+
 ## Checkpoint update (notification system SQL/RLS review plan — planning only, 2026-05-03)
 
 - **Planning:** **`docs/notification-system-sql-rls-review-plan.md`** — §9–§12 RLS, gates, idempotency. When DDL lands: JWT-only smokes for parent **cannot** read other families’ `notification_recipients`; drafts staff-only; **no** service-role browser; cross-feature parity with ParentView scope. **No** SQL files added by this doc milestone.

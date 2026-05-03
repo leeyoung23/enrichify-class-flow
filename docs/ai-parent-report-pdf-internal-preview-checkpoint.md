@@ -31,10 +31,11 @@ Scope: **staff/dev-only** visual preview of **`renderReleasedReportPdfHtml`** ou
 
 ## Recommended next
 
-1. **Manual visual QA** of the preview (desktop + ~390px): typography, iframe scroll, variant switching — **`docs/mobile-first-qa-checkpoint.md`**.  
-2. Later product milestones: ParentView **Download PDF** (policy-gated), optional browser print, then storage/signed URL if persisted exports are approved — **`docs/released-ai-parent-report-export-strategy-plan.md`**.
+1. **Manual visual QA** (screenshot runbook): **`docs/manual-qa-ai-parent-report-pdf-internal-preview-checkpoint.md`** — desktop + **~390px**; also indexed in **`docs/mobile-first-qa-checkpoint.md`**.  
+2. After QA sign-off: ParentView **Download PDF** (policy-gated) only if preview is visually acceptable — **`docs/released-ai-parent-report-export-strategy-plan.md`**.
 
 ## Related
 
+- **`docs/manual-qa-ai-parent-report-pdf-internal-preview-checkpoint.md`** — **canonical manual QA** for this route  
 - **`docs/ai-parent-report-pdf-helper-fixture-final-checkpoint.md`** — helper module reference  
 - **`docs/ai-parent-report-pdf-template-contract-plan.md`** — content contract  

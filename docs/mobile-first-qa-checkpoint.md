@@ -1,5 +1,9 @@
 # Mobile-first QA checkpoint
 
+## Checkpoint update (manual QA — AI Parent Report PDF internal preview — 2026-05-03)
+
+- **Runbook:** **`docs/manual-qa-ai-parent-report-pdf-internal-preview-checkpoint.md`** — staff route **`/ai-parent-report-pdf-preview`**; **desktop + ~390px**; variants **monthly_progress**, **weekly_brief**, **long_text**, **sparse_optional_fields**; iframe readability; **no** parent export UI. **Checkpoint only** — **no** `src/` changes in this doc milestone.
+
 ## Checkpoint update (notification SQL/RLS review plan — planning only, 2026-05-03)
 
 - **Reference:** **`docs/notification-system-sql-rls-review-plan.md`** — when notification inbox/UI ships, re-QA **~390px** for recipient-scoped lists (no cross-child leakage), read/dismiss, and preference surfaces; **no** runtime changes in this milestone.
