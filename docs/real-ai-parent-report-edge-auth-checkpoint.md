@@ -44,7 +44,70 @@
 
 - **RPC execute grant:** If the database has not granted **`EXECUTE`** on **`can_manage_ai_parent_report`** to **`authenticated`**, the RPC may fail; apply **`032_...sql`** in the target Supabase project.
 - **Edge HTTP smokes** require a **deployed** project and network; local-only dev may **CHECK-skip**.
-- **`test:supabase:ai-parent-report:edge-generation-auth`:** If the gateway returns **404**, the function is not deployed to the **`VITE_SUPABASE_URL` / `SUPABASE_URL`** project (or the path is wrong) — the script **CHECK-skip**s; this does **not** assert the auth gate is live until deploy + **`supabase functions deploy generate-ai-parent-report-draft`** (or CI deploy).
+- **`test:supabase:ai-parent-report:edge-generation-auth`:** If the gateway returns **404**, the function is not deployed to the **`VITE_SUPABASE_URL` / `SUPABASE_URL`** project (or the path is wrong) — the script **CHECK-skip**s until the function exists at **`.../functions/v1/generate-ai-parent-report-draft`**.
+
+## Deployment verification (2026-05-03)
+
+### Supabase CLI — deploy `generate-ai-parent-report-draft`
+
+From the repo root (requires **`supabase login`** and access to the target project):
+
+```bash
+supabase functions deploy generate-ai-parent-report-draft \
+  --project-ref <YOUR_PROJECT_REF> \
+  --no-verify-jwt \
+  --use-api \
+  --yes
+```
+
+- **`--use-api`:** bundles without local Docker.
+- **`--no-verify-jwt`:** disables **platform** JWT verification at the Edge gateway so unauthenticated requests **reach the function** and receive **`401`** + **`error.code: missing_auth`** in the JSON body from **`aiParentReportEdgeAuth`**. Authorization remains enforced **inside** the function (Bearer JWT + **`can_manage_ai_parent_report`**); **no** provider call runs without passing that gate.
+
+### SQL 032 — grant RPC execute to `authenticated`
+
+**File:** **`supabase/sql/032_grant_execute_can_manage_ai_parent_report.sql`**
+
+```sql
+grant execute on function public.can_manage_ai_parent_report(uuid) to authenticated;
+```
+
+**Apply via CLI (linked project):**
+
+```bash
+supabase link --project-ref <YOUR_PROJECT_REF> --yes
+supabase db query --linked --file supabase/sql/032_grant_execute_can_manage_ai_parent_report.sql --yes
+```
+
+Alternatively: paste the single **`GRANT`** statement into the Supabase **SQL Editor** for the same project.
+
+**Status (this checkpoint):** **`GRANT`** applied successfully via **`supabase db query --linked`**; idempotent if re-run.
+
+### Edge runtime / secrets (names only)
+
+Inject via Supabase Dashboard → **Edge Functions → Secrets** (or CLI secrets), as needed:
+
+- **`SUPABASE_URL`** — auto-provided in Edge; **`aiParentReportEdgeAuth`** uses it with **`SUPABASE_ANON_KEY`**.
+- **`SUPABASE_ANON_KEY`** — auto-provided in Edge for **`createClient`** + user JWT.
+- **`AI_PARENT_REPORT_PROVIDER_API_KEY`** — optional; required only for real provider HTTP.
+- **`AI_PARENT_REPORT_PROVIDER_MODEL`** — optional; real mode.
+- **`AI_PARENT_REPORT_PROVIDER_BASE_URL`** — optional; overrides default OpenAI-compatible base.
+
+### HTTP auth smoke (`npm run test:supabase:ai-parent-report:edge-generation-auth`)
+
+**Result (this checkpoint):** **PASS** — unauthenticated **`POST`** returns **HTTP 401** with **`ok: false`**, **`error.code: missing_auth`**, **`external_provider_call: false`** (no adapter/provider execution). **404** resolved after deploy (was **CHECK-skip** when the function was missing).
+
+Optional probe (**CHECK-skip** if unset): **`AI_PARENT_REPORT_EDGE_TEST_JWT`** + **`AI_PARENT_REPORT_EDGE_TEST_REPORT_ID`**.
+
+### Tooling availability
+
+- **Supabase CLI** and **Deno** were available locally (`supabase --version`, `deno --version`).
+- **`supabase status`** (local stack) may require Docker; **remote deploy** used **`--use-api`** and did not require local Docker.
+
+### Remaining blockers before **real_ai** persistence unlock
+
+- **Product/service change:** explicitly allow **`generationSource === 'real_ai'`** in **`createAiParentReportVersion`** (and UI) when ready — **not** done here.
+- **Staff UI** wired to call Edge with JWT remains a separate milestone.
+- This checkpoint only confirms **Edge HTTP auth + RPC grant + smoke** on the linked project; persistence is still intentionally blocked.
 
 ## Next milestone
 
