@@ -1,4 +1,4 @@
-# AI Parent Report PDF — mock data + render helper planning (no implementation)
+# AI Parent Report PDF — mock data + render helper planning (+ implemented helpers)
 
 Date: 2026-05-02  
 Type: **planning** + **implementation follow-up** — original scope was planning-only; **implemented** module: **`docs/ai-parent-report-pdf-helper-fixture-checkpoint.md`**, **`src/services/aiParentReportPdfTemplate.js`**, smoke **`test:ai-parent-report:pdf-template`**. **No** export button, **no** storage, **no** binary PDF.
@@ -6,6 +6,8 @@ Type: **planning** + **implementation follow-up** — original scope was plannin
 **Upstream contracts:**  
 `docs/ai-parent-report-pdf-template-contract-plan.md` (`releasedReportPdfInput`, exclusions, section keys)  
 `docs/released-ai-parent-report-export-strategy-plan.md` (phasing, privacy)
+
+**Implementation sealed doc:** `docs/ai-parent-report-pdf-helper-fixture-final-checkpoint.md` — milestone **`2cfab48`**.
 
 **UI reference:** `src/pages/ParentView.jsx` (`resolveParentReportSection`, section row titles); staff lifecycle `src/pages/AiParentReports.jsx`.
 

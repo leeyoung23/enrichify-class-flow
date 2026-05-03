@@ -3,6 +3,8 @@
 Date: 2026-05-02  
 Scope: **`src/services/aiParentReportPdfTemplate.js`** — pure functions, **fake/dev** fixtures, HTML string output **only** (no binary PDF, no `pdf-lib`). **`scripts/ai-parent-report-pdf-template-smoke-test.mjs`** — local smoke, **no** Supabase.
 
+**Canonical sealed reference:** **`docs/ai-parent-report-pdf-helper-fixture-final-checkpoint.md`** — validation snapshot **`2cfab48`**, smoke/build table, future work, **recommended next A**, prompt §11.
+
 ## Delivered
 
 | Item | Detail |
@@ -26,6 +28,8 @@ Run when touching this module:
 `npm run build` · `npm run lint` · `npm run typecheck` · `npm run test:ai-parent-report:pdf-template`
 
 If shared AI report services change: `npm run test:supabase:ai-parent-reports`
+
+**Recorded at `2cfab48`:** all **PASS** (supabase smoke includes expected **CHECK** lines). **Docs-only** commits afterward **do not** require re-running unless **`src/`** / **`scripts/`** change — see **`docs/ai-parent-report-pdf-helper-fixture-final-checkpoint.md`** §8.
 
 ## Next milestone
 

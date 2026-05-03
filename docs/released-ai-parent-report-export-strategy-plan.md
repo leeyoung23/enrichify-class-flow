@@ -7,7 +7,8 @@ Type: **planning only** — product, privacy, and phased implementation strategy
 
 **PDF template contract (sections, exclusions, data shape):** `docs/ai-parent-report-pdf-template-contract-plan.md`  
 **Mock builders + render helper planning:** `docs/ai-parent-report-pdf-mock-render-helper-plan.md`  
-**Helper + fixtures (no export UI):** `docs/ai-parent-report-pdf-helper-fixture-checkpoint.md`
+**Helper + fixtures (no export UI):** `docs/ai-parent-report-pdf-helper-fixture-checkpoint.md`  
+**Sealed milestone doc:** `docs/ai-parent-report-pdf-helper-fixture-final-checkpoint.md`
 
 **Code touchpoints (reference only):** `src/pages/ParentView.jsx`, `src/pages/AiParentReports.jsx`, `src/services/supabaseReadService.js`, `src/services/supabaseWriteService.js`.
 

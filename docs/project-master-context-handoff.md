@@ -1,5 +1,9 @@
 # Project Master Context Handoff
 
+## Checkpoint update (AI Parent Report PDF helper — docs sealed, 2026-05-02)
+
+- **Docs-only:** **`docs/ai-parent-report-pdf-helper-fixture-final-checkpoint.md`** — milestone **`2cfab48`**: API summary §2–§6, validation/smokes §7–§8, future §9, **recommended next A** (internal HTML preview), copy-paste prompt §11. Cross-updates: **`docs/ai-parent-report-pdf-helper-fixture-checkpoint.md`**, **`docs/ai-parent-report-pdf-mock-render-helper-plan.md`**, **`docs/ai-parent-report-pdf-template-contract-plan.md`**, **`docs/released-ai-parent-report-export-strategy-plan.md`**, **`docs/mobile-first-qa-checkpoint.md`**, **`docs/rls-test-checklist.md`**. **No** `src/` in this doc milestone.
+
 ## Checkpoint update (AI Parent Report PDF helper + fixtures — 2026-05-02)
 
 - **`src/services/aiParentReportPdfTemplate.js`** — **`buildDemoReleasedReportPdfInput`**, **`normalizeReportSectionsForPdf`**, **`normalizeReportSectionsFromReleaseVersion`**, **`validateReleasedReportPdfInput`**, **`renderReleasedReportPdfHtml`**, **`buildReleasedReportPdfInputFromParentViewContext`** (no Supabase). **Smoke:** **`npm run test:ai-parent-report:pdf-template`**. **Doc:** **`docs/ai-parent-report-pdf-helper-fixture-checkpoint.md`**. **No** ParentView button, **no** SQL/storage/binary PDF, **no** `real_ai` unlock. Cross-refs: **`docs/ai-parent-report-pdf-template-contract-plan.md`**, **`docs/ai-parent-report-pdf-mock-render-helper-plan.md`**.
