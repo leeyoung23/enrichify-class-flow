@@ -5,7 +5,8 @@
 1. **`listAiParentReports`** returned **no rows** because **no `ai_parent_reports` rows** existed yet for the project (typical empty DEV DB), **not** because HQ couldn’t read reports once rows exist.
 2. **Create report shell** showed **raw UUID fields by default** when **`canUseSupabase`** was false. That happened when **`appUser`** (mapped profile) was still **`null`** even though a valid **`session.user`** existed — the gate used **`appUser.id` only**, so the UI fell through to the legacy grid before profile hydration finished (or on transient profile failure).
 3. **Demo mode** (`?demoRole=`) correctly disables real AI and keeps **mock-only** raw/dev fields; **`Demo Role Preview`** in the shell without `demoRole` does **not** set demo mode by itself.
-4. **Selector visibility fix:** **`hasLiveSupabaseIdentity`** = **`Boolean(appUser?.id) || Boolean(session?.user?.id)`**; **`canUseSupabase`** and **`showStaffCreatePickers`** use that; **`staffDirectoryAuthPending`** shows a spinner instead of flashing UUIDs; **non-demo** path without a live session shows **report type + period** + collapsible **Advanced UUID fallback** only (not a full UUID grid as default).
+4. **`ff41cfc`** still allowed the wrong default when **`showStaffCreatePickers`** stayed tied to **`canUseSupabase`** and **`loadPickerCatalog`** used the same gate — any frame where identity/catalog disagreed routed to the **non-picker** branch (misconfigured/no-session fallback with raw UUID **Advanced**). Native **`<details>`** could also feel like a primary surface for UUIDs.
+5. **Follow-up fix:** **`showStaffSelectorShell`** = **`canAccess && !inDemoMode && isSupabaseConfigured()`** — selector UI always renders for real staff when the client exists; **`loadPickerCatalog`** uses the same gate (not **`canUseSupabase`** alone). **`hasLiveSupabaseIdentity`** still drives **`canUseSupabase`** for lists/detail elsewhere; inline banners handle missing JWT. **Advanced UUID fallback** uses **Radix Collapsible `defaultOpen={false}`** so UUID inputs are never the default visible surface.
 
 ## What changed (smallest safe unblock)
 
@@ -31,7 +32,7 @@
 ## Next manual QA steps
 
 1. **`npm run dev`** → **`http://localhost:5173/ai-parent-reports`** — URL **without** `?demoRole=…`, signed in as staff (HQ admin).
-2. **Create report shell:** expect **Branch** → optional **Class** → **Student**, **Reload lists**, **Report type**, period dates; UUIDs only under **Advanced** (unless Supabase/session missing — then follow banner + Advanced).
+2. **Create report shell:** expect **Branch** → optional **Class** → **Student**, **Reload lists**, **Report type**, period dates first; **Advanced UUID fallback** stays **collapsed** until expanded. Small **Mode:** line shows **`signed-in staff`** / **`session loading`** / **`no-session`** (no secrets).
 3. Confirm report appears in **Parent Reports** list → select it.
 4. Scroll to **Generate real AI draft** → click once → verify **`real_ai`** version and **no** parent visibility until release.
 

@@ -7,9 +7,10 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import PageHeader from '@/components/shared/PageHeader';
 import EmptyState from '@/components/shared/EmptyState';
-import { FileText } from 'lucide-react';
+import { ChevronDown, FileText } from 'lucide-react';
 import { toast } from 'sonner';
 import { getSelectedDemoRole } from '@/services/authService';
 import { getRole, ROLES } from '@/services/permissionService';
@@ -268,8 +269,11 @@ export default function AiParentReports() {
     return gaps;
   }, [selectedReport]);
 
-  /** Staff-friendly branch/class/student UI when JWT session exists (same condition as live reads/writes). */
-  const showStaffCreatePickers = canUseSupabase;
+  /**
+   * Create-shell selector UI: show whenever Supabase client exists and staff is not in URL demo mode.
+   * Do not gate on appUser/profile alone — that hid pickers while session existed or blocked catalog load.
+   */
+  const showStaffSelectorShell = canAccess && !inDemoMode && isSupabaseConfigured();
 
   /** While Supabase auth is resolving, avoid flashing raw UUID fields before session is applied. */
   const staffDirectoryAuthPending =
@@ -278,6 +282,13 @@ export default function AiParentReports() {
     isSupabaseConfigured() &&
     supabaseAuthLoading &&
     !hasLiveSupabaseIdentity;
+
+  const staffShellDiagnosticLabel = useMemo(() => {
+    if (!showStaffSelectorShell) return '';
+    if (staffDirectoryAuthPending) return 'session loading';
+    if (!hasLiveSupabaseIdentity) return 'no-session';
+    return 'signed-in staff';
+  }, [showStaffSelectorShell, staffDirectoryAuthPending, hasLiveSupabaseIdentity]);
 
   const filteredPickerClasses = useMemo(() => {
     const bid = String(createDraftForm.branchId || '').trim();
@@ -357,7 +368,7 @@ export default function AiParentReports() {
   }, [loadReports]);
 
   const loadPickerCatalog = useCallback(async () => {
-    if (!canUseSupabase || inDemoMode) {
+    if (!showStaffSelectorShell) {
       setPickerBranches([]);
       setPickerClasses([]);
       setPickerStudents([]);
@@ -376,7 +387,7 @@ export default function AiParentReports() {
     setPickerClasses(Array.isArray(clRes.data) ? clRes.data : []);
     setPickerStudents(Array.isArray(stRes.data) ? stRes.data : []);
     setPickersLoading(false);
-  }, [canUseSupabase, inDemoMode]);
+  }, [showStaffSelectorShell]);
 
   useEffect(() => {
     void loadPickerCatalog();
@@ -956,9 +967,9 @@ export default function AiParentReports() {
       <p className="text-xs text-muted-foreground border-l-2 border-muted pl-3 py-1 -mt-4 mb-2">
         No report reaches parents until explicit staff release.{' '}
         <span className="font-medium text-foreground">
-          Real AI draft generation runs only for signed-in staff after you select a live report shell.
+          Real AI draft generation is available for signed-in staff after selecting a report.
         </span>{' '}
-        PDF/export to families is not live on this page yet.
+        PDF/export to families is not live yet.
       </p>
 
       <Card className="p-4 border-dashed border-muted-foreground/35 bg-muted/15">
@@ -1076,16 +1087,101 @@ export default function AiParentReports() {
             Set the reporting period and student/class context. Narrative sections should come from source evidence and
             teacher review — not from typing every field by hand.
           </p>
-          {staffDirectoryAuthPending ? (
-            <div className="rounded-lg border bg-muted/30 p-4 flex items-center gap-3">
-              <div className="w-6 h-6 border-2 border-muted border-t-primary rounded-full animate-spin shrink-0" />
-              <p className="text-sm text-muted-foreground">
-                Loading your Supabase session… Branch/class/student pickers appear here once authenticated (no raw UUID
-                fields by default).
-              </p>
+          {inDemoMode ? (
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div className="space-y-1.5">
+                <Label htmlFor="apr-student-id">studentId</Label>
+                <Input
+                  id="apr-student-id"
+                  value={createDraftForm.studentId}
+                  onChange={(event) => setCreateDraftForm((prev) => ({ ...prev, studentId: event.target.value }))}
+                  placeholder="fake/dev UUID or demo id"
+                />
+              </div>
+              <div className="space-y-1.5">
+                <Label htmlFor="apr-class-id">classId (optional)</Label>
+                <Input
+                  id="apr-class-id"
+                  value={createDraftForm.classId}
+                  onChange={(event) => setCreateDraftForm((prev) => ({ ...prev, classId: event.target.value }))}
+                  placeholder="fake/dev UUID"
+                />
+              </div>
+              <div className="space-y-1.5">
+                <Label htmlFor="apr-branch-id">branchId</Label>
+                <Input
+                  id="apr-branch-id"
+                  value={createDraftForm.branchId}
+                  onChange={(event) => setCreateDraftForm((prev) => ({ ...prev, branchId: event.target.value }))}
+                  placeholder="fake/dev UUID or demo id"
+                />
+              </div>
+              <div className="space-y-1.5">
+                <Label>reportType</Label>
+                <Select
+                  value={createDraftForm.reportType}
+                  onValueChange={(value) => setCreateDraftForm((prev) => ({ ...prev, reportType: value }))}
+                >
+                  <SelectTrigger><SelectValue placeholder="Select report type" /></SelectTrigger>
+                  <SelectContent>
+                    {REPORT_TYPE_OPTIONS.map((value) => (
+                      <SelectItem key={value} value={value}>{value}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-1.5">
+                <Label htmlFor="apr-period-start-d">reportPeriodStart</Label>
+                <Input
+                  id="apr-period-start-d"
+                  type="date"
+                  value={createDraftForm.reportPeriodStart}
+                  onChange={(event) => setCreateDraftForm((prev) => ({ ...prev, reportPeriodStart: event.target.value }))}
+                />
+              </div>
+              <div className="space-y-1.5">
+                <Label htmlFor="apr-period-end-d">reportPeriodEnd</Label>
+                <Input
+                  id="apr-period-end-d"
+                  type="date"
+                  value={createDraftForm.reportPeriodEnd}
+                  onChange={(event) => setCreateDraftForm((prev) => ({ ...prev, reportPeriodEnd: event.target.value }))}
+                />
+              </div>
+              <div className="space-y-1.5 sm:col-span-2">
+                <Label htmlFor="apr-assigned-teacher-d">assignedTeacherProfileId (optional)</Label>
+                <Input
+                  id="apr-assigned-teacher-d"
+                  value={createDraftForm.assignedTeacherProfileId}
+                  onChange={(event) => setCreateDraftForm((prev) => ({
+                    ...prev,
+                    assignedTeacherProfileId: event.target.value,
+                  }))}
+                  placeholder="fake/dev UUID"
+                />
+              </div>
             </div>
-          ) : showStaffCreatePickers ? (
+          ) : showStaffSelectorShell ? (
             <>
+              <p className="text-[11px] text-muted-foreground">
+                <span className="font-medium text-foreground">Mode:</span>{' '}
+                <span className="font-mono">{staffShellDiagnosticLabel}</span>
+                {' '}— no tokens or secrets shown.
+              </p>
+              {staffDirectoryAuthPending ? (
+                <div className="rounded-lg border bg-muted/30 p-4 flex items-center gap-3">
+                  <div className="w-6 h-6 border-2 border-muted border-t-primary rounded-full animate-spin shrink-0" />
+                  <p className="text-sm text-muted-foreground">
+                    Loading your Supabase session… Branch/class/student controls stay visible; lists fill once JWT + RLS apply.
+                  </p>
+                </div>
+              ) : null}
+              {!hasLiveSupabaseIdentity && !staffDirectoryAuthPending ? (
+                <div className="rounded-md border border-amber-500/50 bg-amber-500/10 dark:bg-amber-950/40 px-3 py-2 text-sm text-amber-950 dark:text-amber-100">
+                  Sign in as real staff to use Branch/Class/Student selectors (JWT + RLS). Remove{' '}
+                  <code className="text-xs rounded bg-muted px-1">?demoRole=…</code> from the URL if present, then refresh.
+                </div>
+              ) : null}
               <p className="text-xs text-muted-foreground">
                 Choose branch → optional class filter → student. Lists use the same JWT + RLS as the rest of the app (no
                 service role).
@@ -1096,12 +1192,12 @@ export default function AiParentReports() {
               {pickersError ? (
                 <p className="text-xs text-amber-800 dark:text-amber-200">{pickersError}</p>
               ) : null}
-              {!pickersLoading && !pickersError && pickerBranches.length === 0 ? (
+              {!pickersLoading && !pickersError && hasLiveSupabaseIdentity && pickerBranches.length === 0 ? (
                 <p className="text-xs text-destructive/90">
-                  No branches returned — check RLS or seed data, or use Advanced UUID fallback below.
+                  No branches returned — check RLS or seed data, or expand Advanced UUID fallback below.
                 </p>
               ) : null}
-              {!pickersLoading && !pickersError && pickerBranches.length > 0 && pickerStudents.length === 0 ? (
+              {!pickersLoading && !pickersError && hasLiveSupabaseIdentity && pickerBranches.length > 0 && pickerStudents.length === 0 ? (
                 <p className="text-xs text-amber-800 dark:text-amber-200">
                   No students visible for this branch/filter — widen the class filter or check fixtures.
                 </p>
@@ -1238,146 +1334,76 @@ export default function AiParentReports() {
                   />
                 </div>
               </div>
-              <details className="rounded-md border bg-muted/30 p-3 text-sm">
-                <summary className="cursor-pointer font-medium text-foreground">
-                  Advanced: paste UUIDs (optional)
-                </summary>
-                <p className="text-xs text-muted-foreground mt-2 mb-2">
-                  Use only if selectors fail RLS or you need a manual override. Same validation as before.
-                </p>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                  <div className="space-y-1.5">
-                    <Label htmlFor="apr-student-id">studentId</Label>
-                    <Input
-                      id="apr-student-id"
-                      value={createDraftForm.studentId}
-                      onChange={(event) => setCreateDraftForm((prev) => ({ ...prev, studentId: event.target.value }))}
-                      placeholder="UUID"
-                      autoComplete="off"
-                    />
+              <Collapsible defaultOpen={false} className="rounded-md border bg-muted/30 text-sm">
+                <CollapsibleTrigger className="flex w-full items-center justify-between gap-2 p-3 text-left font-medium text-foreground outline-none hover:bg-muted/40 rounded-md [&[data-state=open]>svg]:rotate-180">
+                  <span>Advanced UUID fallback (optional)</span>
+                  <ChevronDown className="h-4 w-4 shrink-0 text-muted-foreground transition-transform" aria-hidden />
+                </CollapsibleTrigger>
+                <CollapsibleContent>
+                  <div className="space-y-2 border-t px-3 pb-3 pt-2">
+                    <p className="text-xs text-muted-foreground">
+                      Hidden by default — expand only if selectors fail RLS or you need a manual override. Same validation as before.
+                    </p>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                      <div className="space-y-1.5">
+                        <Label htmlFor="apr-student-id">studentId</Label>
+                        <Input
+                          id="apr-student-id"
+                          value={createDraftForm.studentId}
+                          onChange={(event) => setCreateDraftForm((prev) => ({ ...prev, studentId: event.target.value }))}
+                          placeholder="UUID"
+                          autoComplete="off"
+                        />
+                      </div>
+                      <div className="space-y-1.5">
+                        <Label htmlFor="apr-class-id">classId</Label>
+                        <Input
+                          id="apr-class-id"
+                          value={createDraftForm.classId}
+                          onChange={(event) => setCreateDraftForm((prev) => ({ ...prev, classId: event.target.value }))}
+                          placeholder="optional UUID"
+                          autoComplete="off"
+                        />
+                      </div>
+                      <div className="space-y-1.5">
+                        <Label htmlFor="apr-branch-id">branchId</Label>
+                        <Input
+                          id="apr-branch-id"
+                          value={createDraftForm.branchId}
+                          onChange={(event) => setCreateDraftForm((prev) => ({ ...prev, branchId: event.target.value }))}
+                          placeholder="UUID"
+                          autoComplete="off"
+                        />
+                      </div>
+                      <div className="space-y-1.5 sm:col-span-2">
+                        <Label htmlFor="apr-assigned-teacher">assignedTeacherProfileId (optional)</Label>
+                        <Input
+                          id="apr-assigned-teacher"
+                          value={createDraftForm.assignedTeacherProfileId}
+                          onChange={(event) => setCreateDraftForm((prev) => ({
+                            ...prev,
+                            assignedTeacherProfileId: event.target.value,
+                          }))}
+                          placeholder="optional UUID"
+                          autoComplete="off"
+                        />
+                      </div>
+                    </div>
                   </div>
-                  <div className="space-y-1.5">
-                    <Label htmlFor="apr-class-id">classId</Label>
-                    <Input
-                      id="apr-class-id"
-                      value={createDraftForm.classId}
-                      onChange={(event) => setCreateDraftForm((prev) => ({ ...prev, classId: event.target.value }))}
-                      placeholder="optional UUID"
-                      autoComplete="off"
-                    />
-                  </div>
-                  <div className="space-y-1.5">
-                    <Label htmlFor="apr-branch-id">branchId</Label>
-                    <Input
-                      id="apr-branch-id"
-                      value={createDraftForm.branchId}
-                      onChange={(event) => setCreateDraftForm((prev) => ({ ...prev, branchId: event.target.value }))}
-                      placeholder="UUID"
-                      autoComplete="off"
-                    />
-                  </div>
-                  <div className="space-y-1.5 sm:col-span-2">
-                    <Label htmlFor="apr-assigned-teacher">assignedTeacherProfileId (optional)</Label>
-                    <Input
-                      id="apr-assigned-teacher"
-                      value={createDraftForm.assignedTeacherProfileId}
-                      onChange={(event) => setCreateDraftForm((prev) => ({
-                        ...prev,
-                        assignedTeacherProfileId: event.target.value,
-                      }))}
-                      placeholder="optional UUID"
-                      autoComplete="off"
-                    />
-                  </div>
-                </div>
-              </details>
+                </CollapsibleContent>
+              </Collapsible>
             </>
-          ) : inDemoMode ? (
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              <div className="space-y-1.5">
-                <Label htmlFor="apr-student-id">studentId</Label>
-                <Input
-                  id="apr-student-id"
-                  value={createDraftForm.studentId}
-                  onChange={(event) => setCreateDraftForm((prev) => ({ ...prev, studentId: event.target.value }))}
-                  placeholder="fake/dev UUID or demo id"
-                />
-              </div>
-              <div className="space-y-1.5">
-                <Label htmlFor="apr-class-id">classId (optional)</Label>
-                <Input
-                  id="apr-class-id"
-                  value={createDraftForm.classId}
-                  onChange={(event) => setCreateDraftForm((prev) => ({ ...prev, classId: event.target.value }))}
-                  placeholder="fake/dev UUID"
-                />
-              </div>
-              <div className="space-y-1.5">
-                <Label htmlFor="apr-branch-id">branchId</Label>
-                <Input
-                  id="apr-branch-id"
-                  value={createDraftForm.branchId}
-                  onChange={(event) => setCreateDraftForm((prev) => ({ ...prev, branchId: event.target.value }))}
-                  placeholder="fake/dev UUID or demo id"
-                />
-              </div>
-              <div className="space-y-1.5">
-                <Label>reportType</Label>
-                <Select
-                  value={createDraftForm.reportType}
-                  onValueChange={(value) => setCreateDraftForm((prev) => ({ ...prev, reportType: value }))}
-                >
-                  <SelectTrigger><SelectValue placeholder="Select report type" /></SelectTrigger>
-                  <SelectContent>
-                    {REPORT_TYPE_OPTIONS.map((value) => (
-                      <SelectItem key={value} value={value}>{value}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="space-y-1.5">
-                <Label htmlFor="apr-period-start-d">reportPeriodStart</Label>
-                <Input
-                  id="apr-period-start-d"
-                  type="date"
-                  value={createDraftForm.reportPeriodStart}
-                  onChange={(event) => setCreateDraftForm((prev) => ({ ...prev, reportPeriodStart: event.target.value }))}
-                />
-              </div>
-              <div className="space-y-1.5">
-                <Label htmlFor="apr-period-end-d">reportPeriodEnd</Label>
-                <Input
-                  id="apr-period-end-d"
-                  type="date"
-                  value={createDraftForm.reportPeriodEnd}
-                  onChange={(event) => setCreateDraftForm((prev) => ({ ...prev, reportPeriodEnd: event.target.value }))}
-                />
-              </div>
-              <div className="space-y-1.5 sm:col-span-2">
-                <Label htmlFor="apr-assigned-teacher-d">assignedTeacherProfileId (optional)</Label>
-                <Input
-                  id="apr-assigned-teacher-d"
-                  value={createDraftForm.assignedTeacherProfileId}
-                  onChange={(event) => setCreateDraftForm((prev) => ({
-                    ...prev,
-                    assignedTeacherProfileId: event.target.value,
-                  }))}
-                  placeholder="fake/dev UUID"
-                />
-              </div>
-            </div>
           ) : (
             <>
+              <p className="text-[11px] text-muted-foreground">
+                <span className="font-medium text-foreground">Mode:</span>{' '}
+                <span className="font-mono">no-supabase-client</span>
+              </p>
               <div className="rounded-md border bg-amber-500/10 dark:bg-amber-950/40 px-3 py-2 text-sm text-amber-950 dark:text-amber-100">
-                {!isSupabaseConfigured() ? (
-                  <span>Supabase is not configured in this build — use Advanced UUID fallback or configure the client.</span>
-                ) : (
-                  <span>
-                    Branch/class/student pickers need a live Supabase session. Sign in with a staff account, remove{' '}
-                    <code className="text-xs rounded bg-muted px-1">?demoRole=…</code> from the URL, and refresh. If you are
-                    already signed in, refresh once so the session attaches before this card renders.
-                  </span>
-                )}
+                <span>
+                  Supabase URL/key are not configured in this build — you cannot load Branch/Class/Student lists here.
+                  Sign in as real staff once the client is configured. Use Advanced UUID fallback only if you must create a shell manually.
+                </span>
               </div>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div className="space-y-1.5">
@@ -1413,59 +1439,64 @@ export default function AiParentReports() {
                   />
                 </div>
               </div>
-              <details className="rounded-md border bg-muted/30 p-3 text-sm">
-                <summary className="cursor-pointer font-medium text-foreground">
-                  Advanced UUID fallback (manual shell only)
-                </summary>
-                <p className="text-xs text-muted-foreground mt-2 mb-2">
-                  Use only when pickers are unavailable. Same validation as the staff selector path.
-                </p>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                  <div className="space-y-1.5">
-                    <Label htmlFor="apr-student-id-fallback">studentId</Label>
-                    <Input
-                      id="apr-student-id-fallback"
-                      value={createDraftForm.studentId}
-                      onChange={(event) => setCreateDraftForm((prev) => ({ ...prev, studentId: event.target.value }))}
-                      placeholder="UUID"
-                      autoComplete="off"
-                    />
+              <Collapsible defaultOpen={false} className="rounded-md border bg-muted/30 text-sm">
+                <CollapsibleTrigger className="flex w-full items-center justify-between gap-2 p-3 text-left font-medium text-foreground outline-none hover:bg-muted/40 rounded-md [&[data-state=open]>svg]:rotate-180">
+                  <span>Advanced UUID fallback (manual shell only)</span>
+                  <ChevronDown className="h-4 w-4 shrink-0 text-muted-foreground transition-transform" aria-hidden />
+                </CollapsibleTrigger>
+                <CollapsibleContent>
+                  <div className="space-y-2 border-t px-3 pb-3 pt-2">
+                    <p className="text-xs text-muted-foreground">
+                      Use only when pickers cannot run in this build. Same validation as the staff selector path.
+                    </p>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                      <div className="space-y-1.5">
+                        <Label htmlFor="apr-student-id-fallback">studentId</Label>
+                        <Input
+                          id="apr-student-id-fallback"
+                          value={createDraftForm.studentId}
+                          onChange={(event) => setCreateDraftForm((prev) => ({ ...prev, studentId: event.target.value }))}
+                          placeholder="UUID"
+                          autoComplete="off"
+                        />
+                      </div>
+                      <div className="space-y-1.5">
+                        <Label htmlFor="apr-class-id-fallback">classId (optional)</Label>
+                        <Input
+                          id="apr-class-id-fallback"
+                          value={createDraftForm.classId}
+                          onChange={(event) => setCreateDraftForm((prev) => ({ ...prev, classId: event.target.value }))}
+                          placeholder="optional UUID"
+                          autoComplete="off"
+                        />
+                      </div>
+                      <div className="space-y-1.5">
+                        <Label htmlFor="apr-branch-id-fallback">branchId</Label>
+                        <Input
+                          id="apr-branch-id-fallback"
+                          value={createDraftForm.branchId}
+                          onChange={(event) => setCreateDraftForm((prev) => ({ ...prev, branchId: event.target.value }))}
+                          placeholder="UUID"
+                          autoComplete="off"
+                        />
+                      </div>
+                      <div className="space-y-1.5 sm:col-span-2">
+                        <Label htmlFor="apr-assigned-teacher-fallback">assignedTeacherProfileId (optional)</Label>
+                        <Input
+                          id="apr-assigned-teacher-fallback"
+                          value={createDraftForm.assignedTeacherProfileId}
+                          onChange={(event) => setCreateDraftForm((prev) => ({
+                            ...prev,
+                            assignedTeacherProfileId: event.target.value,
+                          }))}
+                          placeholder="optional UUID"
+                          autoComplete="off"
+                        />
+                      </div>
+                    </div>
                   </div>
-                  <div className="space-y-1.5">
-                    <Label htmlFor="apr-class-id-fallback">classId (optional)</Label>
-                    <Input
-                      id="apr-class-id-fallback"
-                      value={createDraftForm.classId}
-                      onChange={(event) => setCreateDraftForm((prev) => ({ ...prev, classId: event.target.value }))}
-                      placeholder="optional UUID"
-                      autoComplete="off"
-                    />
-                  </div>
-                  <div className="space-y-1.5">
-                    <Label htmlFor="apr-branch-id-fallback">branchId</Label>
-                    <Input
-                      id="apr-branch-id-fallback"
-                      value={createDraftForm.branchId}
-                      onChange={(event) => setCreateDraftForm((prev) => ({ ...prev, branchId: event.target.value }))}
-                      placeholder="UUID"
-                      autoComplete="off"
-                    />
-                  </div>
-                  <div className="space-y-1.5 sm:col-span-2">
-                    <Label htmlFor="apr-assigned-teacher-fallback">assignedTeacherProfileId (optional)</Label>
-                    <Input
-                      id="apr-assigned-teacher-fallback"
-                      value={createDraftForm.assignedTeacherProfileId}
-                      onChange={(event) => setCreateDraftForm((prev) => ({
-                        ...prev,
-                        assignedTeacherProfileId: event.target.value,
-                      }))}
-                      placeholder="optional UUID"
-                      autoComplete="off"
-                    />
-                  </div>
-                </div>
-              </details>
+                </CollapsibleContent>
+              </Collapsible>
             </>
           )}
           <Button onClick={() => { void handleCreateDraft(); }} disabled={creatingDraft}>

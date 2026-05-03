@@ -15,6 +15,12 @@
 - **Fix:** **`hasLiveSupabaseIdentity`** includes **`session?.user?.id`**; **`staffDirectoryAuthPending`** during auth load; non-demo without session → **report type + dates** + **Advanced UUID fallback** only; mode copy distinguishes **real staff** vs **`?demoRole=`** demo (Demo Role Preview banner alone does not enable demo mode).
 - **No** SQL/RLS/storage/ParentView/release/notifications/OCR/PDF/Edge/persistence/`real_ai` logic changes. **Docs:** **`docs/real-ai-staff-draft-generation-manual-qa-unblock-checkpoint.md`**, **`docs/real-ai-staff-draft-generation-ui-checkpoint.md`**.
 
+## Checkpoint update (AI parent report create shell real staff picker fallback — 2026-05-03)
+
+- **`ff41cfc`** could still show UUID-first UX because **picker visibility** and **`loadPickerCatalog`** both keyed off **`canUseSupabase`**; any mismatch hid the whole selector branch and surfaced UUID fallback; **`<details>`** Advanced could read as primary.
+- **Fix:** **`showStaffSelectorShell`** + **`loadPickerCatalog`** tied to **`canAccess && !inDemoMode && isSupabaseConfigured()`**; **`Collapsible`** (**closed by default**) for Advanced UUIDs; safe **`Mode:`** diagnostic line (no secrets).
+- **No** SQL/RLS/storage/ParentView/release/notifications/OCR/PDF/Edge/`createAiParentReportVersion`/release/`real_ai` click logic changes.
+
 ## Checkpoint update (AI parent report manual QA unblock — create shell pickers, 2026-05-03)
 
 - **`AiParentReports.jsx`** — **branch/class/student** dropdowns for signed-in non-demo staff via **`getBranches` / `getClasses` / `getStudents`** (RLS). **Doc:** **`docs/real-ai-staff-draft-generation-manual-qa-unblock-checkpoint.md`**.

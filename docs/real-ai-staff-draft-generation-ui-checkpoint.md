@@ -3,7 +3,7 @@
 ## What shipped
 
 - **`src/pages/AiParentReports.jsx`**
-  - **Create report shell:** staff-visible **branch / class (optional) / student** dropdowns when **`canUseSupabase`** is true: **`canAccess && !inDemoMode && isSupabaseConfigured() && hasLiveSupabaseIdentity`**, where **`hasLiveSupabaseIdentity`** = **`appUser?.id` OR `session?.user?.id`** (profile load must not hide pickers). Loading state avoids flashing raw UUIDs; **Advanced UUID fallback** is non-default for real staff — see **`docs/real-ai-staff-draft-generation-manual-qa-unblock-checkpoint.md`**.
+  - **Create report shell:** staff-visible **branch / class (optional) / student** dropdowns when **`showStaffSelectorShell`**: **`canAccess && !inDemoMode && isSupabaseConfigured()`** — independent of **`canUseSupabase`** so the selector grid is never swapped for a UUID-first layout while identity or catalog hooks settle. **`loadPickerCatalog`** follows **`showStaffSelectorShell`**. **`canUseSupabase`** (**includes `hasLiveSupabaseIdentity`**) remains for report list/detail and other live reads. **Advanced UUID fallback** is a **closed-by-default Collapsible**, not inline UUID labels — see **`docs/real-ai-staff-draft-generation-manual-qa-unblock-checkpoint.md`**.
   - Explicit action **Generate real AI draft** (only on click; not on load or on report select).
   - Clear copy: real AI, **staff review required**, **parents do not see drafts** until **explicit release**.
   - **Disabled** in **demo role** and without authenticated Supabase session.
