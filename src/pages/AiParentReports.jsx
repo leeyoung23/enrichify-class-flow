@@ -38,6 +38,7 @@ import {
   EVIDENCE_CLASSIFICATION,
   SOURCE_AGGREGATION_MODES,
 } from '@/services/aiParentReportSourceAggregationService';
+import { generateRealAiParentReportDraftViaEdge } from '@/services/aiParentReportEdgeGenerationService';
 
 const REPORT_TYPE_OPTIONS = [
   'weekly_brief',
@@ -208,6 +209,9 @@ export default function AiParentReports() {
   const [creatingDraft, setCreatingDraft] = useState(false);
   const [creatingVersion, setCreatingVersion] = useState(false);
   const [generatingMockDraft, setGeneratingMockDraft] = useState(false);
+  const [generatingRealAiDraft, setGeneratingRealAiDraft] = useState(false);
+  /** null | 'generating' | 'saved' | 'failed' — informational only; resets when switching reports */
+  const [realAiDraftPhase, setRealAiDraftPhase] = useState(null);
   const [lifecycleBusy, setLifecycleBusy] = useState('');
 
   const [demoReports, setDemoReports] = useState(DEMO_BASE_REPORTS);
@@ -396,6 +400,10 @@ export default function AiParentReports() {
   useEffect(() => {
     void loadDetail();
   }, [loadDetail]);
+
+  useEffect(() => {
+    setRealAiDraftPhase(null);
+  }, [selectedReportId]);
 
   useEffect(() => {
     let cancelled = false;
@@ -600,6 +608,77 @@ export default function AiParentReports() {
     resetMockDraftForm();
     toast.success('Mock draft generated. Review/edit and release manually when ready.');
     setGeneratingMockDraft(false);
+  };
+
+  const handleGenerateRealAiDraft = async () => {
+    if (!selectedReportId || !selectedReport) {
+      toast.message('Select a report first.');
+      return;
+    }
+
+    if (inDemoMode) {
+      toast.message('Real AI draft needs a live Supabase session. Exit demo role to use this action.');
+      return;
+    }
+
+    if (!canUseSupabase) {
+      toast.error('Sign in required.');
+      return;
+    }
+
+    if (reportMetadataGaps.length > 0) {
+      toast.error(
+        `Complete report metadata first (missing: ${reportMetadataGaps.join(', ')}). Real AI needs student, branch, and reporting period.`
+      );
+      return;
+    }
+
+    let fromEvidence = {};
+    try {
+      let agg = null;
+      if (!sourceEvidenceLoading && sourceEvidencePreview && !sourceEvidenceError) {
+        agg = sourceEvidencePreview;
+      } else {
+        agg = await fetchSourceEvidenceBundle();
+      }
+      if (agg) {
+        fromEvidence = buildMockDraftInputFromSourceEvidence(agg);
+      }
+    } catch {
+      toast.error('Source evidence could not be prepared. Check the report and try again.');
+      return;
+    }
+
+    const input = mergeMockDraftFormWithEvidence(buildMockDraftInput(), fromEvidence);
+    const hasUnsafe = Object.values(input).some((value) => hasUnsafeMockInput(value));
+    if (hasUnsafe) {
+      toast.error('Draft inputs contain blocked private/provider-style patterns.');
+      return;
+    }
+
+    setGeneratingRealAiDraft(true);
+    setRealAiDraftPhase('generating');
+
+    const result = await generateRealAiParentReportDraftViaEdge({
+      reportId: selectedReportId,
+      input,
+    });
+
+    if (result.error || !result.data?.version?.id) {
+      setRealAiDraftPhase('failed');
+      toast.error(result.error?.message || 'Failed to generate real AI draft.');
+      setGeneratingRealAiDraft(false);
+      return;
+    }
+
+    if (result.warning?.check) {
+      toast.message(`Lifecycle event note: ${result.warning.message}`);
+    }
+
+    setRealAiDraftPhase('saved');
+    toast.success('Real AI draft saved for review. Parents cannot see it until you release a version.');
+    await Promise.all([loadReports(), loadDetail()]);
+    setGeneratingRealAiDraft(false);
   };
 
   const handleCreateDraft = async () => {
@@ -1362,6 +1441,62 @@ export default function AiParentReports() {
           <p className="text-xs text-muted-foreground">
             No real AI provider. No auto-submit, approve, or release. Parents only see content after explicit release.
           </p>
+        </Card>
+
+        <Card className="p-4 space-y-3 xl:col-span-2 border-amber-200/60 bg-amber-50/40 dark:bg-amber-950/20 dark:border-amber-900/40">
+          <h2 className="font-semibold">Generate real AI draft</h2>
+          <p className="text-sm text-muted-foreground">
+            Runs the secured server-side AI service using your staff login and the fields above (merged with Source
+            Evidence Preview like mock draft). This creates a new{' '}
+            <span className="font-medium text-foreground">staff-only draft version</span>.{' '}
+            <span className="font-medium text-foreground">
+              Parents cannot see any draft — teacher/staff must review and explicitly release
+            </span>{' '}
+            before families see content.
+          </p>
+          <ul className="text-xs text-muted-foreground list-disc pl-4 space-y-1">
+            <li>Uses live Edge generation — provider credentials stay on the server.</li>
+            <li>No automatic submit, approve, or release.</li>
+            <li>Unavailable in demo role — sign in as staff without demo mode.</li>
+          </ul>
+          <Button
+            type="button"
+            variant="default"
+            onClick={() => {
+              void handleGenerateRealAiDraft();
+            }}
+            disabled={
+              generatingRealAiDraft ||
+              generatingMockDraft ||
+              !selectedReportId ||
+              inDemoMode ||
+              !canUseSupabase
+            }
+          >
+            {generatingRealAiDraft ? 'Generating draft…' : 'Generate real AI draft'}
+          </Button>
+          {realAiDraftPhase === 'saved' ? (
+            <p className="text-sm font-medium text-emerald-800 dark:text-emerald-300">
+              Real AI draft saved for review — still not visible to parents until release.
+            </p>
+          ) : null}
+          {realAiDraftPhase === 'failed' ? (
+            <p className="text-sm font-medium text-destructive">
+              Failed to generate real AI draft — fix issues above or try again.
+            </p>
+          ) : null}
+          {!inDemoMode && canUseSupabase && selectedReportId ? (
+            <p className="text-xs text-muted-foreground">
+              {generatingRealAiDraft
+                ? 'Calling secured Edge generation…'
+                : 'Only runs when you click the button — nothing runs on page load or when selecting a report.'}
+            </p>
+          ) : null}
+          {inDemoMode ? (
+            <p className="text-xs text-amber-800 dark:text-amber-200">
+              Switch off demo role and sign in to generate a real AI draft.
+            </p>
+          ) : null}
         </Card>
 
         <Card className="p-4 space-y-3">

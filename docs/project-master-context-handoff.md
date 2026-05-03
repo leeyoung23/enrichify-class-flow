@@ -2,7 +2,11 @@
 
 ## Checkpoint update (AI parent report `real_ai` draft persistence — service only, 2026-05-03)
 
-- **`src/services/supabaseWriteService.js`** — **`createAiParentReportVersion`** accepts **`generationSource: 'real_ai'`**; **`ai_generated_at`** set; optional **`ai_model_label`**. **No** staff UI button; **no** ParentView/RLS/SQL change; **no** provider in the write service. **Doc:** **`docs/real-ai-draft-persistence-unlock-checkpoint.md`**. **Next:** staff UI → secured Edge `generate-ai-parent-report-draft` → persist.
+- **`src/services/supabaseWriteService.js`** — **`createAiParentReportVersion`** accepts **`generationSource: 'real_ai'`**; **`ai_generated_at`** set; optional **`ai_model_label`**. **Doc:** **`docs/real-ai-draft-persistence-unlock-checkpoint.md`**.
+
+## Checkpoint update (AI parent report real AI staff UI — Phase 2C, 2026-05-03)
+
+- **`src/pages/AiParentReports.jsx`** — explicit **Generate real AI draft** (Edge JWT + persist **`real_ai`**). **`src/services/aiParentReportEdgeGenerationService.js`** — **`fetch`** to **`generate-ai-parent-report-draft`**, no secrets in browser. **Doc:** **`docs/real-ai-staff-draft-generation-ui-checkpoint.md`**. ParentView unchanged; no auto-release.
 
 ## Checkpoint update (Parent Communication teacher workflow polish — final seal, docs-only, 2026-05-03)
 

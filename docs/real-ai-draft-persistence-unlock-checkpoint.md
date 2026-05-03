@@ -34,4 +34,5 @@
 
 ## Next milestone
 
-- Staff UI: explicit **Generate real AI draft** action calling **secured Edge** (`Authorization: Bearer`), then **`createAiParentReportVersion`** with **`generationSource: 'real_ai'`** and safe structured sections / model label from Edge metadata **only**.
+- **Phase 2C (done):** staff UI **Generate real AI draft** — see **`docs/real-ai-staff-draft-generation-ui-checkpoint.md`**.
+- Further UX: evidence sensitivity gates, loading/error polish, optional **`invoke`** vs **`fetch`** alignment.

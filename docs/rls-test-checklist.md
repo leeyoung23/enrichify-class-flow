@@ -150,9 +150,14 @@
 
 ## Checkpoint update (real AI draft persistence — Stage 2B, service only)
 
-- **`createAiParentReportVersion`** accepts **`generationSource: 'real_ai'`**; **`ai_generated_at`** set; **`ai_model_label`** optional (non-secret). **No** staff UI button yet; **no** ParentView/RLS/SQL change; **no** provider in write service.
+- **`createAiParentReportVersion`** accepts **`generationSource: 'real_ai'`**; **`ai_generated_at`** set; **`ai_model_label`** optional (non-secret). **No** ParentView/RLS/SQL change; **no** provider in write service.
 - Smokes: **`test:supabase:ai-parent-reports`**, **`test:supabase:ai-parent-report:mock-draft`**, **`test:supabase:ai-parent-report:real-ai-persistence`**, adapter integration updated.
 - Doc: **`docs/real-ai-draft-persistence-unlock-checkpoint.md`**.
+
+## Checkpoint update (real AI staff draft UI — Phase 2C)
+
+- **`AiParentReports.jsx`** — **Generate real AI draft** → **`aiParentReportEdgeGenerationService`** → Edge **`generate-ai-parent-report-draft`** (JWT) → **`createAiParentReportVersion`** (**`real_ai`**). Demo-off only; no ParentView change.
+- Doc: **`docs/real-ai-staff-draft-generation-ui-checkpoint.md`** · Manual browser QA before prod.
 
 ## Checkpoint update (real AI provider tooling verification)
 
