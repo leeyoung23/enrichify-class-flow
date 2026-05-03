@@ -381,18 +381,6 @@ async function run() {
       }
 
       if (draftReportId) {
-        const blockedRealAi = await createAiParentReportVersion({
-          reportId: draftReportId,
-          generationSource: "real_ai",
-          structuredSections: { student_summary: "should fail" },
-        });
-        if (blockedRealAi.error) {
-          printResult("PASS", "Service guard: generationSource=real_ai blocked as expected");
-        } else {
-          printResult("WARNING", "Service guard: generationSource=real_ai unexpectedly allowed");
-          failureCount += 1;
-        }
-
         const versionResult = await createAiParentReportVersion({
           reportId: draftReportId,
           generationSource: "mock_ai",
@@ -417,6 +405,69 @@ async function run() {
             printResult("CHECK", `Version event insert CHECK (${versionResult.warning.message})`);
           } else {
             printResult("PASS", "Version lifecycle event insert succeeded");
+          }
+        }
+
+        if (draftReportId && releasedVersionId) {
+          const realAiPersistence = await createAiParentReportVersion({
+            reportId: draftReportId,
+            generationSource: "real_ai",
+            structuredSections: {
+              student_summary:
+                "Persistence smoke: real_ai service path only — no provider HTTP in this test.",
+              attendance: "N/A",
+              lesson_progression: "N/A",
+              homework_completion: "N/A",
+              homework_assessment_performance: "N/A",
+              strengths: "N/A",
+              areas_for_improvement: "N/A",
+              learning_gaps: "N/A",
+              next_recommendations: "N/A",
+              parent_support_suggestions: "N/A",
+              teacher_final_comment: "Persistence smoke only.",
+            },
+            teacherEdits: { persistence_smoke: true },
+            finalText: { parent_summary: "Safe parent-facing placeholder." },
+            aiModelLabel: "real_ai_persistence_smoke_v1",
+          });
+          if (realAiPersistence.error || !realAiPersistence.data?.version?.id) {
+            printResult(
+              "CHECK",
+              `real_ai persistence CHECK (${realAiPersistence.error?.message || "unknown"})`
+            );
+          } else {
+            const rv = realAiPersistence.data.version;
+            if (rv.generation_source === "real_ai" && rv.ai_generated_at) {
+              printResult(
+                "PASS",
+                "real_ai version persisted with ai_generated_at (staff draft; no auto-release)"
+              );
+            } else {
+              printResult("WARNING", "real_ai version metadata mismatch");
+              failureCount += 1;
+            }
+            if (rv.ai_model_label === "real_ai_persistence_smoke_v1") {
+              printResult("PASS", "real_ai ai_model_label stored when provided");
+            } else {
+              printResult("CHECK", "real_ai ai_model_label CHECK (unexpected empty or mismatch)");
+            }
+            const reportPeek = await supabase
+              .from("ai_parent_reports")
+              .select("status,current_version_id,released_at")
+              .eq("id", draftReportId)
+              .maybeSingle();
+            if (
+              reportPeek.data?.status === "draft" &&
+              !reportPeek.data?.released_at &&
+              reportPeek.data?.current_version_id == null
+            ) {
+              printResult("PASS", "Report remains draft/unreleased after real_ai version insert");
+            } else {
+              printResult(
+                "CHECK",
+                "Report status after real_ai insert CHECK (expected draft, no release)"
+              );
+            }
           }
         }
 

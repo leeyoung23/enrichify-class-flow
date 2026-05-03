@@ -184,3 +184,11 @@ Run:
 - `npm run test:supabase:weekly-report:write`
 
 ---
+
+## Addendum: AI Parent Reports (parallel track)
+
+- **Edge:** `generate-ai-parent-report-draft` calls the provider adapter server-side with JWT + **`can_manage_ai_parent_report`** (see **`docs/real-ai-parent-report-edge-auth-checkpoint.md`**).
+- **Persistence (service):** Staff may persist a version with **`generationSource: 'real_ai'`** via **`createAiParentReportVersion`** after Stage 2B — still **no** auto-release; parents see content only through existing release + RLS (see **`docs/real-ai-draft-persistence-unlock-checkpoint.md`**).
+- **Next UI step:** wire staff action → Edge → then persist returned structured sections (no provider in browser).
+
+---

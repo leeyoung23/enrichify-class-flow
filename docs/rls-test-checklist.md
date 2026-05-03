@@ -139,14 +139,20 @@
 
 ## Checkpoint update (real AI provider tooling re-verification)
 
-- Docs-only: **`docs/real-ai-provider-tooling-verification-checkpoint.md`** — **re-verified:** Deno + Supabase CLI on PATH (`deno check` PASS; CLI help PASS); adapter smokes PASS; no SQL/RLS change; **`real_ai`** still blocked.
+- Docs-only: **`docs/real-ai-provider-tooling-verification-checkpoint.md`** — **re-verified:** Deno + Supabase CLI on PATH (`deno check` PASS; CLI help PASS); adapter smokes PASS; no SQL/RLS change; **`real_ai`** service persistence follows **`docs/real-ai-draft-persistence-unlock-checkpoint.md`** (Stage 2B).
 
 ## Checkpoint update (real AI parent report Edge generation auth gate — Stage 2A)
 
-- **`generate-ai-parent-report-draft`** requires **`Authorization: Bearer`** + **`can_manage_ai_parent_report(report_uuid)`** **before** adapter/provider work (anon JWT + user JWT; **no** service-role bypass for scope). **`real_ai`** persistence still blocked; ParentView unchanged.
+- **`generate-ai-parent-report-draft`** requires **`Authorization: Bearer`** + **`can_manage_ai_parent_report(report_uuid)`** **before** adapter/provider work (anon JWT + user JWT; **no** service-role bypass for scope). ParentView unchanged.
 - Optional SQL (manual apply if RPC permission denied): **`supabase/sql/032_grant_execute_can_manage_ai_parent_report.sql`**.
 - Smoke: **`npm run test:supabase:ai-parent-report:edge-generation-auth`** — **CHECK-skip** if Edge URL 404 / keys missing (does not fake PASS for auth). Adapter smokes remain the canonical provider stack tests.
 - Doc: **`docs/real-ai-parent-report-edge-auth-checkpoint.md`**.
+
+## Checkpoint update (real AI draft persistence — Stage 2B, service only)
+
+- **`createAiParentReportVersion`** accepts **`generationSource: 'real_ai'`**; **`ai_generated_at`** set; **`ai_model_label`** optional (non-secret). **No** staff UI button yet; **no** ParentView/RLS/SQL change; **no** provider in write service.
+- Smokes: **`test:supabase:ai-parent-reports`**, **`test:supabase:ai-parent-report:mock-draft`**, **`test:supabase:ai-parent-report:real-ai-persistence`**, adapter integration updated.
+- Doc: **`docs/real-ai-draft-persistence-unlock-checkpoint.md`**.
 
 ## Checkpoint update (real AI provider tooling verification)
 
@@ -156,18 +162,18 @@
 
 - Edge Function **`generate-ai-parent-report-draft`** uses **`supabase/functions/_shared/`** only (no repo `src/` import); behavior aligned with `src/services/aiParentReportProviderAdapter.js` for fake/disabled/real-stub.
 - Smoke: `npm run test:supabase:ai-parent-report:edge-adapter` (+ existing `test:supabase:ai-parent-report:provider-adapter`).
-- No SQL/RLS change; **`real_ai`** inserts still blocked at service layer; no provider keys; no external AI HTTP.
+- No SQL/RLS change; **`real_ai`** rows persist via **`createAiParentReportVersion`** when staff calls it (Stage 2B); Edge itself does not insert versions; no provider keys in frontend; provider HTTP only Edge/server.
 - Docs: `docs/ai-parent-report-edge-adapter-bundling-checkpoint.md`.
 
 ## Checkpoint update (AI parent report provider adapter skeleton)
 
 - Adapter module (server-side, fake/disabled only): `src/services/aiParentReportProviderAdapter.js`.
-- No change to parent visibility; no `real_ai` inserts enabled.
+- Parent visibility unchanged; **`real_ai`** persistence is **`createAiParentReportVersion`** (service).
 - Smoke: `npm run test:supabase:ai-parent-report:provider-adapter`.
-- Optional integration assertion: `createAiParentReportVersion` still rejects `real_ai` before DB writes when env present.
+- Optional integration assertion: unauthenticated **`real_ai`** create does not persist; milestone-block message absent (Stage 2B).
 - Checkpoint: `docs/ai-parent-report-provider-adapter-skeleton-checkpoint.md`
 - Final docs checkpoint: `docs/ai-parent-report-provider-adapter-skeleton-final-checkpoint.md`
-- Next focus: **Edge Function deploy/bundling check (fake only)** before real provider keys; `real_ai` unlock remains future.
+- Next focus: staff UI wiring to Edge + **`createAiParentReportVersion`** (`real_ai` service persistence is Stage 2B — see **`docs/real-ai-draft-persistence-unlock-checkpoint.md`**).
 
 ## Checkpoint update (mock AI draft UI docs finalization)
 
@@ -1459,7 +1465,7 @@ Expected outcomes for this milestone:
 - released linked-child report visibility path for parent is exercised (PASS/CHECK by fixture),
 - unrelated parent is blocked (PASS/CHECK if unrelated parent credentials/fixture are missing),
 - student blocked/empty for AI parent report reads (PASS),
-- `generation_source='real_ai'` is blocked in service layer (PASS),
+- **`generation_source='real_ai'`** may be persisted when staff-authorized (PASS/CHECK); unreleased drafts remain parent-invisible (PASS),
 - release/version audit event inserts are PASS or CHECK with explicit reason (no privilege widening),
 - no service-role frontend usage,
 - no real provider/PDF/export flows exercised.
@@ -1484,7 +1490,7 @@ Expected outcomes for this milestone:
   - `service_create` from CHECK to PASS for HQ draft creation.
 - Expected PASS path after apply:
   - HQ draft create,
-  - `real_ai` source blocked,
+  - **`real_ai`** version insert when fixture allows (Stage 2B),
   - first version number = 1,
   - submit/review/approve/release lifecycle,
   - `current_version_id` set to selected release version,

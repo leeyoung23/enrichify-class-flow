@@ -196,7 +196,10 @@ async function run() {
     ) || failed;
 
   printResult("PASS", "no persistence in adapter");
-  printResult("PASS", "no real_ai DB unlock (smoke does not call createAiParentReportVersion)");
+  printResult(
+    "PASS",
+    "no DB writes in this smoke (adapter-only; real_ai service persistence is separate)"
+  );
   printResult("PASS", "no PDF/export");
   printResult("PASS", "no notification/email side effects");
 

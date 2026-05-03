@@ -190,16 +190,39 @@ async function run() {
         failureCount += 1;
       }
 
-      const blockedRealAi = await createAiParentReportVersion({
+      const realAiPersistence = await createAiParentReportVersion({
         reportId,
         generationSource: "real_ai",
-        structuredSections: { summary: "should fail" },
+        structuredSections: {
+          student_summary: "Mock-draft smoke: real_ai persistence only — no provider in service.",
+          attendance: "N/A",
+          lesson_progression: "N/A",
+          homework_completion: "N/A",
+          homework_assessment_performance: "N/A",
+          strengths: "N/A",
+          areas_for_improvement: "N/A",
+          learning_gaps: "N/A",
+          next_recommendations: "N/A",
+          parent_support_suggestions: "N/A",
+          teacher_final_comment: "Smoke-only.",
+        },
+        teacherEdits: { mock_draft_real_ai_smoke: true },
+        finalText: { parent_summary: "Placeholder." },
+        aiModelLabel: "mock_draft_real_ai_smoke_label",
       });
-      if (blockedRealAi.error) {
-        printResult("PASS", "Service guard: generationSource=real_ai blocked as expected");
+      if (realAiPersistence.error || !realAiPersistence.data?.version?.id) {
+        printResult(
+          "CHECK",
+          `real_ai persistence CHECK (${realAiPersistence.error?.message || "unknown"})`
+        );
       } else {
-        printResult("WARNING", "Service guard: generationSource=real_ai unexpectedly allowed");
-        failureCount += 1;
+        const ver = realAiPersistence.data.version;
+        if (ver.generation_source === "real_ai" && ver.ai_generated_at && ver.ai_model_label) {
+          printResult("PASS", "real_ai version persisted (service-only; no provider call)");
+        } else {
+          printResult("WARNING", "real_ai persistence metadata unexpected");
+          failureCount += 1;
+        }
       }
 
       const versionsRead = await listAiParentReportVersions({ reportId });

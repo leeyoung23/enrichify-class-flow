@@ -46,6 +46,7 @@
     "test:supabase:ai-parent-report:edge-adapter": "node --experimental-strip-types scripts/supabase-ai-parent-report-edge-adapter-smoke-test.mjs",
     "test:supabase:ai-parent-report:edge-real-provider": "node --experimental-strip-types scripts/supabase-ai-parent-report-edge-real-provider-smoke-test.mjs",
     "test:supabase:ai-parent-report:edge-generation-auth": "node scripts/supabase-ai-parent-report-edge-generation-auth-smoke-test.mjs",
+    "test:supabase:ai-parent-report:real-ai-persistence": "node scripts/supabase-ai-parent-report-real-ai-persistence-smoke-test.mjs",
     "test:ai-parent-report:real-provider-smoke": "node --experimental-strip-types scripts/ai-parent-report-real-provider-smoke-test.mjs",
     "test:supabase:staff-time-clock": "node scripts/supabase-staff-time-clock-smoke-test.mjs",
     "test:supabase:staff-time-clock:review": "node scripts/supabase-staff-time-clock-review-smoke-test.mjs",

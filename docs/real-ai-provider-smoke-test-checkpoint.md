@@ -28,8 +28,8 @@ The **`generate-ai-parent-report-draft`** Edge function now requires a **staff J
 ## Safety boundaries (unchanged)
 
 - **No** SQL / RLS / storage changes from this smoke.
-- **No** `ai_parent_report_versions` (or related) insert/update.
-- **No** `real_ai` persistence unlock — service layer still blocks `real_ai` writes unless separately enabled later.
+- **No** `ai_parent_report_versions` (or related) insert/update **from this smoke** — **`npm run test:supabase:ai-parent-report:real-ai-persistence`** covers **`real_ai`** service persistence separately.
+- **Persistence:** **`real_ai`** may be enabled at **`createAiParentReportVersion`** (Stage 2B); this script still does **not** call it.
 - **No** parent release, **no** ParentView changes.
 - **No** frontend provider calls; **no** Vite env exposure for API keys.
 - **No** notification/email sending.

@@ -2585,9 +2585,6 @@ export async function createAiParentReportVersion({
   if (!AI_PARENT_REPORT_GENERATION_SOURCE_VALUES.has(normalizedSource)) {
     return { data: null, error: { message: "generationSource is invalid" } };
   }
-  if (normalizedSource === "real_ai") {
-    return { data: null, error: { message: "generationSource real_ai is blocked in this milestone" } };
-  }
 
   const normalizedStructured = normalizeJsonObject(structuredSections, {
     fieldName: "structuredSections",
@@ -2638,6 +2635,8 @@ export async function createAiParentReportVersion({
       : 1;
 
     const nowIso = new Date().toISOString();
+    const aiGeneratedAt =
+      normalizedSource === "mock_ai" || normalizedSource === "real_ai" ? nowIso : null;
     const insertResult = await supabase
       .from("ai_parent_report_versions")
       .insert({
@@ -2647,8 +2646,9 @@ export async function createAiParentReportVersion({
         structured_sections: normalizedStructured,
         teacher_edits: normalizedTeacherEdits,
         final_text: normalizedFinalText,
+        // Non-secret display label only (e.g. model id from Edge response metadata). Omit if unknown.
         ai_model_label: normalizeNullableText(aiModelLabel, { maxLength: 120 }),
-        ai_generated_at: normalizedSource === "mock_ai" ? nowIso : null,
+        ai_generated_at: aiGeneratedAt,
         created_by_profile_id: profileId,
         created_at: nowIso,
       })

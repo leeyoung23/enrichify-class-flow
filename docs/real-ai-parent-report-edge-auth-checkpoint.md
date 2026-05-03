@@ -17,7 +17,7 @@
 
 ## What is explicitly unchanged (this stage)
 
-- **`createAiParentReportVersion`** still **blocks** **`generationSource === 'real_ai'`** (no persistence unlock).
+- **Edge** does **not** insert into **`ai_parent_report_versions`**; **Stage 2B** unlocked **`real_ai`** **persistence in the browser write service** only (see **`docs/real-ai-draft-persistence-unlock-checkpoint.md`**). The Edge function still returns **draft JSON only**.
 - **No** inserts into **`ai_parent_report_versions`** from the Edge function.
 - **No** ParentView, release, or notification/email changes.
 - **No** OCR / PDF download or storage work.

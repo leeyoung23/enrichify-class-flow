@@ -1,5 +1,9 @@
 # Project Master Context Handoff
 
+## Checkpoint update (AI parent report `real_ai` draft persistence — service only, 2026-05-03)
+
+- **`src/services/supabaseWriteService.js`** — **`createAiParentReportVersion`** accepts **`generationSource: 'real_ai'`**; **`ai_generated_at`** set; optional **`ai_model_label`**. **No** staff UI button; **no** ParentView/RLS/SQL change; **no** provider in the write service. **Doc:** **`docs/real-ai-draft-persistence-unlock-checkpoint.md`**. **Next:** staff UI → secured Edge `generate-ai-parent-report-draft` → persist.
+
 ## Checkpoint update (Parent Communication teacher workflow polish — final seal, docs-only, 2026-05-03)
 
 - **Doc:** **`docs/parent-communication-teacher-workflow-polish-final-checkpoint.md`** — seals teacher UX milestone (**`c313ee8`**, **`312c439`**): Step **1–5**, Announcements vs Parent Communication, draft-only + review before share, friendly statuses, **All updates** non-clickable hints; **no** backend/RLS/storage/provider/email/ParentView changes. **Manual browser QA (~390px)** still recommended (**A**). Parked: My Tasks, notifications, PDF storage, **real_ai**, OCR. **No** runtime edits in this doc milestone.

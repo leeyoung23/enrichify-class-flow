@@ -73,16 +73,23 @@ async function optionalIntegrationChecks() {
   const realAiAttempt = await createAiParentReportVersion({
     reportId: FAKE_REPORT_ID,
     generationSource: "real_ai",
-    structuredSections: { summary: "Stub section for guard test only." },
+    structuredSections: { student_summary: "Stub section for integration probe only." },
     teacherEdits: {},
     finalText: {},
   });
-  const ok = assert(
-    Boolean(realAiAttempt.error?.message?.includes("real_ai")),
-    "integration: createAiParentReportVersion still blocks real_ai (no auth required for this guard)",
-    "integration: real_ai should remain blocked at service layer"
+  const milestoneBlocked = Boolean(realAiAttempt.error?.message?.includes("blocked in this milestone"));
+  const ok1 = assert(
+    !milestoneBlocked,
+    "integration: real_ai is not milestone-blocked in createAiParentReportVersion",
+    "integration: unexpected milestone-block message for real_ai"
   );
-  return !ok;
+  const didNotPersist = !realAiAttempt.data?.version?.id;
+  const ok2 = assert(
+    didNotPersist,
+    "integration: real_ai does not persist without signed-in session + valid report (no version row)",
+    "integration: unexpected real_ai version insert without staff auth context"
+  );
+  return !(ok1 && ok2);
 }
 
 async function run() {
