@@ -15,6 +15,7 @@ Scope: **`renderReleasedReportPdfHtml`** in **`src/services/aiParentReportPdfTem
 | **Signatures** | **Acknowledgements** — two columns: Teacher + Branch supervisor / HQ; signature lines + names (placeholders if missing) |
 | **Footer** | Existing contact + disclaimer in styled footer |
 | **CSS** | Embedded print-oriented styles: A4 **`@page`**, borders/cards, **`break-inside: avoid`** on key blocks, no external fonts/images/scripts |
+| **Released timestamp display** | **`formatReleasedAtForParentPdfDisplay`** — parent-visible lines use **`DD Mon YYYY, HH:mm`** (UTC), not raw ISO strings; validation input **`releasedAt`** unchanged |
 
 ## Safety (unchanged)
 
@@ -28,6 +29,7 @@ Scope: **`renderReleasedReportPdfHtml`** in **`src/services/aiParentReportPdfTem
 - **`docs/ai-parent-report-pdf-template-contract-plan.md`**
 - **`docs/manual-qa-ai-parent-report-pdf-internal-preview-checkpoint.md`** — re-run visual QA on **`/ai-parent-report-pdf-preview`**
 - **`docs/parent-view-printable-report-preview-checkpoint.md`** — same HTML layout in **ParentView** (optional preview; **no** download)
+- **`docs/parent-view-printable-report-preview-visual-polish-checkpoint.md`** — **ParentView** container/iframe + branch mapping + date display polish
 
 ## Validation
 

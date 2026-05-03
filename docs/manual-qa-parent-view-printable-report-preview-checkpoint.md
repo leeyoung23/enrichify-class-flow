@@ -3,7 +3,7 @@
 Date: 2026-05-03  
 Type: **QA / checkpoint only** — human screenshot pass for **ParentView → Progress Reports → Preview printable report** before any real **Download PDF**, storage, signed URLs, or export persistence. **No** code changes implied unless issues are filed separately.
 
-**Implementation reference:** `docs/parent-view-printable-report-preview-checkpoint.md`  
+**Implementation reference:** `docs/parent-view-printable-report-preview-checkpoint.md` · **`docs/parent-view-printable-report-preview-visual-polish-checkpoint.md`** (iframe/container + formatted release date + branch label)  
 **Related:** `docs/parent-view-ai-report-display-final-checkpoint.md`, `docs/ai-parent-report-pdf-template-visual-polish-checkpoint.md`, `docs/mobile-first-qa-checkpoint.md`
 
 Use **fake/dev demo parent** or **staging fixtures only** — **no** real family or learner data in screenshots shared externally.
@@ -26,8 +26,8 @@ Capture **desktop** (e.g. ~1280px) and **~390px** mobile:
 | **Released report list** | Selected vs unselected report buttons |
 | **Report detail** | Section `<details>` blocks above preview |
 | **Preview printable report** | Primary CTA for preview |
-| **Preview chrome** | Sky-tinted banner: **Printable report preview**, bullets, **Download PDF will come later** |
-| **Sandboxed iframe** | Full **Student Progress Report** layout from **`renderReleasedReportPdfHtml`** |
+| **Preview chrome** | Sky-tinted banner: **Printable report preview**, bullets, **Download PDF will come later**, scroll-inside hint |
+| **Sandboxed iframe** | Full **Student Progress Report** layout from **`renderReleasedReportPdfHtml`** — taller viewport (**~88vh** cap); **Released** in document uses **DD Mon YYYY, HH:mm** (not ISO) |
 | **Hide printable preview** | Collapses iframe |
 
 ---
@@ -52,7 +52,7 @@ Capture **desktop** (e.g. ~1280px) and **~390px** mobile:
 - [ ] **At a glance** cards readable.
 - [ ] **Report detail** sections legible; long text wraps sensibly.
 - [ ] **Signature** block and **footer** visible without excessive iframe scroll for typical demo content.
-- [ ] **Iframe height** feels reasonable (not zero-height flash; not absurdly tall empty space).
+- [ ] **Iframe height** feels reasonable (taller preview area; not zero-height flash; inner document scrolls when needed).
 
 ---
 

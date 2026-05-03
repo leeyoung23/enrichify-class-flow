@@ -4,7 +4,14 @@ import {
   renderReleasedReportPdfHtml,
 } from '@/services/aiParentReportPdfTemplate';
 import { getCurrentUser, getSelectedDemoRole } from '@/services/authService';
-import { getStudentById, getClassById, listAttendanceRecords, listParentUpdatesByStudent, getStudentFeeStatus } from '@/services/dataService';
+import {
+  getStudentById,
+  getClassById,
+  listAttendanceRecords,
+  listParentUpdatesByStudent,
+  getStudentFeeStatus,
+  listBranches,
+} from '@/services/dataService';
 import { canAccessStudentRecord, ROLES } from '@/services/permissionService';
 import {
   getStudentLearningContext,
@@ -716,6 +723,7 @@ function ParentProgressReportsSection({
   studentName,
   className,
   classSubject,
+  branchDisplayName,
 }) {
   const [showPrintablePreview, setShowPrintablePreview] = useState(false);
 
@@ -734,7 +742,9 @@ function ParentProgressReportsSection({
         studentDisplayName: studentName || detail.student_display_name || 'Student',
         classLabel: className || '',
         programmeLabel: classSubject || '',
-        branchName: 'Learning centre',
+        branchName: (typeof branchDisplayName === 'string' && branchDisplayName.trim())
+          ? branchDisplayName.trim()
+          : [className, classSubject].filter(Boolean).join(' · ') || 'Learning Centre',
         footerContactLine: 'Contact your centre if you have questions about this report.',
       },
     });
@@ -742,7 +752,7 @@ function ParentProgressReportsSection({
     const rendered = renderReleasedReportPdfHtml(built.data);
     if (!rendered.ok) return { ok: false, error: rendered.error };
     return { ok: true, html: rendered.html };
-  }, [detail, currentVersion, studentName, className, classSubject]);
+  }, [detail, currentVersion, studentName, className, classSubject, branchDisplayName]);
 
   const canShowPrintablePreview = printablePreview.ok === true && Boolean(printablePreview.html);
   if (loading) {
@@ -901,20 +911,30 @@ function ParentProgressReportsSection({
                         This preview uses the released report content shown above. Download PDF will be added later.
                       </p>
                       {showPrintablePreview ? (
-                        <div className="rounded-lg border border-sky-200/90 bg-sky-50/50 dark:bg-sky-950/25 p-3 space-y-2">
+                        <div className="rounded-xl border border-sky-200/90 bg-sky-50/50 dark:bg-sky-950/25 p-3 sm:p-4 space-y-3 max-w-full overflow-x-hidden">
                           <p className="text-sm font-medium text-foreground">Printable report preview</p>
                           <ul className="text-[11px] text-muted-foreground list-disc pl-4 space-y-0.5">
                             <li>Released report content only</li>
                             <li>No file is generated or stored yet</li>
                             <li>Download PDF will come later</li>
                           </ul>
-                          <iframe
-                            title="Printable report preview"
-                            className="w-full min-h-[480px] sm:min-h-[560px] rounded-md border bg-background"
-                            srcDoc={printablePreview.html}
-                            sandbox=""
-                            referrerPolicy="no-referrer"
-                          />
+                          <p className="text-[11px] text-muted-foreground">
+                            Scroll inside the white area below to read the full page. This is a layout preview only — not a file download.
+                          </p>
+                          <div className="rounded-lg border border-border/80 bg-muted/30 p-1 sm:p-2 shadow-inner">
+                            <iframe
+                              key={selectedReportId}
+                              title="Printable report preview"
+                              className="w-full max-w-full block rounded-md border border-border bg-white shadow-sm"
+                              style={{
+                                height: 'min(88vh, 900px)',
+                                minHeight: '560px',
+                              }}
+                              srcDoc={printablePreview.html}
+                              sandbox=""
+                              referrerPolicy="no-referrer"
+                            />
+                          </div>
                         </div>
                       ) : null}
                     </>
@@ -1565,6 +1585,7 @@ export default function ParentView() {
   const [parentProgressReportDetailError, setParentProgressReportDetailError] = useState('');
   const [parentProgressReportDetail, setParentProgressReportDetail] = useState(null);
   const [parentProgressReportCurrentVersion, setParentProgressReportCurrentVersion] = useState(null);
+  const [pdfBranchLabel, setPdfBranchLabel] = useState('');
 
   const latestApprovedUpdate = useMemo(() => updates[0], [updates]);
   const parentHomeworkTasksWithStatus = useMemo(() => {
@@ -1623,6 +1644,27 @@ export default function ParentView() {
       }
     })();
   }, [studentId]);
+
+  useEffect(() => {
+    let cancelled = false;
+    if (!cls?.branch_id || !viewer) {
+      setPdfBranchLabel('');
+      return;
+    }
+    (async () => {
+      try {
+        const branches = await listBranches(viewer);
+        if (cancelled) return;
+        const match = branches.find((b) => b.id === cls.branch_id);
+        setPdfBranchLabel(typeof match?.name === 'string' ? match.name.trim() : '');
+      } catch {
+        if (!cancelled) setPdfBranchLabel('');
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [cls?.branch_id, viewer]);
 
   useEffect(() => {
     let cancelled = false;
@@ -2647,6 +2689,7 @@ export default function ParentView() {
                 studentName={student?.name}
                 className={cls?.name}
                 classSubject={cls?.subject}
+                branchDisplayName={pdfBranchLabel}
               />
               <ParentHomeworkStatusSection
                 isDemoMode={isDemoMode}

@@ -4,6 +4,7 @@
 import {
   buildDemoReleasedReportPdfInput,
   buildReleasedReportPdfInputFromParentViewContext,
+  formatReleasedAtForParentPdfDisplay,
   normalizeReportSectionsForPdf,
   normalizeReportSectionsFromReleaseVersion,
   PDF_SECTION_DEFINITIONS,
@@ -87,8 +88,14 @@ function run() {
 
   if (PDF_SECTION_DEFINITIONS.length < 10) fail('section definitions present');
 
+  if (formatReleasedAtForParentPdfDisplay('2026-05-01T10:00:00.000Z') !== '01 May 2026, 10:00') {
+    fail('formatReleasedAtForParentPdfDisplay UTC formatting');
+  }
+  pass('released date display formatter (UTC)');
+
   const htmlOut = renderReleasedReportPdfHtml(monthly);
   if (!htmlOut.ok) fail(`render monthly: ${htmlOut.error}`);
+  if (htmlOut.html.includes('.000Z')) fail('HTML should not expose raw ISO release timestamps');
   if (!htmlOut.html.includes('Student Progress Report')) fail('HTML missing document title');
   if (!htmlOut.html.includes('student-panel')) fail('HTML missing student information panel');
   if (!htmlOut.html.includes('highlight-card')) fail('HTML missing highlight cards');

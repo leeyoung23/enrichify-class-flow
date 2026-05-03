@@ -1,5 +1,9 @@
 # Project Master Context Handoff
 
+## Checkpoint update (ParentView printable report preview visual polish — 2026-05-03)
+
+- **`src/pages/ParentView.jsx`** — **Progress Reports** preview: framed chrome, **`min(88vh, 900px)`** iframe height floor, scroll-inside hint, **`listBranches(viewer)`** + **`cls.branch_id`** for centre name (else class·programme, else **Learning Centre**). **No** Download PDF, **no** print button, **no** storage/SQL. **`src/services/aiParentReportPdfTemplate.js`** — **`formatReleasedAtForParentPdfDisplay`** so parent HTML never shows raw ISO **releasedAt**; **`scripts/ai-parent-report-pdf-template-smoke-test.mjs`** — formatter assert + **no** `.000Z` in HTML. **Doc:** **`docs/parent-view-printable-report-preview-visual-polish-checkpoint.md`**. AI/email automation planning docs **unchanged** (parked). Cross-refs: **`docs/parent-view-printable-report-preview-checkpoint.md`**, **`docs/manual-qa-parent-view-printable-report-preview-checkpoint.md`**, **`docs/mobile-first-qa-checkpoint.md`**, **`docs/rls-test-checklist.md`**.
+
 ## Checkpoint update (ParentView printable report preview — 2026-05-03)
 
 - **`src/pages/ParentView.jsx`** — **`Progress Reports`**: **Preview printable report** toggles sandboxed iframe with **`buildReleasedReportPdfInputFromParentViewContext`** + **`renderReleasedReportPdfHtml`** (released/detail + current version already loaded; **no** extra reads). **No** Download PDF, **no** binary PDF, **no** storage/SQL/provider/email. **Doc:** **`docs/parent-view-printable-report-preview-checkpoint.md`**. **Manual visual QA (desktop + ~390px):** **`docs/manual-qa-parent-view-printable-report-preview-checkpoint.md`**. Cross-refs: **`docs/parent-view-ai-report-display-final-checkpoint.md`**, **`docs/ai-parent-report-pdf-template-visual-polish-checkpoint.md`**, **`docs/mobile-first-qa-checkpoint.md`**, **`docs/rls-test-checklist.md`**.

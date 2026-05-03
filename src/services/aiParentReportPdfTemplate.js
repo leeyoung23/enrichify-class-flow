@@ -190,7 +190,7 @@ export function buildReleasedReportPdfInputFromParentViewContext({ report, curre
     class: { label: String(context.classLabel || '') },
     programme: { label: String(context.programmeLabel || '') },
     branch: {
-      name: String(context.branchName || 'EduCentre'),
+      name: String(context.branchName || 'Learning Centre'),
       logoUrl: null,
     },
     reportPeriod: {
@@ -336,6 +336,26 @@ export function buildDemoReleasedReportPdfInput(options = {}) {
       disclaimer: 'Confidential. For educational purposes only. Demo data only.',
     },
   };
+}
+
+/**
+ * Parent-facing display only — validation still uses raw `releasedAt` string from input.
+ * Uses UTC so ISO Zulu timestamps render consistently.
+ * @param {string} raw
+ * @returns {string}
+ */
+export function formatReleasedAtForParentPdfDisplay(raw) {
+  const s = typeof raw === 'string' ? raw.trim() : '';
+  if (!s) return '';
+  const d = new Date(s);
+  if (Number.isNaN(d.getTime())) return s;
+  const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+  const day = String(d.getUTCDate()).padStart(2, '0');
+  const mon = months[d.getUTCMonth()];
+  const year = d.getUTCFullYear();
+  const hh = String(d.getUTCHours()).padStart(2, '0');
+  const mm = String(d.getUTCMinutes()).padStart(2, '0');
+  return `${day} ${mon} ${year}, ${hh}:${mm}`;
 }
 
 function containsForbiddenContent(str) {
@@ -535,7 +555,7 @@ export function renderReleasedReportPdfHtml(input) {
   const releasedByName = inv.releasedBy?.displayName ? String(inv.releasedBy.displayName).trim() : '';
   const variantLabel = inv.templateVariant ? String(inv.templateVariant).trim() : '';
   const periodLine = formatPeriod(inv.reportPeriod?.start, inv.reportPeriod?.end);
-  const releasedLine = inv.releasedAt ? String(inv.releasedAt) : '';
+  const releasedLine = inv.releasedAt ? formatReleasedAtForParentPdfDisplay(String(inv.releasedAt)) : '';
 
   const sigTeacher = teacherName || 'Teacher';
   const sigSupervisor = releasedByName || 'Branch supervisor / HQ';
@@ -746,7 +766,7 @@ export function renderReleasedReportPdfHtml(input) {
   parts.push('<div class="sheet">');
 
   parts.push('<header class="brand-strip">');
-  parts.push(`<div class="brand-name">${escapeHtml(branchName || 'Learning centre')}</div>`);
+  parts.push(`<div class="brand-name">${escapeHtml(branchName || 'Learning Centre')}</div>`);
   parts.push(
     '<div class="brand-note">Branding placeholder — printable report layout preview only. '
     + 'No remote images in export.</div>'
