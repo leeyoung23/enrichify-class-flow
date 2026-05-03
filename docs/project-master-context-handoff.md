@@ -2,7 +2,7 @@
 
 ## Checkpoint update (ParentView printable report preview — 2026-05-03)
 
-- **`src/pages/ParentView.jsx`** — **`Progress Reports`**: **Preview printable report** toggles sandboxed iframe with **`buildReleasedReportPdfInputFromParentViewContext`** + **`renderReleasedReportPdfHtml`** (released/detail + current version already loaded; **no** extra reads). **No** Download PDF, **no** binary PDF, **no** storage/SQL/provider/email. **Doc:** **`docs/parent-view-printable-report-preview-checkpoint.md`**. Cross-refs: **`docs/parent-view-ai-report-display-final-checkpoint.md`**, **`docs/ai-parent-report-pdf-template-visual-polish-checkpoint.md`**, **`docs/mobile-first-qa-checkpoint.md`**, **`docs/rls-test-checklist.md`**.
+- **`src/pages/ParentView.jsx`** — **`Progress Reports`**: **Preview printable report** toggles sandboxed iframe with **`buildReleasedReportPdfInputFromParentViewContext`** + **`renderReleasedReportPdfHtml`** (released/detail + current version already loaded; **no** extra reads). **No** Download PDF, **no** binary PDF, **no** storage/SQL/provider/email. **Doc:** **`docs/parent-view-printable-report-preview-checkpoint.md`**. **Manual visual QA (desktop + ~390px):** **`docs/manual-qa-parent-view-printable-report-preview-checkpoint.md`**. Cross-refs: **`docs/parent-view-ai-report-display-final-checkpoint.md`**, **`docs/ai-parent-report-pdf-template-visual-polish-checkpoint.md`**, **`docs/mobile-first-qa-checkpoint.md`**, **`docs/rls-test-checklist.md`**.
 
 ## Checkpoint update (AI Parent Report PDF template visual polish — 2026-05-03)
 

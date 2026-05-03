@@ -23,8 +23,14 @@ Scope: **`ParentView.jsx`** — **`Progress Reports`** adds optional **Preview p
 
 ## Related
 
+- **`docs/manual-qa-parent-view-printable-report-preview-checkpoint.md`** — **canonical manual visual QA** (desktop + **~390px**)
 - **`docs/ai-parent-report-pdf-template-visual-polish-checkpoint.md`**
 - **`docs/released-ai-parent-report-export-strategy-plan.md`**
+
+## Recommended next
+
+1. **Manual visual QA** per **`docs/manual-qa-parent-view-printable-report-preview-checkpoint.md`** before **Download PDF** / storage planning.  
+2. Re-run **`docs/mobile-first-qa-checkpoint.md`** entry for ParentView after QA.
 
 ## Validation
 

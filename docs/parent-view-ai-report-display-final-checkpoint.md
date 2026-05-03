@@ -1,6 +1,6 @@
 # ParentView AI Report Display Final Checkpoint
 
-Date: 2026-05-02 (printable HTML preview **2026-05-03** — **`docs/parent-view-printable-report-preview-checkpoint.md`**)  
+Date: 2026-05-02 (printable HTML preview **2026-05-03** — **`docs/parent-view-printable-report-preview-checkpoint.md`** · manual QA runbook **2026-05-03** — **`docs/manual-qa-parent-view-printable-report-preview-checkpoint.md`**)  
 Scope: ParentView released-report display UI; printable preview is **HTML iframe only** — **no** PDF download
 
 ## Final docs-only alignment update (after staff mock draft UI wiring)
