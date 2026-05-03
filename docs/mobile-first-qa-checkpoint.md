@@ -1,5 +1,9 @@
 # Mobile-first QA checkpoint
 
+## Checkpoint update (released AI Parent Report PDF/PNG export strategy — 2026-05-02)
+
+- **Reference:** **`docs/released-ai-parent-report-export-strategy-plan.md`** — when PDF/summary exports ship, re-QA **ParentView** download actions at **desktop + ~390px** (tap targets, no draft leakage, signed URL flows); PNG summary as short card only.
+
 ## Checkpoint update (manual visual QA — Homework teacher upload/review, 2026-05-02)
 
 - **Runbook:** **`docs/manual-qa-homework-teacher-upload-review-checkpoint.md`** — desktop + **~390px** for **`Homework.jsx`** after polish **`6fe18bc`**: intro, **Create homework task** steps, trackers, submission detail, **Teacher-marked work**, **Share feedback with family**; safety §8; decision rule §10 (fix Homework vs proceed to **Parent Communication** polish). **QA/checkpoint only** — **no** `src/` changes in this milestone.

@@ -1,5 +1,9 @@
 # Project Master Context Handoff
 
+## Checkpoint update (released AI Parent Report export strategy — planning only, 2026-05-02)
+
+- **Docs-only:** **`docs/released-ai-parent-report-export-strategy-plan.md`** — PDF-first official export, PNG summary second; **released/current-version-only** parent access; staff approval before parent export visibility; private storage + signed URL when persisted; phased **A→B→C** (template contract → client prototype → server PDF); audit hooks §9; **`real_ai`** not required for export; **no** auto-email in export milestone. **No** `src/` changes.
+
 ## Checkpoint update (manual QA — Homework teacher upload/review, 2026-05-02)
 
 - **Docs-only:** **`docs/manual-qa-homework-teacher-upload-review-checkpoint.md`** — human QA runbook for **`Homework.jsx`** staff upload/review flow (**`6fe18bc`**): surfaces §2, checklists §3–§7, safety §8, risks §9, decision rule §10 (clean QA → **Parent Communication** step-label polish per **`docs/teacher-upload-step-simplification-plan.md`** §12 **C**). Cross-ref **`docs/homework-teacher-upload-step-ui-polish-checkpoint.md`**. **No** runtime changes in this doc milestone.
