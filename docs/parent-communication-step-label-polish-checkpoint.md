@@ -15,7 +15,8 @@ Steps are numbered **1–5** with plain-language titles so kindergarten/primary 
 | **Steps 1–3** | **Step 1** — Add class memory (“Upload a class moment for review”, demo upload line). **Step 2** — Choose **Quick Parent Comment** vs **Weekly Progress Report** with short explanations; full-width toggle buttons on small screens. **Step 3** — Class + student selects with amber guidance when incomplete |
 | **Steps 4–5 (comments)** | **Learning evidence preview** (renamed from technical “Source Summary”); **Step 5** — teacher note + **Generate AI Comment Draft** with “Draft only — nothing is sent.” Review screen: **Review before sharing with family**; buttons **Approve & share with family**, etc. |
 | **Weekly** | Same step framing: evidence preview card + weekly fields; **Share with family** instead of “Release to Parent” alone |
-| **All updates panel** | Friendly status labels (**Draft**, **Needs review**, **Teacher edited**, **Ready to share with family**, **Shared with family**); **class** shows human-readable name when available; primary row action **Review** / **Edit** / **View**; parents-never-see-drafts copy |
+| **All updates panel** | Friendly status labels (**Draft**, **Needs review**, **Teacher edited**, **Ready to share with family**, **Shared with family**); **class** shows human-readable name when available; parents-never-see-drafts copy |
+| **All updates — action hint (follow-up)** | Manual QA found a **no-op** outline **Button** for **Review / Edit / View** that looked clickable. Replaced with a **non-interactive** dashed-border hint: **Next: Review**, **Next: Edit**, **View only** (no `onClick`, not a button). Real row navigation / open-record behaviour remains **future** if product wants it — **no** backend/RLS/storage/provider/notification/ParentView change |
 
 ## Safety (preserved)
 
@@ -36,6 +37,7 @@ Touching **`ParentUpdates.jsx`**: **`npm run build`**, **`npm run lint`**, **`np
 
 ## What remains future
 
+- **All updates:** optional **wire** row hint to scroll/select/update workflow when product defines behaviour — not implemented in the hint-only fix above  
 - Deeper **My Tasks** / Announcements verb-led buttons (**D** in simplification plan)  
 - Wire evidence preview to richer live data under existing RLS (no UX contract change assumed here)  
 - Notification/email automation, **real_ai**, worksheet/OCR — separate milestones  

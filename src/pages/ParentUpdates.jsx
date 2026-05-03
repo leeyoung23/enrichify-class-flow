@@ -1190,11 +1190,17 @@ export default function ParentUpdates() {
                         <p className="text-xs text-muted-foreground line-clamp-3 flex-1 min-w-0">
                           {update.shared_report || update.approved_report || update.final_message || update.ai_draft || update.note_text || 'No content yet.'}
                         </p>
-                        <Button size="sm" variant="outline" className="gap-1.5 w-full sm:w-auto shrink-0 min-h-10">
-                          {(rowAction === 'Review' || rowAction === 'View') && <Eye className="h-3.5 w-3.5" />}
-                          {rowAction === 'Edit' && <Pencil className="h-3.5 w-3.5" />}
-                          {rowAction}
-                        </Button>
+                        <div
+                          className="inline-flex w-full shrink-0 items-center justify-center gap-1.5 rounded-md border border-dashed border-border/80 bg-muted/30 px-2.5 py-1.5 text-xs text-muted-foreground sm:w-auto sm:justify-start"
+                        >
+                          {(rowAction === 'Review' || rowAction === 'View') && <Eye className="h-3.5 w-3.5 shrink-0 opacity-70" />}
+                          {rowAction === 'Edit' && <Pencil className="h-3.5 w-3.5 shrink-0 opacity-70" />}
+                          <span>
+                            {rowAction === 'Review' && 'Next: Review'}
+                            {rowAction === 'Edit' && 'Next: Edit'}
+                            {rowAction === 'View' && 'View only'}
+                          </span>
+                        </div>
                       </div>
                     </div>
                     );
