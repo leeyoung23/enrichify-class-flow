@@ -1,6 +1,8 @@
 #env
 .env
 .env.*
+# Project-root local secrets (also matched by *.local); never commit
+.env.local
 
 # Logs
 /logs

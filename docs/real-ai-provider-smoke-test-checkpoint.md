@@ -42,6 +42,17 @@ The smoke sends a fixed synthetic object (demo student name, class label, summar
 
 If API key or model is missing, the script prints **which names** are missing and **does not** print values.
 
+## Local setup
+
+- Set variables in **project-root `.env.local`** (copy from **`.env.example`** if helpful). **`.env.local` is gitignored** (see `.gitignore`); never commit secrets.
+- The smoke script loads **`.env.local`** via `dotenv` (`scripts/ai-parent-report-real-provider-smoke-test.mjs`).
+- **Required** for a full PASS: `AI_PARENT_REPORT_PROVIDER_API_KEY` and `AI_PARENT_REPORT_PROVIDER_MODEL`.
+- **Optional:** `AI_PARENT_REPORT_PROVIDER_BASE_URL`.
+- **Do not** use a `VITE_` prefix — these variables are **server/script-only** and must not reach the frontend bundle.
+- Never paste keys into docs, tickets, or logs; the smoke does not print env values.
+- **CHECK-skip** means one or both required variables are missing — exit **0**, no outbound call.
+- **PASS** means a **real outbound provider call** ran and **structured section validation** succeeded.
+
 ## Exit meanings
 
 | Outcome | Condition | Exit code |
