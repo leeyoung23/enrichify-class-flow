@@ -2,12 +2,14 @@
 /* eslint-disable no-undef */
 /**
  * Edge Function for AI parent report draft generation (fake / disabled / real HTTP when configured).
+ * Requires valid staff JWT and can_manage_ai_parent_report(report_id) before any adapter/provider work.
  * Uses `supabase/functions/_shared/` adapter — deploy-safe.
  * Provider secrets: Supabase Edge secrets only (e.g. AI_PARENT_REPORT_PROVIDER_API_KEY).
  * No persistence; no auto-release.
  */
 
 import { generateAiParentReportDraft } from "../_shared/aiParentReportProviderAdapter.ts";
+import { authorizeAiParentReportDraftGeneration } from "../_shared/aiParentReportEdgeAuth.ts";
 
 function jsonResponse(body: Record<string, unknown>, status = 200): Response {
   return new Response(JSON.stringify(body), {
@@ -27,6 +29,15 @@ function httpStatusForError(code: string | undefined): number {
     code === "input_too_large"
   ) {
     return 400;
+  }
+  if (code === "missing_auth" || code === "invalid_auth") {
+    return 401;
+  }
+  if (code === "scope_denied") {
+    return 403;
+  }
+  if (code === "auth_config_missing") {
+    return 500;
   }
   if (code === "provider_disabled" || code === "provider_not_configured") {
     return 503;
@@ -74,6 +85,19 @@ Deno.serve(async (req: Request) => {
     providerMode?: string;
     input?: Record<string, unknown>;
   };
+
+  const auth = await authorizeAiParentReportDraftGeneration(req, body.reportId);
+  if (!auth.ok) {
+    return jsonResponse(
+      {
+        ok: false,
+        error: { code: auth.code, message: auth.message },
+        data: null,
+        external_provider_call: false,
+      },
+      auth.status
+    );
+  }
 
   let result;
   try {

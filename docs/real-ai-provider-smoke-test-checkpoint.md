@@ -21,6 +21,10 @@ This is **not** a product feature unlock and **not** a database integration test
 
 The smoke sends a fixed synthetic object (demo student name, class label, summaries). **No production student IDs or live roster data.**
 
+## Edge HTTP vs adapter smoke
+
+The **`generate-ai-parent-report-draft`** Edge function now requires a **staff JWT** and **`can_manage_ai_parent_report`** **before** calling the provider adapter. Adapter-only smokes in this doc remain valid for provider stack testing; HTTP Edge behaviour is documented in **`docs/real-ai-parent-report-edge-auth-checkpoint.md`**.
+
 ## Safety boundaries (unchanged)
 
 - **No** SQL / RLS / storage changes from this smoke.

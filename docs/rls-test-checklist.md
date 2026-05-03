@@ -141,6 +141,13 @@
 
 - Docs-only: **`docs/real-ai-provider-tooling-verification-checkpoint.md`** — **re-verified:** Deno + Supabase CLI on PATH (`deno check` PASS; CLI help PASS); adapter smokes PASS; no SQL/RLS change; **`real_ai`** still blocked.
 
+## Checkpoint update (real AI parent report Edge generation auth gate — Stage 2A)
+
+- **`generate-ai-parent-report-draft`** requires **`Authorization: Bearer`** + **`can_manage_ai_parent_report(report_uuid)`** **before** adapter/provider work (anon JWT + user JWT; **no** service-role bypass for scope). **`real_ai`** persistence still blocked; ParentView unchanged.
+- Optional SQL (manual apply if RPC permission denied): **`supabase/sql/032_grant_execute_can_manage_ai_parent_report.sql`**.
+- Smoke: **`npm run test:supabase:ai-parent-report:edge-generation-auth`** — **CHECK-skip** if Edge URL 404 / keys missing (does not fake PASS for auth). Adapter smokes remain the canonical provider stack tests.
+- Doc: **`docs/real-ai-parent-report-edge-auth-checkpoint.md`**.
+
 ## Checkpoint update (real AI provider tooling verification)
 
 - First run only: tools absent on default PATH in automated environment — see checkpoint doc history §0.
