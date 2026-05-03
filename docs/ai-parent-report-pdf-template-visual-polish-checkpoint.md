@@ -27,6 +27,7 @@ Scope: **`renderReleasedReportPdfHtml`** in **`src/services/aiParentReportPdfTem
 - **`docs/ai-parent-report-pdf-helper-fixture-final-checkpoint.md`**
 - **`docs/ai-parent-report-pdf-template-contract-plan.md`**
 - **`docs/manual-qa-ai-parent-report-pdf-internal-preview-checkpoint.md`** — re-run visual QA on **`/ai-parent-report-pdf-preview`**
+- **`docs/parent-view-printable-report-preview-checkpoint.md`** — same HTML layout in **ParentView** (optional preview; **no** download)
 
 ## Validation
 

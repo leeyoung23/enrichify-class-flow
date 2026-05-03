@@ -1,7 +1,7 @@
 # ParentView AI Report Display Final Checkpoint
 
-Date: 2026-05-02  
-Scope: docs-only finalization for ParentView released-report display UI milestone
+Date: 2026-05-02 (printable HTML preview **2026-05-03** — **`docs/parent-view-printable-report-preview-checkpoint.md`**)  
+Scope: ParentView released-report display UI; printable preview is **HTML iframe only** — **no** PDF download
 
 ## Final docs-only alignment update (after staff mock draft UI wiring)
 
@@ -23,7 +23,7 @@ Scope: docs-only finalization for ParentView released-report display UI mileston
 - ParentView has no staff controls.
 - ParentView does not show drafts or unreleased reports.
 - ParentView does not show evidence links, raw AI/provider metadata, or raw debug data.
-- No PDF/export.
+- Optional **Preview printable report** — HTML iframe only (**`docs/parent-view-printable-report-preview-checkpoint.md`**); **no** PDF file download yet.
 - No notifications/emails.
 - No real AI provider wiring.
 
@@ -35,7 +35,8 @@ Scope: docs-only finalization for ParentView released-report display UI mileston
   - latest released report card,
   - released report list/history,
   - selected report detail panel,
-  - parent-safe section rendering.
+  - parent-safe section rendering,
+  - optional **Preview printable report** (sandboxed iframe; released content only).
 - Safe states are present:
   - loading,
   - empty,
@@ -56,7 +57,7 @@ Scope: docs-only finalization for ParentView released-report display UI mileston
   - parent support suggestions,
   - teacher final comment.
 - No real AI calls.
-- No PDF/export.
+- Printable layout preview only when toggled — **no** file export.
 
 ## 4) Authenticated parent read behavior
 

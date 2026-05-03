@@ -1,4 +1,8 @@
 import React, { useMemo, useState, useEffect, useCallback } from 'react';
+import {
+  buildReleasedReportPdfInputFromParentViewContext,
+  renderReleasedReportPdfHtml,
+} from '@/services/aiParentReportPdfTemplate';
 import { getCurrentUser, getSelectedDemoRole } from '@/services/authService';
 import { getStudentById, getClassById, listAttendanceRecords, listParentUpdatesByStudent, getStudentFeeStatus } from '@/services/dataService';
 import { canAccessStudentRecord, ROLES } from '@/services/permissionService';
@@ -713,6 +717,34 @@ function ParentProgressReportsSection({
   className,
   classSubject,
 }) {
+  const [showPrintablePreview, setShowPrintablePreview] = useState(false);
+
+  useEffect(() => {
+    setShowPrintablePreview(false);
+  }, [selectedReportId]);
+
+  const printablePreview = useMemo(() => {
+    if (!detail || !currentVersion) return { ok: false };
+    const status = typeof detail.status === 'string' ? detail.status.trim().toLowerCase() : '';
+    if (status && status !== 'released') return { ok: false };
+    const built = buildReleasedReportPdfInputFromParentViewContext({
+      report: detail,
+      currentVersion,
+      context: {
+        studentDisplayName: studentName || detail.student_display_name || 'Student',
+        classLabel: className || '',
+        programmeLabel: classSubject || '',
+        branchName: 'Learning centre',
+        footerContactLine: 'Contact your centre if you have questions about this report.',
+      },
+    });
+    if (!built.ok) return { ok: false, error: built.error };
+    const rendered = renderReleasedReportPdfHtml(built.data);
+    if (!rendered.ok) return { ok: false, error: rendered.error };
+    return { ok: true, html: rendered.html };
+  }, [detail, currentVersion, studentName, className, classSubject]);
+
+  const canShowPrintablePreview = printablePreview.ok === true && Boolean(printablePreview.html);
   if (loading) {
     return (
       <Card id="parent-progress-reports">
@@ -851,6 +883,48 @@ function ParentProgressReportsSection({
                   ))}
                 </div>
               )}
+
+              {!detailLoading && !detailError && detail && currentVersion ? (
+                <div className="mt-4 space-y-2 border-t pt-3">
+                  {canShowPrintablePreview ? (
+                    <>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        className="w-full sm:w-auto"
+                        onClick={() => setShowPrintablePreview((open) => !open)}
+                      >
+                        {showPrintablePreview ? 'Hide printable preview' : 'Preview printable report'}
+                      </Button>
+                      <p className="text-xs text-muted-foreground">
+                        This preview uses the released report content shown above. Download PDF will be added later.
+                      </p>
+                      {showPrintablePreview ? (
+                        <div className="rounded-lg border border-sky-200/90 bg-sky-50/50 dark:bg-sky-950/25 p-3 space-y-2">
+                          <p className="text-sm font-medium text-foreground">Printable report preview</p>
+                          <ul className="text-[11px] text-muted-foreground list-disc pl-4 space-y-0.5">
+                            <li>Released report content only</li>
+                            <li>No file is generated or stored yet</li>
+                            <li>Download PDF will come later</li>
+                          </ul>
+                          <iframe
+                            title="Printable report preview"
+                            className="w-full min-h-[480px] sm:min-h-[560px] rounded-md border bg-background"
+                            srcDoc={printablePreview.html}
+                            sandbox=""
+                            referrerPolicy="no-referrer"
+                          />
+                        </div>
+                      ) : null}
+                    </>
+                  ) : (
+                    <p className="text-xs text-muted-foreground">
+                      Printable preview is not available for this report yet.
+                    </p>
+                  )}
+                </div>
+              ) : null}
             </>
           )}
         </div>

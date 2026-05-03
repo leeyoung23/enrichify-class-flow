@@ -17,7 +17,7 @@ Scope: **staff/dev-only** visual preview of **`renderReleasedReportPdfHtml`** (*
 
 ## Explicit non-goals (preserved)
 
-- **No** ParentView changes or parent download UI  
+- **ParentView** has optional **Preview printable report** (iframe, released content only; **no** file download) — **`docs/parent-view-printable-report-preview-checkpoint.md`**. **No** standalone parent **Download PDF** button  
 - **No** Supabase calls, provider calls, or **real** report rows on this page  
 - **No** storage upload, signed URLs, or PDF binary generation  
 - **No** client/server PDF libraries  

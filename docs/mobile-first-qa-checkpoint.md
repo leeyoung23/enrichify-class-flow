@@ -1,5 +1,9 @@
 # Mobile-first QA checkpoint
 
+## Checkpoint update (ParentView printable report preview — 2026-05-03)
+
+- **Reference:** **`docs/parent-view-printable-report-preview-checkpoint.md`** — re-QA **~390px**: **Preview printable report** button, preview chrome, iframe scroll; **no** download control.
+
 ## Checkpoint update (AI Parent Report PDF template visual polish — 2026-05-03)
 
 - **Reference:** **`docs/ai-parent-report-pdf-template-visual-polish-checkpoint.md`** — re-QA **`/ai-parent-report-pdf-preview`** **~390px** after boxed layout: iframe scroll, highlight cards, signature block readability.

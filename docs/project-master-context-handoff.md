@@ -1,5 +1,9 @@
 # Project Master Context Handoff
 
+## Checkpoint update (ParentView printable report preview — 2026-05-03)
+
+- **`src/pages/ParentView.jsx`** — **`Progress Reports`**: **Preview printable report** toggles sandboxed iframe with **`buildReleasedReportPdfInputFromParentViewContext`** + **`renderReleasedReportPdfHtml`** (released/detail + current version already loaded; **no** extra reads). **No** Download PDF, **no** binary PDF, **no** storage/SQL/provider/email. **Doc:** **`docs/parent-view-printable-report-preview-checkpoint.md`**. Cross-refs: **`docs/parent-view-ai-report-display-final-checkpoint.md`**, **`docs/ai-parent-report-pdf-template-visual-polish-checkpoint.md`**, **`docs/mobile-first-qa-checkpoint.md`**, **`docs/rls-test-checklist.md`**.
+
 ## Checkpoint update (AI Parent Report PDF template visual polish — 2026-05-03)
 
 - **`src/services/aiParentReportPdfTemplate.js`** — **`renderReleasedReportPdfHtml`**: **Student Progress Report** boxed A4 layout (student panel, **At a glance** cards, section blocks, teacher / supervisor signatures); validation unchanged; **`scripts/ai-parent-report-pdf-template-smoke-test.mjs`** layout landmarks. **Doc:** **`docs/ai-parent-report-pdf-template-visual-polish-checkpoint.md`**. **No** ParentView download, **no** storage/SQL/provider/email. Cross-refs: **`docs/ai-parent-report-pdf-internal-preview-checkpoint.md`**, **`docs/manual-qa-ai-parent-report-pdf-internal-preview-checkpoint.md`**, **`docs/mobile-first-qa-checkpoint.md`**, **`docs/rls-test-checklist.md`**.
