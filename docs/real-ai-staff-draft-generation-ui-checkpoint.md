@@ -3,6 +3,7 @@
 ## What shipped
 
 - **`src/pages/AiParentReports.jsx`**
+  - **Create report shell:** staff-visible **branch / class (optional) / student** dropdowns (JWT + RLS reads) when not in demo mode — see **`docs/real-ai-staff-draft-generation-manual-qa-unblock-checkpoint.md`**.
   - Explicit action **Generate real AI draft** (only on click; not on load or on report select).
   - Clear copy: real AI, **staff review required**, **parents do not see drafts** until **explicit release**.
   - **Disabled** in **demo role** and without authenticated Supabase session.

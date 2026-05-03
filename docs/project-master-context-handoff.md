@@ -8,6 +8,10 @@
 
 - **`src/pages/AiParentReports.jsx`** — explicit **Generate real AI draft** (Edge JWT + persist **`real_ai`**). **`src/services/aiParentReportEdgeGenerationService.js`** — **`fetch`** to **`generate-ai-parent-report-draft`**, no secrets in browser. **Doc:** **`docs/real-ai-staff-draft-generation-ui-checkpoint.md`**. ParentView unchanged; no auto-release.
 
+## Checkpoint update (AI parent report manual QA unblock — create shell pickers, 2026-05-03)
+
+- **`AiParentReports.jsx`** — **branch/class/student** dropdowns for signed-in non-demo staff via **`getBranches` / `getClasses` / `getStudents`** (RLS). **Doc:** **`docs/real-ai-staff-draft-generation-manual-qa-unblock-checkpoint.md`**.
+
 ## Checkpoint update (Parent Communication teacher workflow polish — final seal, docs-only, 2026-05-03)
 
 - **Doc:** **`docs/parent-communication-teacher-workflow-polish-final-checkpoint.md`** — seals teacher UX milestone (**`c313ee8`**, **`312c439`**): Step **1–5**, Announcements vs Parent Communication, draft-only + review before share, friendly statuses, **All updates** non-clickable hints; **no** backend/RLS/storage/provider/email/ParentView changes. **Manual browser QA (~390px)** still recommended (**A**). Parked: My Tasks, notifications, PDF storage, **real_ai**, OCR. **No** runtime edits in this doc milestone.

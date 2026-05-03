@@ -18,6 +18,9 @@ import { useSupabaseAuthState } from '@/hooks/useSupabaseAuthState';
 import {
   getAiParentReportCurrentVersion,
   getAiParentReportDetail,
+  getBranches,
+  getClasses,
+  getStudents,
   listAiParentReportEvidenceLinks,
   listAiParentReportVersions,
   listAiParentReports,
@@ -128,6 +131,9 @@ const DEMO_BASE_EVIDENCE = {
 const MOCK_UI_UNSAFE_INPUT_PATTERN =
   /(https?:\/\/|file:\/\/|\/storage\/v1\/object\/|supabase\.co\/storage|[a-z]:\\|\/users\/|\/home\/|\/private\/|\\users\\|\\private\\|announcements-attachments|parent-announcements-media|class-memories|homework-submissions|staff-clock-selfies|provider|debug|api[_-]?key|token|secret)/i;
 
+/** Select sentinel for optional class filter (Radix Select needs non-empty value). */
+const CLASS_SELECT_ANY = '__class_any__';
+
 function formatDateLabel(value) {
   if (!value) return '—';
   const parsed = new Date(value);
@@ -198,6 +204,12 @@ export default function AiParentReports() {
     reportPeriodEnd: '',
     assignedTeacherProfileId: '',
   });
+  /** RLS-scoped rows for staff-friendly create shell (JWT only; no service role). */
+  const [pickerBranches, setPickerBranches] = useState([]);
+  const [pickerClasses, setPickerClasses] = useState([]);
+  const [pickerStudents, setPickerStudents] = useState([]);
+  const [pickersLoading, setPickersLoading] = useState(false);
+  const [pickersError, setPickersError] = useState('');
   const [createVersionForm, setCreateVersionForm] = useState({
     generationSource: 'manual',
     studentSummary: '',
@@ -251,6 +263,23 @@ export default function AiParentReports() {
     if (!selectedReport.reportPeriodEnd) gaps.push('period end');
     return gaps;
   }, [selectedReport]);
+
+  const showStaffCreatePickers = canUseSupabase && !inDemoMode;
+
+  const filteredPickerClasses = useMemo(() => {
+    const bid = String(createDraftForm.branchId || '').trim();
+    if (!bid) return pickerClasses;
+    return pickerClasses.filter((row) => row.branch_id === bid);
+  }, [pickerClasses, createDraftForm.branchId]);
+
+  const filteredPickerStudents = useMemo(() => {
+    const bid = String(createDraftForm.branchId || '').trim();
+    const cid = String(createDraftForm.classId || '').trim();
+    let list = pickerStudents;
+    if (bid) list = list.filter((row) => row.branch_id === bid);
+    if (cid) list = list.filter((row) => !row.class_id || row.class_id === cid);
+    return list;
+  }, [pickerStudents, createDraftForm.branchId, createDraftForm.classId]);
 
   const fetchSourceEvidenceBundle = useCallback(async () => {
     if (!selectedReport || !selectedReportId) return null;
@@ -313,6 +342,32 @@ export default function AiParentReports() {
   useEffect(() => {
     void loadReports();
   }, [loadReports]);
+
+  const loadPickerCatalog = useCallback(async () => {
+    if (!canUseSupabase || inDemoMode) {
+      setPickerBranches([]);
+      setPickerClasses([]);
+      setPickerStudents([]);
+      setPickersError('');
+      return;
+    }
+    setPickersLoading(true);
+    setPickersError('');
+    const [brRes, clRes, stRes] = await Promise.all([getBranches(), getClasses(), getStudents()]);
+    const errMsg =
+      brRes.error?.message || clRes.error?.message || stRes.error?.message || '';
+    if (errMsg) {
+      setPickersError('Could not load branch/class/student lists. You can still use Advanced UUIDs below.');
+    }
+    setPickerBranches(Array.isArray(brRes.data) ? brRes.data : []);
+    setPickerClasses(Array.isArray(clRes.data) ? clRes.data : []);
+    setPickerStudents(Array.isArray(stRes.data) ? stRes.data : []);
+    setPickersLoading(false);
+  }, [canUseSupabase, inDemoMode]);
+
+  useEffect(() => {
+    void loadPickerCatalog();
+  }, [loadPickerCatalog]);
 
   useEffect(() => {
     if (!selectedReportId && reports.length > 0) {
@@ -941,7 +996,15 @@ export default function AiParentReports() {
             <p className="text-sm text-muted-foreground">{reportsError}</p>
           ) : null}
           {!reportsLoading && !reportsError && reports.length === 0 ? (
-            <p className="text-sm text-muted-foreground">No AI parent reports found.</p>
+            <div className="space-y-2">
+              <p className="text-sm text-muted-foreground">No AI parent reports found.</p>
+              {!inDemoMode && canUseSupabase ? (
+                <p className="text-xs text-muted-foreground">
+                  Create one using <span className="font-medium text-foreground">Create report shell</span>
+                  {' '}— pick branch, student, and dates (no UUID typing needed).
+                </p>
+              ) : null}
+            </div>
           ) : null}
           {!reportsLoading && !reportsError && reports.length > 0 ? (
             <div className="space-y-2">
@@ -981,76 +1044,279 @@ export default function AiParentReports() {
             Set the reporting period and student/class context. Narrative sections should come from source evidence and
             teacher review — not from typing every field by hand.
           </p>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            <div className="space-y-1.5">
-              <Label htmlFor="apr-student-id">studentId</Label>
-              <Input
-                id="apr-student-id"
-                value={createDraftForm.studentId}
-                onChange={(event) => setCreateDraftForm((prev) => ({ ...prev, studentId: event.target.value }))}
-                placeholder="fake/dev UUID or demo id"
-              />
+          {showStaffCreatePickers ? (
+            <>
+              <p className="text-xs text-muted-foreground">
+                Signed-in staff: choose branch → optional class filter → student. Lists respect your RLS visibility (same
+                JWT as the rest of the app).
+              </p>
+              {pickersLoading ? (
+                <p className="text-sm text-muted-foreground">Loading branches, classes, and students…</p>
+              ) : null}
+              {pickersError ? (
+                <p className="text-xs text-amber-800 dark:text-amber-200">{pickersError}</p>
+              ) : null}
+              <div className="flex flex-wrap gap-2">
+                <Button type="button" size="sm" variant="outline" onClick={() => { void loadPickerCatalog(); }}>
+                  Reload lists
+                </Button>
+              </div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div className="space-y-1.5">
+                  <Label>Branch</Label>
+                  <Select
+                    value={createDraftForm.branchId || undefined}
+                    onValueChange={(value) => {
+                      setCreateDraftForm((prev) => ({
+                        ...prev,
+                        branchId: value,
+                        classId: '',
+                        studentId: '',
+                      }));
+                    }}
+                  >
+                    <SelectTrigger aria-label="Branch">
+                      <SelectValue placeholder={pickerBranches.length ? 'Select branch' : 'No branches loaded'} />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {pickerBranches.map((row) => (
+                        <SelectItem key={row.id} value={row.id}>
+                          {row.name || row.id}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-1.5">
+                  <Label>Class (optional)</Label>
+                  <Select
+                    value={createDraftForm.classId ? createDraftForm.classId : CLASS_SELECT_ANY}
+                    onValueChange={(value) => {
+                      const classId = value === CLASS_SELECT_ANY ? '' : value;
+                      setCreateDraftForm((prev) => ({
+                        ...prev,
+                        classId,
+                        studentId: '',
+                      }));
+                    }}
+                    disabled={!createDraftForm.branchId.trim()}
+                  >
+                    <SelectTrigger aria-label="Class filter">
+                      <SelectValue placeholder="Filter by class" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value={CLASS_SELECT_ANY}>Any class in branch</SelectItem>
+                      {filteredPickerClasses.map((row) => (
+                        <SelectItem key={row.id} value={row.id}>
+                          {row.name || row.id}
+                          {row.subject ? ` · ${row.subject}` : ''}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-1.5 sm:col-span-2">
+                  <Label>Student</Label>
+                  <Select
+                    value={createDraftForm.studentId || undefined}
+                    onValueChange={(value) => {
+                      const st = pickerStudents.find((r) => r.id === value);
+                      setCreateDraftForm((prev) => ({
+                        ...prev,
+                        studentId: value,
+                        branchId: st?.branch_id || prev.branchId,
+                        classId: st?.class_id ? st.class_id : prev.classId,
+                      }));
+                    }}
+                    disabled={!createDraftForm.branchId.trim()}
+                  >
+                    <SelectTrigger aria-label="Student">
+                      <SelectValue
+                        placeholder={
+                          createDraftForm.branchId.trim()
+                            ? 'Select student'
+                            : 'Choose a branch first'
+                        }
+                      />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {filteredPickerStudents.map((row) => (
+                        <SelectItem key={row.id} value={row.id}>
+                          {row.full_name || row.id}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  {!createDraftForm.branchId.trim() ? (
+                    <p className="text-[11px] text-muted-foreground">Select a branch to load students RLS-visible to you.</p>
+                  ) : filteredPickerStudents.length === 0 ? (
+                    <p className="text-[11px] text-muted-foreground">
+                      No students match this branch/class filter — widen class filter or check RLS fixtures.
+                    </p>
+                  ) : null}
+                </div>
+                <div className="space-y-1.5">
+                  <Label>Report type</Label>
+                  <Select
+                    value={createDraftForm.reportType}
+                    onValueChange={(value) => setCreateDraftForm((prev) => ({ ...prev, reportType: value }))}
+                  >
+                    <SelectTrigger><SelectValue placeholder="Select report type" /></SelectTrigger>
+                    <SelectContent>
+                      {REPORT_TYPE_OPTIONS.map((value) => (
+                        <SelectItem key={value} value={value}>{value}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-1.5">
+                  <Label htmlFor="apr-period-start">Period start</Label>
+                  <Input
+                    id="apr-period-start"
+                    type="date"
+                    value={createDraftForm.reportPeriodStart}
+                    onChange={(event) => setCreateDraftForm((prev) => ({ ...prev, reportPeriodStart: event.target.value }))}
+                  />
+                </div>
+                <div className="space-y-1.5">
+                  <Label htmlFor="apr-period-end">Period end</Label>
+                  <Input
+                    id="apr-period-end"
+                    type="date"
+                    value={createDraftForm.reportPeriodEnd}
+                    onChange={(event) => setCreateDraftForm((prev) => ({ ...prev, reportPeriodEnd: event.target.value }))}
+                  />
+                </div>
+              </div>
+              <details className="rounded-md border bg-muted/30 p-3 text-sm">
+                <summary className="cursor-pointer font-medium text-foreground">
+                  Advanced: paste UUIDs (optional)
+                </summary>
+                <p className="text-xs text-muted-foreground mt-2 mb-2">
+                  Use only if selectors fail RLS or you need a manual override. Same validation as before.
+                </p>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div className="space-y-1.5">
+                    <Label htmlFor="apr-student-id">studentId</Label>
+                    <Input
+                      id="apr-student-id"
+                      value={createDraftForm.studentId}
+                      onChange={(event) => setCreateDraftForm((prev) => ({ ...prev, studentId: event.target.value }))}
+                      placeholder="UUID"
+                      autoComplete="off"
+                    />
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label htmlFor="apr-class-id">classId</Label>
+                    <Input
+                      id="apr-class-id"
+                      value={createDraftForm.classId}
+                      onChange={(event) => setCreateDraftForm((prev) => ({ ...prev, classId: event.target.value }))}
+                      placeholder="optional UUID"
+                      autoComplete="off"
+                    />
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label htmlFor="apr-branch-id">branchId</Label>
+                    <Input
+                      id="apr-branch-id"
+                      value={createDraftForm.branchId}
+                      onChange={(event) => setCreateDraftForm((prev) => ({ ...prev, branchId: event.target.value }))}
+                      placeholder="UUID"
+                      autoComplete="off"
+                    />
+                  </div>
+                  <div className="space-y-1.5 sm:col-span-2">
+                    <Label htmlFor="apr-assigned-teacher">assignedTeacherProfileId (optional)</Label>
+                    <Input
+                      id="apr-assigned-teacher"
+                      value={createDraftForm.assignedTeacherProfileId}
+                      onChange={(event) => setCreateDraftForm((prev) => ({
+                        ...prev,
+                        assignedTeacherProfileId: event.target.value,
+                      }))}
+                      placeholder="optional UUID"
+                      autoComplete="off"
+                    />
+                  </div>
+                </div>
+              </details>
+            </>
+          ) : (
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div className="space-y-1.5">
+                <Label htmlFor="apr-student-id">studentId</Label>
+                <Input
+                  id="apr-student-id"
+                  value={createDraftForm.studentId}
+                  onChange={(event) => setCreateDraftForm((prev) => ({ ...prev, studentId: event.target.value }))}
+                  placeholder="fake/dev UUID or demo id"
+                />
+              </div>
+              <div className="space-y-1.5">
+                <Label htmlFor="apr-class-id">classId (optional)</Label>
+                <Input
+                  id="apr-class-id"
+                  value={createDraftForm.classId}
+                  onChange={(event) => setCreateDraftForm((prev) => ({ ...prev, classId: event.target.value }))}
+                  placeholder="fake/dev UUID"
+                />
+              </div>
+              <div className="space-y-1.5">
+                <Label htmlFor="apr-branch-id">branchId</Label>
+                <Input
+                  id="apr-branch-id"
+                  value={createDraftForm.branchId}
+                  onChange={(event) => setCreateDraftForm((prev) => ({ ...prev, branchId: event.target.value }))}
+                  placeholder="fake/dev UUID or demo id"
+                />
+              </div>
+              <div className="space-y-1.5">
+                <Label>reportType</Label>
+                <Select
+                  value={createDraftForm.reportType}
+                  onValueChange={(value) => setCreateDraftForm((prev) => ({ ...prev, reportType: value }))}
+                >
+                  <SelectTrigger><SelectValue placeholder="Select report type" /></SelectTrigger>
+                  <SelectContent>
+                    {REPORT_TYPE_OPTIONS.map((value) => (
+                      <SelectItem key={value} value={value}>{value}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-1.5">
+                <Label htmlFor="apr-period-start-d">reportPeriodStart</Label>
+                <Input
+                  id="apr-period-start-d"
+                  type="date"
+                  value={createDraftForm.reportPeriodStart}
+                  onChange={(event) => setCreateDraftForm((prev) => ({ ...prev, reportPeriodStart: event.target.value }))}
+                />
+              </div>
+              <div className="space-y-1.5">
+                <Label htmlFor="apr-period-end-d">reportPeriodEnd</Label>
+                <Input
+                  id="apr-period-end-d"
+                  type="date"
+                  value={createDraftForm.reportPeriodEnd}
+                  onChange={(event) => setCreateDraftForm((prev) => ({ ...prev, reportPeriodEnd: event.target.value }))}
+                />
+              </div>
+              <div className="space-y-1.5 sm:col-span-2">
+                <Label htmlFor="apr-assigned-teacher-d">assignedTeacherProfileId (optional)</Label>
+                <Input
+                  id="apr-assigned-teacher-d"
+                  value={createDraftForm.assignedTeacherProfileId}
+                  onChange={(event) => setCreateDraftForm((prev) => ({
+                    ...prev,
+                    assignedTeacherProfileId: event.target.value,
+                  }))}
+                  placeholder="fake/dev UUID"
+                />
+              </div>
             </div>
-            <div className="space-y-1.5">
-              <Label htmlFor="apr-class-id">classId (optional)</Label>
-              <Input
-                id="apr-class-id"
-                value={createDraftForm.classId}
-                onChange={(event) => setCreateDraftForm((prev) => ({ ...prev, classId: event.target.value }))}
-                placeholder="fake/dev UUID"
-              />
-            </div>
-            <div className="space-y-1.5">
-              <Label htmlFor="apr-branch-id">branchId</Label>
-              <Input
-                id="apr-branch-id"
-                value={createDraftForm.branchId}
-                onChange={(event) => setCreateDraftForm((prev) => ({ ...prev, branchId: event.target.value }))}
-                placeholder="fake/dev UUID or demo id"
-              />
-            </div>
-            <div className="space-y-1.5">
-              <Label>reportType</Label>
-              <Select
-                value={createDraftForm.reportType}
-                onValueChange={(value) => setCreateDraftForm((prev) => ({ ...prev, reportType: value }))}
-              >
-                <SelectTrigger><SelectValue placeholder="Select report type" /></SelectTrigger>
-                <SelectContent>
-                  {REPORT_TYPE_OPTIONS.map((value) => (
-                    <SelectItem key={value} value={value}>{value}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="space-y-1.5">
-              <Label htmlFor="apr-period-start">reportPeriodStart</Label>
-              <Input
-                id="apr-period-start"
-                type="date"
-                value={createDraftForm.reportPeriodStart}
-                onChange={(event) => setCreateDraftForm((prev) => ({ ...prev, reportPeriodStart: event.target.value }))}
-              />
-            </div>
-            <div className="space-y-1.5">
-              <Label htmlFor="apr-period-end">reportPeriodEnd</Label>
-              <Input
-                id="apr-period-end"
-                type="date"
-                value={createDraftForm.reportPeriodEnd}
-                onChange={(event) => setCreateDraftForm((prev) => ({ ...prev, reportPeriodEnd: event.target.value }))}
-              />
-            </div>
-            <div className="space-y-1.5 sm:col-span-2">
-              <Label htmlFor="apr-assigned-teacher">assignedTeacherProfileId (optional)</Label>
-              <Input
-                id="apr-assigned-teacher"
-                value={createDraftForm.assignedTeacherProfileId}
-                onChange={(event) => setCreateDraftForm((prev) => ({ ...prev, assignedTeacherProfileId: event.target.value }))}
-                placeholder="fake/dev UUID"
-              />
-            </div>
-          </div>
+          )}
           <Button onClick={() => { void handleCreateDraft(); }} disabled={creatingDraft}>
             {creatingDraft ? 'Creating…' : 'Create report shell'}
           </Button>
