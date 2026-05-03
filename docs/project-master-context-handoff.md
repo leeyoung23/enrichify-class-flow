@@ -8,6 +8,13 @@
 
 - **`src/pages/AiParentReports.jsx`** — explicit **Generate real AI draft** (Edge JWT + persist **`real_ai`**). **`src/services/aiParentReportEdgeGenerationService.js`** — **`fetch`** to **`generate-ai-parent-report-draft`**, no secrets in browser. **Doc:** **`docs/real-ai-staff-draft-generation-ui-checkpoint.md`**. ParentView unchanged; no auto-release.
 
+## Checkpoint update (AI parent report create shell selector visibility — 2026-05-03)
+
+- **Symptom:** Signed-in HQ still saw **raw UUID** inputs as the default **Create report shell** path.
+- **Cause:** **`canUseSupabase`** / **`showStaffCreatePickers`** treated **`appUser`** as the only live identity; **`session.user`** could exist while **`appUser`** was unset → pickers hidden → legacy UUID grid.
+- **Fix:** **`hasLiveSupabaseIdentity`** includes **`session?.user?.id`**; **`staffDirectoryAuthPending`** during auth load; non-demo without session → **report type + dates** + **Advanced UUID fallback** only; mode copy distinguishes **real staff** vs **`?demoRole=`** demo (Demo Role Preview banner alone does not enable demo mode).
+- **No** SQL/RLS/storage/ParentView/release/notifications/OCR/PDF/Edge/persistence/`real_ai` logic changes. **Docs:** **`docs/real-ai-staff-draft-generation-manual-qa-unblock-checkpoint.md`**, **`docs/real-ai-staff-draft-generation-ui-checkpoint.md`**.
+
 ## Checkpoint update (AI parent report manual QA unblock — create shell pickers, 2026-05-03)
 
 - **`AiParentReports.jsx`** — **branch/class/student** dropdowns for signed-in non-demo staff via **`getBranches` / `getClasses` / `getStudents`** (RLS). **Doc:** **`docs/real-ai-staff-draft-generation-manual-qa-unblock-checkpoint.md`**.

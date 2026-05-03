@@ -3,8 +3,9 @@
 ## Why QA was blocked
 
 1. **`listAiParentReports`** returned **no rows** because **no `ai_parent_reports` rows** existed yet for the project (typical empty DEV DB), **not** because HQ couldn’t read reports once rows exist.
-2. **Create report shell** asked for **raw UUIDs** (`studentId`, `branchId`, `classId`). Staff without DB access could not obtain those quickly, so they could not create a shell → could not select a report → **Generate real AI draft** stayed blocked behind metadata/report selection.
-3. **Demo mode** correctly disables real AI (explicit-click mock-only path unchanged).
+2. **Create report shell** showed **raw UUID fields by default** when **`canUseSupabase`** was false. That happened when **`appUser`** (mapped profile) was still **`null`** even though a valid **`session.user`** existed — the gate used **`appUser.id` only**, so the UI fell through to the legacy grid before profile hydration finished (or on transient profile failure).
+3. **Demo mode** (`?demoRole=`) correctly disables real AI and keeps **mock-only** raw/dev fields; **`Demo Role Preview`** in the shell without `demoRole` does **not** set demo mode by itself.
+4. **Selector visibility fix:** **`hasLiveSupabaseIdentity`** = **`Boolean(appUser?.id) || Boolean(session?.user?.id)`**; **`canUseSupabase`** and **`showStaffCreatePickers`** use that; **`staffDirectoryAuthPending`** shows a spinner instead of flashing UUIDs; **non-demo** path without a live session shows **report type + period** + collapsible **Advanced UUID fallback** only (not a full UUID grid as default).
 
 ## What changed (smallest safe unblock)
 
@@ -29,10 +30,21 @@
 
 ## Next manual QA steps
 
-1. **`npm run dev`** → **`http://localhost:5173/ai-parent-reports`** as **real HQ** ( **no** `demoRole` ).
-2. **Create report shell:** branch → student → dates → **Create report shell**.
+1. **`npm run dev`** → **`http://localhost:5173/ai-parent-reports`** — URL **without** `?demoRole=…`, signed in as staff (HQ admin).
+2. **Create report shell:** expect **Branch** → optional **Class** → **Student**, **Reload lists**, **Report type**, period dates; UUIDs only under **Advanced** (unless Supabase/session missing — then follow banner + Advanced).
 3. Confirm report appears in **Parent Reports** list → select it.
 4. Scroll to **Generate real AI draft** → click once → verify **`real_ai`** version and **no** parent visibility until release.
+
+### Automated validation (staff UI change only)
+
+```bash
+npm run build
+npm run lint
+npm run typecheck
+npm run test:supabase:ai-parent-reports
+npm run test:supabase:ai-parent-report:real-ai-persistence
+npm run test:supabase:ai-parent-report:edge-generation-auth
+```
 
 ## Blockers if lists are empty
 

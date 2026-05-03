@@ -176,12 +176,16 @@ function evidenceClassificationBadgeLabel(classification) {
 
 export default function AiParentReports() {
   const { user } = useOutletContext();
-  const { appUser } = useSupabaseAuthState();
+  const { appUser, session, loading: supabaseAuthLoading } = useSupabaseAuthState();
   const demoRole = getSelectedDemoRole();
   const role = demoRole || getRole(user);
   const inDemoMode = Boolean(demoRole);
   const canAccess = isStaffRole(role);
-  const canUseSupabase = canAccess && !inDemoMode && isSupabaseConfigured() && Boolean(appUser?.id);
+  /** Profile-linked user OR Supabase session user — profile fetch must not block directory pickers. */
+  const hasLiveSupabaseIdentity =
+    Boolean(appUser?.id) || Boolean(session?.user?.id);
+  const canUseSupabase =
+    canAccess && !inDemoMode && isSupabaseConfigured() && hasLiveSupabaseIdentity;
 
   const [reports, setReports] = useState([]);
   const [reportsLoading, setReportsLoading] = useState(false);
@@ -264,7 +268,16 @@ export default function AiParentReports() {
     return gaps;
   }, [selectedReport]);
 
-  const showStaffCreatePickers = canUseSupabase && !inDemoMode;
+  /** Staff-friendly branch/class/student UI when JWT session exists (same condition as live reads/writes). */
+  const showStaffCreatePickers = canUseSupabase;
+
+  /** While Supabase auth is resolving, avoid flashing raw UUID fields before session is applied. */
+  const staffDirectoryAuthPending =
+    canAccess &&
+    !inDemoMode &&
+    isSupabaseConfigured() &&
+    supabaseAuthLoading &&
+    !hasLiveSupabaseIdentity;
 
   const filteredPickerClasses = useMemo(() => {
     const bid = String(createDraftForm.branchId || '').trim();
@@ -941,7 +954,11 @@ export default function AiParentReports() {
       />
 
       <p className="text-xs text-muted-foreground border-l-2 border-muted pl-3 py-1 -mt-4 mb-2">
-        No report reaches parents until explicit staff release. Real AI provider and PDF/export are not enabled yet.
+        No report reaches parents until explicit staff release.{' '}
+        <span className="font-medium text-foreground">
+          Real AI draft generation runs only for signed-in staff after you select a live report shell.
+        </span>{' '}
+        PDF/export to families is not live on this page yet.
       </p>
 
       <Card className="p-4 border-dashed border-muted-foreground/35 bg-muted/15">
@@ -973,11 +990,26 @@ export default function AiParentReports() {
         overrides → Submit / approve / release manually.
       </p>
 
-      <Card className="p-3">
-        <p className="text-sm text-muted-foreground">
+      <Card className="p-3 space-y-2">
+        <p className="text-sm font-medium text-foreground">
           {inDemoMode
-            ? 'Demo mode is local-only — no live Supabase report reads/writes.'
-            : 'Signed-in staff use Supabase with your account (JWT + RLS).'}
+            ? 'Demo mode — local fake data only; real AI generation disabled.'
+            : 'Signed-in staff mode — live Supabase reads/writes through JWT + RLS.'}
+        </p>
+        <p className="text-sm text-muted-foreground">
+          {inDemoMode ? (
+            <>
+              Uses fake/dev lists only; real AI draft generation is disabled. Remove{' '}
+              <code className="text-xs rounded bg-muted px-1">?demoRole=…</code> from the URL and sign in with a staff
+              account to test live shells and <span className="font-medium text-foreground">Generate real AI draft</span>.
+            </>
+          ) : (
+            <>
+              The <span className="font-medium text-foreground">Demo Role Preview</span> banner above only switches preview
+              roles when <code className="text-xs rounded bg-muted px-1">demoRole</code> is set — it does not replace signing
+              in. Real AI uses your Supabase session after you select a report.
+            </>
+          )}
         </p>
       </Card>
 
@@ -1044,17 +1076,35 @@ export default function AiParentReports() {
             Set the reporting period and student/class context. Narrative sections should come from source evidence and
             teacher review — not from typing every field by hand.
           </p>
-          {showStaffCreatePickers ? (
+          {staffDirectoryAuthPending ? (
+            <div className="rounded-lg border bg-muted/30 p-4 flex items-center gap-3">
+              <div className="w-6 h-6 border-2 border-muted border-t-primary rounded-full animate-spin shrink-0" />
+              <p className="text-sm text-muted-foreground">
+                Loading your Supabase session… Branch/class/student pickers appear here once authenticated (no raw UUID
+                fields by default).
+              </p>
+            </div>
+          ) : showStaffCreatePickers ? (
             <>
               <p className="text-xs text-muted-foreground">
-                Signed-in staff: choose branch → optional class filter → student. Lists respect your RLS visibility (same
-                JWT as the rest of the app).
+                Choose branch → optional class filter → student. Lists use the same JWT + RLS as the rest of the app (no
+                service role).
               </p>
               {pickersLoading ? (
                 <p className="text-sm text-muted-foreground">Loading branches, classes, and students…</p>
               ) : null}
               {pickersError ? (
                 <p className="text-xs text-amber-800 dark:text-amber-200">{pickersError}</p>
+              ) : null}
+              {!pickersLoading && !pickersError && pickerBranches.length === 0 ? (
+                <p className="text-xs text-destructive/90">
+                  No branches returned — check RLS or seed data, or use Advanced UUID fallback below.
+                </p>
+              ) : null}
+              {!pickersLoading && !pickersError && pickerBranches.length > 0 && pickerStudents.length === 0 ? (
+                <p className="text-xs text-amber-800 dark:text-amber-200">
+                  No students visible for this branch/filter — widen the class filter or check fixtures.
+                </p>
               ) : null}
               <div className="flex flex-wrap gap-2">
                 <Button type="button" size="sm" variant="outline" onClick={() => { void loadPickerCatalog(); }}>
@@ -1242,7 +1292,7 @@ export default function AiParentReports() {
                 </div>
               </details>
             </>
-          ) : (
+          ) : inDemoMode ? (
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div className="space-y-1.5">
                 <Label htmlFor="apr-student-id">studentId</Label>
@@ -1316,6 +1366,107 @@ export default function AiParentReports() {
                 />
               </div>
             </div>
+          ) : (
+            <>
+              <div className="rounded-md border bg-amber-500/10 dark:bg-amber-950/40 px-3 py-2 text-sm text-amber-950 dark:text-amber-100">
+                {!isSupabaseConfigured() ? (
+                  <span>Supabase is not configured in this build — use Advanced UUID fallback or configure the client.</span>
+                ) : (
+                  <span>
+                    Branch/class/student pickers need a live Supabase session. Sign in with a staff account, remove{' '}
+                    <code className="text-xs rounded bg-muted px-1">?demoRole=…</code> from the URL, and refresh. If you are
+                    already signed in, refresh once so the session attaches before this card renders.
+                  </span>
+                )}
+              </div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div className="space-y-1.5">
+                  <Label>Report type</Label>
+                  <Select
+                    value={createDraftForm.reportType}
+                    onValueChange={(value) => setCreateDraftForm((prev) => ({ ...prev, reportType: value }))}
+                  >
+                    <SelectTrigger><SelectValue placeholder="Select report type" /></SelectTrigger>
+                    <SelectContent>
+                      {REPORT_TYPE_OPTIONS.map((value) => (
+                        <SelectItem key={value} value={value}>{value}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-1.5">
+                  <Label htmlFor="apr-period-start-fallback">Period start</Label>
+                  <Input
+                    id="apr-period-start-fallback"
+                    type="date"
+                    value={createDraftForm.reportPeriodStart}
+                    onChange={(event) => setCreateDraftForm((prev) => ({ ...prev, reportPeriodStart: event.target.value }))}
+                  />
+                </div>
+                <div className="space-y-1.5">
+                  <Label htmlFor="apr-period-end-fallback">Period end</Label>
+                  <Input
+                    id="apr-period-end-fallback"
+                    type="date"
+                    value={createDraftForm.reportPeriodEnd}
+                    onChange={(event) => setCreateDraftForm((prev) => ({ ...prev, reportPeriodEnd: event.target.value }))}
+                  />
+                </div>
+              </div>
+              <details className="rounded-md border bg-muted/30 p-3 text-sm">
+                <summary className="cursor-pointer font-medium text-foreground">
+                  Advanced UUID fallback (manual shell only)
+                </summary>
+                <p className="text-xs text-muted-foreground mt-2 mb-2">
+                  Use only when pickers are unavailable. Same validation as the staff selector path.
+                </p>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div className="space-y-1.5">
+                    <Label htmlFor="apr-student-id-fallback">studentId</Label>
+                    <Input
+                      id="apr-student-id-fallback"
+                      value={createDraftForm.studentId}
+                      onChange={(event) => setCreateDraftForm((prev) => ({ ...prev, studentId: event.target.value }))}
+                      placeholder="UUID"
+                      autoComplete="off"
+                    />
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label htmlFor="apr-class-id-fallback">classId (optional)</Label>
+                    <Input
+                      id="apr-class-id-fallback"
+                      value={createDraftForm.classId}
+                      onChange={(event) => setCreateDraftForm((prev) => ({ ...prev, classId: event.target.value }))}
+                      placeholder="optional UUID"
+                      autoComplete="off"
+                    />
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label htmlFor="apr-branch-id-fallback">branchId</Label>
+                    <Input
+                      id="apr-branch-id-fallback"
+                      value={createDraftForm.branchId}
+                      onChange={(event) => setCreateDraftForm((prev) => ({ ...prev, branchId: event.target.value }))}
+                      placeholder="UUID"
+                      autoComplete="off"
+                    />
+                  </div>
+                  <div className="space-y-1.5 sm:col-span-2">
+                    <Label htmlFor="apr-assigned-teacher-fallback">assignedTeacherProfileId (optional)</Label>
+                    <Input
+                      id="apr-assigned-teacher-fallback"
+                      value={createDraftForm.assignedTeacherProfileId}
+                      onChange={(event) => setCreateDraftForm((prev) => ({
+                        ...prev,
+                        assignedTeacherProfileId: event.target.value,
+                      }))}
+                      placeholder="optional UUID"
+                      autoComplete="off"
+                    />
+                  </div>
+                </div>
+              </details>
+            </>
           )}
           <Button onClick={() => { void handleCreateDraft(); }} disabled={creatingDraft}>
             {creatingDraft ? 'Creating…' : 'Create report shell'}
