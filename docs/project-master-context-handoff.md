@@ -1,5 +1,9 @@
 # Project Master Context Handoff
 
+## Checkpoint update (Parent Communication teacher workflow polish — final seal, docs-only, 2026-05-03)
+
+- **Doc:** **`docs/parent-communication-teacher-workflow-polish-final-checkpoint.md`** — seals teacher UX milestone (**`c313ee8`**, **`312c439`**): Step **1–5**, Announcements vs Parent Communication, draft-only + review before share, friendly statuses, **All updates** non-clickable hints; **no** backend/RLS/storage/provider/email/ParentView changes. **Manual browser QA (~390px)** still recommended (**A**). Parked: My Tasks, notifications, PDF storage, **real_ai**, OCR. **No** runtime edits in this doc milestone.
+
 ## Checkpoint update (Parent Communication step-label polish — 2026-05-03)
 
 - **`src/pages/ParentUpdates.jsx`** (`/parent-updates`) — **Step 1–5** teacher workflow cards: class memory, update type, class/student, **Learning evidence preview**, write/review; friendly **All updates** statuses; **Announcements** called out for official notices. **No** SQL/RLS/storage/provider/email changes. **Doc:** **`docs/parent-communication-step-label-polish-checkpoint.md`**. Cross-refs: **`docs/teacher-upload-step-simplification-plan.md`** §5 §12, **`docs/manual-preview-product-direction-corrections.md`**, **`docs/mobile-first-qa-checkpoint.md`**, **`docs/rls-test-checklist.md`**.

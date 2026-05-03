@@ -1,5 +1,9 @@
 # Mobile-first QA checkpoint
 
+## Checkpoint update (Parent Communication teacher workflow polish — final seal, 2026-05-03)
+
+- **Doc:** **`docs/parent-communication-teacher-workflow-polish-final-checkpoint.md`** — **manual browser QA** (**desktop + ~390px**) still recommended for density/tap targets; **All updates** hints non-clickable after **`312c439`**.
+
 ## Checkpoint update (Parent Communication step-label polish — 2026-05-03)
 
 - **Reference:** **`docs/parent-communication-step-label-polish-checkpoint.md`** — re-QA **~390px** **`/parent-updates`**: stacked step cards, full-width toggles/buttons, **All updates** list without horizontal overflow; **no** backend change.

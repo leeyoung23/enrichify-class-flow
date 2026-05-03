@@ -1,6 +1,7 @@
 # Parent Communication — step-label polish (checkpoint)
 
 Date: 2026-05-03  
+**Final seal (docs):** **`docs/parent-communication-teacher-workflow-polish-final-checkpoint.md`** — completed state, safety, QA status, parked lanes, next options (**A–F**).  
 Scope: **`src/pages/ParentUpdates.jsx`** — teacher-facing **UX/copy** and **layout** only (`/parent-updates`). **No** SQL/RLS, **no** storage buckets, **no** new write contracts, **no** provider keys, **no** notification/email sending, **no** ParentView visibility rule changes.
 
 ## Teacher simplicity principle

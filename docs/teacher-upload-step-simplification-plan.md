@@ -211,7 +211,7 @@ This plan does **not** implement routing or rename — only records direction fo
 
 Then **C → D**; **E** when product defines student-notes scope; **F** last.
 
-**Update (2026-05-03):** **C** — **Parent Communication** step-label / teacher workflow polish — **`docs/parent-communication-step-label-polish-checkpoint.md`** ( **`src/pages/ParentUpdates.jsx`** only; no SQL/RLS).
+**Update (2026-05-03):** **C** — **Parent Communication** step-label / teacher workflow polish — **`docs/parent-communication-step-label-polish-checkpoint.md`** ( **`src/pages/ParentUpdates.jsx`** only; no SQL/RLS). **Final seal:** **`docs/parent-communication-teacher-workflow-polish-final-checkpoint.md`** (commits **`c313ee8`**, **`312c439`**).
 
 ---
 

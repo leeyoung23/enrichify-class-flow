@@ -1,5 +1,9 @@
 # RLS Test Checklist
 
+## Checkpoint update (Parent Communication teacher workflow polish — final seal, docs-only, 2026-05-03)
+
+- **Doc:** **`docs/parent-communication-teacher-workflow-polish-final-checkpoint.md`** — **no** new RLS surface; restates **`ParentUpdates.jsx`** UX-only scope (**`c313ee8`**, **`312c439`**). **No** DDL.
+
 ## Checkpoint update (Parent Communication step-label polish — 2026-05-03)
 
 - **`ParentUpdates.jsx`** — **copy/layout only**; **no** RLS/DDL/persistence change. Regression when touching parent flows: **`npm run test:supabase:parent-announcements`** · **`npm run test:supabase:parent-announcements:media`**. **Doc:** **`docs/parent-communication-step-label-polish-checkpoint.md`**.
