@@ -40,6 +40,55 @@ const ANNOUNCEMENT_PRIORITY_STYLES = {
   low: 'bg-slate-100 text-slate-700 border-slate-200',
 };
 
+function formatClassroomTaskStatusLabel(status) {
+  const map = {
+    pending: 'To do',
+    completed: 'Done',
+    overdue: 'Overdue',
+    in_progress: 'In progress',
+  };
+  return map[status] ?? status ?? '—';
+}
+
+function formatClassroomTaskPriorityLabel(priority) {
+  const map = {
+    high: 'High priority',
+    medium: 'Medium priority',
+    low: 'Low priority',
+  };
+  return map[priority] ?? priority ?? '—';
+}
+
+function formatAnnouncementStatusLabel(status) {
+  const map = {
+    pending: 'To do',
+    unread: 'New',
+    undone: 'Action needed',
+    overdue: 'Overdue',
+    done: 'Done',
+    completed: 'Done',
+  };
+  return map[status] ?? status ?? '—';
+}
+
+function formatAnnouncementPriorityLabel(priority) {
+  const map = {
+    urgent: 'Urgent',
+    high: 'High priority',
+    normal: 'Normal',
+    low: 'Low priority',
+  };
+  return map[priority] ?? priority ?? '—';
+}
+
+/** Display-only label for the announcement card primary button; navigation is unchanged. */
+function getAnnouncementPrimaryActionLabel(task) {
+  if (task?.status === 'done') return 'View in Announcements';
+  if (task?.requiresUpload && !task?.uploadProvided) return 'Upload in Announcements';
+  if (task?.requiresResponse && !task?.responseProvided) return 'Reply in Announcements';
+  return 'Open in Announcements';
+}
+
 function partitionAnnouncementTasksForDisplay(tasks) {
   const uploadNeeded = [];
   const replyNeeded = [];
@@ -302,14 +351,13 @@ export default function MyTasks() {
         title="My Tasks"
         description={
           role === 'teacher'
-            ? 'What you need to do next — grouped so uploads and replies are easy to spot. Demo/local only unless you are signed in.'
+            ? 'Two areas below: reminders for your classes, and HQ requests that come through Announcements. Nothing here emails parents or sends notifications by itself — you choose when to act in each area.'
             : 'Staff task overview — demo/local preview where noted.'
         }
       />
       <p className="text-sm text-muted-foreground mb-4">
-        Start with <span className="font-medium text-foreground">Upload needed</span> and{' '}
-        <span className="font-medium text-foreground">Reply needed</span>, then other requests, and check{' '}
-        <span className="font-medium text-foreground">Completed</span> when you need history.
+        <span className="font-medium text-foreground">Class and task reminders</span> are your everyday checklist.{' '}
+        <span className="font-medium text-foreground">HQ requests</span> live under Announcements — start with uploads and replies there, then other actions, and use Done when you need history.
       </p>
       {feedback && (
         <p className={`text-sm mb-4 ${feedback.type === 'error' ? 'text-destructive' : 'text-muted-foreground'}`} role="status">
@@ -319,16 +367,17 @@ export default function MyTasks() {
 
       {role !== 'teacher' && (
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
-          <Card className="p-5"><p className="text-sm text-muted-foreground">Pending</p><p className="text-3xl font-bold mt-1">{overview.pending}</p></Card>
-          <Card className="p-5"><p className="text-sm text-muted-foreground">Completed</p><p className="text-3xl font-bold mt-1">{overview.completed}</p></Card>
+          <Card className="p-5"><p className="text-sm text-muted-foreground">To do</p><p className="text-3xl font-bold mt-1">{overview.pending}</p></Card>
+          <Card className="p-5"><p className="text-sm text-muted-foreground">Done</p><p className="text-3xl font-bold mt-1">{overview.completed}</p></Card>
           <Card className="p-5"><p className="text-sm text-muted-foreground">Overdue</p><p className="text-3xl font-bold mt-1">{overview.overdue}</p></Card>
         </div>
       )}
 
+      <h2 className="text-base font-semibold text-foreground mb-3">Class and task reminders</h2>
       <div className="flex flex-wrap gap-2 mb-6">
         <Button variant={filter === 'all' ? 'default' : 'outline'} size="sm" onClick={() => setFilter('all')}>All</Button>
-        <Button variant={filter === 'pending' ? 'default' : 'outline'} size="sm" onClick={() => setFilter('pending')}>Pending</Button>
-        <Button variant={filter === 'completed' ? 'default' : 'outline'} size="sm" onClick={() => setFilter('completed')}>Completed</Button>
+        <Button variant={filter === 'pending' ? 'default' : 'outline'} size="sm" onClick={() => setFilter('pending')}>To do</Button>
+        <Button variant={filter === 'completed' ? 'default' : 'outline'} size="sm" onClick={() => setFilter('completed')}>Done</Button>
         <Button variant={filter === 'overdue' ? 'default' : 'outline'} size="sm" onClick={() => setFilter('overdue')}>Overdue</Button>
       </div>
 
@@ -352,8 +401,8 @@ export default function MyTasks() {
                   )}
                 </div>
                 <div className="flex flex-wrap items-center gap-2 lg:justify-end">
-                  <span className={`text-xs px-2 py-0.5 rounded-full border font-medium ${STATUS_STYLES[item.status]}`}>{item.status}</span>
-                  <span className={`text-xs px-2 py-0.5 rounded-full border font-medium ${PRIORITY_STYLES[item.priority]}`}>{item.priority}</span>
+                  <span className={`text-xs px-2 py-0.5 rounded-full border font-medium ${STATUS_STYLES[item.status]}`}>{formatClassroomTaskStatusLabel(item.status)}</span>
+                  <span className={`text-xs px-2 py-0.5 rounded-full border font-medium ${PRIORITY_STYLES[item.priority]}`}>{formatClassroomTaskPriorityLabel(item.priority)}</span>
                   {role === 'teacher' && item.status !== 'completed' && (
                     <Button
                       size="sm"
@@ -375,14 +424,14 @@ export default function MyTasks() {
         <Card className="p-4 sm:p-5">
           <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
             <div>
-              <p className="font-semibold">From announcements</p>
+              <p className="font-semibold">HQ requests (Announcements)</p>
               <p className="text-xs text-muted-foreground">
-                Requests tied to Announcements — open one to upload, reply, or finish what HQ asked for.
+                Open a request to upload, reply, or wrap up what HQ asked for — same place as Announcements.
               </p>
             </div>
             <div className="flex flex-wrap gap-2">
               <Badge variant="outline">Total {announcementOverview.total}</Badge>
-              <Badge variant="outline">Pending {announcementOverview.pending}</Badge>
+              <Badge variant="outline">To do {announcementOverview.pending}</Badge>
               <Badge variant="outline">Overdue {announcementOverview.overdue}</Badge>
               <Badge variant="outline">Done {announcementOverview.done}</Badge>
             </div>
@@ -412,26 +461,26 @@ export default function MyTasks() {
             {[
               {
                 key: 'upload',
-                title: 'Upload needed',
-                subtitle: 'Attach the file HQ asked for before moving on.',
+                title: 'Upload files',
+                subtitle: 'Attach what HQ asked for, then continue.',
                 items: announcementGroups.uploadNeeded,
               },
               {
                 key: 'reply',
-                title: 'Reply needed',
-                subtitle: 'Add your comment or confirmation.',
+                title: 'Reply to HQ',
+                subtitle: 'Add your comment or confirmation in Announcements.',
                 items: announcementGroups.replyNeeded,
               },
               {
                 key: 'action',
-                title: 'Other requests',
-                subtitle: 'Read or complete these next.',
+                title: 'Other action needed',
+                subtitle: 'Read or finish these next.',
                 items: announcementGroups.needsAction,
               },
               {
                 key: 'done',
-                title: 'Completed',
-                subtitle: 'Finished requests — for your records.',
+                title: 'Done',
+                subtitle: 'Finished requests for your records.',
                 items: announcementGroups.completed,
               },
             ].map((section) => (
@@ -455,10 +504,10 @@ export default function MyTasks() {
                             <div className="flex flex-wrap gap-2">
                               <Badge variant="outline">Announcement</Badge>
                               <Badge variant="outline" className={ANNOUNCEMENT_PRIORITY_STYLES[task.priority] || ANNOUNCEMENT_PRIORITY_STYLES.normal}>
-                                {task.priority || 'normal'}
+                                {formatAnnouncementPriorityLabel(task.priority || 'normal')}
                               </Badge>
                               <Badge variant="outline" className={ANNOUNCEMENT_STATUS_STYLES[task.status] || ANNOUNCEMENT_STATUS_STYLES.pending}>
-                                {task.status || 'pending'}
+                                {formatAnnouncementStatusLabel(task.status || 'pending')}
                               </Badge>
                             </div>
                           </div>
@@ -466,31 +515,25 @@ export default function MyTasks() {
                           <div className="flex flex-wrap gap-2 text-xs text-muted-foreground">
                             {task.dueDate ? <Badge variant="outline">Due {task.dueDate}</Badge> : null}
                             {task.requiresResponse ? (
-                              <Badge variant="outline">{task.responseProvided ? 'Reply done' : 'Reply needed'}</Badge>
+                              <Badge variant="outline">{task.responseProvided ? 'Replied' : 'Awaiting reply'}</Badge>
                             ) : null}
                             {task.requiresUpload ? (
-                              <Badge variant="outline">{task.uploadProvided ? 'Upload done' : 'Upload needed'}</Badge>
+                              <Badge variant="outline">{task.uploadProvided ? 'Uploaded' : 'Not uploaded yet'}</Badge>
                             ) : null}
                             <Badge variant="outline">Replies {task.replyCount || 0}</Badge>
                             <Badge variant="outline">Attachments {task.attachmentCount || 0}</Badge>
                           </div>
 
-                          <div className="flex flex-wrap items-center gap-2">
-                            {task.requiresResponse ? <span className="text-xs text-muted-foreground">Reply needed</span> : null}
-                            {task.requiresUpload ? <span className="text-xs text-muted-foreground">Upload needed</span> : null}
-                            {task.isOverdue ? <span className="text-xs text-red-700">Overdue</span> : null}
-                          </div>
-
                           <div>
                             <Button
                               size="sm"
-                              className="min-h-10"
+                              className="min-h-10 w-full sm:w-auto"
                               onClick={() => {
                                 const targetUrl = typeof task.actionUrl === 'string' && task.actionUrl.trim() ? task.actionUrl : '/announcements';
                                 navigate(targetUrl, { state: { announcementId: task.announcementId || null } });
                               }}
                             >
-                              Open Announcement
+                              {getAnnouncementPrimaryActionLabel(task)}
                             </Button>
                           </div>
                         </div>
