@@ -4,6 +4,7 @@ Date: 2026-05-02
 Type: **planning only** — defines PDF content, exclusions, layout rules, data shape, and phased implementation alignment. **No** PDF generation, **no** UI buttons, **no** SQL, **no** storage in this milestone.
 
 **Parent strategy:** `docs/released-ai-parent-report-export-strategy-plan.md`  
+**Mock/render helper planning:** `docs/ai-parent-report-pdf-mock-render-helper-plan.md`  
 **Related:** `docs/ai-parent-report-blueprint-plan.md`, `docs/parent-view-ai-report-display-final-checkpoint.md`, `docs/ai-parent-report-ui-shell-final-checkpoint.md`, `docs/ai-parent-report-mvp-final-qa-checkpoint.md`
 
 **UI reference (released sections):** `src/pages/ParentView.jsx` — `ParentProgressReportsSection` resolves text via `structuredSections` / `finalText` with the same key fallbacks as listed under §4.
@@ -243,13 +244,13 @@ const releasedReportPdfInput = {
 | Letter | Milestone |
 |--------|-----------|
 | **A** | Plan only (this doc + strategy doc) |
-| **B** | **PDF template mock data + render helper planning** — fake `releasedReportPdfInput` builder spec + test harness outline |
-| **C** | Browser print CSS prototype |
-| **D** | SQL/storage + RLS review for persisted exports |
-| **E** | PNG summary planning |
-| **F** | Real AI provider smoke |
+| **B** | **PDF mock data + render helper planning** — **`docs/ai-parent-report-pdf-mock-render-helper-plan.md`** (complete) |
+| **C** | **Pure helper + fixture module** in **`src/`** — no ParentView button, no SQL (`mock-render-helper-plan.md` §12 **B**) |
+| **D** | Browser print CSS / HTML preview wired to helpers |
+| **E** | SQL/storage + RLS review for persisted exports |
+| **F** | PNG summary planning |
 
-**Recommend B next:** define **deterministic mock builder** + **pure render function contract** (no UI button yet) so PDF work stays **testable** and **safe**.
+**Recommend next:** implement **`src/`** helpers + fixtures per **`docs/ai-parent-report-pdf-mock-render-helper-plan.md`** §13 — **no** export button yet.
 
 ---
 

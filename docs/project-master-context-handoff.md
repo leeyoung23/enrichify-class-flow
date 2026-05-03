@@ -1,5 +1,9 @@
 # Project Master Context Handoff
 
+## Checkpoint update (AI Parent Report PDF mock + render helper planning — 2026-05-02)
+
+- **Docs-only:** **`docs/ai-parent-report-pdf-mock-render-helper-plan.md`** — pure function contracts (**build**, **normalize**, **validate**, **renderHtml**), section normalization table, validation rules, fake fixtures outline §9, render strategy **HTML/React before** client PDF lib; recommended next **`src/`** module **without** ParentView button (**§12–§13**). Cross-ref **`docs/ai-parent-report-pdf-template-contract-plan.md`**. **No** SQL/buckets/UI/export button in this doc milestone.
+
 ## Checkpoint update (AI Parent Report PDF template contract — planning only, 2026-05-02)
 
 - **Docs-only:** **`docs/ai-parent-report-pdf-template-contract-plan.md`** — official **released-only** PDF artefact; required/optional sections aligned with **`ParentView.jsx`** keys; explicit exclusions (drafts, evidence URLs, `generation_source`, paths); **`releasedReportPdfInput`** contract §7; A4 layout §8; variants §9; privacy §11; recommended next **B** (mock builder + render helper planning §14–§15). Cross-ref **`docs/released-ai-parent-report-export-strategy-plan.md`**. **No** `src/` changes.
