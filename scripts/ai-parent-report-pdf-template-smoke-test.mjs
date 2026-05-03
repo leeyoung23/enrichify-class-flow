@@ -89,11 +89,16 @@ function run() {
 
   const htmlOut = renderReleasedReportPdfHtml(monthly);
   if (!htmlOut.ok) fail(`render monthly: ${htmlOut.error}`);
-  if (!htmlOut.html.includes('Progress report')) fail('HTML missing title');
-  if (!htmlOut.html.includes('Summary')) fail('HTML missing Summary heading');
+  if (!htmlOut.html.includes('Student Progress Report')) fail('HTML missing document title');
+  if (!htmlOut.html.includes('student-panel')) fail('HTML missing student information panel');
+  if (!htmlOut.html.includes('highlight-card')) fail('HTML missing highlight cards');
+  if (!htmlOut.html.includes('At a glance')) fail('HTML missing highlights section');
+  if (!htmlOut.html.includes('Acknowledgements')) fail('HTML missing signature section');
+  if (!htmlOut.html.includes('Branch supervisor')) fail('HTML missing supervisor signature label');
+  if (!htmlOut.html.includes('Summary')) fail('HTML missing Summary section');
   if (!htmlOut.html.includes('Demo Student One')) fail('HTML missing student');
   assertNoLeak(htmlOut.html);
-  pass('HTML contains expected safe headings');
+  pass('HTML contains expected layout landmarks');
 
   const allVariants = ['monthly_progress', 'weekly_brief', 'long_text', 'sparse_optional_fields'];
   for (const v of allVariants) {

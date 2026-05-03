@@ -15,7 +15,7 @@ Type: **documentation** — original seal was docs-only for **`2cfab48`**. **Upd
 - **Fake/dev only** — **`buildDemoReleasedReportPdfInput`** uses fictional student/centre strings.
 - **Section normalization** — ParentView-aligned resolution order and **`PDF_SECTION_DEFINITIONS`** mapping.
 - **Validation** — **`validateReleasedReportPdfInput`** with URL/metadata bans and release posture checks.
-- **HTML render** — **`renderReleasedReportPdfHtml`** produces a full document + **A4 print CSS**; content escaped.
+- **HTML render** — **`renderReleasedReportPdfHtml`** produces a full **Student Progress Report** document (boxed sections, highlight cards, signatures) + **A4 print CSS**; content escaped. Visual polish: **`docs/ai-parent-report-pdf-template-visual-polish-checkpoint.md`**.
 - **Adapter** — **`buildReleasedReportPdfInputFromParentViewContext`** maps in-memory released rows only.
 - **No** ParentView Download button, **no** staff export/download/persist button — **internal** staff **`/ai-parent-report-pdf-preview`** uses demo HTML only (**`docs/ai-parent-report-pdf-internal-preview-checkpoint.md`**). **No** SQL/RLS DDL, **no** buckets.
 - **No** `real_ai` unlock, **no** provider calls, **no** ParentView visibility rule changes.
@@ -68,8 +68,8 @@ Returns **`{ ok: true, data }`** or **`{ ok: false, error }`** with **generic** 
 ## 5. HTML render helper (`renderReleasedReportPdfHtml`)
 
 - Runs **validation first**; on failure returns **`{ ok: false, error }`**.
-- Success: **`{ ok: true, html, input }`** — full **HTML5** document, **embedded print CSS** (**A4**), **no `<script>`**, **no external assets**, **no remote images**, placeholder branding strip only.
-- User content passed through **`escapeHtml`**.
+- Success: **`{ ok: true, html, input }`** — full **HTML5** document (**Student Progress Report** title), branded header strip, **Student information** panel, **At a glance** highlight cards (clipped summaries + safe fallback), **Report detail** boxed sections per **`PDF_SECTION_DEFINITIONS`**, **Acknowledgements** signature grid, footer — **embedded print CSS** (**A4**), **no `<script>`**, **no external assets**, **no remote images**.
+- User content passed through **`escapeHtml`**. Checkpoint: **`docs/ai-parent-report-pdf-template-visual-polish-checkpoint.md`**.
 
 ---
 

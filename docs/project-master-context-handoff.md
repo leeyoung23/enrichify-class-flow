@@ -1,5 +1,9 @@
 # Project Master Context Handoff
 
+## Checkpoint update (AI Parent Report PDF template visual polish — 2026-05-03)
+
+- **`src/services/aiParentReportPdfTemplate.js`** — **`renderReleasedReportPdfHtml`**: **Student Progress Report** boxed A4 layout (student panel, **At a glance** cards, section blocks, teacher / supervisor signatures); validation unchanged; **`scripts/ai-parent-report-pdf-template-smoke-test.mjs`** layout landmarks. **Doc:** **`docs/ai-parent-report-pdf-template-visual-polish-checkpoint.md`**. **No** ParentView download, **no** storage/SQL/provider/email. Cross-refs: **`docs/ai-parent-report-pdf-internal-preview-checkpoint.md`**, **`docs/manual-qa-ai-parent-report-pdf-internal-preview-checkpoint.md`**, **`docs/mobile-first-qa-checkpoint.md`**, **`docs/rls-test-checklist.md`**.
+
 ## Checkpoint update (PDF internal preview navigation clarity — 2026-05-03)
 
 - **`docs/pdf-preview-navigation-clarity-fix-checkpoint.md`** — **removed** sidebar **`PDF preview (internal)`** from **`ROLE_NAVIGATION`** (HQ/supervisor/teacher); route **`/ai-parent-report-pdf-preview`** unchanged; entry via **`AiParentReports`** optional dashed card + direct URL; preview page copy: **not a parent download**, **no file stored**, **fake/dev fixture only**, **no download/print/export**. **No** ParentView/export/SQL/storage/provider/email changes.

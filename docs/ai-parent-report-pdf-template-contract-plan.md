@@ -29,7 +29,7 @@ The **PDF** is the **official printable and downloadable** artefact for an **AI 
 |-------|--------|
 | **ParentView** | **Progress Reports** lists **released** reports; detail shows **current released version** only (`structuredSections` / `finalText` resolution per section rows). |
 | **Staff lifecycle** | **`AiParentReports.jsx`** — draft → review → approve → **manual release**; no auto-release. |
-| **Internal HTML preview** | **Staff-only** route **`/ai-parent-report-pdf-preview`** — **`buildDemoReleasedReportPdfInput`** + **`renderReleasedReportPdfHtml`**; **no** parent access; **`docs/ai-parent-report-pdf-internal-preview-checkpoint.md`**. |
+| **Internal HTML preview** | **Staff-only** **`/ai-parent-report-pdf-preview`** — **`renderReleasedReportPdfHtml`** (**Student Progress Report** layout: student panel, highlight cards, boxed sections, signatures); **`docs/ai-parent-report-pdf-internal-preview-checkpoint.md`** · **`docs/ai-parent-report-pdf-template-visual-polish-checkpoint.md`**. |
 | **PDF generation** | **Not implemented** (preview is HTML string + iframe only). |
 | **PDF storage** | **None** — no export bucket/table in product yet. |
 | **PNG summary** | Planned **after** PDF maturity (`released-ai-parent-report-export-strategy-plan.md`). |

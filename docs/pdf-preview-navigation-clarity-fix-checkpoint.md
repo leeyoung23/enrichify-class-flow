@@ -25,6 +25,7 @@ Re-run spot checks in **`docs/manual-qa-ai-parent-report-pdf-internal-preview-ch
 
 - **`docs/ai-parent-report-pdf-internal-preview-checkpoint.md`**
 - **`docs/manual-qa-ai-parent-report-pdf-internal-preview-checkpoint.md`**
+- **`docs/ai-parent-report-pdf-template-visual-polish-checkpoint.md`** — HTML template layout inside iframe
 
 ## Validation
 

@@ -1,6 +1,6 @@
 # Manual visual QA — AI Parent Report PDF internal preview
 
-Date: 2026-05-03  
+Date: 2026-05-03 (template visual polish **2026-05-03** — **`docs/ai-parent-report-pdf-template-visual-polish-checkpoint.md`**)  
 Type: **QA / checkpoint only** — human screenshot pass for **`/ai-parent-report-pdf-preview`** before any parent-facing **Download PDF**, storage, or export persistence. **No** code changes implied by this document unless product explicitly requests fixes later.
 
 **Surfaces:** `src/pages/AiParentReportPdfPreview.jsx` · helper `src/services/aiParentReportPdfTemplate.js`  
@@ -26,7 +26,7 @@ Capture **desktop** (typical staff width, e.g. 1280px+) and **~390px** mobile:
 |------|-----------------|
 | **Staff sidebar** | **No** “PDF preview” item — confirm it does **not** appear as a routine workflow link (**post–navigation clarity fix**) |
 | **AI Parent Reports** | Optional dashed **Internal PDF preview** card + link (layout QA only; fake/dev; parents do not see) |
-| **Page header** | Title **Internal PDF preview** + staff/dev-only description |
+| **Page header** | App chrome title **Internal PDF preview**; iframe document shows **Student Progress Report** + boxed layout |
 | **Safety banner** | Amber-style strip: fake/dev, not visible to parents, no file stored |
 | **Variant selector** | Label **Demo fixture variant** + **Select** for four variants |
 | **Variants** | **`monthly_progress`**, **`weekly_brief`**, **`long_text`**, **`sparse_optional_fields`** — one screenshot each after switching |

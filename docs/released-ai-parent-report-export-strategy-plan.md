@@ -33,7 +33,7 @@ The **in-app portal view** remains the primary reading experience; exports exten
 |-------|--------|
 | **ParentView** | **Progress Reports** section lists **released** reports and shows **current released version** detail only (`listAiParentReports` with `status: 'released'`, detail + current version reads). |
 | **Staff workflow** | **`AiParentReports.jsx`** supports lifecycle (draft → review → approve → **manual release**); **`real_ai`** version creation remains policy-blocked per existing docs. |
-| **Internal PDF HTML preview** | **Staff-only** **`/ai-parent-report-pdf-preview`** — demo fixtures, **no** download/storage; **`docs/ai-parent-report-pdf-internal-preview-checkpoint.md`**. Use for layout QA **before** parent-facing download work. |
+| **Internal PDF HTML preview** | **Staff-only** **`/ai-parent-report-pdf-preview`** — polished box-based A4 HTML (**Student Progress Report**); demo fixtures, **no** download/storage; **`docs/ai-parent-report-pdf-template-visual-polish-checkpoint.md`**. Use for layout QA **before** parent-facing download work. |
 | **PDF export** | **Not implemented** for parents — explicitly called out as absent in blueprint / ParentView checkpoints. |
 | **PNG / image export** | **Not implemented**. |
 | **Export storage / DB table** | **No** dedicated export artifact table in this plan’s implementation scope (future DDL optional). |

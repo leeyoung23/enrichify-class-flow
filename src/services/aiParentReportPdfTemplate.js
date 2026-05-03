@@ -454,6 +454,66 @@ function formatPeriod(start, end) {
   return a || b || '—';
 }
 
+const DOCUMENT_TITLE = 'Student Progress Report';
+const HIGHLIGHT_FALLBACK =
+  'More evidence is needed before a detailed summary is added.';
+const CARD_TEXT_MAX = 220;
+
+/**
+ * @param {string} text
+ * @param {number} [maxLen]
+ */
+function clipCardSummary(text, maxLen = CARD_TEXT_MAX) {
+  const t = typeof text === 'string' ? text.trim().replace(/\s+/g, ' ') : '';
+  if (!t) return '';
+  if (t.length <= maxLen) return t;
+  return `${t.slice(0, Math.max(0, maxLen - 1))}…`;
+}
+
+/**
+ * @param {{ body?: string }} row
+ * @returns {string}
+ */
+function cardBodyOrFallback(row) {
+  const b = row && typeof row.body === 'string' ? row.body.trim() : '';
+  const clipped = clipCardSummary(b);
+  return clipped || HIGHLIGHT_FALLBACK;
+}
+
+/**
+ * @param {object[]} sections
+ * @returns {Record<string, { title: string, body: string }>}
+ */
+function buildSectionLookup(sections) {
+  const map = {};
+  if (!Array.isArray(sections)) return map;
+  for (const sec of sections) {
+    if (!sec || typeof sec !== 'object') continue;
+    const id = typeof sec.id === 'string' ? sec.id.trim() : '';
+    if (!id) continue;
+    map[id] = {
+      title: typeof sec.title === 'string' ? sec.title : '',
+      body: typeof sec.body === 'string' ? sec.body : '',
+    };
+  }
+  return map;
+}
+
+/**
+ * @param {Record<string, { title: string, body: string }>} lookup
+ * @returns {string}
+ */
+function highlightStrengthsNextText(lookup) {
+  const sRow = lookup.strengths;
+  const nRow = lookup.next_recommendations;
+  const s = sRow && typeof sRow.body === 'string' ? sRow.body.trim() : '';
+  const n = nRow && typeof nRow.body === 'string' ? nRow.body.trim() : '';
+  if (s && n) return clipCardSummary(`${s} ${n}`) || HIGHLIGHT_FALLBACK;
+  if (s) return clipCardSummary(s) || HIGHLIGHT_FALLBACK;
+  if (n) return clipCardSummary(n) || HIGHLIGHT_FALLBACK;
+  return HIGHLIGHT_FALLBACK;
+}
+
 /**
  * @param {object} input
  * @returns {{ ok: true, html: string, input: object } | { ok: false, error: string }}
@@ -465,58 +525,323 @@ export function renderReleasedReportPdfHtml(input) {
   }
 
   const inv = v.data;
-  const title = 'Progress report';
+  const lookup = buildSectionLookup(inv.sections);
+
+  const branchName = inv.branch?.name ? String(inv.branch.name).trim() : '';
+  const studentName = inv.student?.displayName ? String(inv.student.displayName).trim() : '';
+  const classLabel = inv.class?.label ? String(inv.class.label).trim() : '';
+  const programmeLabel = inv.programme?.label ? String(inv.programme.label).trim() : '';
+  const teacherName = inv.teacher?.displayName ? String(inv.teacher.displayName).trim() : '';
+  const releasedByName = inv.releasedBy?.displayName ? String(inv.releasedBy.displayName).trim() : '';
+  const variantLabel = inv.templateVariant ? String(inv.templateVariant).trim() : '';
+  const periodLine = formatPeriod(inv.reportPeriod?.start, inv.reportPeriod?.end);
+  const releasedLine = inv.releasedAt ? String(inv.releasedAt) : '';
+
+  const sigTeacher = teacherName || 'Teacher';
+  const sigSupervisor = releasedByName || 'Branch supervisor / HQ';
 
   const parts = [];
   parts.push('<!DOCTYPE html>');
   parts.push('<html lang="en">');
   parts.push('<head>');
   parts.push('<meta charset="utf-8" />');
-  parts.push(`<title>${escapeHtml(title)}</title>`);
+  parts.push(`<title>${escapeHtml(DOCUMENT_TITLE)}</title>`);
   parts.push('<style>');
   parts.push(`
-    @page { size: A4 portrait; margin: 16mm; }
-    body { font-family: Georgia, "Times New Roman", serif; font-size: 11pt; line-height: 1.35; color: #111; }
-    h1 { font-size: 18pt; margin: 0 0 8pt; }
-    h2 { font-size: 13pt; margin: 16pt 0 6pt; border-bottom: 1px solid #ccc; padding-bottom: 4pt; }
-    .meta { font-size: 10pt; color: #444; margin-bottom: 14pt; }
-    .brand { font-weight: bold; font-size: 12pt; margin-bottom: 4pt; }
-    .section-body { white-space: pre-wrap; margin-top: 4pt; }
-    footer { margin-top: 20pt; font-size: 9pt; color: #555; border-top: 1px solid #ddd; padding-top: 8pt; }
-    .placeholder-logo { border: 1px dashed #bbb; padding: 8pt; text-align: center; color: #888; font-size: 9pt; margin-bottom: 10pt; }
+    @page { size: A4 portrait; margin: 12mm 14mm 14mm 14mm; }
+    * { box-sizing: border-box; }
+    body.report-root {
+      font-family: Georgia, "Times New Roman", serif;
+      font-size: 10.5pt;
+      line-height: 1.45;
+      color: #0f172a;
+      margin: 0;
+      padding: 0;
+      background: #fff;
+    }
+    .sheet {
+      max-width: 210mm;
+      margin: 0 auto;
+      padding: 0 2mm;
+    }
+    .brand-strip {
+      border: 1px solid #cbd5e1;
+      background: linear-gradient(180deg, #f8fafc 0%, #f1f5f9 100%);
+      padding: 10pt 12pt;
+      margin-bottom: 12pt;
+      border-radius: 2pt;
+    }
+    .brand-strip .brand-name { font-weight: 700; font-size: 12pt; letter-spacing: 0.02em; color: #0f172a; }
+    .brand-strip .brand-note {
+      font-size: 8.5pt; color: #64748b; margin-top: 4pt;
+      border-top: 1px dashed #cbd5e1; padding-top: 6pt;
+    }
+    .report-title-block { margin-bottom: 10pt; }
+    .report-title-block h1 {
+      font-size: 20pt;
+      font-weight: 700;
+      margin: 0 0 4pt 0;
+      color: #0f172a;
+      letter-spacing: 0.01em;
+    }
+    .report-title-block .title-meta {
+      font-size: 9.5pt;
+      color: #475569;
+      margin: 0;
+    }
+    .panel {
+      border: 1px solid #cbd5e1;
+      border-radius: 2pt;
+      padding: 10pt 12pt;
+      margin-bottom: 14pt;
+      background: #fff;
+    }
+    .panel-title {
+      font-size: 9pt;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      color: #64748b;
+      margin: 0 0 8pt 0;
+      border-bottom: 1px solid #e2e8f0;
+      padding-bottom: 6pt;
+    }
+    .student-panel dl {
+      margin: 0;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 6pt 16pt;
+    }
+    .student-panel dt {
+      font-size: 8.5pt;
+      font-weight: 600;
+      color: #64748b;
+      margin: 0;
+    }
+    .student-panel dd {
+      margin: 0 0 6pt 0;
+      font-size: 10pt;
+      color: #0f172a;
+    }
+    .student-panel dt.full-row,
+    .student-panel dd.full-row { grid-column: 1 / -1; }
+    @media print {
+      .student-panel dl { grid-template-columns: 1fr 1fr; }
+    }
+    .highlights-section { margin-bottom: 14pt; break-inside: avoid; }
+    .highlights-section > h2 {
+      font-size: 11pt;
+      margin: 0 0 8pt 0;
+      color: #0f172a;
+      font-weight: 700;
+    }
+    .highlight-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8pt;
+    }
+    .highlight-card {
+      border: 1px solid #cbd5e1;
+      border-radius: 2pt;
+      padding: 8pt 10pt;
+      min-height: 52pt;
+      background: #fafafa;
+      break-inside: avoid;
+    }
+    .highlight-card .hc-label {
+      font-size: 8.5pt;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      color: #475569;
+      margin: 0 0 4pt 0;
+    }
+    .highlight-card .hc-body {
+      font-size: 9.5pt;
+      color: #1e293b;
+      margin: 0;
+      line-height: 1.4;
+    }
+    .main-sections { margin-bottom: 12pt; }
+    .main-sections > h2.section-major {
+      font-size: 11pt;
+      margin: 0 0 8pt 0;
+      font-weight: 700;
+      color: #0f172a;
+    }
+    .section-block {
+      border: 1px solid #e2e8f0;
+      border-radius: 2pt;
+      padding: 10pt 12pt;
+      margin-bottom: 10pt;
+      background: #fff;
+      break-inside: avoid;
+    }
+    .section-block h3 {
+      font-size: 10.5pt;
+      margin: 0 0 6pt 0;
+      font-weight: 700;
+      color: #0f172a;
+      border-bottom: 1px solid #f1f5f9;
+      padding-bottom: 4pt;
+    }
+    .section-body {
+      white-space: pre-wrap;
+      font-size: 10pt;
+      color: #334155;
+      margin: 0;
+      line-height: 1.45;
+    }
+    .signature-section {
+      margin-top: 14pt;
+      margin-bottom: 12pt;
+      break-inside: avoid;
+    }
+    .signature-section > h2 {
+      font-size: 11pt;
+      margin: 0 0 8pt 0;
+      font-weight: 700;
+      color: #0f172a;
+    }
+    .signature-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16pt;
+      border: 1px solid #e2e8f0;
+      border-radius: 2pt;
+      padding: 12pt;
+      background: #fafafa;
+    }
+    .sig-col .sig-role {
+      font-size: 8.5pt;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: #64748b;
+      margin: 0 0 16pt 0;
+    }
+    .sig-line {
+      border-bottom: 1px solid #334155;
+      height: 28pt;
+      margin-bottom: 6pt;
+    }
+    .sig-name {
+      font-size: 10pt;
+      color: #0f172a;
+      margin: 0;
+    }
+    .report-footer {
+      margin-top: 16pt;
+      padding-top: 10pt;
+      border-top: 1px solid #cbd5e1;
+      font-size: 8.5pt;
+      color: #64748b;
+      line-height: 1.4;
+    }
+    .report-footer div + div { margin-top: 4pt; }
   `);
   parts.push('</style>');
-  parts.push('</head><body>');
+  parts.push('</head>');
+  parts.push('<body class="report-root">');
+  parts.push('<div class="sheet">');
 
-  parts.push('<div class="placeholder-logo">Centre branding placeholder — no remote images in demo export</div>');
-  parts.push(`<div class="brand">${escapeHtml(inv.branch?.name || 'Centre')}</div>`);
-  parts.push(`<h1>${escapeHtml(title)}</h1>`);
+  parts.push('<header class="brand-strip">');
+  parts.push(`<div class="brand-name">${escapeHtml(branchName || 'Learning centre')}</div>`);
+  parts.push(
+    '<div class="brand-note">Branding placeholder — printable report layout preview only. '
+    + 'No remote images in export.</div>'
+  );
+  parts.push('</header>');
 
-  parts.push('<div class="meta">');
-  parts.push(`<div><strong>Student:</strong> ${escapeHtml(inv.student?.displayName || '')}</div>`);
-  if (inv.class?.label) parts.push(`<div><strong>Class:</strong> ${escapeHtml(inv.class.label)}</div>`);
-  if (inv.programme?.label) parts.push(`<div><strong>Programme:</strong> ${escapeHtml(inv.programme.label)}</div>`);
-  parts.push(`<div><strong>Period:</strong> ${escapeHtml(formatPeriod(inv.reportPeriod?.start, inv.reportPeriod?.end))}</div>`);
-  parts.push(`<div><strong>Released:</strong> ${escapeHtml(inv.releasedAt || '')}</div>`);
-  if (inv.teacher?.displayName) {
-    parts.push(`<div><strong>Teacher:</strong> ${escapeHtml(inv.teacher.displayName)}</div>`);
-  }
-  parts.push(`<div><strong>Variant:</strong> ${escapeHtml(inv.templateVariant || '')}</div>`);
+  parts.push('<div class="report-title-block">');
+  parts.push(`<h1>${escapeHtml(DOCUMENT_TITLE)}</h1>`);
+  parts.push(
+    `<p class="title-meta">${escapeHtml(variantLabel ? `Template: ${variantLabel}` : 'Template: standard')}`
+    + ` · Period: ${escapeHtml(periodLine)} · Released: ${escapeHtml(releasedLine)}</p>`
+  );
   parts.push('</div>');
 
-  for (const sec of inv.sections) {
-    const body = typeof sec.body === 'string' ? sec.body : '';
-    const stitle = typeof sec.title === 'string' ? sec.title : '';
-    if (!body.trim()) continue;
-    parts.push(`<h2>${escapeHtml(stitle)}</h2>`);
+  parts.push('<section class="panel student-panel" aria-label="Student information">');
+  parts.push('<h2 class="panel-title">Student information</h2>');
+  parts.push('<dl>');
+  parts.push(`<dt>Student</dt><dd>${escapeHtml(studentName || '—')}</dd>`);
+  parts.push(`<dt>Class</dt><dd>${escapeHtml(classLabel || '—')}</dd>`);
+  parts.push(`<dt>Programme</dt><dd>${escapeHtml(programmeLabel || '—')}</dd>`);
+  parts.push(`<dt>Centre / branch</dt><dd>${escapeHtml(branchName || '—')}</dd>`);
+  parts.push(`<dt>Teacher</dt><dd>${escapeHtml(teacherName || '—')}</dd>`);
+  parts.push(`<dt class="full-row">Report period</dt><dd class="full-row">${escapeHtml(periodLine)}</dd>`);
+  parts.push(`<dt class="full-row">Released</dt><dd class="full-row">${escapeHtml(releasedLine || '—')}</dd>`);
+  parts.push('</dl>');
+  parts.push('</section>');
+
+  parts.push('<section class="highlights-section" aria-label="Summary highlights">');
+  parts.push('<h2>At a glance</h2>');
+  parts.push('<div class="highlight-grid">');
+
+  const hlAttendance = lookup.attendance_punctuality;
+  const hlHomework = lookup.homework_completion;
+  const hlLesson = lookup.lesson_progression;
+
+  parts.push('<div class="highlight-card">');
+  parts.push('<p class="hc-label">Attendance &amp; punctuality</p>');
+  parts.push(`<p class="hc-body">${escapeHtml(cardBodyOrFallback(hlAttendance))}</p>`);
+  parts.push('</div>');
+
+  parts.push('<div class="highlight-card">');
+  parts.push('<p class="hc-label">Homework completion</p>');
+  parts.push(`<p class="hc-body">${escapeHtml(cardBodyOrFallback(hlHomework))}</p>`);
+  parts.push('</div>');
+
+  parts.push('<div class="highlight-card">');
+  parts.push('<p class="hc-label">Lesson progression</p>');
+  parts.push(`<p class="hc-body">${escapeHtml(cardBodyOrFallback(hlLesson))}</p>`);
+  parts.push('</div>');
+
+  parts.push('<div class="highlight-card">');
+  parts.push('<p class="hc-label">Strengths &amp; next steps</p>');
+  parts.push(`<p class="hc-body">${escapeHtml(highlightStrengthsNextText(lookup))}</p>`);
+  parts.push('</div>');
+
+  parts.push('</div>');
+  parts.push('</section>');
+
+  parts.push('<section class="main-sections" aria-label="Report sections">');
+  parts.push('<h2 class="section-major">Report detail</h2>');
+
+  for (const def of PDF_SECTION_DEFINITIONS) {
+    const row = lookup[def.id];
+    const body = row && typeof row.body === 'string' ? row.body.trim() : '';
+    if (!body) continue;
+    parts.push('<article class="section-block">');
+    parts.push(`<h3>${escapeHtml(def.label)}</h3>`);
     parts.push(`<div class="section-body">${escapeHtml(body)}</div>`);
+    parts.push('</article>');
   }
 
-  parts.push('<footer>');
+  parts.push('</section>');
+
+  parts.push('<section class="signature-section" aria-label="Signatures">');
+  parts.push('<h2>Acknowledgements</h2>');
+  parts.push('<div class="signature-grid">');
+  parts.push('<div class="sig-col">');
+  parts.push('<p class="sig-role">Teacher</p>');
+  parts.push('<div class="sig-line" aria-hidden="true"></div>');
+  parts.push(`<p class="sig-name">${escapeHtml(sigTeacher)}</p>`);
+  parts.push('</div>');
+  parts.push('<div class="sig-col">');
+  parts.push('<p class="sig-role">Branch supervisor / HQ</p>');
+  parts.push('<div class="sig-line" aria-hidden="true"></div>');
+  parts.push(`<p class="sig-name">${escapeHtml(sigSupervisor)}</p>`);
+  parts.push('</div>');
+  parts.push('</div>');
+  parts.push('</section>');
+
+  parts.push('<footer class="report-footer">');
   parts.push(`<div>${escapeHtml(inv.footer?.contactLine || '')}</div>`);
   parts.push(`<div>${escapeHtml(inv.footer?.disclaimer || '')}</div>`);
   parts.push('</footer>');
 
+  parts.push('</div>');
   parts.push('</body></html>');
   const html = parts.join('');
 

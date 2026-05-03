@@ -1,5 +1,9 @@
 # Mobile-first QA checkpoint
 
+## Checkpoint update (AI Parent Report PDF template visual polish — 2026-05-03)
+
+- **Reference:** **`docs/ai-parent-report-pdf-template-visual-polish-checkpoint.md`** — re-QA **`/ai-parent-report-pdf-preview`** **~390px** after boxed layout: iframe scroll, highlight cards, signature block readability.
+
 ## Checkpoint update (PDF preview navigation clarity — 2026-05-03)
 
 - **Reference:** **`docs/pdf-preview-navigation-clarity-fix-checkpoint.md`** — re-QA **~390px**: optional **AI Parent Reports** PDF preview card (readable, clearly optional); **sidebar** must not show PDF preview item.
