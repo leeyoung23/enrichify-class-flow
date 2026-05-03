@@ -41,6 +41,11 @@ export function getParentReportProviderEnv(): {
   return { apiKey, model, baseUrl };
 }
 
+/** GPT-5.x Chat Completions rejects legacy sampling + max_tokens; use max_completion_tokens only. */
+export function isOpenAiGpt5FamilyModel(model: string): boolean {
+  return /\bgpt-5/i.test(String(model || "").trim());
+}
+
 function classifyOpenAiStyleError(
   httpStatus: number,
   providerCode: string | undefined
@@ -66,6 +71,15 @@ function classifyOpenAiStyleError(
   return "provider_request_failed";
 }
 
+const MAX_SAFE_PROVIDER_MESSAGE_CHARS = 200;
+
+function truncateSafeApiMessage(raw: string | undefined): string | undefined {
+  if (!raw || typeof raw !== "string") return undefined;
+  const oneLine = raw.replace(/\s+/g, " ").trim();
+  if (oneLine.length <= MAX_SAFE_PROVIDER_MESSAGE_CHARS) return oneLine;
+  return `${oneLine.slice(0, MAX_SAFE_PROVIDER_MESSAGE_CHARS)}…`;
+}
+
 /**
  * Safe, static messages only — no API error body text (may echo user or key metadata).
  * Optional providerCode in diagnostics line is a known OpenAI-style code string, not a secret.
@@ -73,12 +87,19 @@ function classifyOpenAiStyleError(
 function safeMessageForClassifiedError(
   classified: string,
   httpStatus: number,
-  providerCode: string | undefined
+  providerCode: string | undefined,
+  providerParam: string | undefined,
+  apiMessageSnippet: string | undefined
 ): string {
   const codeNote =
     providerCode && typeof providerCode === "string" && providerCode.length > 0
       ? ` (provider code: ${providerCode})`
       : "";
+  const paramNote =
+    providerParam && typeof providerParam === "string" && /^[a-zA-Z0-9_.-]+$/.test(providerParam)
+      ? ` (unsupported parameter: ${providerParam})`
+      : "";
+  const hintNote = apiMessageSnippet ? ` ${apiMessageSnippet}` : "";
   const http = `HTTP ${httpStatus}`;
 
   switch (classified) {
@@ -95,22 +116,28 @@ function safeMessageForClassifiedError(
     case "provider_not_found":
       return `${http}: Endpoint or resource not found — if using a custom base URL, verify AI_PARENT_REPORT_PROVIDER_BASE_URL.`;
     case "provider_bad_request":
-      return `${http}${codeNote}: Bad request to the provider — check model name and request shape.`;
+      return `${http}${codeNote}${paramNote}: Bad request to the provider — check model name and request shape.${hintNote}`;
     case "provider_server_error":
       return `${http}: Provider server error — retry later.`;
     default:
-      return `${http}${codeNote}: Provider returned an error (see code ${classified}).`;
+      return `${http}${codeNote}${paramNote}: Provider returned an error (see code ${classified}).${hintNote}`;
   }
 }
 
 async function failureFromNonOkResponse(response: Response): Promise<RealProviderFailure> {
   const httpStatus = response.status;
   let providerCode: string | undefined;
+  let providerParam: string | undefined;
+  let apiMessageSnippet: string | undefined;
   try {
     const text = (await response.text()).slice(0, MAX_ERROR_BODY_READ_CHARS);
-    const parsed = JSON.parse(text) as { error?: { code?: string; type?: string } };
-    if (parsed?.error && typeof parsed.error === "object" && typeof parsed.error.code === "string") {
-      providerCode = parsed.error.code;
+    const parsed = JSON.parse(text) as {
+      error?: { code?: string; type?: string; param?: string; message?: string };
+    };
+    if (parsed?.error && typeof parsed.error === "object") {
+      if (typeof parsed.error.code === "string") providerCode = parsed.error.code;
+      if (typeof parsed.error.param === "string") providerParam = parsed.error.param;
+      apiMessageSnippet = truncateSafeApiMessage(parsed.error.message);
     }
   } catch {
     /* ignore non-JSON */
@@ -119,7 +146,13 @@ async function failureFromNonOkResponse(response: Response): Promise<RealProvide
   return {
     error: {
       code: classified,
-      message: safeMessageForClassifiedError(classified, httpStatus, providerCode),
+      message: safeMessageForClassifiedError(
+        classified,
+        httpStatus,
+        providerCode,
+        providerParam,
+        apiMessageSnippet
+      ),
     },
     externalProviderCall: true,
   };
@@ -144,6 +177,32 @@ function buildUserPayload(reportId: string, input: Record<string, unknown>): str
     context: input,
     task: "Produce the 11 sections as JSON keys listed in the system message.",
   });
+}
+
+/**
+ * OpenAI Chat Completions body: GPT-5 family omits temperature and uses max_completion_tokens.
+ * Older models keep temperature + max_tokens + json response_format.
+ */
+function buildChatCompletionsRequestBody(
+  model: string,
+  messages: Array<{ role: "system" | "user"; content: string }>
+): Record<string, unknown> {
+  const gpt5 = isOpenAiGpt5FamilyModel(model);
+  if (gpt5) {
+    return {
+      model,
+      messages,
+      max_completion_tokens: 4096,
+      response_format: { type: "json_object" },
+    };
+  }
+  return {
+    model,
+    messages,
+    temperature: 0.35,
+    max_tokens: 4096,
+    response_format: { type: "json_object" },
+  };
 }
 
 export function validateStructuredSectionsShape(value: unknown): value is Record<string, string> {
@@ -236,16 +295,12 @@ export async function callOpenAiCompatibleParentReport(
         "Content-Type": "application/json",
         Authorization: `Bearer ${apiKey}`,
       },
-      body: JSON.stringify({
-        model,
-        temperature: 0.35,
-        max_tokens: 4096,
-        response_format: { type: "json_object" },
-        messages: [
+      body: JSON.stringify(
+        buildChatCompletionsRequestBody(model, [
           { role: "system", content: buildSystemPrompt() },
           { role: "user", content: serialized },
-        ],
-      }),
+        ])
+      ),
       signal: controller.signal,
     });
   } catch (e) {

@@ -65,6 +65,23 @@ If API key or model is missing, the script prints **which names** are missing an
 
 Uses **`assertStructuredSectionsShapeForTests`** and **`REQUIRED_STRUCTURED_SECTION_KEYS`** from `_shared` (11 keys, non-empty strings). Truncated sample text may be printed for one section; not the full JSON body.
 
+## OpenAI Chat Completions — GPT-5 family (`gpt-5…` model ids)
+
+For models whose id matches **`gpt-5`** (word boundary, case-insensitive), `callOpenAiCompatibleParentReport` sends a **conservative** body:
+
+- **`max_completion_tokens`** instead of **`max_tokens`** (GPT-5 rejects `max_tokens` on Chat Completions).
+- **Omits `temperature`** (and avoids other sampling params); GPT-5 returns **`unsupported_parameter`** if legacy sampling fields are sent.
+- Keeps **`response_format: { type: "json_object" }`** so structured parent-report sections stay enforceable.
+
+Older / non–GPT-5 models still use **`temperature`**, **`max_tokens`**, and the same **`response_format`**.
+
+Non-OK responses may include a safe **`param`** name from the provider (alphanumeric / `_` / `.` only) and a **bounded** snippet of the provider `message` (no full raw JSON body).
+
+## Latest verification (real provider smoke)
+
+- **`npm run test:ai-parent-report:real-provider-smoke`**: **PASS** — real outbound provider call completed; **structured output validation** (11 sections) succeeded; **no** DB persistence; **no** parent release; **no** `real_ai` unlock.
+- Environments without API credentials remain **CHECK-skip** (exit 0), not a failure.
+
 ## Troubleshooting (FAIL — no secrets in logs)
 
 The smoke prints **error `code` + a static, safe `message` only** (no API key prefixes, no Authorization header, no raw provider JSON).
@@ -82,6 +99,7 @@ Before the request, it prints whether **`AI_PARENT_REPORT_PROVIDER_API_KEY`** / 
 | `provider_network_error` | DNS/TLS/offline — check network and custom base URL. |
 | `provider_server_error` | Provider outage — retry later. |
 | `provider_request_failed` | Other non-2xx (see HTTP status in message). |
+| `provider_bad_request` + **`unsupported_parameter`** | Often **`temperature`** or **`max_tokens`** sent to a **GPT-5** model — the adapter uses **`max_completion_tokens`** and omits **`temperature`** for `gpt-5*` ids. Message may include **`unsupported parameter: …`** when the API returns a `param` field. |
 
 ## Related scripts
 
