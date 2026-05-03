@@ -4,6 +4,10 @@
 
 - **Planning only:** **`docs/released-ai-parent-report-export-strategy-plan.md`** — future persisted exports need **JWT-scoped** reads/downloads; **no** service role in browser; **no** DDL in this milestone. When export tables/storage land, add dedicated smokes + parent/staff negative tests per §6–§7.
 
+## Checkpoint update (AI Parent Report PDF template contract — 2026-05-02)
+
+- **`docs/ai-parent-report-pdf-template-contract-plan.md`** — PDF content must mirror **released** RLS boundaries; **no** draft export; negative tests when implemented: parent cannot build input from unreleased version IDs; signed URLs only for stored blobs §11.
+
 ## Checkpoint update (manual visual QA — Homework teacher upload/review, 2026-05-02)
 
 - **Human runbook (no automated RLS assert):** **`docs/manual-qa-homework-teacher-upload-review-checkpoint.md`** — inspection-only confirmation that UI does not expose paths/keys/env (`§8`); **no** DDL. Does **not** replace homework smokes when **`src/`** or homework services change — see **`docs/homework-teacher-upload-step-ui-polish-checkpoint.md`** §Validation.

@@ -5,6 +5,8 @@ Type: **planning only** — product, privacy, and phased implementation strategy
 
 **Related:** `docs/ai-parent-report-blueprint-plan.md`, `docs/parent-view-ai-report-display-final-checkpoint.md`, `docs/ai-parent-report-mvp-final-qa-checkpoint.md`, `docs/real-ai-parent-report-provider-implementation-plan.md`, `docs/homework-teacher-upload-step-ui-polish-checkpoint.md` (release boundary patterns).
 
+**PDF template contract (sections, exclusions, data shape):** `docs/ai-parent-report-pdf-template-contract-plan.md`
+
 **Code touchpoints (reference only):** `src/pages/ParentView.jsx`, `src/pages/AiParentReports.jsx`, `src/services/supabaseReadService.js`, `src/services/supabaseWriteService.js`.
 
 ---
@@ -61,7 +63,7 @@ Target: **A4-oriented**, centre-branded printable document.
 | Closing | **Teacher final comment**; optional **supervisor / HQ note** if product allows and parent-safe. |
 | Footer | **Centre contact**, **disclaimer** (e.g. confidential, not medical/legal advice), **page numbers**. |
 
-Exact field mapping should align with **structured sections** already surfaced on ParentView for released versions—exports are **renditions** of the same parent-safe payload, not new editorial surfaces.
+Exact field mapping should align with **structured sections** already surfaced on ParentView for released versions—exports are **renditions** of the same parent-safe payload, not new editorial surfaces. Canonical mapping, exclusions, and `releasedReportPdfInput` shape: **`docs/ai-parent-report-pdf-template-contract-plan.md`**.
 
 ---
 

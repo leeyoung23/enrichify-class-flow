@@ -1,5 +1,9 @@
 # Project Master Context Handoff
 
+## Checkpoint update (AI Parent Report PDF template contract — planning only, 2026-05-02)
+
+- **Docs-only:** **`docs/ai-parent-report-pdf-template-contract-plan.md`** — official **released-only** PDF artefact; required/optional sections aligned with **`ParentView.jsx`** keys; explicit exclusions (drafts, evidence URLs, `generation_source`, paths); **`releasedReportPdfInput`** contract §7; A4 layout §8; variants §9; privacy §11; recommended next **B** (mock builder + render helper planning §14–§15). Cross-ref **`docs/released-ai-parent-report-export-strategy-plan.md`**. **No** `src/` changes.
+
 ## Checkpoint update (released AI Parent Report export strategy — planning only, 2026-05-02)
 
 - **Docs-only:** **`docs/released-ai-parent-report-export-strategy-plan.md`** — PDF-first official export, PNG summary second; **released/current-version-only** parent access; staff approval before parent export visibility; private storage + signed URL when persisted; phased **A→B→C** (template contract → client prototype → server PDF); audit hooks §9; **`real_ai`** not required for export; **no** auto-email in export milestone. **No** `src/` changes.
