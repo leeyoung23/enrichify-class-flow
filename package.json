@@ -38,6 +38,7 @@
     "test:supabase:company-news:create": "node scripts/supabase-company-news-create-smoke-test.mjs",
     "test:supabase:company-news:popup": "node scripts/supabase-company-news-popup-smoke-test.mjs",
     "test:supabase:ai-parent-reports": "node scripts/supabase-ai-parent-reports-smoke-test.mjs",
+    "test:ai-parent-report:pdf-template": "node scripts/ai-parent-report-pdf-template-smoke-test.mjs",
     "test:supabase:ai-parent-report:mock-draft": "node scripts/supabase-ai-parent-report-mock-draft-smoke-test.mjs",
     "test:supabase:ai-parent-report:source-aggregation": "node scripts/supabase-ai-parent-report-source-aggregation-smoke-test.mjs",
     "test:supabase:ai-parent-report:rls-source-aggregation": "node scripts/supabase-ai-parent-report-rls-source-aggregation-smoke-test.mjs",

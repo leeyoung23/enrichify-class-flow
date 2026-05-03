@@ -1,5 +1,9 @@
 # Project Master Context Handoff
 
+## Checkpoint update (AI Parent Report PDF helper + fixtures — 2026-05-02)
+
+- **`src/services/aiParentReportPdfTemplate.js`** — **`buildDemoReleasedReportPdfInput`**, **`normalizeReportSectionsForPdf`**, **`normalizeReportSectionsFromReleaseVersion`**, **`validateReleasedReportPdfInput`**, **`renderReleasedReportPdfHtml`**, **`buildReleasedReportPdfInputFromParentViewContext`** (no Supabase). **Smoke:** **`npm run test:ai-parent-report:pdf-template`**. **Doc:** **`docs/ai-parent-report-pdf-helper-fixture-checkpoint.md`**. **No** ParentView button, **no** SQL/storage/binary PDF, **no** `real_ai` unlock. Cross-refs: **`docs/ai-parent-report-pdf-template-contract-plan.md`**, **`docs/ai-parent-report-pdf-mock-render-helper-plan.md`**.
+
 ## Checkpoint update (AI Parent Report PDF mock + render helper planning — 2026-05-02)
 
 - **Docs-only:** **`docs/ai-parent-report-pdf-mock-render-helper-plan.md`** — pure function contracts (**build**, **normalize**, **validate**, **renderHtml**), section normalization table, validation rules, fake fixtures outline §9, render strategy **HTML/React before** client PDF lib; recommended next **`src/`** module **without** ParentView button (**§12–§13**). Cross-ref **`docs/ai-parent-report-pdf-template-contract-plan.md`**. **No** SQL/buckets/UI/export button in this doc milestone.

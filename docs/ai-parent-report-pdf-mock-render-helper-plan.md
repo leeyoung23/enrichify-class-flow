@@ -1,7 +1,7 @@
 # AI Parent Report PDF — mock data + render helper planning (no implementation)
 
 Date: 2026-05-02  
-Type: **planning only** — defines deterministic **fake/dev** PDF input construction and **pure render-helper contracts** before any **export button**, **storage**, **SQL**, or **server PDF**. **No** code changes in this milestone.
+Type: **planning** + **implementation follow-up** — original scope was planning-only; **implemented** module: **`docs/ai-parent-report-pdf-helper-fixture-checkpoint.md`**, **`src/services/aiParentReportPdfTemplate.js`**, smoke **`test:ai-parent-report:pdf-template`**. **No** export button, **no** storage, **no** binary PDF.
 
 **Upstream contracts:**  
 `docs/ai-parent-report-pdf-template-contract-plan.md` (`releasedReportPdfInput`, exclusions, section keys)  

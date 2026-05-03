@@ -12,6 +12,10 @@
 
 - **`docs/ai-parent-report-pdf-mock-render-helper-plan.md`** — future **`validateReleasedReportPdfInput`** should run in tests with **forbidden URL/metadata** cases; real builder must only consume **released** rows — complements RLS, does not replace DB tests.
 
+## Checkpoint update (AI Parent Report PDF helper module — 2026-05-02)
+
+- **`src/services/aiParentReportPdfTemplate.js`** — **pure** helpers; **no** RLS bypass; **`buildReleasedReportPdfInputFromParentViewContext`** refuses **`status !== 'released'`**. Smoke **`npm run test:ai-parent-report:pdf-template`** — **no** DDL. **`docs/ai-parent-report-pdf-helper-fixture-checkpoint.md`**.
+
 ## Checkpoint update (manual visual QA — Homework teacher upload/review, 2026-05-02)
 
 - **Human runbook (no automated RLS assert):** **`docs/manual-qa-homework-teacher-upload-review-checkpoint.md`** — inspection-only confirmation that UI does not expose paths/keys/env (`§8`); **no** DDL. Does **not** replace homework smokes when **`src/`** or homework services change — see **`docs/homework-teacher-upload-step-ui-polish-checkpoint.md`** §Validation.

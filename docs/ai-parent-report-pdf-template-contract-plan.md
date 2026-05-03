@@ -5,6 +5,7 @@ Type: **planning only** — defines PDF content, exclusions, layout rules, data 
 
 **Parent strategy:** `docs/released-ai-parent-report-export-strategy-plan.md`  
 **Mock/render helper planning:** `docs/ai-parent-report-pdf-mock-render-helper-plan.md`  
+**Helper implementation:** `docs/ai-parent-report-pdf-helper-fixture-checkpoint.md` — `src/services/aiParentReportPdfTemplate.js`  
 **Related:** `docs/ai-parent-report-blueprint-plan.md`, `docs/parent-view-ai-report-display-final-checkpoint.md`, `docs/ai-parent-report-ui-shell-final-checkpoint.md`, `docs/ai-parent-report-mvp-final-qa-checkpoint.md`
 
 **UI reference (released sections):** `src/pages/ParentView.jsx` — `ParentProgressReportsSection` resolves text via `structuredSections` / `finalText` with the same key fallbacks as listed under §4.

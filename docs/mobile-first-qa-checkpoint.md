@@ -12,6 +12,10 @@
 
 - **`docs/ai-parent-report-pdf-mock-render-helper-plan.md`** — when **HTML preview** or **print** ships, re-QA **~390px** **preview** (if any) and **desktop print** margins; mock fixtures stay **fictional** only.
 
+## Checkpoint update (AI Parent Report PDF helper module — 2026-05-02)
+
+- **`docs/ai-parent-report-pdf-helper-fixture-checkpoint.md`** — **`renderReleasedReportPdfHtml`** output is **print-first A4**; any future preview UI should verify **readable font sizes** on narrow screens if embedded.
+
 ## Checkpoint update (manual visual QA — Homework teacher upload/review, 2026-05-02)
 
 - **Runbook:** **`docs/manual-qa-homework-teacher-upload-review-checkpoint.md`** — desktop + **~390px** for **`Homework.jsx`** after polish **`6fe18bc`**: intro, **Create homework task** steps, trackers, submission detail, **Teacher-marked work**, **Share feedback with family**; safety §8; decision rule §10 (fix Homework vs proceed to **Parent Communication** polish). **QA/checkpoint only** — **no** `src/` changes in this milestone.
