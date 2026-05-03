@@ -30,7 +30,8 @@ This isolates **layout and validation** from **RLS, storage, and product chrome*
 |-------|--------|
 | **PDF template contract** | Exists — `docs/ai-parent-report-pdf-template-contract-plan.md`. |
 | **ParentView sections** | Released report detail resolves **`structuredSections`** / **`finalText`** with defined key fallbacks. |
-| **PDF button / export** | **Not implemented** — no Download control in ParentView for production. |
+| **Internal HTML preview** | **Staff-only** route **`/ai-parent-report-pdf-preview`** — **`renderReleasedReportPdfHtml`** + demo fixtures; sandboxed iframe; **`docs/ai-parent-report-pdf-internal-preview-checkpoint.md`**. |
+| **PDF button / export** | **Not implemented** for parents — no Download control in ParentView for production. |
 | **Storage / bucket / SQL** | **None** for PDF artefacts. |
 | **Server PDF** | **Not implemented.** |
 | **PNG summary** | **Later** — out of scope here beyond reuse note (§11). |

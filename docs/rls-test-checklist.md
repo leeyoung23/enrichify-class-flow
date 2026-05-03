@@ -1,5 +1,9 @@
 # RLS Test Checklist
 
+## Checkpoint update (AI Parent Report PDF internal preview — 2026-05-03)
+
+- **`src/pages/AiParentReportPdfPreview.jsx`** — **no** Supabase reads/writes; pure **`buildDemoReleasedReportPdfInput`** + **`renderReleasedReportPdfHtml`**; **no** RLS surface (does not bypass or replace JWT tests). Parent-facing export rules unchanged. **Doc:** **`docs/ai-parent-report-pdf-internal-preview-checkpoint.md`**.
+
 ## Checkpoint update (released AI Parent Report export strategy — 2026-05-02)
 
 - **Planning only:** **`docs/released-ai-parent-report-export-strategy-plan.md`** — future persisted exports need **JWT-scoped** reads/downloads; **no** service role in browser; **no** DDL in this milestone. When export tables/storage land, add dedicated smokes + parent/staff negative tests per §6–§7.

@@ -1,5 +1,9 @@
 # Project Master Context Handoff
 
+## Checkpoint update (AI Parent Report PDF internal HTML preview — 2026-05-03)
+
+- **Route:** **`/ai-parent-report-pdf-preview`** — **`src/pages/AiParentReportPdfPreview.jsx`** — staff/demo staff roles only; **fake/dev fixtures**; **`renderReleasedReportPdfHtml`** + sandboxed iframe; **no** ParentView, **no** storage/SQL, **no** download/export persistence. **Sidebar:** **`PDF preview (internal)`**. **Link** from **`AiParentReports.jsx`** intro. **Smoke:** **`npm run test:ai-parent-report:pdf-template`** (all four variants). **Doc:** **`docs/ai-parent-report-pdf-internal-preview-checkpoint.md`**. Cross-refs: **`docs/ai-parent-report-pdf-helper-fixture-final-checkpoint.md`**, **`docs/ai-parent-report-pdf-template-contract-plan.md`**, **`docs/released-ai-parent-report-export-strategy-plan.md`**, **`docs/mobile-first-qa-checkpoint.md`**, **`docs/rls-test-checklist.md`**. **Next:** manual visual QA before parent download milestone.
+
 ## Checkpoint update (AI Parent Report PDF helper — docs sealed, 2026-05-02)
 
 - **Docs-only:** **`docs/ai-parent-report-pdf-helper-fixture-final-checkpoint.md`** — milestone **`2cfab48`**: API summary §2–§6, validation/smokes §7–§8, future §9, **recommended next A** (internal HTML preview), copy-paste prompt §11. Cross-updates: **`docs/ai-parent-report-pdf-helper-fixture-checkpoint.md`**, **`docs/ai-parent-report-pdf-mock-render-helper-plan.md`**, **`docs/ai-parent-report-pdf-template-contract-plan.md`**, **`docs/released-ai-parent-report-export-strategy-plan.md`**, **`docs/mobile-first-qa-checkpoint.md`**, **`docs/rls-test-checklist.md`**. **No** `src/` in this doc milestone.

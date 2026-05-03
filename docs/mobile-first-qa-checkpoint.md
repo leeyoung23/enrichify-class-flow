@@ -1,5 +1,9 @@
 # Mobile-first QA checkpoint
 
+## Checkpoint update (AI Parent Report PDF internal preview — 2026-05-03)
+
+- **Route:** **`/ai-parent-report-pdf-preview`** (**staff-only**). Re-QA **desktop + ~390px**: banner legibility, variant **Select**, iframe height/scrolling, sandboxed preview (**no** parent nav). **Canonical:** **`docs/ai-parent-report-pdf-internal-preview-checkpoint.md`**. **No** ParentView change.
+
 ## Checkpoint update (released AI Parent Report PDF/PNG export strategy — 2026-05-02)
 
 - **Reference:** **`docs/released-ai-parent-report-export-strategy-plan.md`** — when PDF/summary exports ship, re-QA **ParentView** download actions at **desktop + ~390px** (tap targets, no draft leakage, signed URL flows); PNG summary as short card only.

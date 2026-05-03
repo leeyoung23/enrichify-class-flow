@@ -95,6 +95,15 @@ function run() {
   assertNoLeak(htmlOut.html);
   pass('HTML contains expected safe headings');
 
+  const allVariants = ['monthly_progress', 'weekly_brief', 'long_text', 'sparse_optional_fields'];
+  for (const v of allVariants) {
+    const demo = buildDemoReleasedReportPdfInput({ variant: v });
+    const out = renderReleasedReportPdfHtml(demo);
+    if (!out.ok) fail(`variant ${v} render: ${out.error}`);
+    assertNoLeak(out.html);
+  }
+  pass('all four demo variants render and pass forbidden-token scan');
+
   const badUrl = {
     ...monthly,
     sections: monthly.sections.map((s, i) => (

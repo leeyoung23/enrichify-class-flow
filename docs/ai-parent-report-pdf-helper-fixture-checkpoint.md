@@ -19,7 +19,7 @@ Scope: **`src/services/aiParentReportPdfTemplate.js`** — pure functions, **fak
 
 ## Boundaries (preserved)
 
-- **No** ParentView / AiParentReports UI changes; **no** download button; **no** routes; **no** SQL/RLS/buckets; **no** `real_ai` unlock; **no** email; **no** binary PDF generation.
+- **No** ParentView changes; **no** parent-facing download. **Staff-only** internal preview route **`/ai-parent-report-pdf-preview`** (**`docs/ai-parent-report-pdf-internal-preview-checkpoint.md`**) — demo HTML in sandboxed iframe **only**; **no** SQL/RLS/buckets; **no** `real_ai` unlock; **no** email; **no** binary PDF generation.
 
 ## Validation snapshot
 

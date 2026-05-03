@@ -1,7 +1,7 @@
 # AI Parent Report PDF helper + fixture — final documentation checkpoint
 
-Date: 2026-05-02  
-Type: **documentation only** — seals milestone **`2cfab48`** (*Add AI parent report PDF helper fixture*). **No** `src/` changes in this doc pass.
+Date: 2026-05-02 (sealed **`2cfab48`**) · internal preview follow-up **2026-05-03** — see **`docs/ai-parent-report-pdf-internal-preview-checkpoint.md`**  
+Type: **documentation** — original seal was docs-only for **`2cfab48`**. **Update 2026-05-03:** internal staff preview route documents the helper in-app; **`src/`** touchpoints listed in internal preview checkpoint.
 
 **Code:** `src/services/aiParentReportPdfTemplate.js`  
 **Smoke:** `scripts/ai-parent-report-pdf-template-smoke-test.mjs` · **`npm run test:ai-parent-report:pdf-template`**  
@@ -17,7 +17,7 @@ Type: **documentation only** — seals milestone **`2cfab48`** (*Add AI parent r
 - **Validation** — **`validateReleasedReportPdfInput`** with URL/metadata bans and release posture checks.
 - **HTML render** — **`renderReleasedReportPdfHtml`** produces a full document + **A4 print CSS**; content escaped.
 - **Adapter** — **`buildReleasedReportPdfInputFromParentViewContext`** maps in-memory released rows only.
-- **No** ParentView Download button, **no** staff export button, **no** routes, **no** SQL/RLS DDL, **no** buckets.
+- **No** ParentView Download button, **no** staff export/download/persist button — **internal** staff **`/ai-parent-report-pdf-preview`** uses demo HTML only (**`docs/ai-parent-report-pdf-internal-preview-checkpoint.md`**). **No** SQL/RLS DDL, **no** buckets.
 - **No** `real_ai` unlock, **no** provider calls, **no** ParentView visibility rule changes.
 
 ---
@@ -112,7 +112,7 @@ Recorded at **`2cfab48`**:
 
 ## 9. What remains future
 
-- **Internal/dev** HTML preview component or route (staff-only, gated).
+- **Done (internal):** staff-only **`/ai-parent-report-pdf-preview`** — **`docs/ai-parent-report-pdf-internal-preview-checkpoint.md`**. Next: **manual visual QA** before parent export work.
 - **ParentView Download PDF** button — product milestone.
 - **Browser print** / client PDF library — after preview approval.
 - **Private storage + signed URL** + optional DDL.
@@ -127,7 +127,7 @@ Recorded at **`2cfab48`**:
 
 | Option | Topic |
 |--------|--------|
-| **A** | **Internal/dev PDF HTML preview** (component or `/dev`-style route, staff-only) |
+| **A** | **Internal/dev PDF HTML preview** — **implemented** (`/ai-parent-report-pdf-preview`); proceed to **manual QA** |
 | **B** | ParentView **Download PDF** |
 | **C** | PDF storage **SQL/RLS** review |
 | **D** | PNG summary planning |

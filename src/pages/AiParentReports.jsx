@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import { useOutletContext } from 'react-router-dom';
+import { Link, useOutletContext } from 'react-router-dom';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
@@ -807,7 +807,15 @@ export default function AiParentReports() {
       />
 
       <p className="text-xs text-muted-foreground border-l-2 border-muted pl-3 py-1 -mt-4 mb-2">
-        No report reaches parents until explicit staff release. Real AI provider and PDF/export are not enabled yet.
+        No report reaches parents until explicit staff release. Real AI provider and PDF/export are not enabled yet.{' '}
+        <Link
+          to="/ai-parent-report-pdf-preview"
+          className="font-medium text-primary underline-offset-4 hover:underline"
+        >
+          Internal PDF HTML preview (dev)
+        </Link>
+        {' '}
+        — fake fixtures only; not parent-facing.
       </p>
 
       <p className="text-sm text-muted-foreground mb-4">
