@@ -1,5 +1,9 @@
 # Project Master Context Handoff
 
+## Checkpoint update (Parent Communication step-label polish — 2026-05-03)
+
+- **`src/pages/ParentUpdates.jsx`** (`/parent-updates`) — **Step 1–5** teacher workflow cards: class memory, update type, class/student, **Learning evidence preview**, write/review; friendly **All updates** statuses; **Announcements** called out for official notices. **No** SQL/RLS/storage/provider/email changes. **Doc:** **`docs/parent-communication-step-label-polish-checkpoint.md`**. Cross-refs: **`docs/teacher-upload-step-simplification-plan.md`** §5 §12, **`docs/manual-preview-product-direction-corrections.md`**, **`docs/mobile-first-qa-checkpoint.md`**, **`docs/rls-test-checklist.md`**.
+
 ## Checkpoint update (ParentView printable report preview — final seal, docs-only, 2026-05-03)
 
 - **Doc:** **`docs/parent-view-printable-report-preview-final-checkpoint.md`** — seals **ParentView** printable **HTML** preview (commit **`8d4ef4b`**): released/current-version only, **no** Download PDF / storage / SQL / provider / email; records **PASS** smokes; **recommends next:** **Parent Communication** step-label simplification (copy-paste prompt in doc §7). Parked: Download PDF, **real_ai**, notifications, attendance alerts, worksheet/OCR. **No** runtime edits in this milestone.

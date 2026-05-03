@@ -6,7 +6,7 @@ Scope: **UX/copy/documentation alignment only.** No SQL/RLS changes, no provider
 
 | Topic | Direction |
 |-------|-----------|
-| **Parent Updates → Parent Communication** | Sidebar and primary staff heading use **Parent Communication** (route unchanged: **`/parent-updates`**). Page clarifies this is **not** official announcements; official notices/events stay under **Announcements**. |
+| **Parent Updates → Parent Communication** | Sidebar and primary staff heading use **Parent Communication** (route unchanged: **`/parent-updates`**). Page clarifies this is **not** official announcements; official notices/events stay under **Announcements**. **2026-05-03:** numbered **Step 1–5** teacher workflow + plain-language statuses — **`docs/parent-communication-step-label-polish-checkpoint.md`**. |
 | **Announcements vs Parent Communication** | **Requests** = internal staff tasks/reminders. **Company News** = internal staff news. **Parent Notices** = official parent-facing centre notices/events. **Parent Communication** = teacher/class learning updates, memories, weekly progress—not a substitute for official notices. |
 | **AI Parent Reports** | **Workflow copy (2026-05-02):** **Report shell → Source evidence → Generate draft from evidence → Optional overrides → Lifecycle.** Manual/mock fields are **optional overrides** once evidence exists — see **`docs/ai-parent-report-workflow-ux-polish-checkpoint.md`**. Long term, drafts use **system evidence** with **teacher review/edit**. **No parent release** without explicit staff release; **no** real provider/PDF in UI. |
 | **Observations** | Treated as a **future evidence source** for AI reports; current tab is not the end state. |
@@ -17,7 +17,7 @@ Scope: **UX/copy/documentation alignment only.** No SQL/RLS changes, no provider
 ## Code / doc touchpoints
 
 - `src/services/permissionService.js` — nav label **Parent Communication**
-- `src/pages/ParentUpdates.jsx` — page title, safety copy, teacher card distinction from Announcements
+- `src/pages/ParentUpdates.jsx` — page title, safety copy, teacher card distinction from Announcements; step-label polish milestone (**2026-05-03**)
 - `src/pages/Dashboard.jsx`, `src/components/dashboard/HqAlertsPanel.jsx` — link and pending-approval labels
 - `src/pages/Announcements.jsx` — header, “how this page fits” card, parent notice / media copy
 - `src/pages/AiParentReports.jsx` — evidence-first workflow copy and section order; Source Evidence Preview emphasis; mock-draft optional overrides — **`docs/ai-parent-report-workflow-ux-polish-checkpoint.md`**

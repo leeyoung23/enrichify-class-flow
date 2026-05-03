@@ -20,22 +20,22 @@ import PageHeader from '@/components/shared/PageHeader';
 import EmptyState from '@/components/shared/EmptyState';
 import { toast } from 'sonner';
 
+const FRIENDLY_STATUS_LABELS = {
+  note_created: 'Draft',
+  ai_draft_generated: 'Needs review',
+  edited: 'Teacher edited',
+  approved: 'Ready to share with family',
+  shared: 'Shared with family',
+};
+
 const STATUS_OPTIONS = [
   { value: 'all', label: 'All statuses' },
-  { value: 'note_created', label: 'Teacher note created' },
-  { value: 'ai_draft_generated', label: 'AI draft generated' },
-  { value: 'edited', label: 'Teacher edited final message' },
-  { value: 'approved', label: 'Approved report' },
-  { value: 'shared', label: 'Shared report' },
+  { value: 'note_created', label: 'Draft' },
+  { value: 'ai_draft_generated', label: 'Needs review' },
+  { value: 'edited', label: 'Teacher edited' },
+  { value: 'approved', label: 'Ready to share with family' },
+  { value: 'shared', label: 'Shared with family' },
 ];
-
-const STATUS_LABELS = {
-  note_created: 'Teacher note created',
-  ai_draft_generated: 'AI draft generated',
-  edited: 'Teacher edited final message',
-  approved: 'Approved report',
-  shared: 'Shared report',
-};
 
 const MEMORY_ALLOWED_TYPES = ['image/jpeg', 'image/png', 'image/webp'];
 const MEMORY_MAX_SIZE_BYTES = 5 * 1024 * 1024;
@@ -50,6 +50,18 @@ function getActionLabel(role) {
   if (role === ROLES.TEACHER) return 'Edit';
   if (role === ROLES.BRANCH_SUPERVISOR || role === ROLES.HQ_ADMIN) return 'View';
   return 'View';
+}
+
+function classDisplayName(classId, classes) {
+  const c = classes.find((x) => x.id === classId);
+  return c?.name || classId || '—';
+}
+
+function cardActionLabel(update, role) {
+  if (role !== ROLES.TEACHER) return getActionLabel(role);
+  if (update.status === 'shared') return 'View';
+  if (update.status === 'note_created' || update.status === 'ai_draft_generated') return 'Review';
+  return 'Edit';
 }
 
 function buildWeeklyReportText({ weeklyReport, sourceSnapshot }) {
@@ -674,8 +686,8 @@ export default function ParentUpdates() {
         title="Parent Communication"
         description={
           isTeacher
-            ? 'Create teacher-approved class memories, quick comments, and weekly progress updates. Official notices and events live under Announcements. Nothing is sent automatically. Parents only see approved or released content.'
-            : 'Review teacher-created class memories, quick comments, and weekly progress. Official notices and events live under Announcements. Nothing is sent automatically. Parents only see approved or released content.'
+            ? 'Create class memories, quick parent comments, and weekly progress updates. Parents only see approved or released content. Official centre notices and events are managed in Announcements. Nothing is sent automatically.'
+            : 'Review teacher-created class memories, quick comments, and weekly progress. Parents only see approved or released content. Official centre notices and events are managed in Announcements. Nothing is sent automatically.'
         }
       />
 
@@ -686,7 +698,7 @@ export default function ParentUpdates() {
           description="Add or assign a class before using Parent Communication."
         />
       ) : (
-        <div className="grid grid-cols-1 lg:grid-cols-5 gap-6">
+        <div className="grid grid-cols-1 lg:grid-cols-5 gap-6 max-w-full overflow-x-hidden">
           <div className="lg:col-span-3 space-y-4">
             {isMemoryReviewer && (
               <Card className="p-6">
@@ -773,13 +785,17 @@ export default function ParentUpdates() {
               </Card>
             )}
             {isTeacher && (
-              <Card className="p-6">
-                <h3 className="font-semibold mb-2">Class updates & communication</h3>
-                <p className="text-sm text-muted-foreground mb-4">This is not the Announcements page—use Announcements for official centre notices and events. Here, create quick comments, weekly progress, and class memories for review. Future versions may add worksheet or photo evidence for AI context; parent visibility stays release-gated.</p>
+              <div className="space-y-4 max-w-full overflow-x-hidden">
+                <p className="text-sm text-muted-foreground">
+                  This workspace is for <span className="font-medium text-foreground">class memories</span>, <span className="font-medium text-foreground">quick comments</span>, and <span className="font-medium text-foreground">weekly progress</span>.
+                  {' '}
+                  <span className="font-medium text-foreground">Announcements</span> is for official centre notices and events.
+                </p>
 
-                <Card className="p-4 border-dashed mb-4">
-                  <h4 className="font-medium mb-1">Add Memory</h4>
-                  <p className="text-xs text-muted-foreground mb-4">Submit a class Memory for review. Parents will only see approved Memories.</p>
+                <Card className="p-4 sm:p-5 border-l-4 border-l-primary/40 shadow-sm">
+                  <p className="text-xs font-semibold uppercase tracking-wide text-primary mb-1">Step 1</p>
+                  <h3 className="text-base font-semibold mb-1">Add class memory</h3>
+                  <p className="text-sm text-muted-foreground mb-4">Upload a class moment for review. Parents only see approved Memories.</p>
                   <div className="space-y-3">
                     <Input
                       value={memoryTitle}
@@ -821,67 +837,91 @@ export default function ParentUpdates() {
                       <p className="text-xs text-amber-700">Supabase teacher sign-in is required for real Memory upload.</p>
                     )}
                     {isDemoMode && (
-                      <p className="text-xs text-muted-foreground">Demo mode only: this does not upload to Supabase.</p>
+                      <p className="text-xs font-medium text-muted-foreground">Demo only — no upload to Supabase.</p>
                     )}
                     <Button
                       type="button"
-                      className="w-full sm:w-auto min-h-11"
+                      className="w-full min-h-11 sm:w-auto"
                       disabled={!selectedClassId || !memoryCaption.trim() || !memoryFile || memoryUploadMutation.isPending}
                       onClick={() => memoryUploadMutation.mutate()}
                     >
                       {memoryUploadMutation.isPending ? 'Submitting...' : 'Submit Memory for review'}
                     </Button>
-                    <p className="text-xs text-muted-foreground">Parents will only see approved Memories.</p>
+                    <p className="text-xs text-muted-foreground">Parents only see Memories after review.</p>
                   </div>
                 </Card>
 
-                <div className="inline-flex rounded-lg border border-border p-1 mb-4">
-                  <Button
-                    type="button"
-                    size="sm"
-                    variant={communicationType === 'comment' ? 'default' : 'ghost'}
-                    onClick={() => setCommunicationType('comment')}
-                  >
-                    Quick Parent Comment
-                  </Button>
-                  <Button
-                    type="button"
-                    size="sm"
-                    variant={communicationType === 'weekly_report' ? 'default' : 'ghost'}
-                    onClick={() => setCommunicationType('weekly_report')}
-                  >
-                    Weekly Progress Report
-                  </Button>
-                </div>
+                <Card className="p-4 sm:p-5 border-l-4 border-l-primary/40 shadow-sm">
+                  <p className="text-xs font-semibold uppercase tracking-wide text-primary mb-1">Step 2</p>
+                  <h3 className="text-base font-semibold mb-3">Choose update type</h3>
+                  <div className="flex flex-col sm:flex-row gap-2 rounded-lg border border-border p-1 mb-3">
+                    <Button
+                      type="button"
+                      size="sm"
+                      className="w-full min-h-11 sm:flex-1"
+                      variant={communicationType === 'comment' ? 'default' : 'ghost'}
+                      onClick={() => setCommunicationType('comment')}
+                    >
+                      Quick Parent Comment
+                    </Button>
+                    <Button
+                      type="button"
+                      size="sm"
+                      className="w-full min-h-11 sm:flex-1"
+                      variant={communicationType === 'weekly_report' ? 'default' : 'ghost'}
+                      onClick={() => setCommunicationType('weekly_report')}
+                    >
+                      Weekly Progress Report
+                    </Button>
+                  </div>
+                  <p className="text-xs text-muted-foreground"><span className="font-medium text-foreground">Quick Parent Comment</span> — short note after class.</p>
+                  <p className="text-xs text-muted-foreground"><span className="font-medium text-foreground">Weekly Progress Report</span> — fixed summary for review before sharing with family.</p>
+                </Card>
 
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
-                  <Select value={selectedClassId} onValueChange={(v) => { setSelectedClassId(v); setSelectedStudentId(''); }}>
-                    <SelectTrigger><SelectValue placeholder="Select class" /></SelectTrigger>
-                    <SelectContent>
-                      {classes.map((c) => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}
-                    </SelectContent>
-                  </Select>
-                  <Select value={selectedStudentId} onValueChange={setSelectedStudentId} disabled={!selectedClassId}>
-                    <SelectTrigger><SelectValue placeholder="Select student" /></SelectTrigger>
-                    <SelectContent>
-                      {students.map((s) => <SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>)}
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                <div className="mb-4">
-                  <Badge variant="outline">
-                    Selected student: {selectedStudent?.name || 'No student selected'}
-                  </Badge>
-                </div>
+                <Card className="p-4 sm:p-5 border-l-4 border-l-primary/40 shadow-sm">
+                  <p className="text-xs font-semibold uppercase tracking-wide text-primary mb-1">Step 3</p>
+                  <h3 className="text-base font-semibold mb-3">Select class and student</h3>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <Select value={selectedClassId} onValueChange={(v) => { setSelectedClassId(v); setSelectedStudentId(''); }}>
+                      <SelectTrigger className="w-full min-h-11"><SelectValue placeholder="Choose class" /></SelectTrigger>
+                      <SelectContent>
+                        {classes.map((c) => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}
+                      </SelectContent>
+                    </Select>
+                    <Select value={selectedStudentId} onValueChange={setSelectedStudentId} disabled={!selectedClassId}>
+                      <SelectTrigger className="w-full min-h-11"><SelectValue placeholder="Choose student" /></SelectTrigger>
+                      <SelectContent>
+                        {students.map((s) => <SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>)}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="mt-3 flex flex-wrap gap-2 items-center">
+                    <Badge variant="outline" className="text-xs">
+                      {selectedStudent?.name ? `Student: ${selectedStudent.name}` : 'No student selected yet'}
+                    </Badge>
+                    {selectedClassId ? (
+                      <Badge variant="secondary" className="text-xs">
+                        Class: {selectedClass?.name || selectedClassId}
+                      </Badge>
+                    ) : null}
+                  </div>
+                  {(!selectedClassId || !selectedStudentId) && (
+                    <div className="mt-3 rounded-md border border-amber-200 bg-amber-50/90 px-3 py-2 text-sm text-amber-950 dark:border-amber-900 dark:bg-amber-950/40 dark:text-amber-50">
+                      Choose a class and student to continue.
+                    </div>
+                  )}
+                </Card>
 
                 {communicationType === 'comment' && step === 'notes' && (
                   <>
-                    <Card className="p-4 mb-4 border-dashed">
-                      <h4 className="font-medium mb-2">Source Summary (Demo)</h4>
-                      <p className="text-xs text-muted-foreground mb-3">AI comment draft uses teacher note + attendance + homework + previous feedback + student/class profile.</p>
+                    <Card className="p-4 sm:p-5 mb-4 border-l-4 border-l-primary/40 border-dashed shadow-sm">
+                      <p className="text-xs font-semibold uppercase tracking-wide text-primary mb-1">Step 4</p>
+                      <h4 className="text-base font-semibold mb-1">Learning evidence preview</h4>
+                      <p className="text-xs text-muted-foreground mb-3">
+                        A simple preview of saved learning evidence to help draft your message. You can always edit before anything is shared. Demo/local data only when not on live Supabase.
+                      </p>
                       {!selectedStudentId ? (
-                        <p className="text-sm text-muted-foreground">Select a class and student to load source data.</p>
+                        <p className="text-sm text-muted-foreground">Choose a class and student in Step 3 to see this preview.</p>
                       ) : (
                         <div className="space-y-3 text-sm">
                           <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
@@ -909,172 +949,185 @@ export default function ParentUpdates() {
                           </div>
                         </div>
                       )}
-                      <p className="text-xs text-muted-foreground mt-3">Demo only: in the future, this AI draft will use saved attendance, homework, marking results, and teacher-approved notes.</p>
+                      <p className="text-xs text-muted-foreground mt-3">When fully connected, this preview can draw on attendance, homework, and past notes. Nothing is sent to parents from this box.</p>
                     </Card>
-                    <div className="mb-4">
-                      <div className="flex items-center gap-2 mb-2">
-                        <span className="text-sm font-medium">1. Teacher lesson note</span>
-                        <Badge variant="outline">Teacher note created</Badge>
+                    <Card className="p-4 sm:p-5 border-l-4 border-l-primary/40 shadow-sm">
+                      <p className="text-xs font-semibold uppercase tracking-wide text-primary mb-1">Step 5</p>
+                      <h4 className="text-base font-semibold mb-1">Write your note, then review</h4>
+                      <p className="text-xs text-muted-foreground mb-3">Add your teacher note first. The optional draft helper does not send anything—review before sharing with family.</p>
+                      <div className="mb-4">
+                        <p className="text-sm font-medium text-foreground mb-2">Your teacher note</p>
+                        <Textarea
+                          placeholder="Write what happened in class. Nothing is sent automatically."
+                          value={notes}
+                          onChange={(e) => setNotes(e.target.value)}
+                          className="min-h-[160px] w-full"
+                        />
                       </div>
-                      <Textarea
-                        placeholder="Write the teacher note only. Nothing is sent automatically."
-                        value={notes}
-                        onChange={(e) => setNotes(e.target.value)}
-                        className="min-h-[160px]"
-                      />
-                    </div>
-                    {needsMoreSourceData && (
-                      <p className="text-xs text-amber-700 mb-3">
-                        Add a lesson note or confirm homework/attendance before generating a stronger draft.
-                      </p>
-                    )}
-                    <Button
-                      onClick={handleGenerate}
-                      disabled={!notes.trim() || !selectedStudentId || generating}
-                      className="gap-2"
-                    >
-                      {generating ? (
-                        <><Loader2 className="h-4 w-4 animate-spin" /> Generating...</>
-                      ) : (
-                        <><Sparkles className="h-4 w-4" /> Generate AI Comment Draft</>
+                      {needsMoreSourceData && (
+                        <p className="text-xs text-amber-800 dark:text-amber-200 mb-3">
+                          Add a lesson note or confirm homework/attendance for a stronger draft.
+                        </p>
                       )}
-                    </Button>
-                    <p className="text-xs text-muted-foreground mt-3">No message is sent automatically. Parent sees this comment only after teacher/staff approval and release.</p>
+                      <Button
+                        onClick={handleGenerate}
+                        disabled={!notes.trim() || !selectedStudentId || generating}
+                        className="gap-2 w-full min-h-11 sm:w-auto"
+                      >
+                        {generating ? (
+                          <><Loader2 className="h-4 w-4 animate-spin" /> Generating...</>
+                        ) : (
+                          <><Sparkles className="h-4 w-4" /> Generate AI Comment Draft</>
+                        )}
+                      </Button>
+                      <p className="text-xs text-muted-foreground mt-2">Draft only — nothing is sent. Parents only see content after you review and share with family.</p>
+                    </Card>
                   </>
                 )}
 
                 {communicationType === 'comment' && step === 'review' && (
-                  <>
-                    <p className="text-xs text-muted-foreground mb-2">
-                      Draft generated from available student/class profile, attendance record, homework status, previous feedback, and your teacher note.
+                  <Card className="p-4 sm:p-5 border-l-4 border-l-primary/40 shadow-sm">
+                    <p className="text-xs font-semibold uppercase tracking-wide text-primary mb-1">Step 5</p>
+                    <h4 className="text-base font-semibold mb-1">Review before sharing with family</h4>
+                    <p className="text-xs text-muted-foreground mb-4">
+                      Edit the text below. Parents do not see drafts. Nothing is emailed or sent automatically.
                     </p>
                     <div className="space-y-4">
                       <div>
                         <div className="flex items-center gap-2 mb-2">
                           <Sparkles className="h-4 w-4 text-primary" />
-                          <span className="text-sm font-medium">2. AI draft generated</span>
-                          <Badge variant="outline" className="text-xs">AI draft generated</Badge>
+                          <span className="text-sm font-medium">Draft from helper (read-only)</span>
+                          <Badge variant="outline" className="text-xs">Needs review</Badge>
                         </div>
                         <Textarea value={aiDraft} readOnly className="min-h-[120px] bg-accent/20" />
                       </div>
 
                       <div>
                         <div className="flex items-center gap-2 mb-2">
-                          <span className="text-sm font-medium">3. Teacher edited final message</span>
-                          <Badge variant="outline" className="text-xs">Teacher edited final message</Badge>
+                          <span className="text-sm font-medium">Message to share (edit here)</span>
+                          <Badge variant="outline" className="text-xs">Teacher edited</Badge>
                         </div>
                         <Textarea
                           value={editedMessage}
                           onChange={(e) => setEditedMessage(e.target.value)}
-                          className="min-h-[150px]"
+                          className="min-h-[150px] w-full"
                         />
                       </div>
 
                       <div>
                         <div className="flex items-center gap-2 mb-2">
                           <CheckCircle2 className="h-4 w-4 text-primary" />
-                          <span className="text-sm font-medium">4. Approved parent comment</span>
-                          <Badge variant="outline" className="text-xs">Approved report</Badge>
+                          <span className="text-sm font-medium">Teacher-approved text (optional record)</span>
+                          <Badge variant="outline" className="text-xs">Ready to share with family</Badge>
                         </div>
                         <Textarea
                           value={approvedReport}
                           onChange={(e) => setApprovedReport(e.target.value)}
-                          placeholder="Set approved comment content before parent can view it."
-                          className="min-h-[120px]"
+                          placeholder="Optional: the version you approved for the record."
+                          className="min-h-[120px] w-full"
                         />
                       </div>
 
                       <div>
                         <div className="flex items-center gap-2 mb-2">
                           <Share2 className="h-4 w-4 text-primary" />
-                          <span className="text-sm font-medium">5. Released to parent</span>
-                          <Badge variant="outline" className="text-xs">Shared report</Badge>
+                          <span className="text-sm font-medium">What was shared with family (optional record)</span>
+                          <Badge variant="outline" className="text-xs">Shared with family</Badge>
                         </div>
                         <Textarea
                           value={sharedReport}
                           onChange={(e) => setSharedReport(e.target.value)}
-                          placeholder="Optional record of the exact approved comment released later."
-                          className="min-h-[120px]"
+                          placeholder="Optional record of what parents actually saw."
+                          className="min-h-[120px] w-full"
                         />
                       </div>
                     </div>
 
-                    <div className="flex flex-wrap gap-3">
-                      <Button onClick={() => handleSave('edited')} disabled={saveMutation.isPending} className="gap-2">
+                    <div className="flex flex-col sm:flex-row flex-wrap gap-2 sm:gap-3 mt-4">
+                      <Button onClick={() => handleSave('edited')} disabled={saveMutation.isPending} className="gap-2 w-full min-h-11 sm:w-auto">
                         <Save className="h-4 w-4" />
                         Save Draft
                       </Button>
-                      <Button variant="outline" onClick={() => handleSave('approved')} disabled={saveMutation.isPending || !approvedReport.trim()}>
-                        Approve Comment
+                      <Button variant="outline" className="w-full min-h-11 sm:w-auto" onClick={() => handleSave('approved')} disabled={saveMutation.isPending || !approvedReport.trim()}>
+                        Mark approved
                       </Button>
-                      <Button variant="outline" onClick={() => handleSave('shared')} disabled={saveMutation.isPending || (isDemoMode && !sharedReport.trim())}>
-                        Approve & Release to Parent
+                      <Button variant="outline" className="w-full min-h-11 sm:w-auto" onClick={() => handleSave('shared')} disabled={saveMutation.isPending || (isDemoMode && !sharedReport.trim())}>
+                        Approve & share with family
                       </Button>
-                      <Button variant="outline" onClick={() => setStep('notes')}>
-                        Back to Note
+                      <Button variant="outline" className="w-full min-h-11 sm:w-auto" onClick={() => setStep('notes')}>
+                        Back to note
                       </Button>
-                      <Button variant="ghost" onClick={resetForm}>
+                      <Button variant="ghost" className="w-full sm:w-auto" onClick={resetForm}>
                         Discard
                       </Button>
                     </div>
-                  </>
+                  </Card>
                 )}
 
                 {communicationType === 'weekly_report' && (
                   <div className="space-y-4">
-                    <Card className="p-4 border-dashed">
-                      <h4 className="font-medium mb-2">Weekly Progress Report</h4>
-                      <p className="text-xs text-muted-foreground mb-3">Fixed weekly template in demo mode only. No scheduling, no auto-send.</p>
-                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm">
-                        <div><p className="text-xs text-muted-foreground">Week range</p><p>{weeklyReport.weekRange}</p></div>
-                        <div><p className="text-xs text-muted-foreground">Student name</p><p>{selectedStudent?.name || 'Select a student'}</p></div>
-                        <div><p className="text-xs text-muted-foreground">Class</p><p>{selectedClass?.name || selectedClassId || 'Select a class'}</p></div>
-                        <div><p className="text-xs text-muted-foreground">Attendance summary</p><p>{sourceSnapshot?.latestAttendance?.status || 'Not recorded'}</p></div>
-                        <div><p className="text-xs text-muted-foreground">Homework completion</p><p>{sourceSnapshot?.latestAttendance?.homework_status || 'Not recorded'}</p></div>
-                        <div><p className="text-xs text-muted-foreground">Report status</p><p>{weeklyReport.status}</p></div>
-                      </div>
-                      <div className="space-y-3 mt-4">
-                        <div><p className="text-xs text-muted-foreground mb-1">Learning focus this week</p><Textarea value={weeklyReport.learningFocus} onChange={(e) => setWeeklyReport((prev) => ({ ...prev, learningFocus: e.target.value }))} className="min-h-[70px]" /></div>
-                        <div><p className="text-xs text-muted-foreground mb-1">Strengths</p><Textarea value={weeklyReport.strengths} onChange={(e) => setWeeklyReport((prev) => ({ ...prev, strengths: e.target.value }))} className="min-h-[70px]" /></div>
-                        <div><p className="text-xs text-muted-foreground mb-1">Areas to improve</p><Textarea value={weeklyReport.areasToImprove} onChange={(e) => setWeeklyReport((prev) => ({ ...prev, areasToImprove: e.target.value }))} className="min-h-[70px]" /></div>
-                        <div><p className="text-xs text-muted-foreground mb-1">Teacher comment</p><Textarea value={weeklyReport.teacherComment} onChange={(e) => syncWeeklyTeacherComment(e.target.value)} className="min-h-[90px]" /></div>
-                        <div><p className="text-xs text-muted-foreground mb-1">Suggested home practice</p><Textarea value={weeklyReport.suggestedHomePractice} onChange={(e) => setWeeklyReport((prev) => ({ ...prev, suggestedHomePractice: e.target.value }))} className="min-h-[70px]" /></div>
-                        <div><p className="text-xs text-muted-foreground mb-1">Next week focus</p><Textarea value={weeklyReport.nextWeekFocus} onChange={(e) => setWeeklyReport((prev) => ({ ...prev, nextWeekFocus: e.target.value }))} className="min-h-[70px]" /></div>
-                      </div>
-                      <p className="text-xs text-muted-foreground mt-3">In production, weekly reports can be automatically drafted every weekend from saved attendance, homework, marking results, and teacher-approved notes. Teachers still review before parents see the report.</p>
+                    <Card className="p-4 sm:p-5 border-l-4 border-l-primary/40 border-dashed shadow-sm">
+                      <p className="text-xs font-semibold uppercase tracking-wide text-primary mb-1">Step 4</p>
+                      <h4 className="text-base font-semibold mb-1">Learning evidence preview (weekly)</h4>
+                      <p className="text-xs text-muted-foreground mb-3">Snapshot from saved attendance and homework to support your weekly text. Review every line before sharing—no auto-send.</p>
+                      {!selectedStudentId ? (
+                        <p className="text-sm text-muted-foreground">Choose a class and student in Step 3 first.</p>
+                      ) : (
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm">
+                          <div><p className="text-xs text-muted-foreground">Week range</p><p>{weeklyReport.weekRange}</p></div>
+                          <div><p className="text-xs text-muted-foreground">Student</p><p>{selectedStudent?.name || '—'}</p></div>
+                          <div><p className="text-xs text-muted-foreground">Class</p><p>{selectedClass?.name || selectedClassId || '—'}</p></div>
+                          <div><p className="text-xs text-muted-foreground">Attendance</p><p>{sourceSnapshot?.latestAttendance?.status || 'Not recorded'}</p></div>
+                          <div><p className="text-xs text-muted-foreground">Homework</p><p>{sourceSnapshot?.latestAttendance?.homework_status || 'Not recorded'}</p></div>
+                          <div><p className="text-xs text-muted-foreground">Local status</p><p>{weeklyReport.status}</p></div>
+                        </div>
+                      )}
                     </Card>
-                    <div className="flex flex-wrap gap-3">
-                      <Button onClick={handleGenerateWeeklyDraft} disabled={!selectedStudentId} className="gap-2">
+                    <Card className="p-4 sm:p-5 border-l-4 border-l-primary/40 shadow-sm">
+                      <p className="text-xs font-semibold uppercase tracking-wide text-primary mb-1">Step 5</p>
+                      <h4 className="text-base font-semibold mb-1">Weekly progress text</h4>
+                      <p className="text-xs text-muted-foreground mb-3">Demo template: no scheduling, no auto-send. Teachers review before parents see anything.</p>
+                      <div className="space-y-3">
+                        <div><p className="text-xs text-muted-foreground mb-1">Learning focus this week</p><Textarea value={weeklyReport.learningFocus} onChange={(e) => setWeeklyReport((prev) => ({ ...prev, learningFocus: e.target.value }))} className="min-h-[70px] w-full" /></div>
+                        <div><p className="text-xs text-muted-foreground mb-1">Strengths</p><Textarea value={weeklyReport.strengths} onChange={(e) => setWeeklyReport((prev) => ({ ...prev, strengths: e.target.value }))} className="min-h-[70px] w-full" /></div>
+                        <div><p className="text-xs text-muted-foreground mb-1">Areas to improve</p><Textarea value={weeklyReport.areasToImprove} onChange={(e) => setWeeklyReport((prev) => ({ ...prev, areasToImprove: e.target.value }))} className="min-h-[70px] w-full" /></div>
+                        <div><p className="text-xs text-muted-foreground mb-1">Teacher comment</p><Textarea value={weeklyReport.teacherComment} onChange={(e) => syncWeeklyTeacherComment(e.target.value)} className="min-h-[90px] w-full" /></div>
+                        <div><p className="text-xs text-muted-foreground mb-1">Suggested home practice</p><Textarea value={weeklyReport.suggestedHomePractice} onChange={(e) => setWeeklyReport((prev) => ({ ...prev, suggestedHomePractice: e.target.value }))} className="min-h-[70px] w-full" /></div>
+                        <div><p className="text-xs text-muted-foreground mb-1">Next week focus</p><Textarea value={weeklyReport.nextWeekFocus} onChange={(e) => setWeeklyReport((prev) => ({ ...prev, nextWeekFocus: e.target.value }))} className="min-h-[70px] w-full" /></div>
+                      </div>
+                    </Card>
+                    <div className="flex flex-col sm:flex-row flex-wrap gap-2 sm:gap-3">
+                      <Button onClick={handleGenerateWeeklyDraft} disabled={!selectedStudentId} className="gap-2 w-full min-h-11 sm:w-auto">
                         <Sparkles className="h-4 w-4" />
-                        Generate Weekly Report Draft
+                        Generate weekly draft
                       </Button>
-                      <Button variant="outline" onClick={handleSaveWeeklyDraft} disabled={!selectedStudentId || saveMutation.isPending} className="gap-2">
+                      <Button variant="outline" onClick={handleSaveWeeklyDraft} disabled={!selectedStudentId || saveMutation.isPending} className="gap-2 w-full min-h-11 sm:w-auto">
                         <Save className="h-4 w-4" />
-                        Save Draft
+                        Save draft
                       </Button>
-                      <Button variant="outline" onClick={handleApproveWeeklyReport} disabled={!weeklyDraftGenerated}>
-                        Approve Weekly Report
+                      <Button variant="outline" onClick={handleApproveWeeklyReport} disabled={!weeklyDraftGenerated} className="w-full min-h-11 sm:w-auto">
+                        Approve for sharing
                       </Button>
-                      <Button variant="outline" onClick={handleReleaseWeeklyReport} disabled={!selectedStudentId || weeklyReport.status !== 'Approved' || saveMutation.isPending}>
-                        Release to Parent
+                      <Button variant="outline" onClick={handleReleaseWeeklyReport} disabled={!selectedStudentId || weeklyReport.status !== 'Approved' || saveMutation.isPending} className="w-full min-h-11 sm:w-auto">
+                        Share with family
                       </Button>
                     </div>
                   </div>
                 )}
-              </Card>
+              </div>
             )}
           </div>
 
           <div className="lg:col-span-2">
             <Card className="p-6">
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4">
-                <div>
+                <div className="min-w-0">
                   <h3 className="font-semibold">All updates</h3>
-                  <p className="text-sm text-muted-foreground">Quick comments and weekly reports stay in demo mode until approved and released.</p>
+                  <p className="text-sm text-muted-foreground">Quick comments and weekly progress. Parents only see shared content—never drafts.</p>
                 </div>
-                <div className="w-full sm:w-[220px]">
+                <div className="w-full sm:w-[240px] shrink-0">
                   <Select value={statusFilter} onValueChange={setStatusFilter}>
-                    <SelectTrigger><SelectValue placeholder="Filter by status" /></SelectTrigger>
+                    <SelectTrigger className="w-full min-h-11"><SelectValue placeholder="Filter by status" /></SelectTrigger>
                     <SelectContent>
                       {STATUS_OPTIONS.map((option) => (
                         <SelectItem key={option.value} value={option.value}>{option.label}</SelectItem>
@@ -1084,9 +1137,9 @@ export default function ParentUpdates() {
                 </div>
               </div>
 
-              <div className="space-y-2 mb-4 text-xs text-muted-foreground">
-                <p>Quick Parent Comments: short teacher-approved communication after a class/session.</p>
-                <p>Weekly Progress Reports: fixed-template weekend report drafted from saved learning data (demo).</p>
+              <div className="space-y-1.5 mb-4 text-xs text-muted-foreground">
+                <p><span className="font-medium text-foreground">Quick Parent Comment</span> — short note after class.</p>
+                <p><span className="font-medium text-foreground">Weekly Progress Report</span> — structured weekly summary; review before sharing.</p>
               </div>
 
               {communicationType === 'comment' && filteredCommentUpdates.length === 0 ? (
@@ -1094,50 +1147,58 @@ export default function ParentUpdates() {
               ) : communicationType === 'weekly_report' && filteredWeeklyUpdates.length === 0 ? (
                 <p className="text-sm text-muted-foreground">No weekly reports found for this filter.</p>
               ) : (
-                <div className="space-y-3 max-h-[700px] overflow-y-auto pr-1">
-                  {(communicationType === 'comment' ? filteredCommentUpdates : filteredWeeklyUpdates).map((update) => (
-                    <div key={update.id} className="rounded-lg border border-border p-4 bg-card">
+                <div className="space-y-3 max-h-[700px] overflow-y-auto overflow-x-hidden pr-1">
+                  {(communicationType === 'comment' ? filteredCommentUpdates : filteredWeeklyUpdates).map((update) => {
+                    const rowAction = cardActionLabel(update, user?.role);
+                    return (
+                    <div key={update.id} className="rounded-lg border border-border p-4 bg-card max-w-full">
                       <div className="flex items-start justify-between gap-3 mb-3">
-                        <div className="space-y-1 min-w-0">
+                        <div className="space-y-1 min-w-0 flex-1">
                           <p className="font-medium truncate">{update.student_name || 'Student'}</p>
-                          <p className="text-xs text-muted-foreground">{update.class_id || 'Class'} • {update.teacher_name || update.teacher_email || 'Teacher'}</p>
+                          <p className="text-xs text-muted-foreground break-words">
+                            {classDisplayName(update.class_id, classes)}
+                            {' · '}
+                            {update.teacher_name || update.teacher_email || 'Teacher'}
+                          </p>
                           <p className="text-xs text-muted-foreground">{update.update_type === 'weekly_report' ? 'Weekly Progress Report' : 'Quick Parent Comment'}</p>
                         </div>
-                        <Badge variant={getStatusBadgeVariant(update.status)} className="text-xs whitespace-nowrap">
-                          {STATUS_LABELS[update.status] || update.status}
+                        <Badge variant={getStatusBadgeVariant(update.status)} className="text-xs whitespace-nowrap shrink-0">
+                          {FRIENDLY_STATUS_LABELS[update.status] || update.status}
                         </Badge>
                       </div>
 
-                      <div className="grid grid-cols-2 gap-3 text-sm mb-3">
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm mb-3">
                         <div>
-                          <p className="text-xs text-muted-foreground">Student name</p>
-                          <p>{update.student_name || '—'}</p>
+                          <p className="text-xs text-muted-foreground">Student</p>
+                          <p className="break-words">{update.student_name || '—'}</p>
                         </div>
                         <div>
                           <p className="text-xs text-muted-foreground">Class</p>
-                          <p>{update.class_id || '—'}</p>
+                          <p className="break-words">{classDisplayName(update.class_id, classes)}</p>
                         </div>
                         <div>
                           <p className="text-xs text-muted-foreground">Teacher</p>
-                          <p>{update.teacher_name || update.teacher_email || '—'}</p>
+                          <p className="break-words">{update.teacher_name || update.teacher_email || '—'}</p>
                         </div>
                         <div>
-                          <p className="text-xs text-muted-foreground">Latest update date</p>
+                          <p className="text-xs text-muted-foreground">Last updated</p>
                           <p>{update.created_date ? new Date(update.created_date).toLocaleDateString('en-AU') : '—'}</p>
                         </div>
                       </div>
 
-                      <div className="flex items-center justify-between gap-3">
-                        <p className="text-xs text-muted-foreground line-clamp-2">
+                      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                        <p className="text-xs text-muted-foreground line-clamp-3 flex-1 min-w-0">
                           {update.shared_report || update.approved_report || update.final_message || update.ai_draft || update.note_text || 'No content yet.'}
                         </p>
-                        <Button size="sm" variant="outline" className="gap-1.5">
-                          {user?.role === ROLES.TEACHER ? <Pencil className="h-3.5 w-3.5" /> : <Eye className="h-3.5 w-3.5" />}
-                          {getActionLabel(user?.role)}
+                        <Button size="sm" variant="outline" className="gap-1.5 w-full sm:w-auto shrink-0 min-h-10">
+                          {(rowAction === 'Review' || rowAction === 'View') && <Eye className="h-3.5 w-3.5" />}
+                          {rowAction === 'Edit' && <Pencil className="h-3.5 w-3.5" />}
+                          {rowAction}
                         </Button>
                       </div>
                     </div>
-                  ))}
+                    );
+                  })}
                 </div>
               )}
             </Card>

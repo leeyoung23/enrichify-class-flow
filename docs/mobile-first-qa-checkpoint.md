@@ -1,5 +1,9 @@
 # Mobile-first QA checkpoint
 
+## Checkpoint update (Parent Communication step-label polish — 2026-05-03)
+
+- **Reference:** **`docs/parent-communication-step-label-polish-checkpoint.md`** — re-QA **~390px** **`/parent-updates`**: stacked step cards, full-width toggles/buttons, **All updates** list without horizontal overflow; **no** backend change.
+
 ## Checkpoint update (ParentView printable report preview — 2026-05-03)
 
 - **Reference:** **`docs/parent-view-printable-report-preview-checkpoint.md`** — re-QA **~390px**: **Preview printable report** button, preview chrome, iframe scroll; **no** download control.

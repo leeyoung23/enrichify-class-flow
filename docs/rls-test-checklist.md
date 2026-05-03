@@ -1,5 +1,9 @@
 # RLS Test Checklist
 
+## Checkpoint update (Parent Communication step-label polish — 2026-05-03)
+
+- **`ParentUpdates.jsx`** — **copy/layout only**; **no** RLS/DDL/persistence change. Regression when touching parent flows: **`npm run test:supabase:parent-announcements`** · **`npm run test:supabase:parent-announcements:media`**. **Doc:** **`docs/parent-communication-step-label-polish-checkpoint.md`**.
+
 ## Checkpoint update (ParentView printable report preview — 2026-05-03)
 
 - **`ParentView.jsx`** — preview uses **already-fetched** released detail/version only; **no** RLS change; **no** new reads. Regression when touching ParentView + AI reports: **`npm run test:supabase:ai-parent-reports`** · **`npm run test:supabase:parent-announcements`** · **`npm run test:supabase:parent-announcements:media`**. **Doc:** **`docs/parent-view-printable-report-preview-checkpoint.md`**.
