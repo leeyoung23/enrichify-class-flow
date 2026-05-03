@@ -1,5 +1,9 @@
 # Mobile-first QA checkpoint
 
+## Checkpoint update (notification & email automation — planning only, 2026-05-03)
+
+- **Reference:** **`docs/notification-email-automation-trigger-matrix-plan.md`** — when notification/in-app/email UI ships, re-QA **~390px** for parent/staff notification surfaces, preference toggles, and **short non-leaky** message previews; **no** runtime changes in this milestone.
+
 ## Checkpoint update (AI Parent Report PDF internal preview — 2026-05-03)
 
 - **Route:** **`/ai-parent-report-pdf-preview`** (**staff-only**). Re-QA **desktop + ~390px**: banner legibility, variant **Select**, iframe height/scrolling, sandboxed preview (**no** parent nav). **Canonical:** **`docs/ai-parent-report-pdf-internal-preview-checkpoint.md`**. **No** ParentView change.

@@ -1,5 +1,9 @@
 # RLS Test Checklist
 
+## Checkpoint update (notification & email automation — planning only, 2026-05-03)
+
+- **Planning:** **`docs/notification-email-automation-trigger-matrix-plan.md`** §11 (conceptual tables), §14 (**B** SQL/RLS review first). When notification DDL lands: **JWT-scoped** reads/writes per family/branch; **no** parent notification rows visible across families; **no** service-role browser usage; dedicated smokes **not** required until **`src/`** + SQL exist. **No** DDL in this milestone.
+
 ## Checkpoint update (AI Parent Report PDF internal preview — 2026-05-03)
 
 - **`src/pages/AiParentReportPdfPreview.jsx`** — **no** Supabase reads/writes; pure **`buildDemoReleasedReportPdfInput`** + **`renderReleasedReportPdfHtml`**; **no** RLS surface (does not bypass or replace JWT tests). Parent-facing export rules unchanged. **Doc:** **`docs/ai-parent-report-pdf-internal-preview-checkpoint.md`**.

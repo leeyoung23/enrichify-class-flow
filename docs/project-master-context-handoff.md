@@ -1,5 +1,9 @@
 # Project Master Context Handoff
 
+## Checkpoint update (notification & email automation trigger matrix — planning only, 2026-05-03)
+
+- **Doc:** **`docs/notification-email-automation-trigger-matrix-plan.md`** — product purpose, current state, channel comparison (**in-app + email first**), **trigger matrix** (parent + staff rows), safety sections (attendance, reports, homework, announcements, fees, staff), conceptual data model (**no SQL**), email provider strategy (**secrets server-side only**), implementation sequence (**B** SQL/RLS review → **C** in-app prototype → **D/E** parent triggers → **F** email), **what not to do yet**, copy-paste prompt §16 for **notification SQL/RLS review**. **No** app UI, **no** runtime logic, **no** provider keys. Cross-refs: **`docs/mobile-first-qa-checkpoint.md`**, **`docs/rls-test-checklist.md`**, **`docs/announcements-parent-communication-final-qa-checkpoint.md`**, **`docs/ai-parent-report-mvp-final-qa-checkpoint.md`**.
+
 ## Checkpoint update (AI Parent Report PDF internal HTML preview — 2026-05-03)
 
 - **Route:** **`/ai-parent-report-pdf-preview`** — **`src/pages/AiParentReportPdfPreview.jsx`** — staff/demo staff roles only; **fake/dev fixtures**; **`renderReleasedReportPdfHtml`** + sandboxed iframe; **no** ParentView, **no** storage/SQL, **no** download/export persistence. **Sidebar:** **`PDF preview (internal)`**. **Link** from **`AiParentReports.jsx`** intro. **Smoke:** **`npm run test:ai-parent-report:pdf-template`** (all four variants). **Doc:** **`docs/ai-parent-report-pdf-internal-preview-checkpoint.md`**. Cross-refs: **`docs/ai-parent-report-pdf-helper-fixture-final-checkpoint.md`**, **`docs/ai-parent-report-pdf-template-contract-plan.md`**, **`docs/released-ai-parent-report-export-strategy-plan.md`**, **`docs/mobile-first-qa-checkpoint.md`**, **`docs/rls-test-checklist.md`**. **Next:** manual visual QA before parent download milestone.
