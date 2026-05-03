@@ -224,7 +224,7 @@ export default function AppLayout() {
           showSidebar ? (collapsed ? 'ml-0 lg:ml-[72px]' : 'ml-0 lg:ml-[260px]') : 'ml-0'
         )}>
           <div className="p-6 md:p-8 max-w-[1400px] mx-auto">
-            <DemoRoleSwitcher />
+            <DemoRoleSwitcher layoutRole={role} />
             <EmptyState
               icon={ShieldAlert}
               title="Access restricted"
@@ -248,7 +248,7 @@ export default function AppLayout() {
         showSidebar ? (collapsed ? 'ml-0 lg:ml-[72px]' : 'ml-0 lg:ml-[260px]') : 'ml-0'
       )}>
         <div className="p-6 md:p-8 max-w-[1400px] mx-auto">
-          <DemoRoleSwitcher />
+          <DemoRoleSwitcher layoutRole={role} />
           <Outlet context={{ user: effectiveUser, role }} />
         </div>
       </main>

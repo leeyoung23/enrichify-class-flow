@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import { Link, useOutletContext } from 'react-router-dom';
+import { Link, useLocation, useNavigate, useOutletContext, useSearchParams } from 'react-router-dom';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
@@ -12,7 +12,7 @@ import PageHeader from '@/components/shared/PageHeader';
 import EmptyState from '@/components/shared/EmptyState';
 import { ChevronDown, FileText } from 'lucide-react';
 import { toast } from 'sonner';
-import { getSelectedDemoRole } from '@/services/authService';
+import { normalizeRole } from '@/services/authService';
 import { getRole, ROLES } from '@/services/permissionService';
 import { isSupabaseConfigured } from '@/services/supabaseClient';
 import { useSupabaseAuthState } from '@/hooks/useSupabaseAuthState';
@@ -177,14 +177,38 @@ function evidenceClassificationBadgeLabel(classification) {
 
 export default function AiParentReports() {
   const { user } = useOutletContext();
+  const navigate = useNavigate();
+  const location = useLocation();
+  const [searchParams] = useSearchParams();
   const { appUser, session, loading: supabaseAuthLoading } = useSupabaseAuthState();
-  const demoRole = getSelectedDemoRole();
+  /** URL query only (no localStorage). Sidebar `withDemoRole` can add `?demoRole=` when navigating. */
+  const urlDemoRole = useMemo(
+    () => normalizeRole(searchParams.get('demoRole')),
+    [searchParams]
+  );
+  const demoRole = urlDemoRole;
   const role = demoRole || getRole(user);
   const inDemoMode = Boolean(demoRole);
+
+  const stripUrlDemoRole = useCallback(() => {
+    const next = new URLSearchParams(location.search);
+    next.delete('demoRole');
+    const qs = next.toString();
+    navigate({ pathname: location.pathname, search: qs ? `?${qs}` : '' }, { replace: true });
+    toast.message('Removed demoRole from URL — live staff mode when signed in.');
+  }, [location.pathname, location.search, navigate]);
+
   const canAccess = isStaffRole(role);
   /** Profile-linked user OR Supabase session user — profile fetch must not block directory pickers. */
   const hasLiveSupabaseIdentity =
     Boolean(appUser?.id) || Boolean(session?.user?.id);
+
+  const aiReportsModeDiagnostic = useMemo(() => {
+    if (demoRole) return `demo preview · URL demoRole=${demoRole}`;
+    if (hasLiveSupabaseIdentity) return 'real staff';
+    return 'no-session';
+  }, [demoRole, hasLiveSupabaseIdentity]);
+
   const canUseSupabase =
     canAccess && !inDemoMode && isSupabaseConfigured() && hasLiveSupabaseIdentity;
 
@@ -1001,6 +1025,24 @@ export default function AiParentReports() {
         overrides → Submit / approve / release manually.
       </p>
 
+      <Card className="p-3 border-dashed border-primary/25 bg-muted/10 space-y-2">
+        <p className="text-xs text-muted-foreground">
+          <span className="font-medium text-foreground">Diagnostics:</span>{' '}
+          <span className="font-mono">{aiReportsModeDiagnostic}</span>
+          {' '}(URL <code className="text-[10px] bg-muted px-1 rounded">demoRole</code> only — no localStorage demo role.)
+        </p>
+        {demoRole ? (
+          <div className="flex flex-wrap items-center gap-2">
+            <Button type="button" size="sm" variant="secondary" onClick={stripUrlDemoRole}>
+              Exit demo preview — use live staff AI
+            </Button>
+            <span className="text-[11px] text-muted-foreground max-w-xl">
+              Strips <code className="text-[10px] bg-muted px-1 rounded">demoRole</code> from the address bar. Sidebar links can re-append it if you still have a demo preview URL elsewhere — use this button after navigating here.
+            </span>
+          </div>
+        ) : null}
+      </Card>
+
       <Card className="p-3 space-y-2">
         <p className="text-sm font-medium text-foreground">
           {inDemoMode
@@ -1016,9 +1058,11 @@ export default function AiParentReports() {
             </>
           ) : (
             <>
-              The <span className="font-medium text-foreground">Demo Role Preview</span> banner above only switches preview
-              roles when <code className="text-xs rounded bg-muted px-1">demoRole</code> is set — it does not replace signing
-              in. Real AI uses your Supabase session after you select a report.
+              <span className="font-medium text-foreground">Demo Role Preview</span> uses the URL{' '}
+              <code className="text-xs rounded bg-muted px-1">demoRole</code> when set; otherwise it shows your signed-in role
+              from the app shell (it does not read this page&apos;s outlet). This page is in real staff mode only when{' '}
+              <code className="text-xs rounded bg-muted px-1">demoRole</code> is absent from the URL. Real AI uses your
+              Supabase session after you select a report.
             </>
           )}
         </p>

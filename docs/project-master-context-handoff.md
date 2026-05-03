@@ -21,6 +21,12 @@
 - **Fix:** **`showStaffSelectorShell`** + **`loadPickerCatalog`** tied to **`canAccess && !inDemoMode && isSupabaseConfigured()`**; **`Collapsible`** (**closed by default**) for Advanced UUIDs; safe **`Mode:`** diagnostic line (no secrets).
 - **No** SQL/RLS/storage/ParentView/release/notifications/OCR/PDF/Edge/`createAiParentReportVersion`/release/`real_ai` click logic changes.
 
+## Checkpoint update (AI parent report demo preview mode conflict — 2026-05-03)
+
+- **Cause:** **`DemoRoleSwitcher`** used **`useOutletContext()`** but renders **next to** `<Outlet />`, so context was **always empty** → badge defaulted to **Teacher** while **`Sidebar`** showed real **HQ Admin** — misleading “demo vs staff” state. **`getSelectedDemoRole`** remains **URL-only** (no localStorage); **`Sidebar.withDemoRole`** can append **`demoRole`** while navigating if the current URL already had **`demoRole`**.
+- **Fix:** **`DemoRoleSwitcher layoutRole={role}`** from **`AppLayout`**; **`AiParentReports`** uses **`useSearchParams`** for **`inDemoMode`**, **Diagnostics** (`demo preview` / `real staff` / `no-session`), **Exit demo preview** strips **`demoRole`** from URL.
+- **No** SQL/RLS/storage/ParentView/notifications/OCR/PDF/Edge/persistence/release/`real_ai` logic changes.
+
 ## Checkpoint update (AI parent report manual QA unblock — create shell pickers, 2026-05-03)
 
 - **`AiParentReports.jsx`** — **branch/class/student** dropdowns for signed-in non-demo staff via **`getBranches` / `getClasses` / `getStudents`** (RLS). **Doc:** **`docs/real-ai-staff-draft-generation-manual-qa-unblock-checkpoint.md`**.

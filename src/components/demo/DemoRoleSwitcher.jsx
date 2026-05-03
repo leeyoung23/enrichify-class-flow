@@ -1,5 +1,5 @@
 import React from 'react';
-import { useNavigate, useOutletContext } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
 import { Card } from '@/components/ui/card';
@@ -13,10 +13,14 @@ const ROLE_LABELS = {
   student: 'Student',
 };
 
-export default function DemoRoleSwitcher() {
+/**
+ * `layoutRole` must come from AppLayout (resolved staff/demo role). This component is rendered *beside*
+ * `<Outlet />`, so `useOutletContext()` is always empty — without `layoutRole`, the badge wrongly defaulted to Teacher.
+ */
+export default function DemoRoleSwitcher({ layoutRole = null }) {
   const navigate = useNavigate();
-  const outletContext = useOutletContext?.() || {};
-  const currentRole = getSelectedDemoRole() || outletContext.user?.role || 'teacher';
+  const urlDemoRole = getSelectedDemoRole();
+  const currentRole = urlDemoRole || layoutRole || 'teacher';
   const roles = getAvailableDemoRoles();
 
   const handleChange = (role) => {
