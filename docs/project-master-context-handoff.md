@@ -1,5 +1,9 @@
 # Project Master Context Handoff
 
+## Checkpoint update (notification system SQL/RLS review plan — planning only, 2026-05-03)
+
+- **Doc:** **`docs/notification-system-sql-rls-review-plan.md`** — safety-critical output layer; conceptual tables (**notification_events**, **notifications**, **notification_recipients**, **notification_delivery_attempts**, **notification_preferences**, optional **notification_templates**); event/notification/recipient rules; delivery logging constraints; preferences; **RLS** by role; trigger-specific access implications; safety gates + **idempotency**; email vs in-app sequencing; **§17** prompts (**A** draft DDL foundation vs **B** park + PDF QA / Parent Communication polish). **No** `supabase/sql` changes in this milestone. Cross-ref **`docs/notification-email-automation-trigger-matrix-plan.md`**, **`docs/mobile-first-qa-checkpoint.md`**, **`docs/rls-test-checklist.md`**.
+
 ## Checkpoint update (notification & email automation trigger matrix — planning only, 2026-05-03)
 
 - **Doc:** **`docs/notification-email-automation-trigger-matrix-plan.md`** — product purpose, current state, channel comparison (**in-app + email first**), **trigger matrix** (parent + staff rows), safety sections (attendance, reports, homework, announcements, fees, staff), conceptual data model (**no SQL**), email provider strategy (**secrets server-side only**), implementation sequence (**B** SQL/RLS review → **C** in-app prototype → **D/E** parent triggers → **F** email), **what not to do yet**, copy-paste prompt §16 for **notification SQL/RLS review**. **No** app UI, **no** runtime logic, **no** provider keys. Cross-refs: **`docs/mobile-first-qa-checkpoint.md`**, **`docs/rls-test-checklist.md`**, **`docs/announcements-parent-communication-final-qa-checkpoint.md`**, **`docs/ai-parent-report-mvp-final-qa-checkpoint.md`**.

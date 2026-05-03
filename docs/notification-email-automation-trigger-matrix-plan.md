@@ -3,7 +3,7 @@
 Date: 2026-05-03  
 Type: **planning only** — defines future parent/staff notification triggers, safety rules, review gates, message boundaries, and implementation order. **No** app UI changes, **no** runtime logic, **no** services, **no** SQL/RLS, **no** email or notification sending in this milestone.
 
-**Related:** `docs/project-master-context-handoff.md`, `docs/ai-parent-report-mvp-final-qa-checkpoint.md`, `docs/released-ai-parent-report-export-strategy-plan.md`, `docs/announcements-parent-communication-final-qa-checkpoint.md`, `docs/rls-test-checklist.md`, `docs/mobile-first-qa-checkpoint.md`
+**Related:** `docs/notification-system-sql-rls-review-plan.md` (detailed **SQL/RLS** planning), `docs/project-master-context-handoff.md`, `docs/ai-parent-report-mvp-final-qa-checkpoint.md`, `docs/released-ai-parent-report-export-strategy-plan.md`, `docs/announcements-parent-communication-final-qa-checkpoint.md`, `docs/rls-test-checklist.md`, `docs/mobile-first-qa-checkpoint.md`
 
 ---
 
@@ -149,7 +149,7 @@ Conceptual tables (names illustrative):
 | **notification_preferences** | Per-user channel toggles, quiet hours (future). |
 | **notification_delivery_attempts** | Channel (email/push), provider message id, status, error class — **no** raw secrets or full body in logs by default. |
 
-RLS must enforce **tenant/branch/family** scoping — **planning follow-up**: dedicated SQL/RLS review milestone.
+RLS must enforce **tenant/branch/family** scoping — **detailed follow-up**: **`docs/notification-system-sql-rls-review-plan.md`** (table purposes, key fields, RLS roles, idempotency, trigger-specific implications).
 
 ---
 
@@ -208,7 +208,9 @@ RLS must enforce **tenant/branch/family** scoping — **planning follow-up**: de
 
 ## 16. Next implementation prompt (copy-paste)
 
-Use when starting the **notification system SQL/RLS review** milestone:
+The **notification SQL/RLS planning** deliverable is **`docs/notification-system-sql-rls-review-plan.md`**. Use **§17 Option A** there for the **draft DDL** milestone, or **§17 Option B** to park work.
+
+Legacy one-shot prompt (subset of the above doc):
 
 ```text
 Notification system SQL/RLS review planning only — no UI, no Edge email sender yet.

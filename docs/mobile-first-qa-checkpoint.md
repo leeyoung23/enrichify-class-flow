@@ -1,5 +1,9 @@
 # Mobile-first QA checkpoint
 
+## Checkpoint update (notification SQL/RLS review plan — planning only, 2026-05-03)
+
+- **Reference:** **`docs/notification-system-sql-rls-review-plan.md`** — when notification inbox/UI ships, re-QA **~390px** for recipient-scoped lists (no cross-child leakage), read/dismiss, and preference surfaces; **no** runtime changes in this milestone.
+
 ## Checkpoint update (notification & email automation — planning only, 2026-05-03)
 
 - **Reference:** **`docs/notification-email-automation-trigger-matrix-plan.md`** — when notification/in-app/email UI ships, re-QA **~390px** for parent/staff notification surfaces, preference toggles, and **short non-leaky** message previews; **no** runtime changes in this milestone.

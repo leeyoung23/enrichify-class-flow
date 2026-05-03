@@ -1,5 +1,9 @@
 # RLS Test Checklist
 
+## Checkpoint update (notification system SQL/RLS review plan — planning only, 2026-05-03)
+
+- **Planning:** **`docs/notification-system-sql-rls-review-plan.md`** — §9–§12 RLS, gates, idempotency. When DDL lands: JWT-only smokes for parent **cannot** read other families’ `notification_recipients`; drafts staff-only; **no** service-role browser; cross-feature parity with ParentView scope. **No** SQL files added by this doc milestone.
+
 ## Checkpoint update (notification & email automation — planning only, 2026-05-03)
 
 - **Planning:** **`docs/notification-email-automation-trigger-matrix-plan.md`** §11 (conceptual tables), §14 (**B** SQL/RLS review first). When notification DDL lands: **JWT-scoped** reads/writes per family/branch; **no** parent notification rows visible across families; **no** service-role browser usage; dedicated smokes **not** required until **`src/`** + SQL exist. **No** DDL in this milestone.
