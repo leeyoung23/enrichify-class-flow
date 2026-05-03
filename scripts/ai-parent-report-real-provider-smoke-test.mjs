@@ -22,6 +22,10 @@ import {
   generateAiParentReportDraft,
   REQUIRED_STRUCTURED_SECTION_KEYS,
 } from "../supabase/functions/_shared/aiParentReportProviderAdapter.ts";
+import {
+  getParentReportProviderEnv,
+  PARENT_REPORT_OPENAI_DEFAULT_BASE_URL,
+} from "../supabase/functions/_shared/aiParentReportRealProviderHttp.ts";
 
 const FAKE_REPORT_ID = "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee";
 
@@ -71,6 +75,20 @@ async function run() {
     process.exit(0);
   }
 
+  const envSnap = getParentReportProviderEnv();
+  print(
+    "INFO",
+    "env: AI_PARENT_REPORT_PROVIDER_API_KEY is set, AI_PARENT_REPORT_PROVIDER_MODEL is set (values not shown)"
+  );
+  const baseUrlNorm = envSnap.baseUrl.replace(/\/$/, "");
+  const defaultNorm = PARENT_REPORT_OPENAI_DEFAULT_BASE_URL.replace(/\/$/, "");
+  print(
+    "INFO",
+    baseUrlNorm === defaultNorm
+      ? "BASE_URL: default OpenAI-compatible v1 base (api.openai.com)"
+      : "BASE_URL: custom (hostname not printed — verify AI_PARENT_REPORT_PROVIDER_BASE_URL if requests fail)"
+  );
+
   const result = await generateAiParentReportDraft({
     reportId: FAKE_REPORT_ID,
     providerMode: AI_PARENT_REPORT_PROVIDER_MODES.REAL,
@@ -78,7 +96,8 @@ async function run() {
   });
 
   if (result.error) {
-    print("FAIL", `provider returned error: ${result.error.code} — ${result.error.message}`);
+    print("FAIL", `code=${result.error.code}`);
+    print("FAIL", result.error.message);
     process.exit(1);
   }
 

@@ -34,7 +34,16 @@ function httpStatusForError(code: string | undefined): number {
   if (
     code === "provider_timeout" ||
     code === "provider_request_failed" ||
-    code === "provider_response_invalid"
+    code === "provider_response_invalid" ||
+    code === "provider_network_error" ||
+    code === "provider_auth_failed" ||
+    code === "provider_permission_denied" ||
+    code === "provider_quota_exceeded" ||
+    code === "provider_rate_limited" ||
+    code === "provider_model_not_found" ||
+    code === "provider_not_found" ||
+    code === "provider_bad_request" ||
+    code === "provider_server_error"
   ) {
     return 502;
   }

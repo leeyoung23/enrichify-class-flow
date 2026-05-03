@@ -65,6 +65,24 @@ If API key or model is missing, the script prints **which names** are missing an
 
 Uses **`assertStructuredSectionsShapeForTests`** and **`REQUIRED_STRUCTURED_SECTION_KEYS`** from `_shared` (11 keys, non-empty strings). Truncated sample text may be printed for one section; not the full JSON body.
 
+## Troubleshooting (FAIL — no secrets in logs)
+
+The smoke prints **error `code` + a static, safe `message` only** (no API key prefixes, no Authorization header, no raw provider JSON).
+
+Before the request, it prints whether **`AI_PARENT_REPORT_PROVIDER_API_KEY`** / **`AI_PARENT_REPORT_PROVIDER_MODEL`** are set (yes/no only) and whether **`AI_PARENT_REPORT_PROVIDER_BASE_URL`** is the **default** OpenAI-compatible base or a **custom** endpoint (hostname is not printed).
+
+| Error `code` (typical) | Likely cause |
+|------------------------|--------------|
+| `provider_auth_failed` | Invalid or revoked API key, or wrong key type — use a **developer API key** from the provider dashboard (e.g. OpenAI **api-keys**), **not** a ChatGPT account password, passkey, or PIN. |
+| `provider_permission_denied` | Key valid but org/project forbids this call. |
+| `provider_quota_exceeded` | Billing / quota exhausted on the provider account. |
+| `provider_rate_limited` | Too many requests; retry later. |
+| `provider_model_not_found` | Wrong **`AI_PARENT_REPORT_PROVIDER_MODEL`** or model not enabled for the account. |
+| `provider_not_found` | Wrong path or base URL — check optional **`AI_PARENT_REPORT_PROVIDER_BASE_URL`**. |
+| `provider_network_error` | DNS/TLS/offline — check network and custom base URL. |
+| `provider_server_error` | Provider outage — retry later. |
+| `provider_request_failed` | Other non-2xx (see HTTP status in message). |
+
 ## Related scripts
 
 - **`test:supabase:ai-parent-report:edge-real-provider`** — broader adapter checks (no-key behaviour, fake, unsafe input) plus optional real call.

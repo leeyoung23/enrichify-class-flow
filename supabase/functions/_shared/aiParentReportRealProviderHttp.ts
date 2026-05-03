@@ -6,10 +6,12 @@
 
 import { REQUIRED_STRUCTURED_SECTION_KEYS } from "./aiParentReportSectionKeys.ts";
 
-const DEFAULT_BASE_URL = "https://api.openai.com/v1";
+export const PARENT_REPORT_OPENAI_DEFAULT_BASE_URL = "https://api.openai.com/v1";
+const DEFAULT_BASE_URL = PARENT_REPORT_OPENAI_DEFAULT_BASE_URL;
 const CHAT_PATH = "/chat/completions";
 const REQUEST_TIMEOUT_MS = 60_000;
 const MAX_INPUT_SERIALIZED_CHARS = 24_000;
+const MAX_ERROR_BODY_READ_CHARS = 4096;
 
 function getEnv(key: string): string | undefined {
   // Deno (Edge)
@@ -37,6 +39,90 @@ export function getParentReportProviderEnv(): {
   const baseRaw = getEnv("AI_PARENT_REPORT_PROVIDER_BASE_URL")?.trim();
   const baseUrl = (baseRaw || DEFAULT_BASE_URL).replace(/\/$/, "");
   return { apiKey, model, baseUrl };
+}
+
+function classifyOpenAiStyleError(
+  httpStatus: number,
+  providerCode: string | undefined
+): string {
+  const code = (providerCode || "").toLowerCase();
+  if (httpStatus === 401 || code === "invalid_api_key" || code === "incorrect_api_key") {
+    return "provider_auth_failed";
+  }
+  if (httpStatus === 403) return "provider_permission_denied";
+  if (code === "insufficient_quota" || code === "billing_hard_limit_reached") {
+    return "provider_quota_exceeded";
+  }
+  if (code === "rate_limit_exceeded" || code === "engine_overloaded") {
+    return "provider_rate_limited";
+  }
+  if (code === "model_not_found") {
+    return "provider_model_not_found";
+  }
+  if (httpStatus === 404) return "provider_not_found";
+  if (httpStatus === 429) return "provider_rate_limited";
+  if (httpStatus === 400) return "provider_bad_request";
+  if (httpStatus >= 500) return "provider_server_error";
+  return "provider_request_failed";
+}
+
+/**
+ * Safe, static messages only — no API error body text (may echo user or key metadata).
+ * Optional providerCode in diagnostics line is a known OpenAI-style code string, not a secret.
+ */
+function safeMessageForClassifiedError(
+  classified: string,
+  httpStatus: number,
+  providerCode: string | undefined
+): string {
+  const codeNote =
+    providerCode && typeof providerCode === "string" && providerCode.length > 0
+      ? ` (provider code: ${providerCode})`
+      : "";
+  const http = `HTTP ${httpStatus}`;
+
+  switch (classified) {
+    case "provider_auth_failed":
+      return `${http}${codeNote}: API key rejected or missing permissions. Use an API key from your AI platform's developer/API keys page (e.g. OpenAI: platform.openai.com/api-keys). This is not the same as a ChatGPT web login, passkey, or PIN.`;
+    case "provider_permission_denied":
+      return `${http}${codeNote}: Access denied for this API key or organization.`;
+    case "provider_quota_exceeded":
+      return `${http}${codeNote}: Billing or quota limit reached on the provider account.`;
+    case "provider_rate_limited":
+      return `${http}${codeNote}: Rate limited — retry later or reduce request frequency.`;
+    case "provider_model_not_found":
+      return `${http}${codeNote}: Model id may be wrong or not enabled for this account. Check AI_PARENT_REPORT_PROVIDER_MODEL matches a model your provider exposes.`;
+    case "provider_not_found":
+      return `${http}: Endpoint or resource not found — if using a custom base URL, verify AI_PARENT_REPORT_PROVIDER_BASE_URL.`;
+    case "provider_bad_request":
+      return `${http}${codeNote}: Bad request to the provider — check model name and request shape.`;
+    case "provider_server_error":
+      return `${http}: Provider server error — retry later.`;
+    default:
+      return `${http}${codeNote}: Provider returned an error (see code ${classified}).`;
+  }
+}
+
+async function failureFromNonOkResponse(response: Response): Promise<RealProviderFailure> {
+  const httpStatus = response.status;
+  let providerCode: string | undefined;
+  try {
+    const text = (await response.text()).slice(0, MAX_ERROR_BODY_READ_CHARS);
+    const parsed = JSON.parse(text) as { error?: { code?: string; type?: string } };
+    if (parsed?.error && typeof parsed.error === "object" && typeof parsed.error.code === "string") {
+      providerCode = parsed.error.code;
+    }
+  } catch {
+    /* ignore non-JSON */
+  }
+  const classified = classifyOpenAiStyleError(httpStatus, providerCode);
+  return {
+    error: {
+      code: classified,
+      message: safeMessageForClassifiedError(classified, httpStatus, providerCode),
+    },
+    externalProviderCall: true,
+  };
 }
 
 function buildSystemPrompt(): string {
@@ -165,12 +251,20 @@ export async function callOpenAiCompatibleParentReport(
   } catch (e) {
     clearTimeout(t);
     const aborted = e instanceof Error && e.name === "AbortError";
+    if (aborted) {
+      return {
+        error: {
+          code: "provider_timeout",
+          message: "The AI provider request timed out.",
+        },
+        externalProviderCall: false,
+      };
+    }
     return {
       error: {
-        code: aborted ? "provider_timeout" : "provider_request_failed",
-        message: aborted
-          ? "The AI provider request timed out."
-          : "The AI provider request could not be completed.",
+        code: "provider_network_error",
+        message:
+          "Could not reach the provider (network/DNS/TLS). Check connectivity and AI_PARENT_REPORT_PROVIDER_BASE_URL if using a custom gateway.",
       },
       externalProviderCall: false,
     };
@@ -179,13 +273,7 @@ export async function callOpenAiCompatibleParentReport(
   }
 
   if (!response.ok) {
-    return {
-      error: {
-        code: "provider_request_failed",
-        message: "The AI provider returned an error response.",
-      },
-      externalProviderCall: true,
-    };
+    return failureFromNonOkResponse(response);
   }
 
   let body: unknown;

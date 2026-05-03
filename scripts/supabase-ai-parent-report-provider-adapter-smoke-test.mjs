@@ -29,6 +29,38 @@ function assert(condition, passLabel, failLabel) {
   return false;
 }
 
+function stashProviderEnv() {
+  return {
+    AI_PARENT_REPORT_PROVIDER_API_KEY: process.env.AI_PARENT_REPORT_PROVIDER_API_KEY,
+    AI_PARENT_REPORT_PROVIDER_MODEL: process.env.AI_PARENT_REPORT_PROVIDER_MODEL,
+    AI_PARENT_REPORT_PROVIDER_BASE_URL: process.env.AI_PARENT_REPORT_PROVIDER_BASE_URL,
+  };
+}
+
+function clearProviderEnv() {
+  delete process.env.AI_PARENT_REPORT_PROVIDER_API_KEY;
+  delete process.env.AI_PARENT_REPORT_PROVIDER_MODEL;
+  delete process.env.AI_PARENT_REPORT_PROVIDER_BASE_URL;
+}
+
+function restoreProviderEnv(saved) {
+  if (saved.AI_PARENT_REPORT_PROVIDER_API_KEY !== undefined) {
+    process.env.AI_PARENT_REPORT_PROVIDER_API_KEY = saved.AI_PARENT_REPORT_PROVIDER_API_KEY;
+  } else {
+    delete process.env.AI_PARENT_REPORT_PROVIDER_API_KEY;
+  }
+  if (saved.AI_PARENT_REPORT_PROVIDER_MODEL !== undefined) {
+    process.env.AI_PARENT_REPORT_PROVIDER_MODEL = saved.AI_PARENT_REPORT_PROVIDER_MODEL;
+  } else {
+    delete process.env.AI_PARENT_REPORT_PROVIDER_MODEL;
+  }
+  if (saved.AI_PARENT_REPORT_PROVIDER_BASE_URL !== undefined) {
+    process.env.AI_PARENT_REPORT_PROVIDER_BASE_URL = saved.AI_PARENT_REPORT_PROVIDER_BASE_URL;
+  } else {
+    delete process.env.AI_PARENT_REPORT_PROVIDER_BASE_URL;
+  }
+}
+
 async function optionalIntegrationChecks() {
   const supabaseUrl = process.env.VITE_SUPABASE_URL;
   const supabaseAnonKey = process.env.VITE_SUPABASE_ANON_KEY;
@@ -101,11 +133,18 @@ async function run() {
       "disabled mode unexpected result"
     ) || failed;
 
-  const realMode = await generateAiParentReportDraft({
-    reportId: FAKE_REPORT_ID,
-    providerMode: AI_PARENT_REPORT_PROVIDER_MODES.REAL,
-    input: {},
-  });
+  const savedRealEnv = stashProviderEnv();
+  clearProviderEnv();
+  let realMode;
+  try {
+    realMode = await generateAiParentReportDraft({
+      reportId: FAKE_REPORT_ID,
+      providerMode: AI_PARENT_REPORT_PROVIDER_MODES.REAL,
+      input: {},
+    });
+  } finally {
+    restoreProviderEnv(savedRealEnv);
+  }
   failed =
     !assert(
       Boolean(realMode.error?.code === "provider_not_configured"),
