@@ -1824,3 +1824,18 @@ Handoff status: complete for continuity. Use this file as the primary context an
   - no parent/student access change,
   - no service-role usage,
   - audit writes remain non-blocking.
+
+### Class memories supervisor approval smoke fixture fix note (2026-05-04)
+
+- Remaining warning diagnosis completed for `test:supabase:class-memories:approval`.
+- Root cause:
+  - smoke script selected teacher-visible latest class without forcing supervisor-branch alignment,
+  - selected class could be outside supervisor branch scope,
+  - supervisor approve/reject/hide calls were then correctly blocked by branch-scoped class memories update policy.
+- Fix applied (test-only, minimal):
+  - `scripts/supabase-class-memories-approval-smoke-test.mjs` now resolves supervisor branch first and constrains teacher fixture class lookup to that branch.
+  - script now fails fast if selected class branch mismatches supervisor branch.
+- Boundaries preserved:
+  - no SQL/RLS changes,
+  - no runtime product UI/service behavior changes,
+  - no parent/student visibility widening.

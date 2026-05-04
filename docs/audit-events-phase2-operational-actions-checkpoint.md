@@ -116,6 +116,28 @@ Safety boundaries preserved:
 - no blocking behavior introduced,
 - metadata remains minimal and non-sensitive.
 
+## Class memories supervisor-warning diagnosis (2026-05-04)
+
+Root cause:
+
+- The class-memories approval smoke selected teacher-visible latest class without enforcing supervisor branch alignment.
+- In linked fixture data, teacher-visible latest class branch can differ from `supervisor.demo@example.test` branch.
+- Supervisor update lifecycle operations (`approveClassMemory`, `rejectClassMemory`, `hideClassMemory`) are branch-scoped by `class_memories_update_scope`; cross-branch rows are not updatable, producing null-row/blocked outcomes.
+
+Smallest safe fix applied:
+
+- Updated `scripts/supabase-class-memories-approval-smoke-test.mjs` fixture discovery:
+  - resolve supervisor profile branch scope first,
+  - constrain teacher class selection to that branch,
+  - fail fast when selected class branch mismatches supervisor branch.
+
+Why this fix is safe:
+
+- no SQL/RLS changes,
+- no production UI/service behavior changes,
+- no parent/student visibility widening,
+- only test fixture targeting was tightened for deterministic branch-supervisor policy validation.
+
 ## Next recommended milestone
 
 - Add compact read/report tooling for authorized staff over `audit_events`, then run a targeted review of action naming consistency before broader operational coverage.

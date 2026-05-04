@@ -68,23 +68,72 @@ async function run() {
   let memoryTwo = { id: null, path: null, classId: null, studentId: null };
   let targetClass = null;
   let targetStudent = null;
+  let supervisorBranchId = null;
 
   const fakeImage = new Blob(
     [Uint8Array.from([137,80,78,71,13,10,26,10,0,0,0,13,73,72,68,82,0,0,0,1,0,0,0,1,8,2,0,0,0,144,119,83,222,0,0,0,12,73,68,65,84,8,153,99,248,15,4,0,9,251,3,253,160,219,106,202,0,0,0,0,73,69,78,68,174,66,96,130])],
     { type: "image/png" }
   );
 
+  const supervisorScopeSignIn = await signInRole(supervisorUser, { signInWithEmailPassword, signOut });
+  if (!supervisorScopeSignIn.ok) {
+    printResult("WARNING", "Branch Supervisor: unable to resolve branch scope for fixture selection");
+    failureCount += 1;
+  } else {
+    const supervisorAuthRead = await supabase.auth.getUser();
+    const supervisorProfileId = supervisorAuthRead?.data?.user?.id || null;
+    const supervisorProfile = await supabase
+      .from("profiles")
+      .select("id,role,branch_id,is_active")
+      .eq("id", supervisorProfileId)
+      .maybeSingle();
+    if (
+      !supervisorProfileId
+      || supervisorProfile.error
+      || !supervisorProfile.data?.id
+      || supervisorProfile.data.role !== "branch_supervisor"
+      || !supervisorProfile.data.branch_id
+    ) {
+      printResult(
+        "WARNING",
+        `Branch Supervisor: invalid profile scope (${supervisorProfile.error?.message || "missing role/branch"})`
+      );
+      failureCount += 1;
+    } else {
+      supervisorBranchId = supervisorProfile.data.branch_id;
+      printResult("PASS", `Branch Supervisor: using branch scope ${supervisorBranchId}`);
+    }
+  }
+  await signOut();
+
   const teacherSignIn = await signInRole(teacherUser, { signInWithEmailPassword, signOut });
   if (!teacherSignIn.ok) process.exit(1);
 
-  const classLookup = await supabase
-    .from("classes")
-    .select("id,branch_id,name")
-    .order("created_at", { ascending: false })
-    .limit(1)
-    .maybeSingle();
+  let classLookup = null;
+  if (supervisorBranchId) {
+    classLookup = await supabase
+      .from("classes")
+      .select("id,branch_id,name")
+      .eq("branch_id", supervisorBranchId)
+      .order("created_at", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+  } else {
+    classLookup = await supabase
+      .from("classes")
+      .select("id,branch_id,name")
+      .order("created_at", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+  }
   if (classLookup.error || !classLookup.data) {
     printResult("WARNING", `Teacher: unable to resolve visible class (${classLookup.error?.message || "unknown"})`);
+    failureCount += 1;
+  } else if (supervisorBranchId && classLookup.data.branch_id !== supervisorBranchId) {
+    printResult(
+      "WARNING",
+      `Teacher: resolved class branch ${classLookup.data.branch_id} does not match supervisor branch ${supervisorBranchId}`
+    );
     failureCount += 1;
   } else {
     targetClass = classLookup.data;
