@@ -1718,3 +1718,23 @@ Handoff status: complete for continuity. Use this file as the primary context an
   - no AI Parent Reports/ParentView behavior changes in this checkpoint.
 - Environment note:
   - intermittent Supabase auth/rate-limit failures in smoke runs are tracked as environment instability unless deterministic reproduction appears.
+
+### Security, audit, and session governance foundation planning note (2026-05-04)
+
+- New planning checkpoint doc:
+  - `docs/security-audit-session-governance-foundation-plan.md`
+- Scope:
+  - planning-only foundation for session governance, audit logging, data protection, role onboarding/access review, notification safety prerequisites, and production/staging readiness.
+- Explicit guardrails preserved in this checkpoint:
+  - no runtime code changes,
+  - no SQL/RLS changes,
+  - no auth config changes,
+  - no notification/email implementation,
+  - no Edge/provider/PDF/OCR work,
+  - no product UI changes.
+- Recommended implementation sequence captured:
+  - session policy + audit model first,
+  - notification/email safety prerequisites before automation,
+  - advanced channel/analytics work deferred to production beta.
+- Risk posture summary captured:
+  - high-risk focus on session misuse, audit gaps, and cross-family data leakage boundaries.
