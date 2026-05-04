@@ -60,8 +60,8 @@ function withDemoRole(path, selectedDemoRole) {
 export default function Sidebar({ user, collapsed, onToggle }) {
   const location = useLocation();
   const selectedDemoRole = getSelectedDemoRole();
-  const role = selectedDemoRole || normalizeRole(user?.role) || 'teacher';
-  const items = getRoleNavigation(role);
+  const role = selectedDemoRole || normalizeRole(user?.role) || null;
+  const items = role ? getRoleNavigation(role) : [];
 
   return (
     <aside className={cn(
@@ -75,12 +75,21 @@ export default function Sidebar({ user, collapsed, onToggle }) {
         {!collapsed && (
           <div className="overflow-hidden">
             <h1 className="font-bold text-base tracking-tight truncate">EduCentre</h1>
-            <p className="text-[11px] text-muted-foreground truncate">{ROLE_TITLES[role] || role.replace('_', ' ')}</p>
+            <p className="text-[11px] text-muted-foreground truncate">
+              {role ? ROLE_TITLES[role] || role.replace('_', ' ') : 'Profile role pending'}
+            </p>
           </div>
         )}
       </div>
 
       <nav className="flex-1 py-4 px-3 space-y-1 overflow-y-auto">
+        {items.length === 0 ? (
+          <p className="px-3 text-xs text-muted-foreground leading-relaxed">
+            {user?.id
+              ? 'Navigation will appear when your account profile has a valid role. Contact support if this persists.'
+              : 'Sign in to see navigation.'}
+          </p>
+        ) : null}
         {items.map((item) => {
           const itemPath = item.path.split('#')[0];
           const isActive = location.pathname === itemPath;

@@ -211,6 +211,25 @@ export default function AppLayout() {
     );
   }
 
+  const hasResolvedIdentity = Boolean(appUser?.id || fallbackUser?.id);
+  const needsRoleAssignment = Boolean(
+    !isDemoActive
+      && !role
+      && hasResolvedIdentity
+  );
+
+  if (needsRoleAssignment) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center p-6">
+        <EmptyState
+          icon={ShieldAlert}
+          title="Profile role required"
+          description="Your account is signed in, but no application role is on file. Contact an administrator or use Auth Preview to sign out and try again."
+        />
+      </div>
+    );
+  }
+
   if (role && !isRouteAllowed(role, location.pathname)) {
     return (
       <div className="min-h-screen bg-background">

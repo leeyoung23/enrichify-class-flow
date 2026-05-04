@@ -89,7 +89,12 @@ export const ROLE_NAVIGATION = {
 };
 
 export function getRole(user) {
-  const role = String(user?.role || ROLES.TEACHER).trim().toLowerCase().replace(/\s+/g, '_');
+  if (user == null) return null;
+  const raw = user.role;
+  if (raw == null) return null;
+  const trimmed = String(raw).trim();
+  if (!trimmed) return null;
+  const role = trimmed.toLowerCase().replace(/\s+/g, '_');
   if (role === 'admin' || role === 'hq' || role === 'hqadmin') return ROLES.HQ_ADMIN;
   if (role === 'branchsupervisor') return ROLES.BRANCH_SUPERVISOR;
   return role;
@@ -118,11 +123,13 @@ export function isTeacherRole(user) {
 
 export function getDashboardLabel(user) {
   const role = getRole(user);
+  if (!role) return 'Dashboard';
   if (role === ROLES.HQ_ADMIN) return 'HQ Dashboard';
   if (role === ROLES.BRANCH_SUPERVISOR) return 'Branch Dashboard';
   if (role === ROLES.PARENT) return 'Parent Dashboard';
   if (role === ROLES.STUDENT) return 'Learning Portal';
-  return 'Teacher Dashboard';
+  if (role === ROLES.TEACHER) return 'Teacher Dashboard';
+  return 'Dashboard';
 }
 
 export function getAllowedRoutes(role) {
@@ -140,6 +147,7 @@ export function isRouteAllowed(role, pathname) {
 
 export function canAccessStudentRecord(user, student, links = []) {
   const role = getRole(user);
+  if (!role) return false;
   if (role === ROLES.HQ_ADMIN) return true;
   if (role === ROLES.BRANCH_SUPERVISOR) return student?.branch_id === user?.branch_id;
   if (role === ROLES.TEACHER) return Array.isArray(user?.assigned_class_ids) && user.assigned_class_ids.includes(student?.class_id);

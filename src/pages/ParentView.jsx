@@ -1,9 +1,10 @@
 import React, { useMemo, useState, useEffect, useCallback } from 'react';
+import { useOutletContext } from 'react-router-dom';
 import {
   buildReleasedReportPdfInputFromParentViewContext,
   renderReleasedReportPdfHtml,
 } from '@/services/aiParentReportPdfTemplate';
-import { getCurrentUser, getSelectedDemoRole } from '@/services/authService';
+import { getCurrentUser, getSelectedDemoRole, normalizeRole } from '@/services/authService';
 import {
   getStudentById,
   getClassById,
@@ -1546,13 +1547,15 @@ function ParentClassMemoriesSection({ className, latestMemory, historyMemories, 
 }
 
 export default function ParentView() {
-  const { user: supabaseUser } = useSupabaseAuthState();
+  const outletContext = useOutletContext();
+  const outletUser = outletContext?.user ?? null;
+  const { appUser: supabaseAppUser, user: supabaseSessionUser } = useSupabaseAuthState();
   const urlParams = new URLSearchParams(window.location.search);
   const studentId = urlParams.get('student');
   const previewRole = urlParams.get('demoRole');
   const isDemoStudentPreview = previewRole === 'student';
   const isDemoMode = Boolean(getSelectedDemoRole());
-  const hasSupabaseSession = Boolean(supabaseUser?.id);
+  const hasSupabaseSession = Boolean(supabaseSessionUser?.id);
   const ALLOWED_RECEIPT_TYPES = new Set(['image/png', 'image/jpeg', 'application/pdf', 'text/plain']);
   const MAX_RECEIPT_FILE_SIZE_BYTES = 5 * 1024 * 1024;
 
@@ -1626,10 +1629,28 @@ export default function ParentView() {
   }, [parentHomeworkTasks, parentHomeworkSubmissions, parentHomeworkFeedbackBySubmissionId, cls?.branch_id, cls?.id, student?.id]);
 
   useEffect(() => {
-    if (!studentId) { setNotFound(true); setLoading(false); return; }
+    if (!studentId) {
+      setNotFound(true);
+      setLoading(false);
+      return;
+    }
+    let cancelled = false;
     (async () => {
       try {
-        const currentUser = await getCurrentUser();
+        let currentUser;
+        if (isDemoMode) {
+          currentUser = await getCurrentUser();
+        } else if (outletUser) {
+          currentUser = outletUser;
+        } else if (supabaseAppUser) {
+          currentUser = {
+            ...supabaseAppUser,
+            role: normalizeRole(supabaseAppUser.role) || supabaseAppUser.role,
+          };
+        } else {
+          currentUser = await getCurrentUser();
+        }
+        if (cancelled) return;
         setViewer(currentUser);
         let targetStudentId;
         if (currentUser?.role === ROLES.PARENT) {
@@ -1647,7 +1668,12 @@ export default function ParentView() {
           targetStudentId = studentId;
         }
         const s = await getStudentById(currentUser, targetStudentId);
-        if (!s || !canAccessStudentRecord(currentUser, s, [{ guardian_parent_id: currentUser?.guardian_parent_id, student_id: s.id }])) {
+        if (
+          !s
+          || !canAccessStudentRecord(currentUser, s, [
+            { guardian_parent_id: currentUser?.guardian_parent_id, student_id: s.id },
+          ])
+        ) {
           setNotFound(true);
           setLoading(false);
           return;
@@ -1658,20 +1684,25 @@ export default function ParentView() {
           listAttendanceRecords(currentUser, { student_id: s.id }),
           listParentUpdatesByStudent(currentUser, s.id),
         ]);
+        if (cancelled) return;
         setCls(classRecord || null);
         setAttendance(att || []);
         setUpdates((pu || [])
           .filter((item) => ['approved', 'shared'].includes(item.status))
           .sort((a, b) => new Date(b.created_date) - new Date(a.created_date)));
         const fee = await getStudentFeeStatus(currentUser, s.id);
+        if (cancelled) return;
         setFeeStatus(fee || null);
       } catch {
-        setNotFound(true);
+        if (!cancelled) setNotFound(true);
       } finally {
-        setLoading(false);
+        if (!cancelled) setLoading(false);
       }
     })();
-  }, [studentId, isDemoMode]);
+    return () => {
+      cancelled = true;
+    };
+  }, [studentId, isDemoMode, outletUser?.id, outletUser?.role, supabaseAppUser?.id, supabaseAppUser?.role]);
 
   useEffect(() => {
     let cancelled = false;
@@ -2572,7 +2603,7 @@ export default function ParentView() {
           <p className="text-muted-foreground text-sm">
             {isDemoMode
               ? 'This demo parent view could not be opened for the selected student.'
-              : 'This parent view could not be opened for the selected child. Check that the parent account is linked to this student.'}
+              : 'This parent view could not be opened. Check that the parent account is linked to this student.'}
           </p>
         </div>
       </div>
