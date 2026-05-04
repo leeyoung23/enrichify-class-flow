@@ -1,5 +1,5 @@
 import React, { useMemo, useState, useEffect, useCallback } from 'react';
-import { useOutletContext } from 'react-router-dom';
+import { useOutletContext, useLocation } from 'react-router-dom';
 import {
   buildReleasedReportPdfInputFromParentViewContext,
   renderReleasedReportPdfHtml,
@@ -83,6 +83,11 @@ const ALLOWED_HOMEWORK_UPLOAD_TYPES = new Set([
   'application/pdf',
 ]);
 const MAX_HOMEWORK_UPLOAD_BYTES = 5 * 1024 * 1024;
+
+/** Legacy hash bookmarks (e.g. old “Parent Reports” target) → current section id */
+const PARENT_VIEW_HASH_ALIASES = {
+  'latest-report': 'parent-progress-reports',
+};
 
 function formatReleasedDateLabel(value) {
   if (!value) return '';
@@ -1246,7 +1251,7 @@ function StudentPortalSummary({ attendance, updates }) {
   const progressRate = attendance.length ? Math.round((attendance.filter((item) => item.status === 'present').length / attendance.length) * 100) : 0;
 
   return (
-    <div className="space-y-4">
+    <div id="student-learning-portal" className="space-y-4">
       <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
         <Card><CardContent className="pt-6"><p className="text-sm text-muted-foreground">Homework Due</p><p className="text-3xl font-bold mt-1">{homeworkDue}</p></CardContent></Card>
         <Card><CardContent className="pt-6"><p className="text-sm text-muted-foreground">Recent Feedback</p><p className="text-3xl font-bold mt-1">{recentFeedback.length}</p></CardContent></Card>
@@ -1254,7 +1259,7 @@ function StudentPortalSummary({ attendance, updates }) {
         <Card><CardContent className="pt-6"><p className="text-sm text-muted-foreground">Progress Summary</p><p className="text-3xl font-bold mt-1">{progressRate}%</p></CardContent></Card>
       </div>
 
-      <Card id="recent-feedback">
+      <Card id="homework-due">
         <CardHeader className="pb-3"><CardTitle className="text-base">Homework Due</CardTitle></CardHeader>
         <CardContent>
           <div className="space-y-2 text-sm">
@@ -1268,7 +1273,7 @@ function StudentPortalSummary({ attendance, updates }) {
         </CardContent>
       </Card>
 
-      <Card id="learning-resources">
+      <Card id="recent-feedback">
         <CardHeader className="pb-3"><CardTitle className="text-base">Recent Feedback</CardTitle></CardHeader>
         <CardContent>
           <div className="space-y-3 text-sm">
@@ -1281,7 +1286,7 @@ function StudentPortalSummary({ attendance, updates }) {
         </CardContent>
       </Card>
 
-      <Card id="simple-progress-summary">
+      <Card id="learning-resources">
         <CardHeader className="pb-3"><CardTitle className="text-base">Learning Resources</CardTitle></CardHeader>
         <CardContent>
           <div className="space-y-2 text-sm text-muted-foreground">
@@ -1291,7 +1296,7 @@ function StudentPortalSummary({ attendance, updates }) {
         </CardContent>
       </Card>
 
-      <Card>
+      <Card id="simple-progress-summary">
         <CardHeader className="pb-3"><CardTitle className="text-base">Simple Progress Summary</CardTitle></CardHeader>
         <CardContent>
           <p className="text-sm text-muted-foreground mb-3">A light overview of attendance and homework completion using fake demo data only.</p>
@@ -1550,6 +1555,7 @@ export default function ParentView() {
   const outletContext = useOutletContext();
   const outletUser = outletContext?.user ?? null;
   const { appUser: supabaseAppUser, user: supabaseSessionUser } = useSupabaseAuthState();
+  const location = useLocation();
   const urlParams = new URLSearchParams(window.location.search);
   const studentId = urlParams.get('student');
   const previewRole = urlParams.get('demoRole');
@@ -1627,6 +1633,36 @@ export default function ParentView() {
       };
     });
   }, [parentHomeworkTasks, parentHomeworkSubmissions, parentHomeworkFeedbackBySubmissionId, cls?.branch_id, cls?.id, student?.id]);
+
+  useEffect(() => {
+    if (loading || notFound) return undefined;
+    let raw = (location.hash || '').replace(/^#/, '');
+    if (PARENT_VIEW_HASH_ALIASES[raw]) {
+      raw = PARENT_VIEW_HASH_ALIASES[raw];
+    }
+    if (!raw) return undefined;
+    const el = document.getElementById(raw);
+    if (!el) return undefined;
+    const reduceMotion = typeof window !== 'undefined'
+      && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    el.scrollIntoView({ behavior: reduceMotion ? 'auto' : 'smooth', block: 'start' });
+    if (reduceMotion) return undefined;
+    el.classList.remove('parent-view-section-enter');
+    void el.offsetWidth;
+    let enterTid;
+    let removeTid;
+    enterTid = window.setTimeout(() => {
+      el.classList.add('parent-view-section-enter');
+      removeTid = window.setTimeout(() => {
+        el.classList.remove('parent-view-section-enter');
+      }, 480);
+    }, 24);
+    return () => {
+      if (enterTid) window.clearTimeout(enterTid);
+      if (removeTid) window.clearTimeout(removeTid);
+      el.classList.remove('parent-view-section-enter');
+    };
+  }, [loading, notFound, location.hash]);
 
   useEffect(() => {
     if (!studentId) {
@@ -2627,15 +2663,17 @@ export default function ParentView() {
 
       {/* Student identity */}
       <div className="max-w-2xl mx-auto px-4 py-6">
-        <div className="flex items-center gap-4 mb-6">
-          <div className="h-14 w-14 rounded-full bg-accent flex items-center justify-center text-accent-foreground text-xl font-bold flex-shrink-0">
-            {student.name[0].toUpperCase()}
-          </div>
-          <div>
-            <h2 className="text-xl font-bold">{student.name}</h2>
-            <div className="flex items-center gap-2 mt-1 text-sm text-muted-foreground">
-              {cls && <Badge variant="outline">{cls.name}</Badge>}
-              {cls?.subject && <span>{cls.subject}</span>}
+        <div id="parent-portal-overview">
+          <div className="flex items-center gap-4 mb-6">
+            <div className="h-14 w-14 rounded-full bg-accent flex items-center justify-center text-accent-foreground text-xl font-bold flex-shrink-0">
+              {student.name[0].toUpperCase()}
+            </div>
+            <div>
+              <h2 className="text-xl font-bold">{student.name}</h2>
+              <div className="flex items-center gap-2 mt-1 text-sm text-muted-foreground">
+                {cls && <Badge variant="outline">{cls.name}</Badge>}
+                {cls?.subject && <span>{cls.subject}</span>}
+              </div>
             </div>
           </div>
         </div>

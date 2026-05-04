@@ -73,10 +73,10 @@ export const ROLE_NAVIGATION = {
     { label: 'Observations', icon: 'observations', path: '/observations' },
   ],
   [ROLES.PARENT]: [
-    { label: 'Parent Dashboard', icon: 'dashboard', path: '/parent-view' },
+    { label: 'Parent Dashboard', icon: 'dashboard', path: '/parent-view#parent-portal-overview' },
     { label: 'Child Attendance', icon: 'attendance', path: '/parent-view#attendance-summary' },
-    { label: 'Child Homework', icon: 'homework', path: '/parent-view#homework-history' },
-    { label: 'Parent Reports', icon: 'parentUpdates', path: '/parent-view#latest-report' },
+    { label: 'Child Homework', icon: 'homework', path: '/parent-view#parent-homework-status' },
+    { label: 'Parent Reports', icon: 'parentUpdates', path: '/parent-view#parent-progress-reports' },
     { label: 'Student Learning Portal / Learning Materials', icon: 'classes', path: '/parent-view#student-learning-portal' },
   ],
   [ROLES.STUDENT]: [

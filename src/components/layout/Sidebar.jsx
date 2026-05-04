@@ -57,6 +57,31 @@ function withDemoRole(path, selectedDemoRole) {
   return `${pathname}?${params.toString()}${hash ? `#${hash}` : ''}`;
 }
 
+/** Real mode: keep ?student= on /parent-view; demo mode uses withDemoRole (demoRole + default student). */
+function buildParentViewNavTo(itemPath, selectedDemoRole, currentSearch) {
+  if (selectedDemoRole) {
+    return withDemoRole(itemPath, selectedDemoRole);
+  }
+  const [pathnameOnly, hash = ''] = itemPath.split('#');
+  if (pathnameOnly === '/parent-view') {
+    return `/parent-view${currentSearch || ''}${hash ? `#${hash}` : ''}`;
+  }
+  return itemPath;
+}
+
+function isParentViewNavItemActive(itemPath, location) {
+  const itemBase = itemPath.split('#')[0];
+  if (itemBase !== '/parent-view' || location.pathname !== '/parent-view') {
+    return false;
+  }
+  const itemHash = itemPath.includes('#') ? itemPath.slice(itemPath.indexOf('#') + 1) : '';
+  const locHash = (location.hash || '').replace(/^#/, '');
+  if (!itemHash) {
+    return !locHash;
+  }
+  return locHash === itemHash;
+}
+
 export default function Sidebar({ user, collapsed, onToggle }) {
   const location = useLocation();
   const selectedDemoRole = getSelectedDemoRole();
@@ -92,11 +117,13 @@ export default function Sidebar({ user, collapsed, onToggle }) {
         ) : null}
         {items.map((item) => {
           const itemPath = item.path.split('#')[0];
-          const isActive = location.pathname === itemPath;
+          const isActive = itemPath === '/parent-view'
+            ? isParentViewNavItemActive(item.path, location)
+            : location.pathname === itemPath;
           return (
             <Link
               key={item.path}
-              to={withDemoRole(item.path, selectedDemoRole)}
+              to={buildParentViewNavTo(item.path, selectedDemoRole, location.search)}
               className={cn(
                 "flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-200",
                 isActive 
