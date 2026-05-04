@@ -1,5 +1,32 @@
 # Project Master Context Handoff
 
+## Checkpoint update (notifications SQL/RLS foundation phase 1 — 2026-05-05)
+
+- Added conservative notification persistence foundation via `supabase/sql/034_notifications_foundation.sql`:
+  - `notification_events`, `notifications`, `notification_delivery_logs`
+  - RLS is deny-by-default with explicit scoped policies:
+    - recipient self-read for `notifications`
+    - HQ broad access where required
+    - branch supervisor branch-scoped event visibility
+    - HQ-only delivery-log visibility
+    - authenticated staff-only constrained inserts
+- Added non-sending helper surface:
+  - `src/services/supabaseWriteService.js`: `createNotificationEvent`, `createInAppNotification`, `markNotificationRead`
+  - `src/services/supabaseReadService.js`: `listMyInAppNotifications`, `getMyUnreadInAppNotificationCount`
+- Added focused smoke: `scripts/supabase-notifications-foundation-smoke-test.mjs` and npm script `test:supabase:notifications`.
+- Validation snapshot:
+  - `build/lint/typecheck`: pass
+  - `test:supabase:audit-events`, `test:supabase:ai-parent-reports`, `test:supabase:parent-updates:write`: pass
+  - `test:supabase:notifications`: expected fail until `034_notifications_foundation.sql` is applied to linked project
+  - apply command: `supabase db query --linked --file supabase/sql/034_notifications_foundation.sql` (this workspace run was blocked by missing `SUPABASE_DB_PASSWORD`)
+- Boundaries preserved:
+  - no email/SMS/push sender implementation
+  - no automatic trigger wiring to attendance/homework/reports/announcements/fees
+  - no frontend service-role usage
+  - no cross-family parent visibility broadening
+  - no sensitive payload logging in metadata
+- Checkpoint doc: `docs/notifications-foundation-checkpoint.md`.
+
 ## Checkpoint update (ParentView real parent `?student=` UUID — 2026-05-03)
 
 - **`src/pages/ParentView.jsx`** — Parents in **real** mode (no URL **`demoRole`**) use a **valid UUID** from **`?student=`** as the target child (then profile **`student_id`**, then demo-only **`student-01`**). **RLS** unchanged; AI report reads still **released** + **current version** only. **Doc:** **`docs/real-ai-staff-draft-generation-qa-pass-checkpoint.md`**.

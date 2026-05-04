@@ -75,6 +75,9 @@ const AI_PARENT_REPORT_TYPE_VALUES = new Set([
   "homework_feedback",
   "participation_note",
 ]);
+const NOTIFICATION_STATUS_VALUES = new Set(["pending", "delivered", "read", "archived", "suppressed", "failed"]);
+const NOTIFICATION_FIELDS =
+  "id,event_id,recipient_profile_id,recipient_role,branch_id,class_id,student_id,channel,title,body,status,read_at,created_by_profile_id,created_at";
 
 function isUuidLike(value) {
   if (typeof value !== "string") return false;
@@ -2047,5 +2050,58 @@ export async function listAnnouncementReplies({ announcementId } = {}) {
     return { data: Array.isArray(data) ? data : [], error: null };
   } catch (error) {
     return { data: [], error };
+  }
+}
+
+export async function listMyInAppNotifications({ status, unreadOnly = false, limit = 50 } = {}) {
+  if (!isSupabaseConfigured() || !supabase) {
+    return { data: [], error: { message: "Supabase is not configured" } };
+  }
+  if (status != null && status !== "" && !NOTIFICATION_STATUS_VALUES.has(trimString(status))) {
+    return { data: [], error: { message: "status is invalid" } };
+  }
+  if (unreadOnly != null && typeof unreadOnly !== "boolean") {
+    return { data: [], error: { message: "unreadOnly must be a boolean when provided" } };
+  }
+  const safeLimit = Number.isInteger(limit) && limit > 0 ? Math.min(limit, 200) : 50;
+
+  try {
+    let query = supabase
+      .from("notifications")
+      .select(NOTIFICATION_FIELDS)
+      .eq("channel", "in_app")
+      .order("created_at", { ascending: false })
+      .limit(safeLimit);
+
+    if (status != null && status !== "") {
+      query = query.eq("status", trimString(status));
+    }
+    if (unreadOnly) {
+      query = query.is("read_at", null);
+    }
+
+    const { data, error } = await query;
+    if (error) return { data: [], error };
+    return { data: Array.isArray(data) ? data : [], error: null };
+  } catch (error) {
+    return { data: [], error };
+  }
+}
+
+export async function getMyUnreadInAppNotificationCount() {
+  if (!isSupabaseConfigured() || !supabase) {
+    return { data: { count: 0 }, error: { message: "Supabase is not configured" } };
+  }
+
+  try {
+    const { count, error } = await supabase
+      .from("notifications")
+      .select("id", { head: true, count: "exact" })
+      .eq("channel", "in_app")
+      .is("read_at", null);
+    if (error) return { data: { count: 0 }, error };
+    return { data: { count: Number.isInteger(count) ? count : 0 }, error: null };
+  } catch (error) {
+    return { data: { count: 0 }, error };
   }
 }

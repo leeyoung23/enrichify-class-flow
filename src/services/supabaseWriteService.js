@@ -97,6 +97,8 @@ const AUDIT_FORBIDDEN_METADATA_KEY_PATTERN =
   /(token|secret|password|apikey|api_key|authorization|cookie|session|provider|raw|prompt)/i;
 const AUDIT_MAX_METADATA_KEYS = 12;
 const AUDIT_MAX_STRING_LENGTH = 280;
+const NOTIFICATION_EVENT_STATUS_VALUES = new Set(["draft", "pending", "processed", "cancelled"]);
+const NOTIFICATION_STATUS_VALUES = new Set(["pending", "delivered", "read", "archived", "suppressed", "failed"]);
 
 function isUuidLike(value) {
   if (typeof value !== "string") return false;
@@ -397,6 +399,137 @@ export async function recordAuditEvent({
       .select("id,actor_profile_id,actor_role,action_type,entity_type,entity_id,branch_id,class_id,student_id,created_at")
       .maybeSingle();
     return { data: insertResult.data ?? null, error: insertResult.error ?? null };
+  } catch (err) {
+    return { data: null, error: { message: err?.message || String(err) } };
+  }
+}
+
+export async function createNotificationEvent({
+  eventType,
+  entityType,
+  entityId,
+  branchId,
+  classId,
+  studentId,
+  status = "pending",
+  metadata,
+} = {}) {
+  if (!isSupabaseConfigured() || !supabase) {
+    return { data: null, error: { message: "Supabase is not configured" } };
+  }
+  const safeEventType = trimString(eventType);
+  const safeEntityType = trimString(entityType);
+  if (!safeEventType) return { data: null, error: { message: "eventType is required" } };
+  if (!safeEntityType) return { data: null, error: { message: "entityType is required" } };
+  if (!NOTIFICATION_EVENT_STATUS_VALUES.has(status)) {
+    return { data: null, error: { message: "status is invalid" } };
+  }
+
+  try {
+    const { profileId, error: authError } = await getAuthenticatedProfileId();
+    if (authError || !profileId) {
+      return { data: null, error: authError || { message: "Authenticated user is required" } };
+    }
+
+    const payload = {
+      event_type: safeEventType.slice(0, 120),
+      entity_type: safeEntityType.slice(0, 80),
+      entity_id: isUuidLike(entityId) ? trimString(entityId) : null,
+      branch_id: isUuidLike(branchId) ? trimString(branchId) : null,
+      class_id: isUuidLike(classId) ? trimString(classId) : null,
+      student_id: isUuidLike(studentId) ? trimString(studentId) : null,
+      created_by_profile_id: profileId,
+      status,
+      metadata: sanitizeAuditMetadata(metadata),
+      created_at: new Date().toISOString(),
+    };
+
+    const insertResult = await supabase
+      .from("notification_events")
+      .insert(payload)
+      .select("id,event_type,entity_type,entity_id,branch_id,class_id,student_id,status,created_by_profile_id,created_at")
+      .maybeSingle();
+    return { data: insertResult.data ?? null, error: insertResult.error ?? null };
+  } catch (err) {
+    return { data: null, error: { message: err?.message || String(err) } };
+  }
+}
+
+export async function createInAppNotification({
+  eventId,
+  recipientProfileId,
+  recipientRole,
+  branchId,
+  classId,
+  studentId,
+  title,
+  body,
+  status = "pending",
+} = {}) {
+  if (!isSupabaseConfigured() || !supabase) {
+    return { data: null, error: { message: "Supabase is not configured" } };
+  }
+  if (!isUuidLike(recipientProfileId)) {
+    return { data: null, error: { message: "recipientProfileId must be a UUID" } };
+  }
+  const safeTitle = trimString(title).slice(0, 240);
+  if (!safeTitle) return { data: null, error: { message: "title is required" } };
+  if (!NOTIFICATION_STATUS_VALUES.has(status)) {
+    return { data: null, error: { message: "status is invalid" } };
+  }
+
+  try {
+    const { profileId, error: authError } = await getAuthenticatedProfileId();
+    if (authError || !profileId) {
+      return { data: null, error: authError || { message: "Authenticated user is required" } };
+    }
+
+    const payload = {
+      event_id: isUuidLike(eventId) ? trimString(eventId) : null,
+      recipient_profile_id: trimString(recipientProfileId),
+      recipient_role: normalizeNullableText(recipientRole, { maxLength: 40 }),
+      branch_id: isUuidLike(branchId) ? trimString(branchId) : null,
+      class_id: isUuidLike(classId) ? trimString(classId) : null,
+      student_id: isUuidLike(studentId) ? trimString(studentId) : null,
+      channel: "in_app",
+      title: safeTitle,
+      body: normalizeNullableText(body, { maxLength: 1200 }),
+      status,
+      created_by_profile_id: profileId,
+      created_at: new Date().toISOString(),
+    };
+
+    const insertResult = await supabase
+      .from("notifications")
+      .insert(payload)
+      .select("id,event_id,recipient_profile_id,recipient_role,branch_id,class_id,student_id,channel,title,body,status,read_at,created_by_profile_id,created_at")
+      .maybeSingle();
+    return { data: insertResult.data ?? null, error: insertResult.error ?? null };
+  } catch (err) {
+    return { data: null, error: { message: err?.message || String(err) } };
+  }
+}
+
+export async function markNotificationRead({ notificationId } = {}) {
+  if (!isSupabaseConfigured() || !supabase) {
+    return { data: null, error: { message: "Supabase is not configured" } };
+  }
+  if (!isUuidLike(notificationId)) {
+    return { data: null, error: { message: "notificationId must be a UUID" } };
+  }
+
+  try {
+    const nowIso = new Date().toISOString();
+    const updateResult = await supabase
+      .from("notifications")
+      .update({
+        read_at: nowIso,
+        status: "read",
+      })
+      .eq("id", trimString(notificationId))
+      .select("id,recipient_profile_id,status,read_at")
+      .maybeSingle();
+    return { data: updateResult.data ?? null, error: updateResult.error ?? null };
   } catch (err) {
     return { data: null, error: { message: err?.message || String(err) } };
   }
