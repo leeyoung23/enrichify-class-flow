@@ -48,6 +48,8 @@ Use this as an explicit checklist for the next validation round:
 
 Automated smokes (e.g. **`npm run test:supabase:ai-parent-reports`**) cover parts of RLS/parent boundaries in CI; **browser QA** still owns lifecycle UX and perception checks.
 
+**ParentView real parent + URL student (app-layer, no RLS change):** In real mode (no **`demoRole`**), **`ROLES.PARENT`** now resolves the child from a **valid UUID** in **`?student=`** first, then **`currentUser.student_id`** if set; the legacy **`student-01`** fallback applies **only** when **URL `demoRole`** preview is active. **`getStudentById`** / **`getStudents()`** stay JWT + RLS. **`notFound`** copy distinguishes demo vs real. See **`src/pages/ParentView.jsx`** (`resolveParentViewTargetStudentIdForParent`).
+
 ---
 
 ## 4. Parked lanes (explicitly out of scope for this milestone)

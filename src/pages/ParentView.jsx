@@ -1331,6 +1331,20 @@ function isUuidLike(value) {
 }
 
 /**
+ * Real parent mode: prefer URL `student` UUID (RLS still gates listStudents/getStudents).
+ * Demo URL preview: allow legacy student-01 fallback when no UUID and no profile student_id.
+ */
+function resolveParentViewTargetStudentIdForParent({ studentIdFromUrl, currentUserStudentId, isDemoMode }) {
+  const urlTrim = typeof studentIdFromUrl === 'string' ? studentIdFromUrl.trim() : '';
+  if (isUuidLike(urlTrim)) return urlTrim;
+  if (typeof currentUserStudentId === 'string' && currentUserStudentId.trim()) {
+    return currentUserStudentId.trim();
+  }
+  if (isDemoMode) return 'student-01';
+  return null;
+}
+
+/**
  * Parent-facing Class Memories demo only (no class_media / storage; fake captions and placeholders).
  * Internal schema may use class_media — not wired here.
  */
@@ -1617,7 +1631,21 @@ export default function ParentView() {
       try {
         const currentUser = await getCurrentUser();
         setViewer(currentUser);
-        const targetStudentId = currentUser?.role === ROLES.PARENT ? currentUser?.student_id || 'student-01' : studentId;
+        let targetStudentId;
+        if (currentUser?.role === ROLES.PARENT) {
+          targetStudentId = resolveParentViewTargetStudentIdForParent({
+            studentIdFromUrl: studentId,
+            currentUserStudentId: currentUser?.student_id,
+            isDemoMode,
+          });
+          if (!targetStudentId) {
+            setNotFound(true);
+            setLoading(false);
+            return;
+          }
+        } else {
+          targetStudentId = studentId;
+        }
         const s = await getStudentById(currentUser, targetStudentId);
         if (!s || !canAccessStudentRecord(currentUser, s, [{ guardian_parent_id: currentUser?.guardian_parent_id, student_id: s.id }])) {
           setNotFound(true);
@@ -1643,7 +1671,7 @@ export default function ParentView() {
         setLoading(false);
       }
     })();
-  }, [studentId]);
+  }, [studentId, isDemoMode]);
 
   useEffect(() => {
     let cancelled = false;
@@ -2541,7 +2569,11 @@ export default function ParentView() {
         <div className="text-center max-w-sm">
           <GraduationCap className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
           <h2 className="text-xl font-semibold mb-2">Dashboard not available</h2>
-          <p className="text-muted-foreground text-sm">This demo parent view could not be opened for the selected student.</p>
+          <p className="text-muted-foreground text-sm">
+            {isDemoMode
+              ? 'This demo parent view could not be opened for the selected student.'
+              : 'This parent view could not be opened for the selected child. Check that the parent account is linked to this student.'}
+          </p>
         </div>
       </div>
     );

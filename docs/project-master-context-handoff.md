@@ -1,5 +1,9 @@
 # Project Master Context Handoff
 
+## Checkpoint update (ParentView real parent `?student=` UUID — 2026-05-03)
+
+- **`src/pages/ParentView.jsx`** — Parents in **real** mode (no URL **`demoRole`**) use a **valid UUID** from **`?student=`** as the target child (then profile **`student_id`**, then demo-only **`student-01`**). **RLS** unchanged; AI report reads still **released** + **current version** only. **Doc:** **`docs/real-ai-staff-draft-generation-qa-pass-checkpoint.md`**.
+
 ## Checkpoint update (real AI staff draft generation manual QA PASS — 2026-05-03)
 
 - **Doc:** **`docs/real-ai-staff-draft-generation-qa-pass-checkpoint.md`** — staff browser **PASS** on **`/ai-parent-reports`** (**OPTIONS** + **POST 200**, success toast + inline saved copy, draft staff-only); safety boundaries; **remaining** prototype QA (version history, parent unreleased, manual release, evidence links); **parked** lanes (PDF, notifications, OCR, audit, etc.). Baseline includes **`8628555`**. **Docs-only** checkpoint — **no** runtime edits.
