@@ -1584,3 +1584,20 @@ Handoff status: complete for continuity. Use this file as the primary context an
 - Remaining cleanup items (future pass):
   - further reduce internal QA phrasing in non-debug staff helper text blocks,
   - optional toggle-based debug drawer instead of inline cards.
+
+### AI Parent Reports validation-ready internal prototype note (2026-05-04)
+
+- New checkpoint doc:
+  - `docs/ai-parent-reports-validation-ready-internal-prototype-checkpoint.md`
+- Internal validation-ready scope confirmed:
+  - staff flow: create shell -> real AI draft -> version history -> submit/approve/release,
+  - release assigns `current_version_id`,
+  - ParentView reads released reports + current version only,
+  - parent cannot read drafts/old versions/evidence links.
+- Validation cleanup confirmed:
+  - real mode hides demo role switcher and AI diagnostics/internal PDF helper panels,
+  - demo/debug helpers remain available only when URL enables `demoRole`/`debug`.
+- Safety boundaries unchanged:
+  - no SQL/RLS weakening, no service-role frontend, no auth relaxation, no parent visibility widening.
+- Recommended next lane:
+  - Validation Mode Cleanup Phase 2 (final real-mode wording cleanup + debug drawer consolidation + validator UX pass).
