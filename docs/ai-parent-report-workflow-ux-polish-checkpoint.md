@@ -35,3 +35,35 @@ Scope: **`src/pages/AiParentReports.jsx`** copy + layout order + **`src/componen
 ## Validation
 
 Run after **`src/`** changes: `npm run build`, `npm run lint`, `npm run typecheck`, and AI parent report smokes (`source-aggregation`, `rls-source-aggregation`, `mock-draft`, `ai-parent-reports`).
+
+## 2026-05-04 Validation Mode Cleanup Phase 1 update
+
+### What was hidden from normal real mode
+
+- `DemoRoleSwitcher` in app layout is now hidden unless URL has demo/debug mode.
+- AI Parent Reports:
+  - Diagnostics card hidden in normal real mode.
+  - Internal PDF HTML preview helper hidden in normal real mode.
+- ParentView:
+  - real-mode portal copy no longer uses fake/demo wording.
+
+### What still appears in demo/debug mode
+
+- Demo Role Preview and role-switch helper when `?demoRole=...` is present.
+- Diagnostics and internal PDF HTML preview in AI Parent Reports when demo/debug mode is active.
+- Demo-specific wording remains visible only in demo mode.
+
+### Safety boundaries unchanged
+
+- No SQL/RLS edits.
+- No service-role frontend usage.
+- No parent draft visibility.
+- No parent old/non-current report version visibility.
+- No parent evidence-link exposure.
+- No AI release-rule changes.
+- No provider/Edge/email/notification/PDF-storage changes.
+
+### Remaining cleanup items
+
+- Consolidate remaining internal QA helper text into debug-only blocks where safe.
+- Consider a unified debug drawer for validator runs instead of inline helper cards.

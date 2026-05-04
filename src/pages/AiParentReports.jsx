@@ -12,7 +12,7 @@ import PageHeader from '@/components/shared/PageHeader';
 import EmptyState from '@/components/shared/EmptyState';
 import { ChevronDown, FileText } from 'lucide-react';
 import { toast } from 'sonner';
-import { normalizeRole } from '@/services/authService';
+import { normalizeRole, isDebugModeEnabled } from '@/services/authService';
 import { getRole, ROLES } from '@/services/permissionService';
 import { isSupabaseConfigured } from '@/services/supabaseClient';
 import { useSupabaseAuthState } from '@/hooks/useSupabaseAuthState';
@@ -221,6 +221,8 @@ export default function AiParentReports() {
   const demoRole = urlDemoRole;
   const role = demoRole || getRole(user);
   const inDemoMode = Boolean(demoRole);
+  const isDebugMode = isDebugModeEnabled();
+  const showDebugPanels = Boolean(inDemoMode || isDebugMode);
 
   const stripUrlDemoRole = useCallback(() => {
     const next = new URLSearchParams(location.search);
@@ -1060,28 +1062,30 @@ export default function AiParentReports() {
         PDF/export to families is not live yet.
       </p>
 
-      <Card className="p-4 border-dashed border-muted-foreground/35 bg-muted/15">
-        <p className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
-          Optional — not part of the release workflow
-        </p>
-        <h2 className="text-sm font-semibold text-foreground mt-1.5">Internal PDF preview</h2>
-        <ul className="mt-2 text-sm text-muted-foreground space-y-1 list-disc pl-5">
-          <li>For layout checking only</li>
-          <li>Fake/dev data only</li>
-          <li>Parents do not see this</li>
-        </ul>
-        <p className="mt-3">
-          <Link
-            to="/ai-parent-report-pdf-preview"
-            className="text-sm font-medium text-primary underline-offset-4 hover:underline"
-          >
-            Open internal PDF HTML preview
-          </Link>
-          <span className="text-xs text-muted-foreground block mt-1">
-            Parents will download from ParentView after release when that feature ships — not here.
-          </span>
-        </p>
-      </Card>
+      {showDebugPanels ? (
+        <Card className="p-4 border-dashed border-muted-foreground/35 bg-muted/15">
+          <p className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
+            Optional — debug/demo helper (not part of release workflow)
+          </p>
+          <h2 className="text-sm font-semibold text-foreground mt-1.5">Internal PDF preview</h2>
+          <ul className="mt-2 text-sm text-muted-foreground space-y-1 list-disc pl-5">
+            <li>For layout checking only</li>
+            <li>Debug/demo validation helper</li>
+            <li>Parents do not see this</li>
+          </ul>
+          <p className="mt-3">
+            <Link
+              to="/ai-parent-report-pdf-preview"
+              className="text-sm font-medium text-primary underline-offset-4 hover:underline"
+            >
+              Open internal PDF HTML preview
+            </Link>
+            <span className="text-xs text-muted-foreground block mt-1">
+              Parent-facing download remains out of scope in this workflow.
+            </span>
+          </p>
+        </Card>
+      ) : null}
 
       <p className="text-sm text-muted-foreground mb-4">
         <span className="font-medium text-foreground">Workflow:</span>{' '}
@@ -1089,23 +1093,25 @@ export default function AiParentReports() {
         overrides → Submit / approve / release manually.
       </p>
 
-      <Card className="p-3 border-dashed border-primary/25 bg-muted/10 space-y-2">
-        <p className="text-xs text-muted-foreground">
-          <span className="font-medium text-foreground">Diagnostics:</span>{' '}
-          <span className="font-mono">{aiReportsModeDiagnostic}</span>
-          {' '}(URL <code className="text-[10px] bg-muted px-1 rounded">demoRole</code> only — no localStorage demo role.)
-        </p>
-        {demoRole ? (
-          <div className="flex flex-wrap items-center gap-2">
-            <Button type="button" size="sm" variant="secondary" onClick={stripUrlDemoRole}>
-              Exit demo preview — use live staff AI
-            </Button>
-            <span className="text-[11px] text-muted-foreground max-w-xl">
-              Strips <code className="text-[10px] bg-muted px-1 rounded">demoRole</code> from the address bar. Sidebar links can re-append it if you still have a demo preview URL elsewhere — use this button after navigating here.
-            </span>
-          </div>
-        ) : null}
-      </Card>
+      {showDebugPanels ? (
+        <Card className="p-3 border-dashed border-primary/25 bg-muted/10 space-y-2">
+          <p className="text-xs text-muted-foreground">
+            <span className="font-medium text-foreground">Diagnostics:</span>{' '}
+            <span className="font-mono">{aiReportsModeDiagnostic}</span>
+            {' '}(URL <code className="text-[10px] bg-muted px-1 rounded">demoRole</code> only — no localStorage demo role.)
+          </p>
+          {demoRole ? (
+            <div className="flex flex-wrap items-center gap-2">
+              <Button type="button" size="sm" variant="secondary" onClick={stripUrlDemoRole}>
+                Exit demo preview — use live staff AI
+              </Button>
+              <span className="text-[11px] text-muted-foreground max-w-xl">
+                Strips <code className="text-[10px] bg-muted px-1 rounded">demoRole</code> from the address bar. Sidebar links can re-append it if you still have a demo preview URL elsewhere — use this button after navigating here.
+              </span>
+            </div>
+          ) : null}
+        </Card>
+      ) : null}
 
       <Card className="p-3 space-y-2">
         <p className="text-sm font-medium text-foreground">
@@ -1122,11 +1128,8 @@ export default function AiParentReports() {
             </>
           ) : (
             <>
-              <span className="font-medium text-foreground">Demo Role Preview</span> uses the URL{' '}
-              <code className="text-xs rounded bg-muted px-1">demoRole</code> when set; otherwise it shows your signed-in role
-              from the app shell (it does not read this page&apos;s outlet). This page is in real staff mode only when{' '}
-              <code className="text-xs rounded bg-muted px-1">demoRole</code> is absent from the URL. Real AI uses your
-              Supabase session after you select a report.
+              Signed-in staff mode uses your Supabase session after you select a report.
+              Drafts stay staff-only until manually released to parents.
             </>
           )}
         </p>

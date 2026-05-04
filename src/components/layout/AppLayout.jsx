@@ -6,7 +6,7 @@ import DemoRoleSwitcher from '@/components/demo/DemoRoleSwitcher';
 import EmptyState from '@/components/shared/EmptyState';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
-import { getCurrentUser, getSelectedDemoRole, getDemoUser, normalizeRole } from '@/services/authService';
+import { getCurrentUser, getSelectedDemoRole, getDemoUser, normalizeRole, isDebugModeEnabled } from '@/services/authService';
 import { useSupabaseAuthState } from '@/hooks/useSupabaseAuthState';
 import { isSupabaseConfigured } from '@/services/supabaseClient';
 import { listEligibleCompanyNewsPopups } from '@/services/supabaseReadService';
@@ -56,11 +56,13 @@ export default function AppLayout() {
   const location = useLocation();
   const navigate = useNavigate();
   const selectedDemoRole = getSelectedDemoRole();
+  const isDebugMode = isDebugModeEnabled();
   const { appUser, loading: supabaseAuthLoading, isSupabaseAuthAvailable } = useSupabaseAuthState();
   const popupFetchAttemptedRef = useRef(false);
   const popupSeenMarkedRef = useRef(new Set());
 
   const isDemoActive = Boolean(selectedDemoRole);
+  const showDemoTools = Boolean(isDemoActive || isDebugMode);
 
   useEffect(() => {
     if (isDemoActive) {
@@ -243,11 +245,11 @@ export default function AppLayout() {
           showSidebar ? (collapsed ? 'ml-0 lg:ml-[72px]' : 'ml-0 lg:ml-[260px]') : 'ml-0'
         )}>
           <div className="p-6 md:p-8 max-w-[1400px] mx-auto">
-            <DemoRoleSwitcher layoutRole={role} />
+            {showDemoTools ? <DemoRoleSwitcher layoutRole={role} /> : null}
             <EmptyState
               icon={ShieldAlert}
               title="Access restricted"
-              description="This page is not available for the current demo role."
+              description={isDemoActive ? 'This page is not available for the current demo role.' : 'This page is not available for your account role.'}
             />
           </div>
         </main>
@@ -267,7 +269,7 @@ export default function AppLayout() {
         showSidebar ? (collapsed ? 'ml-0 lg:ml-[72px]' : 'ml-0 lg:ml-[260px]') : 'ml-0'
       )}>
         <div className="p-6 md:p-8 max-w-[1400px] mx-auto">
-          <DemoRoleSwitcher layoutRole={role} />
+          {showDemoTools ? <DemoRoleSwitcher layoutRole={role} /> : null}
           <Outlet context={{ user: effectiveUser, role }} />
         </div>
       </main>

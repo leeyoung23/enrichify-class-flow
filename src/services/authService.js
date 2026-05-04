@@ -66,6 +66,12 @@ export function getSelectedDemoRole() {
   return normalizeRole(params.get('demoRole'));
 }
 
+export function isDebugModeEnabled() {
+  const params = new URLSearchParams(window.location.search);
+  const value = String(params.get('debug') || '').trim().toLowerCase();
+  return value === '1' || value === 'true' || value === 'yes' || value === 'on';
+}
+
 export function getDemoUser(role = ROLES.TEACHER) {
   const normalizedRole = normalizeRole(role) || ROLES.TEACHER;
   return DEMO_USERS[normalizedRole] || DEMO_USERS[ROLES.TEACHER];

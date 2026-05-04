@@ -1557,3 +1557,30 @@ Handoff status: complete for continuity. Use this file as the primary context an
 - Safety boundaries unchanged:
   - no SQL/RLS/auth/release-policy/provider/Edge/function boundary widening,
   - no parent draft/old-version/evidence-link exposure.
+
+### Validation Mode Cleanup Phase 1 note (2026-05-04)
+
+- Scope:
+  - `src/pages/AiParentReports.jsx`,
+  - `src/pages/ParentView.jsx`,
+  - `src/components/layout/AppLayout.jsx`,
+  - `src/services/authService.js`.
+- Display rule applied:
+  - demo/debug helper UI shows only when URL has `?demoRole=...` or `?debug=1` (also accepts `true/yes/on`),
+  - normal real staff/parent/student mode hides developer-facing demo/debug panels.
+- Real-mode cleanup:
+  - App shell hides `DemoRoleSwitcher` unless demo/debug URL mode is active,
+  - AI Parent Reports hides Diagnostics and internal PDF HTML preview in normal real mode,
+  - AI Parent Reports real-mode explanatory copy is now validator-facing (less demo/dev language),
+  - ParentView real-mode privacy/footer copy now avoids fake/demo phrasing.
+- Demo/debug behavior preserved:
+  - existing demo role workflows still visible and functional with `?demoRole`,
+  - diagnostics + internal preview helpers remain available in demo/debug URLs.
+- Safety boundaries preserved:
+  - no SQL/RLS/auth relaxation,
+  - no service-role frontend usage,
+  - no parent draft/old-version/evidence-link exposure,
+  - no provider/Edge/email/notification/PDF-storage changes.
+- Remaining cleanup items (future pass):
+  - further reduce internal QA phrasing in non-debug staff helper text blocks,
+  - optional toggle-based debug drawer instead of inline cards.

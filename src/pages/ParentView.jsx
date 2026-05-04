@@ -4,7 +4,7 @@ import {
   buildReleasedReportPdfInputFromParentViewContext,
   renderReleasedReportPdfHtml,
 } from '@/services/aiParentReportPdfTemplate';
-import { getCurrentUser, getSelectedDemoRole, normalizeRole } from '@/services/authService';
+import { getCurrentUser, getSelectedDemoRole, normalizeRole, isDebugModeEnabled } from '@/services/authService';
 import {
   getStudentById,
   getClassById,
@@ -717,6 +717,7 @@ function resolveParentReportSection({ currentVersion, detail }, keys) {
 
 function ParentProgressReportsSection({
   isDemoMode,
+  showInternalPreview,
   loading,
   error,
   reports,
@@ -900,7 +901,7 @@ function ParentProgressReportsSection({
                 </div>
               )}
 
-              {!detailLoading && !detailError && detail && currentVersion ? (
+              {!detailLoading && !detailError && detail && currentVersion && showInternalPreview ? (
                 <div className="mt-4 space-y-2 border-t pt-3">
                   {canShowPrintablePreview ? (
                     <>
@@ -1561,6 +1562,8 @@ export default function ParentView() {
   const previewRole = urlParams.get('demoRole');
   const isDemoStudentPreview = previewRole === 'student';
   const isDemoMode = Boolean(getSelectedDemoRole());
+  const isDebugMode = isDebugModeEnabled();
+  const showInternalDebugPanels = Boolean(isDemoMode || isDebugMode);
   const hasSupabaseSession = Boolean(supabaseSessionUser?.id);
   const ALLOWED_RECEIPT_TYPES = new Set(['image/png', 'image/jpeg', 'application/pdf', 'text/plain']);
   const MAX_RECEIPT_FILE_SIZE_BYTES = 5 * 1024 * 1024;
@@ -2755,8 +2758,8 @@ export default function ParentView() {
           <CardContent className="pt-6">
             <p className="text-sm text-muted-foreground">
               {isDemoStudentPreview
-                ? 'Privacy note: the student portal only shows this student’s own linked fake learning data.'
-                : 'Privacy note: the parent dashboard only shows linked child data for this one fake student and does not show teacher, HQ, or internal pages.'}
+                ? 'Privacy note: the student portal shows only this linked student’s information.'
+                : 'Privacy note: this parent dashboard shows only data for your linked child and does not include internal staff pages.'}
             </p>
           </CardContent>
         </Card>
@@ -2778,6 +2781,7 @@ export default function ParentView() {
               />
               <ParentProgressReportsSection
                 isDemoMode={isDemoMode}
+                showInternalPreview={showInternalDebugPanels}
                 loading={parentProgressReportsLoading}
                 error={parentProgressReportsError}
                 reports={parentProgressReports}
@@ -2888,7 +2892,9 @@ export default function ParentView() {
         </div>
 
         <p className="text-center text-xs text-muted-foreground mt-8">
-          This is a private demo view for {isDemoStudentPreview ? student.name : (student.parent_name || 'the parent/guardian')} linked to {student.name}. Internal teacher, branch, HQ, KPI, observation, lead, trial, migration, and roadmap pages are restricted.
+          {isDemoMode
+            ? `This is a private demo view for ${isDemoStudentPreview ? student.name : (student.parent_name || 'the parent/guardian')} linked to ${student.name}. Internal teacher, branch, HQ, KPI, observation, lead, trial, migration, and roadmap pages are restricted.`
+            : `This is a private parent/student portal for ${student.name}. Internal teacher, branch, HQ, KPI, observation, lead, trial, migration, and roadmap pages remain restricted.`}
         </p>
       </div>
     </div>
