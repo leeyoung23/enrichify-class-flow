@@ -62,6 +62,11 @@ These prove adapter/Edge/service persistence boundaries; they **do not** replace
 - Confirm **403/401** paths show friendly messages (wrong branch/report scope / expired session).
 - Confirm **demo role** cannot invoke real AI (button disabled + helper copy).
 
+## Teacher-facing display polish (version history & lifecycle copy)
+
+- **`src/pages/AiParentReports.jsx` only** — maps stored **`generation_source`** values to teacher labels: **`real_ai`** → “AI-generated”, **`mock_ai`** → “Test draft”, **`manual`** → “Manual draft”; primary line uses **Draft {n} · {kind}** instead of **`v{n} · real_ai`**. Internal UUIDs use a short **Internal ref** line (full value on hover **`title`** where truncated). Lifecycle copy explains **Draft** (staff-only prep), **Submit / Approve** (internal), and **Release selected draft to parents** as the parent-visible step; release button label updated accordingly (same **`releaseAiParentReport`** API).
+- **No** database fields, SQL/RLS, ParentView, release logic, provider calls, or authorization changes.
+
 ## Manual QA PASS — internal prototype (recorded)
 
 - **Full report:** **`docs/real-ai-staff-draft-generation-qa-pass-checkpoint.md`** (2026-05-03; baseline includes **`8628555`**).

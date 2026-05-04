@@ -63,6 +63,30 @@ const STATUS_STYLES = {
   archived: 'bg-zinc-100 text-zinc-700 border-zinc-200',
 };
 
+/** Teacher-facing labels only — database `generation_source` values are unchanged. */
+function teacherFacingDraftKindLabel(generationSource) {
+  const g = typeof generationSource === 'string' ? generationSource.trim().toLowerCase() : '';
+  if (g === 'real_ai') return 'AI-generated';
+  if (g === 'mock_ai') return 'Test draft';
+  if (g === 'manual') return 'Manual draft';
+  if (g) return g;
+  return 'Draft';
+}
+
+function teacherFacingDraftTitle(versionNumber, generationSource) {
+  const n = typeof versionNumber === 'number' && Number.isFinite(versionNumber) ? versionNumber : null;
+  const kind = teacherFacingDraftKindLabel(generationSource);
+  if (n != null) return `Draft ${n} · ${kind}`;
+  return kind;
+}
+
+/** Short internal ref for display; full value available via `title` for QA. */
+function formatInternalIdRef(id) {
+  if (typeof id !== 'string' || !id) return '—';
+  if (id.length > 20) return `${id.slice(0, 8)}…${id.slice(-4)}`;
+  return id;
+}
+
 const DEMO_BASE_REPORTS = [
   {
     id: 'demo-ai-parent-report-1',
@@ -1157,8 +1181,12 @@ export default function AiParentReports() {
                   <p className="text-xs text-muted-foreground">
                     {formatDateLabel(row.reportPeriodStart)} - {formatDateLabel(row.reportPeriodEnd)}
                   </p>
-                  <p className="text-[11px] text-muted-foreground mt-1">
-                    Current version: {row.currentVersionId || 'none'} · Updated {formatDateTimeLabel(row.updatedAt)}
+                  <p
+                    className="text-[11px] text-muted-foreground mt-1"
+                    title={row.currentVersionId || undefined}
+                  >
+                    Current draft (internal ref): {row.currentVersionId ? formatInternalIdRef(row.currentVersionId) : 'none'}{' '}
+                    · Updated {formatDateTimeLabel(row.updatedAt)}
                   </p>
                 </button>
               ))}
@@ -1646,25 +1674,62 @@ export default function AiParentReports() {
         {!detailLoading && !detailError && detail ? (
           <div className="space-y-4">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm">
-              <p><span className="text-muted-foreground">Report ID:</span> {detail.id}</p>
+              <p title={detail.id}>
+                <span className="text-muted-foreground">Report ID (internal):</span>{' '}
+                <span className="font-mono text-xs">{formatInternalIdRef(detail.id)}</span>
+              </p>
               <p><span className="text-muted-foreground">Status:</span> {detail.status}</p>
               <p><span className="text-muted-foreground">Student:</span> {detail.studentId || '—'}</p>
               <p><span className="text-muted-foreground">Class:</span> {detail.classId || '—'}</p>
               <p><span className="text-muted-foreground">Branch:</span> {detail.branchId || '—'}</p>
               <p><span className="text-muted-foreground">Report Type:</span> {detail.reportType}</p>
               <p><span className="text-muted-foreground">Period:</span> {formatDateLabel(detail.reportPeriodStart)} - {formatDateLabel(detail.reportPeriodEnd)}</p>
-              <p><span className="text-muted-foreground">Current Version:</span> {detail.currentVersionId || 'none'}</p>
+              <div className="md:col-span-2">
+                <p className="text-muted-foreground">Current version</p>
+                {detail.currentVersionId ? (
+                  <div className="mt-0.5">
+                    <p className="text-sm font-medium text-foreground">
+                      {(() => {
+                        const match = versions.find((v) => v.id === detail.currentVersionId);
+                        if (currentVersion) {
+                          return teacherFacingDraftTitle(
+                            currentVersion.versionNumber,
+                            currentVersion.generationSource
+                          );
+                        }
+                        if (match) {
+                          return teacherFacingDraftTitle(match.versionNumber, match.generationSource);
+                        }
+                        return 'Current draft';
+                      })()}
+                    </p>
+                    <p className="text-[10px] text-muted-foreground font-mono mt-0.5" title={detail.currentVersionId}>
+                      Internal ref: {formatInternalIdRef(detail.currentVersionId)}
+                    </p>
+                  </div>
+                ) : (
+                  <p className="text-sm text-muted-foreground mt-0.5">None selected yet.</p>
+                )}
+              </div>
             </div>
 
             <div className="rounded-lg border p-3 space-y-2">
-              <p className="text-sm font-medium">Current Version</p>
+              <p className="text-sm font-medium">Current draft content</p>
               {!currentVersion ? (
                 <p className="text-sm text-muted-foreground">No current version selected yet.</p>
               ) : (
                 <div className="space-y-2">
-                  <p className="text-xs text-muted-foreground">
-                    v{currentVersion.versionNumber} · {currentVersion.generationSource} · created {formatDateTimeLabel(currentVersion.createdAt)}
-                  </p>
+                  <div>
+                    <p className="text-sm font-medium text-foreground">
+                      {teacherFacingDraftTitle(currentVersion.versionNumber, currentVersion.generationSource)}
+                    </p>
+                    <p className="text-xs text-muted-foreground">
+                      Created {formatDateTimeLabel(currentVersion.createdAt)}
+                    </p>
+                    <p className="text-[10px] text-muted-foreground font-mono mt-0.5" title={currentVersion.id}>
+                      Internal ref: {formatInternalIdRef(currentVersion.id)}
+                    </p>
+                  </div>
                   <pre className="text-xs bg-muted/40 rounded-md p-2 overflow-auto whitespace-pre-wrap">
                     {JSON.stringify(currentVersion.structuredSections || {}, null, 2)}
                   </pre>
@@ -1673,7 +1738,13 @@ export default function AiParentReports() {
             </div>
 
             <div className="rounded-lg border p-3 space-y-2">
-              <p className="text-sm font-medium">Version History</p>
+              <div className="space-y-1">
+                <p className="text-sm font-medium">Version history</p>
+                <p className="text-xs text-muted-foreground">
+                  Each saved draft is listed below. Choose which draft to release to parents in Lifecycle — only that step
+                  makes content visible to families.
+                </p>
+              </div>
               {versions.length === 0 ? (
                 <p className="text-sm text-muted-foreground">No versions yet.</p>
               ) : (
@@ -1686,9 +1757,16 @@ export default function AiParentReports() {
                         checked={selectedReleaseVersionId === row.id}
                         onChange={() => setSelectedReleaseVersionId(row.id)}
                       />
-                      <div className="text-sm">
-                        <p className="font-medium">v{row.versionNumber} · {row.generationSource}</p>
-                        <p className="text-xs text-muted-foreground">id: {row.id} · {formatDateTimeLabel(row.createdAt)}</p>
+                      <div className="text-sm min-w-0 flex-1">
+                        <p className="font-medium text-foreground">
+                          {teacherFacingDraftTitle(row.versionNumber, row.generationSource)}
+                        </p>
+                        <p className="text-xs text-muted-foreground">
+                          Created {formatDateTimeLabel(row.createdAt)}
+                        </p>
+                        <p className="text-[10px] text-muted-foreground font-mono mt-0.5" title={row.id}>
+                          Internal ref: {formatInternalIdRef(row.id)}
+                        </p>
                       </div>
                     </label>
                   ))}
@@ -2152,11 +2230,23 @@ export default function AiParentReports() {
 
         <Card className="p-4 space-y-3">
           <h2 className="font-semibold">Lifecycle</h2>
-          <p className="text-sm text-muted-foreground">
-            Submit and approve stay internal. <span className="font-medium text-foreground">Release</span> is the step
-            that can make the selected version parent-visible — choose the correct version in Report detail first. No
-            auto-release, notifications, or PDF.
-          </p>
+          <div className="text-sm text-muted-foreground space-y-2">
+            <p>
+              <span className="font-medium text-foreground">Draft</span> means staff are still preparing the report at
+              school — families do not see this work in progress.
+            </p>
+            <p>
+              <span className="font-medium text-foreground">Submit for review</span> and{' '}
+              <span className="font-medium text-foreground">Approve</span> are internal workflow steps. Parents are not
+              notified by these buttons.
+            </p>
+            <p>
+              <span className="font-medium text-foreground">Release selected draft to parents</span> is the only action
+              here that can make the draft you selected in <span className="font-medium text-foreground">Version history</span>{' '}
+              visible to linked parents (when your school rules allow).
+            </p>
+            <p className="text-xs">No automatic release, parent notifications, or PDF from this screen.</p>
+          </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
             <Button
               variant="outline"
@@ -2189,7 +2279,7 @@ export default function AiParentReports() {
               disabled={!selectedReportId || !selectedReleaseVersionId || Boolean(lifecycleBusy)}
               onClick={() => {
                 if (!selectedReleaseVersionId) {
-                  toast.message('Select a version to release.');
+                  toast.message('Select a draft in Version history first.');
                   return;
                 }
                 if (inDemoMode) {
@@ -2197,12 +2287,12 @@ export default function AiParentReports() {
                   return;
                 }
                 void runLifecycleAction(
-                  'Release',
+                  'Release to parents',
                   () => releaseAiParentReport({ reportId: selectedReportId, versionId: selectedReleaseVersionId })
                 );
               }}
             >
-              Release Selected Version
+              Release selected draft to parents
             </Button>
             <Button
               variant="outline"
@@ -2219,8 +2309,9 @@ export default function AiParentReports() {
             </Button>
           </div>
           {selectedReport ? (
-            <p className="text-xs text-muted-foreground">
-              Selected report: <span className="font-medium">{selectedReport.id}</span> · current status{' '}
+            <p className="text-xs text-muted-foreground" title={selectedReport.id}>
+              Selected report (internal ref):{' '}
+              <span className="font-mono font-medium">{formatInternalIdRef(selectedReport.id)}</span> · Status{' '}
               <span className="font-medium">{selectedReport.status || 'draft'}</span>
             </p>
           ) : null}
