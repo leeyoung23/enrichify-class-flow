@@ -340,7 +340,7 @@ export default function MyTasks() {
       <EmptyState
         icon={BellRing}
         title="Access restricted"
-        description="This page is not available for the current demo role."
+        description={demoRole ? 'This page is not available for the current demo role.' : 'This page is not available for your account role.'}
       />
     );
   }
@@ -352,13 +352,23 @@ export default function MyTasks() {
         description={
           role === 'teacher'
             ? 'Two areas below: reminders for your classes, and HQ requests that come through Announcements. Nothing here emails parents or sends notifications by itself — you choose when to act in each area.'
-            : 'Staff task overview — demo/local preview where noted.'
+            : 'Staff task overview for classroom reminders and HQ requests.'
         }
       />
       <p className="text-sm text-muted-foreground mb-4">
         <span className="font-medium text-foreground">Class and task reminders</span> are your everyday checklist.{' '}
         <span className="font-medium text-foreground">HQ requests</span> live under Announcements — start with uploads and replies there, then other actions, and use Done when you need history.
       </p>
+      {role === 'teacher' ? (
+        <div className="flex flex-col sm:flex-row gap-2 mb-4">
+          <Button type="button" variant="outline" className="min-h-10 w-full sm:w-auto" onClick={() => navigate('/homework')}>
+            Open Homework
+          </Button>
+          <Button type="button" variant="outline" className="min-h-10 w-full sm:w-auto" onClick={() => navigate('/parent-updates')}>
+            Open Parent Communication
+          </Button>
+        </div>
+      ) : null}
       {feedback && (
         <p className={`text-sm mb-4 ${feedback.type === 'error' ? 'text-destructive' : 'text-muted-foreground'}`} role="status">
           {feedback.text}

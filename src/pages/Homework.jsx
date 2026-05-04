@@ -1144,8 +1144,8 @@ export default function Homework() {
   return (
     <div>
       <PageHeader
-        title={role === ROLES.TEACHER ? 'Homework review (staff)' : 'Homework review (staff)'}
-        description="For teachers and staff: check submissions, open student files, add teacher-marked work, and draft feedback here. Families only see homework feedback and marked files after you release them—nothing sends automatically. The parent homework view is separate and shows released work only."
+        title="Homework"
+        description="Create homework, review submissions, add teacher-marked work, and share feedback with families when ready. Families only see marked work and feedback after release, and nothing sends automatically."
       />
 
       {!isStaffRole ? (
@@ -1157,7 +1157,7 @@ export default function Homework() {
       ) : !isDemoMode && !canUseSupabaseHomework ? (
         <Card className="p-5 border-dashed">
           <p className="text-sm text-muted-foreground">
-            Sign in with your staff account to review homework from your centre. Demo mode below shows a safe preview without saving to the server.
+            Sign in with your staff account to review homework from your centre.
           </p>
         </Card>
       ) : (
@@ -1231,7 +1231,7 @@ export default function Homework() {
                 <p className="text-sm font-semibold text-primary mb-3">Step 1 · Choose who receives this homework</p>
                 <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                   <div className="space-y-2">
-                    <Label>Who is it for?</Label>
+                    <Label>Who is it for? <span className="text-destructive">*</span></Label>
                     <Select value={createForm.assignmentType} onValueChange={setAssignmentType}>
                       <SelectTrigger>
                         <SelectValue placeholder="Select assignment type" />
@@ -1244,7 +1244,7 @@ export default function Homework() {
                     </Select>
                   </div>
                   <div className="space-y-2">
-                    <Label>Class</Label>
+                    <Label>Class <span className="text-destructive">*</span></Label>
                     <Select
                       value={createForm.classId}
                       onValueChange={(value) => setCreateForm((prev) => ({ ...prev, classId: value }))}
@@ -1304,7 +1304,7 @@ export default function Homework() {
                 <p className="text-sm font-semibold text-primary mb-3">Step 2 · Add homework details</p>
                 <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                   <div className="space-y-2 sm:col-span-2">
-                    <Label>Title</Label>
+                    <Label>Title <span className="text-destructive">*</span></Label>
                     <Input
                       value={createForm.title}
                       onChange={(event) => setCreateForm((prev) => ({ ...prev, title: event.target.value }))}
@@ -1477,7 +1477,7 @@ export default function Homework() {
                     </div>
                     {!isUuidLike(resolvedTrackerClassId) ? (
                       <p className="text-sm text-muted-foreground">
-                        No valid class context is available yet. Select a class-scoped task to load tracker rows.
+                        A class context is not available yet. Select a class to load tracker rows.
                       </p>
                     ) : trackerBusy ? (
                       <p className="text-sm text-muted-foreground">Loading task tracker...</p>
@@ -1551,7 +1551,7 @@ export default function Homework() {
                               </Badge>
                             </div>
                             <p className="text-xs text-muted-foreground truncate">
-                              Task ref. {shortenStaffReference(submission.homework_task_id)}
+                              Linked task {shortenStaffReference(submission.homework_task_id)}
                             </p>
                           </button>
                         );
@@ -1630,7 +1630,7 @@ export default function Homework() {
                 ) : !isUuidLike(resolvedStudentId) ? (
                   <Card className="p-4 border-dashed">
                     <p className="text-sm text-muted-foreground">
-                      No valid student UUID is available from current visible homework data yet.
+                      No student context is available from current visible homework data yet.
                     </p>
                   </Card>
                 ) : trackerByStudentBusy ? (
@@ -1785,7 +1785,7 @@ export default function Homework() {
                     <div className="mb-4 rounded-lg border border-dashed p-3 bg-muted/20">
                       <p className="text-sm font-medium mb-2">By Student detail</p>
                       <p className="text-xs text-muted-foreground mb-2">
-                        Student {resolvedStudentId} · {selectedRealStudentItem?.task?.title || 'Untitled task'}
+                        Selected student · {selectedRealStudentItem?.task?.title || 'Untitled task'}
                       </p>
                       <div className="flex flex-wrap gap-2">
                         <Badge variant="outline" className={TRACKER_STATUS_BADGE[getStudentTrackerStatusLabel(selectedRealStudentItem)] || ''}>

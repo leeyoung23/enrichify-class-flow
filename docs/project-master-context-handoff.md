@@ -1651,3 +1651,22 @@ Handoff status: complete for continuity. Use this file as the primary context an
   - no SQL/RLS/auth/provider/release/visibility boundary changes in this sign-off checkpoint.
 - Recommended next lane:
   - production hardening planning and rollout readiness documentation.
+
+### Teacher homework + parent communication validation cleanup note (2026-05-04)
+
+- New checkpoint doc:
+  - `docs/teacher-homework-parent-communication-validation-cleanup-checkpoint.md`
+- Scope:
+  - `src/pages/ParentUpdates.jsx`,
+  - `src/pages/Homework.jsx`,
+  - `src/pages/MyTasks.jsx`.
+- Real-mode polish completed for teacher-facing clarity:
+  - removed remaining demo-first wording from normal staff helper copy,
+  - added clearer step sequencing for Parent Communication share flow,
+  - replaced UUID-heavy staff wording in Homework empty states with teacher-facing context copy,
+  - added quick teacher navigation actions in My Tasks to Homework and Parent Communication.
+- Demo/debug posture preserved:
+  - demo-oriented helper wording remains limited to demo/debug contexts.
+- Safety boundaries unchanged:
+  - no SQL/RLS/auth/provider/notification/auto-release changes,
+  - no parent visibility widening.

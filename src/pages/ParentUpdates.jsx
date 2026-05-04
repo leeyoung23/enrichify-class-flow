@@ -2,7 +2,7 @@ import React, { useMemo, useState } from 'react';
 import { useOutletContext } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { listClasses, listStudentsByClass, listParentUpdates, createParentUpdate, listAttendanceRecords, listHomeworkAttachments } from '@/services/dataService';
-import { getSelectedDemoRole } from '@/services/authService';
+import { getSelectedDemoRole, isDebugModeEnabled } from '@/services/authService';
 import { ROLES, getRole, isTeacherRole } from '@/services/permissionService';
 import { isSupabaseConfigured } from '@/services/supabaseClient';
 import { getClassMemorySignedUrl, listClassMemories, uploadClassMemory } from '@/services/supabaseUploadService';
@@ -113,6 +113,8 @@ export default function ParentUpdates() {
   const role = getRole(user);
   const isMemoryReviewer = role === ROLES.HQ_ADMIN || role === ROLES.BRANCH_SUPERVISOR;
   const isDemoMode = Boolean(getSelectedDemoRole());
+  const isDebugMode = isDebugModeEnabled();
+  const showDemoHelperCopy = Boolean(isDemoMode || isDebugMode);
   const hasSupabaseSession = Boolean(supabaseAppUser?.id);
   const canUseSupabaseMemoryReview = isMemoryReviewer && !isDemoMode && isSupabaseConfigured() && hasSupabaseSession;
 
@@ -918,7 +920,9 @@ export default function ParentUpdates() {
                       <p className="text-xs font-semibold uppercase tracking-wide text-primary mb-1">Step 4</p>
                       <h4 className="text-base font-semibold mb-1">Learning evidence preview</h4>
                       <p className="text-xs text-muted-foreground mb-3">
-                        A simple preview of saved learning evidence to help draft your message. You can always edit before anything is shared. Demo/local data only when not on live Supabase.
+                        {showDemoHelperCopy
+                          ? 'A simple preview of saved learning evidence to help draft your message. You can always edit before anything is shared. Demo/local preview may appear in this mode.'
+                          : 'A simple preview of saved learning evidence to help draft your message. You can always edit before anything is shared.'}
                       </p>
                       {!selectedStudentId ? (
                         <p className="text-sm text-muted-foreground">Choose a class and student in Step 3 to see this preview.</p>
@@ -1049,10 +1053,10 @@ export default function ParentUpdates() {
                         Save Draft
                       </Button>
                       <Button variant="outline" className="w-full min-h-11 sm:w-auto" onClick={() => handleSave('approved')} disabled={saveMutation.isPending || !approvedReport.trim()}>
-                        Mark approved
+                        Step 2: Mark ready to share
                       </Button>
                       <Button variant="outline" className="w-full min-h-11 sm:w-auto" onClick={() => handleSave('shared')} disabled={saveMutation.isPending || (isDemoMode && !sharedReport.trim())}>
-                        Approve & share with family
+                        Step 3: Share with family
                       </Button>
                       <Button variant="outline" className="w-full min-h-11 sm:w-auto" onClick={() => setStep('notes')}>
                         Back to note
@@ -1086,7 +1090,11 @@ export default function ParentUpdates() {
                     <Card className="p-4 sm:p-5 border-l-4 border-l-primary/40 shadow-sm">
                       <p className="text-xs font-semibold uppercase tracking-wide text-primary mb-1">Step 5</p>
                       <h4 className="text-base font-semibold mb-1">Weekly progress text</h4>
-                      <p className="text-xs text-muted-foreground mb-3">Demo template: no scheduling, no auto-send. Teachers review before parents see anything.</p>
+                      <p className="text-xs text-muted-foreground mb-3">
+                        {showDemoHelperCopy
+                          ? 'Template preview in this mode: no scheduling and no auto-send. Teachers review before parents see anything.'
+                          : 'Draft the weekly summary, then review and share when ready. Nothing is sent automatically.'}
+                      </p>
                       <div className="space-y-3">
                         <div><p className="text-xs text-muted-foreground mb-1">Learning focus this week</p><Textarea value={weeklyReport.learningFocus} onChange={(e) => setWeeklyReport((prev) => ({ ...prev, learningFocus: e.target.value }))} className="min-h-[70px] w-full" /></div>
                         <div><p className="text-xs text-muted-foreground mb-1">Strengths</p><Textarea value={weeklyReport.strengths} onChange={(e) => setWeeklyReport((prev) => ({ ...prev, strengths: e.target.value }))} className="min-h-[70px] w-full" /></div>
@@ -1143,9 +1151,9 @@ export default function ParentUpdates() {
               </div>
 
               {communicationType === 'comment' && filteredCommentUpdates.length === 0 ? (
-                <p className="text-sm text-muted-foreground">No reports found for this filter.</p>
+                <p className="text-sm text-muted-foreground">No comments yet for this filter. Start from Steps 2-5 to create and share one.</p>
               ) : communicationType === 'weekly_report' && filteredWeeklyUpdates.length === 0 ? (
-                <p className="text-sm text-muted-foreground">No weekly reports found for this filter.</p>
+                <p className="text-sm text-muted-foreground">No weekly reports yet for this filter. Use the weekly report steps to draft, review, and share.</p>
               ) : (
                 <div className="space-y-3 max-h-[700px] overflow-y-auto overflow-x-hidden pr-1">
                   {(communicationType === 'comment' ? filteredCommentUpdates : filteredWeeklyUpdates).map((update) => {
