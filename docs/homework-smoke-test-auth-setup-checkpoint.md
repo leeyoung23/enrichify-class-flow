@@ -31,8 +31,9 @@ Optional:
 
 - The parent smoke account must have a valid `linked_student_id`.
 - The linked student should be in a class/branch that is visible to staff test accounts used by the script path.
-- For `homework:assignment:write`, the script expects a branch-supervisor-allowed create path on `homework_tasks`.
-  - If the selected student/class fixture does not match the supervisor's branch scope, this appears as an RLS insert denial (setup mismatch, not automatically a product regression).
+- For `homework:assignment:write`, the script now discovers a supervisor-visible student fixture first (under current RLS), then uses that student/class/branch for allowed-write assertions.
+  - This keeps the main assertion aligned with legitimate branch scope.
+  - If no supervisor-visible student fixture is available, treat as fixture/setup failure.
 
 ## Interpreting common failures
 

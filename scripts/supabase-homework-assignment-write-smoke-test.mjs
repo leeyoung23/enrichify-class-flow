@@ -23,6 +23,11 @@ function resolvePassword(roleSpecificVar) {
   return process.env[roleSpecificVar] || process.env.RLS_TEST_PASSWORD || "";
 }
 
+function isUuidLike(value) {
+  return typeof value === "string"
+    && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(value.trim());
+}
+
 async function signInRole({ label, email, passwordVar }, deps) {
   const password = resolvePassword(passwordVar);
   if (!password) {
@@ -65,57 +70,40 @@ async function run() {
   const cleanupWarnings = [];
 
   let linkedStudent = null;
-  let siblingStudent = null;
   let createdSelectedTaskId = null;
   let createdIndividualTaskId = null;
   let createdClassTaskId = null;
-
-  const parentFixtureSignIn = await signInRole(parentUser, { signInWithEmailPassword, signOut });
-  if (!parentFixtureSignIn.ok) {
-    printResult("CHECK", "Parent fixture user unavailable; write smoke skipped");
-    return;
-  }
-
-  const parentAuth = await supabase.auth.getUser();
-  const parentProfileId = parentAuth.data?.user?.id || null;
-  if (!parentProfileId) {
-    printResult("CHECK", "Parent auth profile not available; write smoke skipped");
-    return;
-  }
-  const parentProfile = await supabase
-    .from("profiles")
-    .select("id,linked_student_id")
-    .eq("id", parentProfileId)
-    .maybeSingle();
-  if (parentProfile.error || !parentProfile.data?.linked_student_id) {
-    printResult("CHECK", `Parent linked-student fixture unavailable (${parentProfile.error?.message || "unknown"})`);
-    return;
-  }
-  const studentRead = await supabase
-    .from("students")
-    .select("id,branch_id,class_id,full_name")
-    .eq("id", parentProfile.data.linked_student_id)
-    .maybeSingle();
-  if (studentRead.error || !studentRead.data?.id) {
-    printResult("CHECK", `Linked student fixture unavailable (${studentRead.error?.message || "unknown"})`);
-    return;
-  }
-  linkedStudent = studentRead.data;
-  const siblingRead = await supabase
-    .from("students")
-    .select("id")
-    .eq("class_id", linkedStudent.class_id)
-    .neq("id", linkedStudent.id)
-    .limit(1)
-    .maybeSingle();
-  if (!siblingRead.error && siblingRead.data?.id) siblingStudent = siblingRead.data;
-  await signOut();
 
   const supervisorSignIn = await signInRole(supervisorUser, { signInWithEmailPassword, signOut });
   if (!supervisorSignIn.ok) {
     printResult("WARNING", "Branch Supervisor unavailable; expected allowed write cannot be verified");
     process.exit(1);
   }
+
+  // Use a fixture that is visible to the authenticated supervisor under current RLS.
+  // This keeps the "expected allowed write" assertion legitimate without weakening policy.
+  const supervisorStudentRead = await supabase
+    .from("students")
+    .select("id,branch_id,class_id,full_name")
+    .not("branch_id", "is", null)
+    .not("class_id", "is", null)
+    .order("created_at", { ascending: false })
+    .limit(20);
+  if (supervisorStudentRead.error || !Array.isArray(supervisorStudentRead.data)) {
+    printResult("WARNING", `Branch Supervisor: unable to load visible students (${supervisorStudentRead.error?.message || "unknown"})`);
+    process.exit(1);
+  }
+  linkedStudent = supervisorStudentRead.data.find(
+    (row) => isUuidLike(row?.id) && isUuidLike(row?.branch_id) && isUuidLike(row?.class_id)
+  ) || null;
+  if (!linkedStudent) {
+    printResult("WARNING", "Branch Supervisor: no RLS-visible student fixture with branch/class UUIDs");
+    process.exit(1);
+  }
+  printResult(
+    "PASS",
+    `Branch Supervisor: using visible fixture ${linkedStudent.full_name || linkedStudent.id}`
+  );
 
   const selectedTaskResult = await createHomeworkTaskWithAssignees({
     branchId: linkedStudent.branch_id,

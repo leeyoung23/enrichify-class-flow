@@ -1682,3 +1682,15 @@ Handoff status: complete for continuity. Use this file as the primary context an
   - `test:supabase:homework:assignment:write`
 - Clarified failure interpretation:
   - `Auth session missing!` and `homework_tasks` RLS-insert-denied can be environment/fixture setup failures, not necessarily UI/service regressions.
+
+### Homework assignment-write smoke stabilization note (2026-05-04)
+
+- Updated `scripts/supabase-homework-assignment-write-smoke-test.mjs`:
+  - removed parent-linked-student dependency for the allowed-write assertion,
+  - now discovers a supervisor-visible student/class/branch fixture under active RLS before task creation assertions.
+- Result:
+  - deterministic branch-supervisor create path succeeds when legitimate fixture data is visible under policy.
+- Boundaries preserved:
+  - no SQL/RLS changes,
+  - no auth bypass,
+  - parent/student create checks remain blocked assertions.
