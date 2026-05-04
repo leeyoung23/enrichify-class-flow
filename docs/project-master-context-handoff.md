@@ -31,6 +31,12 @@
 
 - **`AiParentReports.jsx`:** post-create **`loadReports({ silent: true })`** then **`setSelectedReportId(createdId)`** fixes sync effect resetting selection; **required \*** labels, **period order** validation, clearer toasts, **scrollIntoView** on new list row. **Doc:** **`docs/real-ai-staff-draft-generation-manual-qa-unblock-checkpoint.md`**, **`docs/real-ai-staff-draft-generation-ui-checkpoint.md`**.
 
+## Checkpoint update (AI parent report real AI draft failure diagnostics — 2026-05-03)
+
+- **`aiParentReportEdgeGenerationService.js`:** **`error.code`** on all failure paths (Edge **`body.error.code`**, **`edge_response_invalid`**, **`persistence_failed`**, client-side gates); **`publicAiParentReportEdgeErrorCode`** sanitizes unknown codes.
+- **`AiParentReports.jsx`:** inline **Generation failed:** card shows **code** + message; toast includes **`(code: …)`**; no tokens or raw provider payloads.
+- **Smoke:** **`npm run test:ai-parent-report:edge-client-error-codes`**. **Doc:** **`docs/real-ai-staff-draft-generation-ui-checkpoint.md`**.
+
 ## Checkpoint update (AI parent report manual QA unblock — create shell pickers, 2026-05-03)
 
 - **`AiParentReports.jsx`** — **branch/class/student** dropdowns for signed-in non-demo staff via **`getBranches` / `getClasses` / `getStudents`** (RLS). **Doc:** **`docs/real-ai-staff-draft-generation-manual-qa-unblock-checkpoint.md`**.

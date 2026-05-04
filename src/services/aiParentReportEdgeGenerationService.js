@@ -9,6 +9,51 @@ import { createAiParentReportVersion } from "./supabaseWriteService.js";
 
 const EDGE_FUNCTION_NAME = "generate-ai-parent-report-draft";
 
+/** Allowlisted / pattern-safe codes only — never echo arbitrary server strings. */
+const KNOWN_EDGE_ERROR_CODES = new Set([
+  "missing_auth",
+  "invalid_auth",
+  "scope_denied",
+  "invalid_report_id",
+  "unsafe_input",
+  "invalid_input",
+  "input_too_large",
+  "provider_disabled",
+  "provider_not_configured",
+  "auth_config_missing",
+  "internal_error",
+  "provider_timeout",
+  "provider_request_failed",
+  "provider_response_invalid",
+  "provider_network_error",
+  "provider_auth_failed",
+  "provider_permission_denied",
+  "provider_quota_exceeded",
+  "provider_rate_limited",
+  "provider_model_not_found",
+  "provider_not_found",
+  "provider_bad_request",
+  "provider_server_error",
+  "edge_response_invalid",
+  "persistence_failed",
+  "edge_error",
+  "client_not_configured",
+  "client_invalid_report",
+  "client_unsafe_input",
+  "client_no_session",
+  "client_app_misconfigured",
+  "client_network_error",
+  "client_bad_response",
+]);
+
+export function publicAiParentReportEdgeErrorCode(raw) {
+  const c = typeof raw === "string" ? raw.trim().toLowerCase() : "";
+  if (!c) return "";
+  if (KNOWN_EDGE_ERROR_CODES.has(c)) return c;
+  if (/^provider_[a-z0-9_]{1,40}$/.test(c)) return c;
+  return "";
+}
+
 function supabaseUrlTrimmed() {
   const raw =
     (typeof import.meta !== "undefined" && import.meta.env?.VITE_SUPABASE_URL) ||
@@ -52,14 +97,20 @@ function friendlyEdgeFailure(code, httpStatus, fallbackMessage) {
  */
 export async function generateRealAiParentReportDraftViaEdge({ reportId, input } = {}) {
   if (!isSupabaseConfigured() || !supabase) {
-    return { data: null, error: { message: "Supabase is not configured." } };
+    return {
+      data: null,
+      error: { code: "client_not_configured", message: "Supabase is not configured." },
+    };
   }
 
   const rid = typeof reportId === "string" ? reportId.trim() : "";
   const uuidRe =
     /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
   if (!uuidRe.test(rid)) {
-    return { data: null, error: { message: "Select a valid report." } };
+    return {
+      data: null,
+      error: { code: "client_invalid_report", message: "Select a valid report." },
+    };
   }
 
   const safeInput =
@@ -69,6 +120,7 @@ export async function generateRealAiParentReportDraftViaEdge({ reportId, input }
     return {
       data: null,
       error: {
+        code: "client_unsafe_input",
         message:
           "Input contains blocked patterns (URLs, storage paths, or secret-like text). Remove them and try again.",
       },
@@ -79,7 +131,7 @@ export async function generateRealAiParentReportDraftViaEdge({ reportId, input }
   if (sessionError || !sessionData?.session?.access_token) {
     return {
       data: null,
-      error: { message: "Sign in required to generate a real AI draft." },
+      error: { code: "client_no_session", message: "Sign in required to generate a real AI draft." },
     };
   }
 
@@ -87,7 +139,10 @@ export async function generateRealAiParentReportDraftViaEdge({ reportId, input }
   const base = supabaseUrlTrimmed();
   const anon = supabaseAnonKey();
   if (!base || !anon) {
-    return { data: null, error: { message: "App configuration is incomplete." } };
+    return {
+      data: null,
+      error: { code: "client_app_misconfigured", message: "App configuration is incomplete." },
+    };
   }
 
   const url = `${base}/functions/v1/${EDGE_FUNCTION_NAME}`;
@@ -108,23 +163,31 @@ export async function generateRealAiParentReportDraftViaEdge({ reportId, input }
       }),
     });
   } catch {
-    return { data: null, error: { message: "Network error. Check your connection and try again." } };
+    return {
+      data: null,
+      error: { code: "client_network_error", message: "Network error. Check your connection and try again." },
+    };
   }
 
   let body;
   try {
     body = await res.json();
   } catch {
-    return { data: null, error: { message: "Invalid response from AI draft service." } };
+    return {
+      data: null,
+      error: { code: "client_bad_response", message: "Invalid response from AI draft service." },
+    };
   }
 
   const errCode = body?.error?.code;
   const errMsg = typeof body?.error?.message === "string" ? body.error.message : "";
 
   if (!res.ok || body?.ok === false) {
+    const pubCode = publicAiParentReportEdgeErrorCode(errCode) || "edge_error";
     return {
       data: null,
       error: {
+        code: pubCode,
         message: friendlyEdgeFailure(errCode, res.status, errMsg),
       },
     };
@@ -132,7 +195,13 @@ export async function generateRealAiParentReportDraftViaEdge({ reportId, input }
 
   const draft = body?.data;
   if (!draft || typeof draft.structuredSections !== "object" || Array.isArray(draft.structuredSections)) {
-    return { data: null, error: { message: "AI draft response was incomplete." } };
+    return {
+      data: null,
+      error: {
+        code: "edge_response_invalid",
+        message: "AI draft response was incomplete.",
+      },
+    };
   }
 
   const structuredSections = draft.structuredSections;
@@ -144,7 +213,7 @@ export async function generateRealAiParentReportDraftViaEdge({ reportId, input }
       ? structuredSections.teacher_final_comment.trim()
       : "";
 
-  return createAiParentReportVersion({
+  const persist = await createAiParentReportVersion({
     reportId: rid,
     generationSource: "real_ai",
     structuredSections,
@@ -155,4 +224,19 @@ export async function generateRealAiParentReportDraftViaEdge({ reportId, input }
     finalText: teacherFinal ? { teacher_final_comment: teacherFinal } : null,
     aiModelLabel: modelRaw || null,
   });
+
+  if (persist.error || !persist.data?.version?.id) {
+    return {
+      data: null,
+      error: {
+        code: "persistence_failed",
+        message:
+          typeof persist.error?.message === "string" && persist.error.message.trim()
+            ? persist.error.message.trim()
+            : "Could not save the AI draft version after generation.",
+      },
+    };
+  }
+
+  return persist;
 }

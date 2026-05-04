@@ -261,6 +261,8 @@ export default function AiParentReports() {
   const [generatingRealAiDraft, setGeneratingRealAiDraft] = useState(false);
   /** null | 'generating' | 'saved' | 'failed' — informational only; resets when switching reports */
   const [realAiDraftPhase, setRealAiDraftPhase] = useState(null);
+  /** Safe diagnostic only — no tokens or provider bodies (set from service `error.code`). */
+  const [realAiDraftFailure, setRealAiDraftFailure] = useState(null);
   const [lifecycleBusy, setLifecycleBusy] = useState('');
 
   const [demoReports, setDemoReports] = useState(DEMO_BASE_REPORTS);
@@ -523,6 +525,7 @@ export default function AiParentReports() {
 
   useEffect(() => {
     setRealAiDraftPhase(null);
+    setRealAiDraftFailure(null);
   }, [selectedReportId]);
 
   useEffect(() => {
@@ -778,6 +781,7 @@ export default function AiParentReports() {
 
     setGeneratingRealAiDraft(true);
     setRealAiDraftPhase('generating');
+    setRealAiDraftFailure(null);
 
     const result = await generateRealAiParentReportDraftViaEdge({
       reportId: selectedReportId,
@@ -786,7 +790,10 @@ export default function AiParentReports() {
 
     if (result.error || !result.data?.version?.id) {
       setRealAiDraftPhase('failed');
-      toast.error(result.error?.message || 'Failed to generate real AI draft.');
+      const code = typeof result.error?.code === "string" ? result.error.code.trim() : "";
+      const msg = result.error?.message || "Failed to generate real AI draft.";
+      setRealAiDraftFailure({ code: code || "unknown", message: msg });
+      toast.error(code ? `${msg} (code: ${code})` : msg);
       setGeneratingRealAiDraft(false);
       return;
     }
@@ -796,6 +803,7 @@ export default function AiParentReports() {
     }
 
     setRealAiDraftPhase('saved');
+    setRealAiDraftFailure(null);
     toast.success('Real AI draft saved for review. Parents cannot see it until you release a version.');
     await Promise.all([loadReports(), loadDetail()]);
     setGeneratingRealAiDraft(false);
@@ -2050,10 +2058,16 @@ export default function AiParentReports() {
               Real AI draft saved for review — still not visible to parents until release.
             </p>
           ) : null}
-          {realAiDraftPhase === 'failed' ? (
-            <p className="text-sm font-medium text-destructive">
-              Failed to generate real AI draft — fix issues above or try again.
-            </p>
+          {realAiDraftPhase === 'failed' && realAiDraftFailure ? (
+            <div className="rounded-md border border-destructive/40 bg-destructive/5 px-3 py-2 text-sm text-destructive space-y-1">
+              <p className="font-medium">
+                Generation failed{realAiDraftFailure.code ? `: ${realAiDraftFailure.code}` : ''}.
+              </p>
+              <p className="text-destructive/90">{realAiDraftFailure.message}</p>
+              <p className="text-xs text-muted-foreground">
+                Check Source Evidence Preview and report metadata above, then retry. No keys or raw provider responses are shown here.
+              </p>
+            </div>
           ) : null}
           {!inDemoMode && canUseSupabase && selectedReportId ? (
             <p className="text-xs text-muted-foreground">

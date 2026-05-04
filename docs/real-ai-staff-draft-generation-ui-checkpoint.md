@@ -6,6 +6,7 @@
   - **Create report shell:** staff-visible **branch / class (optional) / student** dropdowns when **`showStaffSelectorShell`**: **`canAccess && !inDemoMode && isSupabaseConfigured()`** — independent of **`canUseSupabase`** so the selector grid is never swapped for a UUID-first layout while identity or catalog hooks settle. **`loadPickerCatalog`** follows **`showStaffSelectorShell`**. **`canUseSupabase`** (**includes `hasLiveSupabaseIdentity`**) remains for report list/detail and other live reads. **Advanced UUID fallback** is a **closed-by-default Collapsible**, not inline UUID labels — see **`docs/real-ai-staff-draft-generation-manual-qa-unblock-checkpoint.md`**.
   - **`inDemoMode`** = URL **`demoRole`** query only (**`useSearchParams`**). **`DemoRoleSwitcher`** receives **`layoutRole`** from **`AppLayout`** (not outlet context). **Diagnostics** + **Exit demo preview** on **`AiParentReports`** when URL demo is active.
   - **Create shell polish:** required-field **\*** on branch/student/report type/periods; **period end ≥ start** (inline + disabled submit); post-create **`loadReports({ silent: true })`** then **`setSelectedReportId`** so the new shell stays selected; toast **Report shell created successfully.**; list row **`id`** for scroll-into-view.
+  - **Real AI draft failure diagnostics:** **`generateRealAiParentReportDraftViaEdge`** returns **`error.code`** (allowlisted / `provider_*` pattern) with safe messages; UI shows **Generation failed:** plus the **code** and message (toast includes **`(code: …)`**); **`persistence_failed`** when Edge succeeds but **`createAiParentReportVersion`** fails. Smoke: **`npm run test:ai-parent-report:edge-client-error-codes`**.
   - Explicit action **Generate real AI draft** (only on click; not on load or on report select).
   - Clear copy: real AI, **staff review required**, **parents do not see drafts** until **explicit release**.
   - **Disabled** in **demo role** and without authenticated Supabase session.
@@ -39,6 +40,7 @@ npm run typecheck
 npm run test:supabase:ai-parent-reports
 npm run test:supabase:ai-parent-report:real-ai-persistence
 npm run test:supabase:ai-parent-report:edge-generation-auth
+npm run test:ai-parent-report:edge-client-error-codes
 ```
 
 Optional broader suite (provider / Edge):
@@ -54,6 +56,7 @@ These prove adapter/Edge/service persistence boundaries; they **do not** replace
 ## Manual QA (recommended before production)
 
 - Staff user **without** demo role: open **`/ai-parent-reports`**, select a draft report with complete metadata, click **Generate real AI draft**, confirm new **`real_ai`** version appears and **parents still cannot see** the draft until release.
+- On failure, confirm the **Generation failed:** line shows a **code** (e.g. **`scope_denied`**, **`provider_not_configured`**, **`persistence_failed`**) plus a safe message — no tokens or raw provider JSON.
 - Confirm **403/401** paths show friendly messages (wrong branch/report scope / expired session).
 - Confirm **demo role** cannot invoke real AI (button disabled + helper copy).
 
