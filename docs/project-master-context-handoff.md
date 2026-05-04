@@ -1,5 +1,9 @@
 # Project Master Context Handoff
 
+## Checkpoint update (real AI staff draft generation manual QA PASS — 2026-05-03)
+
+- **Doc:** **`docs/real-ai-staff-draft-generation-qa-pass-checkpoint.md`** — staff browser **PASS** on **`/ai-parent-reports`** (**OPTIONS** + **POST 200**, success toast + inline saved copy, draft staff-only); safety boundaries; **remaining** prototype QA (version history, parent unreleased, manual release, evidence links); **parked** lanes (PDF, notifications, OCR, audit, etc.). Baseline includes **`8628555`**. **Docs-only** checkpoint — **no** runtime edits.
+
 ## Checkpoint update (AI parent report Edge generation CORS — 2026-05-03)
 
 - **Root cause:** Browser **`fetch`** to **`/functions/v1/generate-ai-parent-report-draft`** is cross-origin with **`Authorization`** + **`apikey`** + JSON **`Content-Type`** → **OPTIONS** preflight + **POST** responses must expose **`Access-Control-Allow-*`**. Without them, DevTools shows **CORS error** and the client maps the failure to **`client_network_error`**.

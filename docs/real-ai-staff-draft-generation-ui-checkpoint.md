@@ -62,6 +62,12 @@ These prove adapter/Edge/service persistence boundaries; they **do not** replace
 - Confirm **403/401** paths show friendly messages (wrong branch/report scope / expired session).
 - Confirm **demo role** cannot invoke real AI (button disabled + helper copy).
 
+## Manual QA PASS — internal prototype (recorded)
+
+- **Full report:** **`docs/real-ai-staff-draft-generation-qa-pass-checkpoint.md`** (2026-05-03; baseline includes **`8628555`**).
+- **Observed in browser:** **OPTIONS** preflight OK; **`POST` 200**; toast *Real AI draft saved for review. Parents cannot see it until you release a version.*; inline *Real AI draft saved for review — still not visible to parents until release.*; **no** demo role; draft **not** auto-released.
+- **Next:** confirm version history + parent unreleased + manual release workflow + evidence-link posture per that doc.
+
 ## Next milestones
 
 - Deeper **evidence integration** (what gets summarized vs withheld) and teacher confirmation UX for sensitive aggregates per **`EVIDENCE_CLASSIFICATION`**.
