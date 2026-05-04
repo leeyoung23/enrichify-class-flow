@@ -27,6 +27,10 @@
 - **Fix:** **`DemoRoleSwitcher layoutRole={role}`** from **`AppLayout`**; **`AiParentReports`** uses **`useSearchParams`** for **`inDemoMode`**, **Diagnostics** (`demo preview` / `real staff` / `no-session`), **Exit demo preview** strips **`demoRole`** from URL.
 - **No** SQL/RLS/storage/ParentView/notifications/OCR/PDF/Edge/persistence/release/`real_ai` logic changes.
 
+## Checkpoint update (AI parent report shell create polish — 2026-05-03)
+
+- **`AiParentReports.jsx`:** post-create **`loadReports({ silent: true })`** then **`setSelectedReportId(createdId)`** fixes sync effect resetting selection; **required \*** labels, **period order** validation, clearer toasts, **scrollIntoView** on new list row. **Doc:** **`docs/real-ai-staff-draft-generation-manual-qa-unblock-checkpoint.md`**, **`docs/real-ai-staff-draft-generation-ui-checkpoint.md`**.
+
 ## Checkpoint update (AI parent report manual QA unblock — create shell pickers, 2026-05-03)
 
 - **`AiParentReports.jsx`** — **branch/class/student** dropdowns for signed-in non-demo staff via **`getBranches` / `getClasses` / `getStudents`** (RLS). **Doc:** **`docs/real-ai-staff-draft-generation-manual-qa-unblock-checkpoint.md`**.

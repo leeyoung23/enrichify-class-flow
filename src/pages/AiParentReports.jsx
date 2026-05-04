@@ -160,6 +160,14 @@ function isReportIdUuid(id) {
   );
 }
 
+/** YYYY-MM-DD string compare (inclusive end on or after start). */
+function isPeriodEndBeforeStart(periodStart, periodEnd) {
+  const s = String(periodStart || '').trim().slice(0, 10);
+  const e = String(periodEnd || '').trim().slice(0, 10);
+  if (!s || !e || s.length < 10 || e.length < 10) return false;
+  return e < s;
+}
+
 function evidenceClassificationBadgeLabel(classification) {
   switch (classification) {
     case EVIDENCE_CLASSIFICATION.NEVER_SEND_TO_PROVIDER:
@@ -329,6 +337,13 @@ export default function AiParentReports() {
     return list;
   }, [pickerStudents, createDraftForm.branchId, createDraftForm.classId]);
 
+  const createDraftPeriodOrderError = useMemo(() => {
+    if (isPeriodEndBeforeStart(createDraftForm.reportPeriodStart, createDraftForm.reportPeriodEnd)) {
+      return 'Period end must be on or after period start.';
+    }
+    return '';
+  }, [createDraftForm.reportPeriodStart, createDraftForm.reportPeriodEnd]);
+
   const fetchSourceEvidenceBundle = useCallback(async () => {
     if (!selectedReport || !selectedReportId) return null;
     const periodStart = selectedReport.reportPeriodStart
@@ -352,7 +367,7 @@ export default function AiParentReports() {
     });
   }, [selectedReport, selectedReportId, inDemoMode, canUseSupabase]);
 
-  const loadReports = useCallback(async () => {
+  const loadReports = useCallback(async ({ silent = false } = {}) => {
     if (!canAccess) {
       setReports([]);
       setReportsError('');
@@ -373,7 +388,9 @@ export default function AiParentReports() {
       return;
     }
 
-    setReportsLoading(true);
+    if (!silent) {
+      setReportsLoading(true);
+    }
     setReportsError('');
     const result = await listAiParentReports({});
     if (result.error) {
@@ -787,11 +804,19 @@ export default function AiParentReports() {
   const handleCreateDraft = async () => {
     if (!canAccess) return;
     if (!createDraftForm.studentId.trim() || !createDraftForm.branchId.trim()) {
-      toast.message('studentId and branchId are required.');
+      toast.message('Branch and student are required.');
+      return;
+    }
+    if (!createDraftForm.reportType?.trim()) {
+      toast.message('Report type is required.');
       return;
     }
     if (!createDraftForm.reportPeriodStart || !createDraftForm.reportPeriodEnd) {
-      toast.message('report period start and end are required.');
+      toast.message('Period start and period end are required.');
+      return;
+    }
+    if (isPeriodEndBeforeStart(createDraftForm.reportPeriodStart, createDraftForm.reportPeriodEnd)) {
+      toast.message('Period end must be on or after period start.');
       return;
     }
 
@@ -821,7 +846,7 @@ export default function AiParentReports() {
       setDemoVersionsByReportId((prev) => ({ ...prev, [nextId]: [] }));
       setDemoEvidenceByReportId((prev) => ({ ...prev, [nextId]: [] }));
       setSelectedReportId(nextId);
-      toast.success('Demo draft report created locally.');
+      toast.success('Report shell created successfully (demo — local only).');
       setCreatingDraft(false);
       return;
     }
@@ -836,13 +861,20 @@ export default function AiParentReports() {
       assignedTeacherProfileId: createDraftForm.assignedTeacherProfileId.trim() || null,
     });
     if (result.error || !result.data?.id) {
-      toast.error(result.error?.message || 'Unable to create AI parent report draft right now.');
+      toast.error(result.error?.message || 'Could not create the report shell. Try again or check your connection.');
       setCreatingDraft(false);
       return;
     }
-    toast.success('Draft report created.');
-    setSelectedReportId(result.data.id);
-    await loadReports();
+    const createdId = result.data.id;
+    /** Refresh list before selecting the new id so sync effect does not reset selection to the first row. */
+    await loadReports({ silent: true });
+    setSelectedReportId(createdId);
+    if (typeof document !== 'undefined') {
+      window.requestAnimationFrame(() => {
+        document.getElementById(`apr-report-row-${createdId}`)?.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+      });
+    }
+    toast.success('Report shell created successfully.');
     setCreatingDraft(false);
   };
 
@@ -1098,6 +1130,7 @@ export default function AiParentReports() {
               {reports.map((row) => (
                 <button
                   key={row.id}
+                  id={`apr-report-row-${row.id}`}
                   type="button"
                   className={`w-full text-left rounded-lg border p-3 transition-colors ${
                     selectedReportId === row.id ? 'border-primary bg-primary/5' : 'hover:bg-muted/40'
@@ -1134,7 +1167,9 @@ export default function AiParentReports() {
           {inDemoMode ? (
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div className="space-y-1.5">
-                <Label htmlFor="apr-student-id">studentId</Label>
+                <Label htmlFor="apr-student-id">
+                  studentId <span className="text-destructive font-semibold" aria-hidden>*</span>
+                </Label>
                 <Input
                   id="apr-student-id"
                   value={createDraftForm.studentId}
@@ -1152,7 +1187,9 @@ export default function AiParentReports() {
                 />
               </div>
               <div className="space-y-1.5">
-                <Label htmlFor="apr-branch-id">branchId</Label>
+                <Label htmlFor="apr-branch-id">
+                  branchId <span className="text-destructive font-semibold" aria-hidden>*</span>
+                </Label>
                 <Input
                   id="apr-branch-id"
                   value={createDraftForm.branchId}
@@ -1161,7 +1198,9 @@ export default function AiParentReports() {
                 />
               </div>
               <div className="space-y-1.5">
-                <Label>reportType</Label>
+                <Label>
+                  reportType <span className="text-destructive font-semibold" aria-hidden>*</span>
+                </Label>
                 <Select
                   value={createDraftForm.reportType}
                   onValueChange={(value) => setCreateDraftForm((prev) => ({ ...prev, reportType: value }))}
@@ -1175,7 +1214,9 @@ export default function AiParentReports() {
                 </Select>
               </div>
               <div className="space-y-1.5">
-                <Label htmlFor="apr-period-start-d">reportPeriodStart</Label>
+                <Label htmlFor="apr-period-start-d">
+                  reportPeriodStart <span className="text-destructive font-semibold" aria-hidden>*</span>
+                </Label>
                 <Input
                   id="apr-period-start-d"
                   type="date"
@@ -1184,7 +1225,9 @@ export default function AiParentReports() {
                 />
               </div>
               <div className="space-y-1.5">
-                <Label htmlFor="apr-period-end-d">reportPeriodEnd</Label>
+                <Label htmlFor="apr-period-end-d">
+                  reportPeriodEnd <span className="text-destructive font-semibold" aria-hidden>*</span>
+                </Label>
                 <Input
                   id="apr-period-end-d"
                   type="date"
@@ -1192,6 +1235,11 @@ export default function AiParentReports() {
                   onChange={(event) => setCreateDraftForm((prev) => ({ ...prev, reportPeriodEnd: event.target.value }))}
                 />
               </div>
+              {createDraftPeriodOrderError ? (
+                <p className="text-xs text-destructive sm:col-span-2" role="alert">
+                  {createDraftPeriodOrderError}
+                </p>
+              ) : null}
               <div className="space-y-1.5 sm:col-span-2">
                 <Label htmlFor="apr-assigned-teacher-d">assignedTeacherProfileId (optional)</Label>
                 <Input
@@ -1253,7 +1301,9 @@ export default function AiParentReports() {
               </div>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div className="space-y-1.5">
-                  <Label>Branch</Label>
+                  <Label>
+                    Branch <span className="text-destructive font-semibold" aria-hidden>*</span>
+                  </Label>
                   <Select
                     value={createDraftForm.branchId || undefined}
                     onValueChange={(value) => {
@@ -1306,7 +1356,9 @@ export default function AiParentReports() {
                   </Select>
                 </div>
                 <div className="space-y-1.5 sm:col-span-2">
-                  <Label>Student</Label>
+                  <Label>
+                    Student <span className="text-destructive font-semibold" aria-hidden>*</span>
+                  </Label>
                   <Select
                     value={createDraftForm.studentId || undefined}
                     onValueChange={(value) => {
@@ -1346,7 +1398,9 @@ export default function AiParentReports() {
                   ) : null}
                 </div>
                 <div className="space-y-1.5">
-                  <Label>Report type</Label>
+                  <Label>
+                    Report type <span className="text-destructive font-semibold" aria-hidden>*</span>
+                  </Label>
                   <Select
                     value={createDraftForm.reportType}
                     onValueChange={(value) => setCreateDraftForm((prev) => ({ ...prev, reportType: value }))}
@@ -1360,7 +1414,9 @@ export default function AiParentReports() {
                   </Select>
                 </div>
                 <div className="space-y-1.5">
-                  <Label htmlFor="apr-period-start">Period start</Label>
+                  <Label htmlFor="apr-period-start">
+                    Period start <span className="text-destructive font-semibold" aria-hidden>*</span>
+                  </Label>
                   <Input
                     id="apr-period-start"
                     type="date"
@@ -1369,7 +1425,9 @@ export default function AiParentReports() {
                   />
                 </div>
                 <div className="space-y-1.5">
-                  <Label htmlFor="apr-period-end">Period end</Label>
+                  <Label htmlFor="apr-period-end">
+                    Period end <span className="text-destructive font-semibold" aria-hidden>*</span>
+                  </Label>
                   <Input
                     id="apr-period-end"
                     type="date"
@@ -1377,6 +1435,11 @@ export default function AiParentReports() {
                     onChange={(event) => setCreateDraftForm((prev) => ({ ...prev, reportPeriodEnd: event.target.value }))}
                   />
                 </div>
+                {createDraftPeriodOrderError ? (
+                  <p className="text-xs text-destructive sm:col-span-2" role="alert">
+                    {createDraftPeriodOrderError}
+                  </p>
+                ) : null}
               </div>
               <Collapsible defaultOpen={false} className="rounded-md border bg-muted/30 text-sm">
                 <CollapsibleTrigger className="flex w-full items-center justify-between gap-2 p-3 text-left font-medium text-foreground outline-none hover:bg-muted/40 rounded-md [&[data-state=open]>svg]:rotate-180">
@@ -1451,7 +1514,9 @@ export default function AiParentReports() {
               </div>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div className="space-y-1.5">
-                  <Label>Report type</Label>
+                  <Label>
+                    Report type <span className="text-destructive font-semibold" aria-hidden>*</span>
+                  </Label>
                   <Select
                     value={createDraftForm.reportType}
                     onValueChange={(value) => setCreateDraftForm((prev) => ({ ...prev, reportType: value }))}
@@ -1465,7 +1530,9 @@ export default function AiParentReports() {
                   </Select>
                 </div>
                 <div className="space-y-1.5">
-                  <Label htmlFor="apr-period-start-fallback">Period start</Label>
+                  <Label htmlFor="apr-period-start-fallback">
+                    Period start <span className="text-destructive font-semibold" aria-hidden>*</span>
+                  </Label>
                   <Input
                     id="apr-period-start-fallback"
                     type="date"
@@ -1474,7 +1541,9 @@ export default function AiParentReports() {
                   />
                 </div>
                 <div className="space-y-1.5">
-                  <Label htmlFor="apr-period-end-fallback">Period end</Label>
+                  <Label htmlFor="apr-period-end-fallback">
+                    Period end <span className="text-destructive font-semibold" aria-hidden>*</span>
+                  </Label>
                   <Input
                     id="apr-period-end-fallback"
                     type="date"
@@ -1482,6 +1551,11 @@ export default function AiParentReports() {
                     onChange={(event) => setCreateDraftForm((prev) => ({ ...prev, reportPeriodEnd: event.target.value }))}
                   />
                 </div>
+                {createDraftPeriodOrderError ? (
+                  <p className="text-xs text-destructive sm:col-span-2" role="alert">
+                    {createDraftPeriodOrderError}
+                  </p>
+                ) : null}
               </div>
               <Collapsible defaultOpen={false} className="rounded-md border bg-muted/30 text-sm">
                 <CollapsibleTrigger className="flex w-full items-center justify-between gap-2 p-3 text-left font-medium text-foreground outline-none hover:bg-muted/40 rounded-md [&[data-state=open]>svg]:rotate-180">
@@ -1543,7 +1617,11 @@ export default function AiParentReports() {
               </Collapsible>
             </>
           )}
-          <Button onClick={() => { void handleCreateDraft(); }} disabled={creatingDraft}>
+          <Button
+            type="button"
+            onClick={() => { void handleCreateDraft(); }}
+            disabled={creatingDraft || Boolean(createDraftPeriodOrderError)}
+          >
             {creatingDraft ? 'Creating…' : 'Create report shell'}
           </Button>
         </Card>

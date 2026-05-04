@@ -34,8 +34,9 @@
 
 1. **`npm run dev`** → **`http://localhost:5173/ai-parent-reports`** — URL **without** `?demoRole=…`, signed in as staff (HQ admin).
 2. **Create report shell:** expect **Branch** → optional **Class** → **Student**, **Reload lists**, **Report type**, period dates first; **Advanced UUID fallback** stays **collapsed** until expanded. Small **Mode:** line shows **`signed-in staff`** / **`session loading`** / **`no-session`** (no secrets).
-3. Confirm report appears in **Parent Reports** list → select it.
-4. Scroll to **Generate real AI draft** → click once → verify **`real_ai`** version and **no** parent visibility until release.
+3. After **Create report shell**, the **Parent Reports** list refreshes without blanking the whole panel (**silent refresh**), the **new row stays selected** (selection was previously reset because `setSelectedReportId` ran before the list contained the new id), and the list row **scrolls into view** when possible.
+4. **Validation:** required fields marked with **\***; **period end** cannot be before **period start** (inline message + submit disabled); success toast **Report shell created successfully.**
+5. Scroll to **Generate real AI draft** → click once → verify **`real_ai`** version and **no** parent visibility until release.
 
 ### Automated validation (staff UI change only)
 
