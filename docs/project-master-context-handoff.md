@@ -1,5 +1,11 @@
 # Project Master Context Handoff
 
+## Checkpoint update (AI parent report Edge generation CORS — 2026-05-03)
+
+- **Root cause:** Browser **`fetch`** to **`/functions/v1/generate-ai-parent-report-draft`** is cross-origin with **`Authorization`** + **`apikey`** + JSON **`Content-Type`** → **OPTIONS** preflight + **POST** responses must expose **`Access-Control-Allow-*`**. Without them, DevTools shows **CORS error** and the client maps the failure to **`client_network_error`**.
+- **Fix:** **`supabase/functions/_shared/aiParentReportDraftEdgeCors.ts`** + **`generate-ai-parent-report-draft/index.ts`** — **204** **`OPTIONS`** before auth; CORS headers on **all** JSON responses. **Auth / `can_manage_ai_parent_report` / provider secrets** unchanged (keys server-side only; no Edge **`real_ai`** persistence).
+- **Smoke / docs:** **`scripts/supabase-ai-parent-report-edge-generation-auth-smoke-test.mjs`** asserts **OPTIONS** + **POST 401** CORS headers; **`docs/real-ai-parent-report-edge-auth-checkpoint.md`**, **`docs/real-ai-staff-draft-generation-ui-checkpoint.md`**.
+
 ## Checkpoint update (AI parent report `real_ai` draft persistence — service only, 2026-05-03)
 
 - **`src/services/supabaseWriteService.js`** — **`createAiParentReportVersion`** accepts **`generationSource: 'real_ai'`**; **`ai_generated_at`** set; optional **`ai_model_label`**. **Doc:** **`docs/real-ai-draft-persistence-unlock-checkpoint.md`**.

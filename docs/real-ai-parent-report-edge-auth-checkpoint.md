@@ -23,6 +23,21 @@
 - **No** OCR / PDF download or storage work.
 - Provider keys remain **Edge secrets** / server env only; not exposed to the browser bundle.
 
+## CORS (browser staff UI)
+
+**Symptom:** Chrome DevTools shows **CORS error** on **`POST …/functions/v1/generate-ai-parent-report-draft`**; the app surfaces **`client_network_error`** because the browser blocks reading the response when CORS headers are missing.
+
+**Cause:** Cross-origin requests with **`Authorization`**, **`apikey`**, and **`Content-Type: application/json`** trigger a **preflight `OPTIONS`** request and require **`Access-Control-Allow-*`** on **both** the preflight response and the actual **POST** response (including **401** JSON).
+
+**Fix (Edge function):**
+
+- **`supabase/functions/_shared/aiParentReportDraftEdgeCors.ts`** — static header map: **`Access-Control-Allow-Origin: *`**, **`Access-Control-Allow-Headers: authorization, x-client-info, apikey, content-type`**, **`Access-Control-Allow-Methods: POST, OPTIONS`**.
+- **`supabase/functions/generate-ai-parent-report-draft/index.ts`** — **`OPTIONS`** returns **204** with CORS headers **before** auth or provider logic; every **`jsonResponse`** merges the same CORS headers (success, **`missing_auth`**, **`scope_denied`**, provider errors, **`internal_error`**, etc.).
+
+**Unchanged:** JWT validation and **`can_manage_ai_parent_report`** gate; no provider keys in responses; no persistence in Edge.
+
+**Smoke:** **`npm run test:supabase:ai-parent-report:edge-generation-auth`** — **`OPTIONS`** preflight + CORS headers; unauthenticated **`POST`** still **401** **`missing_auth`** with CORS headers on the response.
+
 ## HTTP behaviour
 
 | Case | Result |
@@ -38,7 +53,7 @@
 |--------|------|
 | `npm run test:ai-parent-report:real-provider-smoke` | Calls **adapter** in Node (unchanged contract). |
 | `npm run test:supabase:ai-parent-report:edge-real-provider` | Same — **not** HTTP Edge. |
-| `npm run test:supabase:ai-parent-report:edge-generation-auth` | **Optional** HTTP to deployed `.../functions/v1/generate-ai-parent-report-draft`; **401** unauthenticated check; **CHECK-skip** if URL/keys missing or host unreachable. Optional **`AI_PARENT_REPORT_EDGE_TEST_JWT`** + **`AI_PARENT_REPORT_EDGE_TEST_REPORT_ID`** for a manual **CHECK** probe. |
+| `npm run test:supabase:ai-parent-report:edge-generation-auth` | **Optional** HTTP to deployed `.../functions/v1/generate-ai-parent-report-draft`; **OPTIONS** + CORS headers; **401** unauthenticated **POST** + **`missing_auth`** + CORS on response; **CHECK-skip** if URL/keys missing or host unreachable. Optional **`AI_PARENT_REPORT_EDGE_TEST_JWT`** + **`AI_PARENT_REPORT_EDGE_TEST_REPORT_ID`** for a manual **CHECK** probe. |
 
 ## CHECK-skip / limitations
 

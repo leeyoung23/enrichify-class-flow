@@ -10,14 +10,22 @@
 
 import { generateAiParentReportDraft } from "../_shared/aiParentReportProviderAdapter.ts";
 import { authorizeAiParentReportDraftGeneration } from "../_shared/aiParentReportEdgeAuth.ts";
+import { mergeAiParentReportDraftCorsHeaders } from "../_shared/aiParentReportDraftEdgeCors.ts";
 
 function jsonResponse(body: Record<string, unknown>, status = 200): Response {
   return new Response(JSON.stringify(body), {
     status,
-    headers: {
+    headers: mergeAiParentReportDraftCorsHeaders({
       "Content-Type": "application/json",
       "Cache-Control": "no-store",
-    },
+    }),
+  });
+}
+
+function corsPreflightResponse(): Response {
+  return new Response(null, {
+    status: 204,
+    headers: mergeAiParentReportDraftCorsHeaders({}),
   });
 }
 
@@ -65,6 +73,10 @@ function httpStatusForError(code: string | undefined): number {
 }
 
 Deno.serve(async (req: Request) => {
+  if (req.method === "OPTIONS") {
+    return corsPreflightResponse();
+  }
+
   if (req.method !== "POST") {
     return jsonResponse({ error: "Method not allowed", expected_method: "POST" }, 405);
   }

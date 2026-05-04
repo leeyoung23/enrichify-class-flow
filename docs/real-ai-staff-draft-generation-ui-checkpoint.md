@@ -7,6 +7,7 @@
   - **`inDemoMode`** = URL **`demoRole`** query only (**`useSearchParams`**). **`DemoRoleSwitcher`** receives **`layoutRole`** from **`AppLayout`** (not outlet context). **Diagnostics** + **Exit demo preview** on **`AiParentReports`** when URL demo is active.
   - **Create shell polish:** required-field **\*** on branch/student/report type/periods; **period end ≥ start** (inline + disabled submit); post-create **`loadReports({ silent: true })`** then **`setSelectedReportId`** so the new shell stays selected; toast **Report shell created successfully.**; list row **`id`** for scroll-into-view.
   - **Real AI draft failure diagnostics:** **`generateRealAiParentReportDraftViaEdge`** returns **`error.code`** (allowlisted / `provider_*` pattern) with safe messages; UI shows **Generation failed:** plus the **code** and message (toast includes **`(code: …)`**); **`persistence_failed`** when Edge succeeds but **`createAiParentReportVersion`** fails. Smoke: **`npm run test:ai-parent-report:edge-client-error-codes`**.
+  - **Browser CORS:** Staff **`fetch`** uses **`Authorization`**, **`apikey`**, and **`Content-Type: application/json`** → **OPTIONS** preflight plus CORS headers on **POST** responses. Edge implements **`supabase/functions/_shared/aiParentReportDraftEdgeCors.ts`** and **`generate-ai-parent-report-draft/index.ts`** (**`OPTIONS`** **204** before auth; CORS on all JSON). DevTools **CORS error** + UI **`client_network_error`** → redeploy the function; verify **`npm run test:supabase:ai-parent-report:edge-generation-auth`**.
   - Explicit action **Generate real AI draft** (only on click; not on load or on report select).
   - Clear copy: real AI, **staff review required**, **parents do not see drafts** until **explicit release**.
   - **Disabled** in **demo role** and without authenticated Supabase session.
@@ -55,6 +56,7 @@ These prove adapter/Edge/service persistence boundaries; they **do not** replace
 
 ## Manual QA (recommended before production)
 
+- After deploying **`generate-ai-parent-report-draft`**, in DevTools **Network**: confirm **OPTIONS** to the function returns **204** (or **200**) with **Access-Control-*** headers; **POST** should show a real HTTP status (**401** / **403** / **200**, etc.), not **(blocked:cors)**.
 - Staff user **without** demo role: open **`/ai-parent-reports`**, select a draft report with complete metadata, click **Generate real AI draft**, confirm new **`real_ai`** version appears and **parents still cannot see** the draft until release.
 - On failure, confirm the **Generation failed:** line shows a **code** (e.g. **`scope_denied`**, **`provider_not_configured`**, **`persistence_failed`**) plus a safe message — no tokens or raw provider JSON.
 - Confirm **403/401** paths show friendly messages (wrong branch/report scope / expired session).
