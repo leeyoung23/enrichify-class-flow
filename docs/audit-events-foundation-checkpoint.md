@@ -116,23 +116,44 @@ Checks:
 - parent cannot read event
 - HQ can read event (and cleanup delete if policy is active)
 
-## Migration apply note
+## Migration apply + verification checkpoint
 
-This checkpoint creates the migration file but does not assume auto-apply.
+Migration file applied on linked Supabase project:
 
-To apply manually on linked Supabase project:
+- `supabase/sql/033_audit_events_foundation.sql`
+
+Applied command used:
 
 - `supabase db query --linked --file supabase/sql/033_audit_events_foundation.sql`
 
+Post-apply smoke verification:
+
+- `npm run test:supabase:audit-events` -> PASS
+  - teacher inserted audit event,
+  - teacher read own event,
+  - metadata sanitization worked,
+  - parent audit read blocked,
+  - HQ admin audit read worked,
+  - HQ cleanup deleted smoke event.
+
+Regression smokes:
+
+- `npm run test:supabase:ai-parent-reports` -> PASS
+- `npm run test:supabase:parent-updates:write` -> PASS
+
 ## Safety boundaries preserved
 
+- No service-role path in frontend code
+- No parent audit read access
+- Audit write remains non-blocking for primary flows
+- Metadata is sanitized before write
+- No tokens/secrets/raw provider bodies are logged
 - No notification/email implementation
 - No auto sign-out/session tracking implementation yet
 - No AI provider/Edge behavior changes
 - No ParentView visibility-rule changes
 - No RLS loosening
-- No frontend service-role usage
 
 ## Next recommended milestone
 
-- Expand audit coverage to additional high-value write actions (attendance write, memory release, fee verification decisions), then add lightweight read/report tooling for authorized staff.
+- Expand audit coverage to additional high-value write actions (attendance write, memory release, fee verification decisions), then add lightweight authorized staff review/report tooling before any notification/email/session-tracking rollout.

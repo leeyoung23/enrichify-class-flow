@@ -1763,3 +1763,27 @@ Handoff status: complete for continuity. Use this file as the primary context an
   - npm command `test:supabase:audit-events`.
 - Boundary posture preserved:
   - no email/notification automation, no session auto-timeout/session-tracking rollout, no AI provider/Edge behavior changes, no ParentView visibility changes, no service-role frontend usage.
+
+### Audit events apply verification note (2026-05-04)
+
+- Migration applied to linked Supabase project:
+  - `supabase/sql/033_audit_events_foundation.sql`
+  - command used: `supabase db query --linked --file supabase/sql/033_audit_events_foundation.sql`
+- Post-apply audit smoke status:
+  - `npm run test:supabase:audit-events` passed:
+  - teacher own-event insert/read allowed,
+  - parent audit read blocked,
+  - HQ admin read allowed,
+  - metadata sanitization verified,
+  - HQ cleanup delete succeeded.
+- Regression smoke status:
+  - `npm run test:supabase:ai-parent-reports` passed,
+  - `npm run test:supabase:parent-updates:write` passed.
+- Safety boundaries reaffirmed:
+  - no service-role usage in frontend,
+  - no parent audit-read grant,
+  - audit writes remain non-blocking to primary user actions,
+  - metadata sanitization retained,
+  - no tokens/secrets/raw provider payload bodies logged.
+- Recommended next milestone:
+  - expand audit coverage to additional high-value write actions, then add lightweight authorized staff review/report tooling before notifications/email/session-tracking implementation.
