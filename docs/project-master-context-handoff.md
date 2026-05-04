@@ -1637,3 +1637,17 @@ Handoff status: complete for continuity. Use this file as the primary context an
   - no SQL/RLS/auth/provider/release/visibility changes.
 - Recommended next lane:
   - final manual validator sign-off pass and production-hardening planning (outside this bounded cleanup lane).
+
+### Final validator sign-off note (2026-05-04)
+
+- New sign-off checkpoint:
+  - `docs/ai-parent-reports-validator-signoff-checkpoint.md`
+- Final manual status recorded:
+  - real staff flow validated end-to-end (create -> real AI draft -> submit/approve/release),
+  - ParentView real parent visibility validated as released/current-only.
+- Demo/debug gating reaffirmed:
+  - helper tools remain URL opt-in only via `demoRole` or `debug`.
+- Safety boundaries reaffirmed:
+  - no SQL/RLS/auth/provider/release/visibility boundary changes in this sign-off checkpoint.
+- Recommended next lane:
+  - production hardening planning and rollout readiness documentation.
