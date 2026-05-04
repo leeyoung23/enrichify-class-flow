@@ -1670,3 +1670,15 @@ Handoff status: complete for continuity. Use this file as the primary context an
 - Safety boundaries unchanged:
   - no SQL/RLS/auth/provider/notification/auto-release changes,
   - no parent visibility widening.
+
+### Homework smoke auth setup note (2026-05-04)
+
+- Added missing env template:
+  - `.env.example` now includes required smoke-test placeholders (no secrets).
+- Added setup checkpoint:
+  - `docs/homework-smoke-test-auth-setup-checkpoint.md`
+- Clarified auth + fixture prerequisites for:
+  - `test:supabase:homework:feedback`
+  - `test:supabase:homework:assignment:write`
+- Clarified failure interpretation:
+  - `Auth session missing!` and `homework_tasks` RLS-insert-denied can be environment/fixture setup failures, not necessarily UI/service regressions.
