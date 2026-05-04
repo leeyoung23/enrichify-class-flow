@@ -223,6 +223,7 @@ export default function AiParentReports() {
   const inDemoMode = Boolean(demoRole);
   const isDebugMode = isDebugModeEnabled();
   const showDebugPanels = Boolean(inDemoMode || isDebugMode);
+  const showStrictDebugPanels = Boolean(isDebugMode);
 
   const stripUrlDemoRole = useCallback(() => {
     const next = new URLSearchParams(location.search);
@@ -1294,11 +1295,13 @@ export default function AiParentReports() {
             </div>
           ) : showStaffSelectorShell ? (
             <>
-              <p className="text-[11px] text-muted-foreground">
-                <span className="font-medium text-foreground">Mode:</span>{' '}
-                <span className="font-mono">{staffShellDiagnosticLabel}</span>
-                {' '}— no tokens or secrets shown.
-              </p>
+              {showStrictDebugPanels ? (
+                <p className="text-[11px] text-muted-foreground">
+                  <span className="font-medium text-foreground">Debug mode:</span>{' '}
+                  <span className="font-mono">{staffShellDiagnosticLabel}</span>
+                  {' '}— no tokens or secrets shown.
+                </p>
+              ) : null}
               {staffDirectoryAuthPending ? (
                 <div className="rounded-lg border bg-muted/30 p-4 flex items-center gap-3">
                   <div className="w-6 h-6 border-2 border-muted border-t-primary rounded-full animate-spin shrink-0" />
@@ -1325,12 +1328,12 @@ export default function AiParentReports() {
               ) : null}
               {!pickersLoading && !pickersError && hasLiveSupabaseIdentity && pickerBranches.length === 0 ? (
                 <p className="text-xs text-destructive/90">
-                  No branches returned — check RLS or seed data, or expand Advanced UUID fallback below.
+                  No branches are currently available for your account. Contact support if this continues.
                 </p>
               ) : null}
               {!pickersLoading && !pickersError && hasLiveSupabaseIdentity && pickerBranches.length > 0 && pickerStudents.length === 0 ? (
                 <p className="text-xs text-amber-800 dark:text-amber-200">
-                  No students visible for this branch/filter — widen the class filter or check fixtures.
+                  No students are available for the selected branch/class filter.
                 </p>
               ) : null}
               <div className="flex flex-wrap gap-2">
@@ -1482,13 +1485,13 @@ export default function AiParentReports() {
               </div>
               <Collapsible defaultOpen={false} className="rounded-md border bg-muted/30 text-sm">
                 <CollapsibleTrigger className="flex w-full items-center justify-between gap-2 p-3 text-left font-medium text-foreground outline-none hover:bg-muted/40 rounded-md [&[data-state=open]>svg]:rotate-180">
-                  <span>Advanced UUID fallback (optional)</span>
+                  <span>Advanced UUID fallback (debug/manual only)</span>
                   <ChevronDown className="h-4 w-4 shrink-0 text-muted-foreground transition-transform" aria-hidden />
                 </CollapsibleTrigger>
                 <CollapsibleContent>
                   <div className="space-y-2 border-t px-3 pb-3 pt-2">
                     <p className="text-xs text-muted-foreground">
-                      Hidden by default — expand only if selectors fail RLS or you need a manual override. Same validation as before.
+                      Hidden by default. Use only if selectors are unavailable and you need manual entry.
                     </p>
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                       <div className="space-y-1.5">
@@ -1541,14 +1544,16 @@ export default function AiParentReports() {
             </>
           ) : (
             <>
-              <p className="text-[11px] text-muted-foreground">
-                <span className="font-medium text-foreground">Mode:</span>{' '}
-                <span className="font-mono">no-supabase-client</span>
-              </p>
+              {showStrictDebugPanels ? (
+                <p className="text-[11px] text-muted-foreground">
+                  <span className="font-medium text-foreground">Debug mode:</span>{' '}
+                  <span className="font-mono">no-supabase-client</span>
+                </p>
+              ) : null}
               <div className="rounded-md border bg-amber-500/10 dark:bg-amber-950/40 px-3 py-2 text-sm text-amber-950 dark:text-amber-100">
                 <span>
                   Supabase URL/key are not configured in this build — you cannot load Branch/Class/Student lists here.
-                  Sign in as real staff once the client is configured. Use Advanced UUID fallback only if you must create a shell manually.
+                  Sign in as real staff once the client is configured. Use the advanced manual fallback only if necessary.
                 </span>
               </div>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -1598,7 +1603,7 @@ export default function AiParentReports() {
               </div>
               <Collapsible defaultOpen={false} className="rounded-md border bg-muted/30 text-sm">
                 <CollapsibleTrigger className="flex w-full items-center justify-between gap-2 p-3 text-left font-medium text-foreground outline-none hover:bg-muted/40 rounded-md [&[data-state=open]>svg]:rotate-180">
-                  <span>Advanced UUID fallback (manual shell only)</span>
+                  <span>Advanced UUID fallback (debug/manual only)</span>
                   <ChevronDown className="h-4 w-4 shrink-0 text-muted-foreground transition-transform" aria-hidden />
                 </CollapsibleTrigger>
                 <CollapsibleContent>
@@ -1677,10 +1682,12 @@ export default function AiParentReports() {
         {!detailLoading && !detailError && detail ? (
           <div className="space-y-4">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm">
-              <p title={detail.id}>
-                <span className="text-muted-foreground">Report ID (internal):</span>{' '}
-                <span className="font-mono text-xs">{formatInternalIdRef(detail.id)}</span>
-              </p>
+              {showStrictDebugPanels ? (
+                <p title={detail.id}>
+                  <span className="text-muted-foreground">Report ID (internal):</span>{' '}
+                  <span className="font-mono text-xs">{formatInternalIdRef(detail.id)}</span>
+                </p>
+              ) : null}
               <p><span className="text-muted-foreground">Status:</span> {detail.status}</p>
               <p><span className="text-muted-foreground">Student:</span> {detail.studentId || '—'}</p>
               <p><span className="text-muted-foreground">Class:</span> {detail.classId || '—'}</p>
@@ -1706,9 +1713,11 @@ export default function AiParentReports() {
                         return 'Current draft';
                       })()}
                     </p>
-                    <p className="text-[10px] text-muted-foreground font-mono mt-0.5" title={detail.currentVersionId}>
-                      Internal ref: {formatInternalIdRef(detail.currentVersionId)}
-                    </p>
+                    {showStrictDebugPanels ? (
+                      <p className="text-[10px] text-muted-foreground font-mono mt-0.5" title={detail.currentVersionId}>
+                        Internal ref: {formatInternalIdRef(detail.currentVersionId)}
+                      </p>
+                    ) : null}
                   </div>
                 ) : (
                   <p className="text-sm text-muted-foreground mt-0.5">None selected yet.</p>
@@ -1729,13 +1738,21 @@ export default function AiParentReports() {
                     <p className="text-xs text-muted-foreground">
                       Created {formatDateTimeLabel(currentVersion.createdAt)}
                     </p>
-                    <p className="text-[10px] text-muted-foreground font-mono mt-0.5" title={currentVersion.id}>
-                      Internal ref: {formatInternalIdRef(currentVersion.id)}
-                    </p>
+                    {showStrictDebugPanels ? (
+                      <p className="text-[10px] text-muted-foreground font-mono mt-0.5" title={currentVersion.id}>
+                        Internal ref: {formatInternalIdRef(currentVersion.id)}
+                      </p>
+                    ) : null}
                   </div>
-                  <pre className="text-xs bg-muted/40 rounded-md p-2 overflow-auto whitespace-pre-wrap">
-                    {JSON.stringify(currentVersion.structuredSections || {}, null, 2)}
-                  </pre>
+                  {showStrictDebugPanels ? (
+                    <pre className="text-xs bg-muted/40 rounded-md p-2 overflow-auto whitespace-pre-wrap">
+                      {JSON.stringify(currentVersion.structuredSections || {}, null, 2)}
+                    </pre>
+                  ) : (
+                    <p className="text-xs text-muted-foreground">
+                      Draft content is available for workflow review and release decisions.
+                    </p>
+                  )}
                 </div>
               )}
             </div>
@@ -1767,9 +1784,11 @@ export default function AiParentReports() {
                         <p className="text-xs text-muted-foreground">
                           Created {formatDateTimeLabel(row.createdAt)}
                         </p>
-                        <p className="text-[10px] text-muted-foreground font-mono mt-0.5" title={row.id}>
-                          Internal ref: {formatInternalIdRef(row.id)}
-                        </p>
+                        {showStrictDebugPanels ? (
+                          <p className="text-[10px] text-muted-foreground font-mono mt-0.5" title={row.id}>
+                            Internal ref: {formatInternalIdRef(row.id)}
+                          </p>
+                        ) : null}
                       </div>
                     </label>
                   ))}
@@ -1960,8 +1979,8 @@ export default function AiParentReports() {
         <Card className="p-4 space-y-3 xl:col-span-2 border-primary/15 bg-muted/5">
           <h2 className="font-semibold">Generate draft from source evidence</h2>
           <p className="text-sm text-muted-foreground">
-            Mock mode only — pulls text from the Source Evidence Preview above and merges any notes you add below.
-            No real AI provider call. Nothing is sent to parents until you run lifecycle release later.
+            Local draft-assist mode — uses Source Evidence Preview plus any notes you add below.
+            Nothing is sent to parents until staff release.
           </p>
           <div className="rounded-lg border bg-card p-3 space-y-2">
             <p className="text-xs font-medium text-foreground">Optional teacher notes / overrides</p>
@@ -2085,7 +2104,7 @@ export default function AiParentReports() {
                 id="apr-mock-evidence-summaries"
                 value={mockDraftForm.evidenceSummaries}
                 onChange={(event) => setMockDraftForm((prev) => ({ ...prev, evidenceSummaries: event.target.value }))}
-                placeholder="Optional — fake/dev-safe notes only"
+                placeholder="Optional notes"
               />
             </div>
           </div>
@@ -2190,7 +2209,7 @@ export default function AiParentReports() {
               id="apr-student-summary"
               value={createVersionForm.studentSummary}
               onChange={(event) => setCreateVersionForm((prev) => ({ ...prev, studentSummary: event.target.value }))}
-              placeholder="Fake/dev summary only"
+              placeholder="Optional summary"
             />
           </div>
           <div className="space-y-1.5">

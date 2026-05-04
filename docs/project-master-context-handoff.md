@@ -1601,3 +1601,21 @@ Handoff status: complete for continuity. Use this file as the primary context an
   - no SQL/RLS weakening, no service-role frontend, no auth relaxation, no parent visibility widening.
 - Recommended next lane:
   - Validation Mode Cleanup Phase 2 (final real-mode wording cleanup + debug drawer consolidation + validator UX pass).
+
+### Validation Mode Cleanup Phase 2 note (2026-05-04)
+
+- New checkpoint doc:
+  - `docs/ai-parent-reports-validation-mode-cleanup-phase2-checkpoint.md`
+- Real-mode polish completed for AI Parent Reports:
+  - mode/diagnostic text hidden unless debug,
+  - internal refs hidden unless debug,
+  - raw current-draft JSON hidden unless debug,
+  - advanced UUID fallback relabeled as debug/manual-only,
+  - remaining fixture-style wording softened for validator-facing staff flow.
+- Demo/debug availability preserved:
+  - demo helper tools still require `?demoRole=...`,
+  - debug-only internals require `?debug=1`.
+- Safety boundaries unchanged:
+  - no SQL/RLS/auth/provider/release/visibility boundary widening.
+- Recommended next lane:
+  - Validation Mode Cleanup Phase 3 (final cross-page wording pass + centralized debug drawer + final manual validator walkthrough).
