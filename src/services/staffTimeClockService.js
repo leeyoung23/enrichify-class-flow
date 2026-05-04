@@ -1,5 +1,6 @@
 import { isSupabaseConfigured, supabase } from "./supabaseClient.js";
 import { evaluateGeofence, DEFAULT_GEOFENCE_RADIUS_METERS } from "./locationVerificationService.js";
+import { recordAuditEvent } from "./supabaseWriteService.js";
 
 const STAFF_CLOCK_SELFIES_BUCKET = "staff-clock-selfies";
 const ALLOWED_GEOFENCE_STATUSES = new Set(["valid", "outside_geofence", "pending_review"]);
@@ -66,6 +67,14 @@ function normalizeDateOnly(dateValue) {
   const dt = new Date(`${trimmed}T00:00:00.000Z`);
   if (Number.isNaN(dt.getTime())) return null;
   return trimmed;
+}
+
+function warnAuditFailureInDev(error, context = "") {
+  const isDev = typeof import.meta !== "undefined" ? Boolean(import.meta?.env?.DEV) : process?.env?.NODE_ENV !== "production";
+  if (!isDev) return;
+  const message = typeof error?.message === "string" ? error.message : "unknown";
+  // eslint-disable-next-line no-console
+  console.warn(`[audit_events] ${context || "write failure"}: ${message}`);
 }
 
 function addOneDay(dateOnly) {
@@ -213,6 +222,20 @@ export async function clockInStaff({
           cleanup_warning: "Entry remains with reserved selfie path due immutable clock-in evidence policy",
         },
       };
+    }
+
+    const auditResult = await recordAuditEvent({
+      actionType: "staff_time_clock.clocked_in",
+      entityType: "staff_time_entry",
+      entityId: createResult.data.id,
+      branchId: createResult.data.branch_id,
+      metadata: {
+        verificationStatus: status,
+        statusSource: statusResolution.source,
+      },
+    });
+    if (auditResult.error) {
+      warnAuditFailureInDev(auditResult.error, "clockInStaff");
     }
 
     return {
@@ -372,6 +395,21 @@ export async function clockOutStaff({
 
     if (closeResult.error || !closeResult.data) {
       return { data: null, error: { message: closeResult.error?.message || "Unable to finalize clock-out entry" } };
+    }
+
+    const auditResult = await recordAuditEvent({
+      actionType: "staff_time_clock.clocked_out",
+      entityType: "staff_time_entry",
+      entityId: closeResult.data.id,
+      branchId: closeResult.data.branch_id,
+      metadata: {
+        verificationStatus: closeResult.data.status || derivedStatus,
+        statusSource: statusResolution.source,
+        selfieCaptured: Boolean(selfiePath),
+      },
+    });
+    if (auditResult.error) {
+      warnAuditFailureInDev(auditResult.error, "clockOutStaff");
     }
 
     return {

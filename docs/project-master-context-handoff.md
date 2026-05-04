@@ -1787,3 +1787,25 @@ Handoff status: complete for continuity. Use this file as the primary context an
   - no tokens/secrets/raw provider payload bodies logged.
 - Recommended next milestone:
   - expand audit coverage to additional high-value write actions, then add lightweight authorized staff review/report tooling before notifications/email/session-tracking implementation.
+
+### Audit events phase 2 operational actions note (2026-05-04)
+
+- New checkpoint doc:
+  - `docs/audit-events-phase2-operational-actions-checkpoint.md`
+- Added operational audit actions in existing write services:
+  - `student_attendance.updated` via `updateAttendanceRecord(...)`,
+  - `staff_time_clock.clocked_in` via `clockInStaff(...)`,
+  - `staff_time_clock.clocked_out` via `clockOutStaff(...)`,
+  - `class_memory.released` via `approveClassMemory(...)`,
+  - `fee_payment_proof.verified` via `verifyFeeReceipt(...)`,
+  - `fee_payment_proof.rejected` via `rejectFeeReceipt(...)`.
+- Metadata safety posture for phase 2:
+  - no GPS coordinates, no selfie/proof URL paths, no full note/comment bodies, no raw receipt/provider payloads.
+- Boundaries preserved:
+  - no SQL/RLS change,
+  - no frontend service-role usage,
+  - no notification/email/session-tracking implementation,
+  - audit writes remain non-blocking (dev warning only on audit failure).
+- Intentional skips in phase 2:
+  - `student_attendance.marked` skipped (existing stable write path is update),
+  - `class_memory.shared_with_family` skipped (current lifecycle semantics are approve/release).

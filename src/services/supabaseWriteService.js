@@ -653,7 +653,24 @@ export async function updateAttendanceRecord({ recordId, status, note } = {}) {
       .eq("id", recordId)
       .select("id,branch_id,class_id,student_id,teacher_id,session_date,status,note,updated_at")
       .maybeSingle();
-
+    if (!error && data?.id) {
+      const auditResult = await recordAuditEvent({
+        actionType: "student_attendance.updated",
+        entityType: "attendance_record",
+        entityId: data.id,
+        branchId: data.branch_id,
+        classId: data.class_id,
+        studentId: data.student_id,
+        metadata: {
+          status: data.status,
+          noteProvided: Boolean(data.note && String(data.note).trim()),
+          sessionDate: data.session_date || null,
+        },
+      });
+      if (auditResult.error) {
+        warnAuditFailureInDev(auditResult.error, "updateAttendanceRecord");
+      }
+    }
     return { data: data ?? null, error: error ?? null };
   } catch (err) {
     return { data: null, error: { message: err?.message || String(err) } };
@@ -1332,7 +1349,21 @@ export async function verifyFeeReceipt({ feeRecordId, internalNote } = {}) {
       .eq("id", feeRecordId)
       .select("id,verification_status,verified_by_profile_id,verified_at,internal_note,updated_at")
       .maybeSingle();
-
+    if (!error && data?.id) {
+      const auditResult = await recordAuditEvent({
+        actionType: "fee_payment_proof.verified",
+        entityType: "fee_record",
+        entityId: data.id,
+        metadata: {
+          verificationStatus: data.verification_status,
+          decision: "verified",
+          hasInternalNote: Boolean(data.internal_note && String(data.internal_note).trim()),
+        },
+      });
+      if (auditResult.error) {
+        warnAuditFailureInDev(auditResult.error, "verifyFeeReceipt");
+      }
+    }
     return { data: data ?? null, error: error ?? null };
   } catch (err) {
     return { data: null, error: { message: err?.message || String(err) } };
@@ -1377,7 +1408,21 @@ export async function rejectFeeReceipt({ feeRecordId, internalNote } = {}) {
       .eq("id", feeRecordId)
       .select("id,verification_status,verified_by_profile_id,verified_at,internal_note,updated_at")
       .maybeSingle();
-
+    if (!error && data?.id) {
+      const auditResult = await recordAuditEvent({
+        actionType: "fee_payment_proof.rejected",
+        entityType: "fee_record",
+        entityId: data.id,
+        metadata: {
+          verificationStatus: data.verification_status,
+          decision: "rejected",
+          hasInternalNote: Boolean(data.internal_note && String(data.internal_note).trim()),
+        },
+      });
+      if (auditResult.error) {
+        warnAuditFailureInDev(auditResult.error, "rejectFeeReceipt");
+      }
+    }
     return { data: data ?? null, error: error ?? null };
   } catch (err) {
     return { data: null, error: { message: err?.message || String(err) } };
@@ -1417,7 +1462,23 @@ export async function approveClassMemory({ memoryId } = {}) {
       .eq("id", String(memoryId).trim())
       .select("id,branch_id,class_id,student_id,visibility_status,visible_to_parents,approved_by_profile_id,approved_at,rejected_reason,hidden_at,updated_at")
       .maybeSingle();
-
+    if (!error && data?.id) {
+      const auditResult = await recordAuditEvent({
+        actionType: "class_memory.released",
+        entityType: "class_memory",
+        entityId: data.id,
+        branchId: data.branch_id,
+        classId: data.class_id,
+        studentId: data.student_id,
+        metadata: {
+          visibilityStatus: data.visibility_status,
+          visibleToParents: Boolean(data.visible_to_parents),
+        },
+      });
+      if (auditResult.error) {
+        warnAuditFailureInDev(auditResult.error, "approveClassMemory");
+      }
+    }
     return { data: data ?? null, error: error ?? null };
   } catch (err) {
     return { data: null, error: { message: err?.message || String(err) } };

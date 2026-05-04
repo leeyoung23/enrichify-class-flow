@@ -157,3 +157,51 @@ Regression smokes:
 ## Next recommended milestone
 
 - Expand audit coverage to additional high-value write actions (attendance write, memory release, fee verification decisions), then add lightweight authorized staff review/report tooling before any notification/email/session-tracking rollout.
+
+## Audit phase 2 implementation checkpoint (2026-05-04)
+
+Expanded audit coverage was added only in existing write functions with clear ownership and small/safe metadata:
+
+- `student_attendance.updated`
+  - source: `updateAttendanceRecord(...)`
+  - entity: `attendance_record`
+  - scope fields: `branch_id`, `class_id`, `student_id` when available
+  - metadata: `status`, `noteProvided`, `sessionDate`
+- `staff_time_clock.clocked_in`
+  - source: `clockInStaff(...)`
+  - entity: `staff_time_entry`
+  - scope fields: `branch_id`
+  - metadata: `verificationStatus`, `statusSource`
+- `staff_time_clock.clocked_out`
+  - source: `clockOutStaff(...)`
+  - entity: `staff_time_entry`
+  - scope fields: `branch_id`
+  - metadata: `verificationStatus`, `statusSource`, `selfieCaptured`
+- `class_memory.released`
+  - source: `approveClassMemory(...)`
+  - entity: `class_memory`
+  - scope fields: `branch_id`, `class_id`, `student_id` when present
+  - metadata: `visibilityStatus`, `visibleToParents`
+- `fee_payment_proof.verified`
+  - source: `verifyFeeReceipt(...)`
+  - entity: `fee_record`
+  - metadata: `verificationStatus`, `decision`, `hasInternalNote`
+- `fee_payment_proof.rejected`
+  - source: `rejectFeeReceipt(...)`
+  - entity: `fee_record`
+  - metadata: `verificationStatus`, `decision`, `hasInternalNote`
+
+Skipped in this phase:
+
+- `student_attendance.marked` (not added)
+  - reason: current stable Supabase write path is `updateAttendanceRecord(...)`; action uses `student_attendance.updated` to avoid duplicate semantics.
+- `class_memory.shared_with_family` (not added)
+  - reason: parent-visible memory flow uses `approveClassMemory(...)` release semantics today; `class_memory.released` matches current lifecycle naming.
+
+Safety posture confirmed for phase 2 wiring:
+
+- audit writes are non-blocking (failure logs dev warning only),
+- no frontend service-role usage,
+- no SQL/RLS changes,
+- no notification/email/session-tracking implementation,
+- no raw file URLs, no GPS coordinates, no full comments/internal notes, no receipt payload bodies in metadata.
