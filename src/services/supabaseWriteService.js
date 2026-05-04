@@ -1347,13 +1347,14 @@ export async function verifyFeeReceipt({ feeRecordId, internalNote } = {}) {
       .from("fee_records")
       .update(payload)
       .eq("id", feeRecordId)
-      .select("id,verification_status,verified_by_profile_id,verified_at,internal_note,updated_at")
+      .select("id,branch_id,verification_status,verified_by_profile_id,verified_at,internal_note,updated_at")
       .maybeSingle();
     if (!error && data?.id) {
       const auditResult = await recordAuditEvent({
         actionType: "fee_payment_proof.verified",
         entityType: "fee_record",
         entityId: data.id,
+        branchId: data.branch_id,
         metadata: {
           verificationStatus: data.verification_status,
           decision: "verified",
@@ -1406,13 +1407,14 @@ export async function rejectFeeReceipt({ feeRecordId, internalNote } = {}) {
       .from("fee_records")
       .update(payload)
       .eq("id", feeRecordId)
-      .select("id,verification_status,verified_by_profile_id,verified_at,internal_note,updated_at")
+      .select("id,branch_id,verification_status,verified_by_profile_id,verified_at,internal_note,updated_at")
       .maybeSingle();
     if (!error && data?.id) {
       const auditResult = await recordAuditEvent({
         actionType: "fee_payment_proof.rejected",
         entityType: "fee_record",
         entityId: data.id,
+        branchId: data.branch_id,
         metadata: {
           verificationStatus: data.verification_status,
           decision: "rejected",

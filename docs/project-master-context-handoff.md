@@ -1809,3 +1809,18 @@ Handoff status: complete for continuity. Use this file as the primary context an
 - Intentional skips in phase 2:
   - `student_attendance.marked` skipped (existing stable write path is update),
   - `class_memory.shared_with_family` skipped (current lifecycle semantics are approve/release).
+
+### Branch-supervisor audit compatibility fix note (2026-05-04)
+
+- Focused diagnosis completed for branch-supervisor audit warnings in fee verification flow.
+- Root cause:
+  - fee audit events were written without `branch_id`, and supervisor branch-scoped select policy does not expose null-branch rows.
+  - because `recordAuditEvent` inserts with returning select, missing branch scope surfaced as audit RLS denial in warning logs.
+- Minimal fix applied in write service only:
+  - `verifyFeeReceipt(...)` now includes `branch_id` in update return fields and passes it into `recordAuditEvent`,
+  - `rejectFeeReceipt(...)` now includes `branch_id` in update return fields and passes it into `recordAuditEvent`.
+- No SQL migration in this fix:
+  - no RLS widening,
+  - no parent/student access change,
+  - no service-role usage,
+  - audit writes remain non-blocking.

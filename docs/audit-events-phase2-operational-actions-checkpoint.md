@@ -89,6 +89,33 @@ Manual QA follow-up recommended:
 
 - verify branch-supervisor audit insertion behavior for fee verification in linked environment and confirm expected `profiles.role` vs audit insert policy compatibility.
 
+## Branch-supervisor compatibility diagnosis + fix (2026-05-04)
+
+Root cause identified:
+
+- The failing path was fee audit writes where `recordAuditEvent(...)` was called without `branch_id`.
+- `audit_events` supervisor read policy is branch-scoped (`branch_id is not null` + supervisor branch match).
+- `recordAuditEvent` uses insert with returning (`.insert(...).select(...).maybeSingle()`), so when `branch_id` is null the inserted row is not selectable by supervisor and returns an RLS denial.
+- This presents as `new row violates row-level security policy for table "audit_events"` in the non-blocking dev warning path.
+
+Why this is policy-compatible (not a policy bug):
+
+- Insert policy itself is actor-based (`actor_profile_id = auth.uid()` and role match).
+- Supervisor failure was specifically tied to returning visibility under select policy when branch scope was omitted in payload.
+
+Minimal safe fix applied (no SQL/RLS changes):
+
+- `verifyFeeReceipt(...)` now selects `branch_id` from `fee_records` update result and passes it into `recordAuditEvent`.
+- `rejectFeeReceipt(...)` now selects `branch_id` from `fee_records` update result and passes it into `recordAuditEvent`.
+
+Safety boundaries preserved:
+
+- no SQL/RLS widening,
+- no parent/student access widening,
+- no service-role use,
+- no blocking behavior introduced,
+- metadata remains minimal and non-sensitive.
+
 ## Next recommended milestone
 
 - Add compact read/report tooling for authorized staff over `audit_events`, then run a targeted review of action naming consistency before broader operational coverage.
