@@ -200,3 +200,51 @@ Run:
 - git diff --name-only
 Do not run build/lint/typecheck/smoke suite unless runtime files change.
 ```
+
+## 11) 2026-05-04 ParentView sidebar section navigation QA checkpoint
+
+### Root cause confirmed
+
+- Real parent/student sidebar links were dropping `?student=<uuid>` because non-demo `/parent-view#...` links did not preserve existing query params.
+- ParentView did not react to hash changes, so URL hash updates did not reliably scroll to visible sections.
+- Sidebar active-state logic used pathname-only matching (`/parent-view`), so multiple parent/student items looked active at once.
+- Some parent/student hash targets were wrong or missing, so clicked items did not map cleanly to intended content sections.
+
+### Fixed behavior
+
+- Real parent URLs now preserve student context:
+  - `/parent-view?student=<uuid>#section`
+- Demo parent URLs remain:
+  - `/parent-view?demoRole=parent&student=student-01#section`
+- Demo student URLs remain:
+  - `/parent-view?demoRole=student&student=student-01#section`
+- Parent Reports now targets released AI progress reports:
+  - `#parent-progress-reports`
+- Hash navigation now performs smooth section scroll and quick section reveal.
+- `prefers-reduced-motion` is respected:
+  - reduced motion disables/minimizes the animated reveal path.
+
+### Parent sidebar mapping
+
+- Parent Dashboard -> `#parent-portal-overview`
+- Child Attendance -> `#attendance-summary`
+- Child Homework -> `#parent-homework-status`
+- Parent Reports -> `#parent-progress-reports`
+- Student Learning Portal -> `#student-learning-portal`
+
+### Student sidebar mapping
+
+- Student Learning Portal -> `#student-learning-portal`
+- Homework Due -> `#homework-due`
+- Recent Feedback -> `#recent-feedback`
+- Learning Resources -> `#learning-resources`
+- Simple Progress Summary -> `#simple-progress-summary`
+
+### Safety boundaries reaffirmed
+
+- No SQL/RLS changes.
+- No service-role frontend usage.
+- No parent draft visibility.
+- No old/non-current report version visibility for parent.
+- No evidence-link exposure to parent.
+- No AI report release-rule changes.

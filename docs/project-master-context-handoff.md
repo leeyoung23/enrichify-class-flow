@@ -1527,3 +1527,33 @@ Handoff status: complete for continuity. Use this file as the primary context an
   - service + RLS + evidence traceability behavior is already proven,
   - UI shape should be validated before mock AI draft service,
   - real provider integration and PDF/export remain later phases.
+
+### ParentView sidebar section navigation QA note (2026-05-04)
+
+- Root cause:
+  - non-demo parent/student `/parent-view#...` nav dropped `?student=<uuid>`,
+  - ParentView did not react to hash changes for section scroll,
+  - sidebar active-state used pathname only,
+  - several hash targets were missing/misaligned for parent/student sections.
+- Fixed URL patterns:
+  - real parent/student: `/parent-view?student=<uuid>#section`,
+  - demo parent: `/parent-view?demoRole=parent&student=student-01#section`,
+  - demo student: `/parent-view?demoRole=student&student=student-01#section`.
+- Parent mapping:
+  - dashboard `#parent-portal-overview`,
+  - attendance `#attendance-summary`,
+  - homework `#parent-homework-status`,
+  - reports `#parent-progress-reports`,
+  - learning portal `#student-learning-portal`.
+- Student mapping:
+  - learning portal `#student-learning-portal`,
+  - homework due `#homework-due`,
+  - recent feedback `#recent-feedback`,
+  - learning resources `#learning-resources`,
+  - simple progress `#simple-progress-summary`.
+- UX behavior:
+  - hash click triggers smooth scroll + quick section reveal,
+  - reduced-motion users get minimized/no motion path.
+- Safety boundaries unchanged:
+  - no SQL/RLS/auth/release-policy/provider/Edge/function boundary widening,
+  - no parent draft/old-version/evidence-link exposure.
