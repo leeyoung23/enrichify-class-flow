@@ -93,6 +93,10 @@ const AI_PARENT_REPORT_EVIDENCE_TYPE_VALUES = new Set([
   "assessment",
   "manual",
 ]);
+const AUDIT_FORBIDDEN_METADATA_KEY_PATTERN =
+  /(token|secret|password|apikey|api_key|authorization|cookie|session|provider|raw|prompt)/i;
+const AUDIT_MAX_METADATA_KEYS = 12;
+const AUDIT_MAX_STRING_LENGTH = 280;
 
 function isUuidLike(value) {
   if (typeof value !== "string") return false;
@@ -268,6 +272,134 @@ function sanitizeServiceError(error, fallbackMessage) {
     return { message: fallbackMessage };
   }
   return { message };
+}
+
+function isDevRuntime() {
+  try {
+    if (typeof import.meta !== "undefined" && import.meta?.env) {
+      return Boolean(import.meta.env.DEV);
+    }
+  } catch (_error) {
+    // ignore import.meta access issues in non-browser contexts
+  }
+  return process?.env?.NODE_ENV !== "production";
+}
+
+function warnAuditFailureInDev(error, context = "") {
+  if (!isDevRuntime()) return;
+  const message = trimString(error?.message) || "unknown";
+  // eslint-disable-next-line no-console
+  console.warn(`[audit_events] ${context || "write failure"}: ${message}`);
+}
+
+function sanitizeAuditValue(value) {
+  if (value == null) return null;
+  if (typeof value === "string") {
+    return value.trim().slice(0, AUDIT_MAX_STRING_LENGTH);
+  }
+  if (typeof value === "number" || typeof value === "boolean") {
+    return value;
+  }
+  if (Array.isArray(value)) {
+    return value
+      .slice(0, 6)
+      .map((entry) => sanitizeAuditValue(entry))
+      .filter((entry) => entry != null);
+  }
+  if (typeof value === "object") {
+    return null;
+  }
+  return null;
+}
+
+function sanitizeAuditMetadata(metadata) {
+  if (!metadata || typeof metadata !== "object" || Array.isArray(metadata)) {
+    return {};
+  }
+  const entries = Object.entries(metadata).slice(0, AUDIT_MAX_METADATA_KEYS);
+  const output = {};
+  for (const [rawKey, rawValue] of entries) {
+    const key = trimString(rawKey);
+    if (!key || AUDIT_FORBIDDEN_METADATA_KEY_PATTERN.test(key)) {
+      continue;
+    }
+    const safeValue = sanitizeAuditValue(rawValue);
+    if (safeValue == null || safeValue === "") continue;
+    output[key] = safeValue;
+  }
+  return output;
+}
+
+async function getCurrentProfileRole() {
+  const authRead = await supabase.auth.getUser();
+  const profileId = authRead?.data?.user?.id || null;
+  if (!isUuidLike(profileId)) {
+    return { profileId: null, role: null, error: { message: "Authenticated user is required" } };
+  }
+  const roleRead = await supabase
+    .from("profiles")
+    .select("id,role")
+    .eq("id", profileId)
+    .maybeSingle();
+  if (roleRead.error || !roleRead.data?.id) {
+    return {
+      profileId,
+      role: null,
+      error: roleRead.error || { message: "Profile role is unavailable" },
+    };
+  }
+  return {
+    profileId,
+    role: trimString(roleRead.data.role) || null,
+    error: null,
+  };
+}
+
+export async function recordAuditEvent({
+  actionType,
+  entityType,
+  entityId,
+  branchId,
+  classId,
+  studentId,
+  metadata,
+} = {}) {
+  if (!isSupabaseConfigured() || !supabase) {
+    return { data: null, error: { message: "Supabase is not configured" } };
+  }
+  const safeActionType = trimString(actionType);
+  const safeEntityType = trimString(entityType);
+  if (!safeActionType) return { data: null, error: { message: "actionType is required" } };
+  if (!safeEntityType) return { data: null, error: { message: "entityType is required" } };
+
+  try {
+    const { profileId, role, error: actorError } = await getCurrentProfileRole();
+    if (actorError || !profileId) {
+      return { data: null, error: actorError || { message: "Authenticated user is required" } };
+    }
+
+    const payload = {
+      actor_profile_id: profileId,
+      actor_role: role,
+      action_type: safeActionType.slice(0, 120),
+      entity_type: safeEntityType.slice(0, 80),
+      entity_id: isUuidLike(entityId) ? trimString(entityId) : null,
+      branch_id: isUuidLike(branchId) ? trimString(branchId) : null,
+      class_id: isUuidLike(classId) ? trimString(classId) : null,
+      student_id: isUuidLike(studentId) ? trimString(studentId) : null,
+      metadata: sanitizeAuditMetadata(metadata),
+      created_at: new Date().toISOString(),
+    };
+
+    const insertResult = await supabase
+      .from("audit_events")
+      .insert(payload)
+      .select("id,actor_profile_id,actor_role,action_type,entity_type,entity_id,branch_id,class_id,student_id,created_at")
+      .maybeSingle();
+    return { data: insertResult.data ?? null, error: insertResult.error ?? null };
+  } catch (err) {
+    return { data: null, error: { message: err?.message || String(err) } };
+  }
 }
 
 function validateCompanyNewsInput({
@@ -600,6 +732,22 @@ export async function releaseParentComment({ commentId, message } = {}) {
       .select("id,branch_id,class_id,student_id,teacher_id,comment_text,status,updated_at")
       .maybeSingle();
 
+    if (!error && data?.id) {
+      const auditResult = await recordAuditEvent({
+        actionType: "parent_comment.released",
+        entityType: "parent_comment",
+        entityId: data.id,
+        branchId: data.branch_id,
+        classId: data.class_id,
+        studentId: data.student_id,
+        metadata: {
+          status: data.status,
+        },
+      });
+      if (auditResult.error) {
+        warnAuditFailureInDev(auditResult.error, "releaseParentComment");
+      }
+    }
     return { data: data ?? null, error: error ?? null };
   } catch (err) {
     return { data: null, error: { message: err?.message || String(err) } };
@@ -908,6 +1056,30 @@ export async function releaseHomeworkFeedbackToParent({ homeworkFeedbackId } = {
       .eq("id", trimString(homeworkFeedbackId))
       .select("id,homework_submission_id,teacher_profile_id,feedback_text,next_step,status,released_to_parent_at,created_at,updated_at")
       .maybeSingle();
+    if (!error && data?.id) {
+      const submissionRead = await supabase
+        .from("homework_submissions")
+        .select("id,homework_task_id,branch_id,class_id,student_id")
+        .eq("id", data.homework_submission_id)
+        .maybeSingle();
+      const submissionData = submissionRead.error ? null : submissionRead.data;
+      const auditResult = await recordAuditEvent({
+        actionType: "homework_feedback.released_to_parent",
+        entityType: "homework_feedback",
+        entityId: data.id,
+        branchId: submissionData?.branch_id || null,
+        classId: submissionData?.class_id || null,
+        studentId: submissionData?.student_id || null,
+        metadata: {
+          submissionId: data.homework_submission_id,
+          homeworkTaskId: submissionData?.homework_task_id || null,
+          status: data.status,
+        },
+      });
+      if (auditResult.error) {
+        warnAuditFailureInDev(auditResult.error, "releaseHomeworkFeedbackToParent");
+      }
+    }
     return { data: data ?? null, error: error ?? null };
   } catch (err) {
     return { data: null, error: { message: err?.message || String(err) } };
@@ -3020,6 +3192,24 @@ export async function releaseAiParentReport({ reportId, versionId } = {}) {
       actorProfileId: profileId,
       eventNote: "released",
     });
+
+    const auditResult = await recordAuditEvent({
+      actionType: "ai_parent_report.released",
+      entityType: "ai_parent_report",
+      entityId: updateResult.data.id,
+      branchId: updateResult.data.branch_id,
+      classId: updateResult.data.class_id,
+      studentId: updateResult.data.student_id,
+      metadata: {
+        reportType: updateResult.data.report_type,
+        status: updateResult.data.status,
+        currentVersionId: updateResult.data.current_version_id,
+      },
+    });
+    if (auditResult.error) {
+      warnAuditFailureInDev(auditResult.error, "releaseAiParentReport");
+    }
+
     return {
       data: {
         report: updateResult.data,

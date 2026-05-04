@@ -1738,3 +1738,28 @@ Handoff status: complete for continuity. Use this file as the primary context an
   - advanced channel/analytics work deferred to production beta.
 - Risk posture summary captured:
   - high-risk focus on session misuse, audit gaps, and cross-family data leakage boundaries.
+
+### Audit events foundation note (2026-05-04)
+
+- New checkpoint doc:
+  - `docs/audit-events-foundation-checkpoint.md`
+- Added migration file:
+  - `supabase/sql/033_audit_events_foundation.sql`
+- Added phase-1 audit table:
+  - `public.audit_events` with actor/action/entity/scope ids + safe metadata + timestamp indexes.
+- RLS posture (conservative):
+  - insert authenticated with `actor_profile_id = auth.uid()`,
+  - select: HQ all, supervisor branch-scoped, teacher own-actor events,
+  - no parent/student read grants.
+- Added safe helper:
+  - `recordAuditEvent(...)` in `src/services/supabaseWriteService.js`,
+  - JWT-only, metadata sanitization for sensitive keys/content, non-blocking failure behavior.
+- Initial action logging wired (narrow scope):
+  - `ai_parent_report.released`,
+  - `homework_feedback.released_to_parent`,
+  - `parent_comment.released`.
+- Added focused smoke script:
+  - `scripts/supabase-audit-events-smoke-test.mjs`
+  - npm command `test:supabase:audit-events`.
+- Boundary posture preserved:
+  - no email/notification automation, no session auto-timeout/session-tracking rollout, no AI provider/Edge behavior changes, no ParentView visibility changes, no service-role frontend usage.
