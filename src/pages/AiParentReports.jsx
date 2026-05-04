@@ -451,7 +451,7 @@ export default function AiParentReports() {
     const errMsg =
       brRes.error?.message || clRes.error?.message || stRes.error?.message || '';
     if (errMsg) {
-      setPickersError('Could not load branch/class/student lists. You can still use Advanced UUIDs below.');
+      setPickersError('Could not load branch/class/student lists. You can still use the advanced manual fallback below.');
     }
     setPickerBranches(Array.isArray(brRes.data) ? brRes.data : []);
     setPickerClasses(Array.isArray(clRes.data) ? clRes.data : []);
@@ -1187,10 +1187,14 @@ export default function AiParentReports() {
                   </p>
                   <p
                     className="text-[11px] text-muted-foreground mt-1"
-                    title={row.currentVersionId || undefined}
+                    title={showStrictDebugPanels ? (row.currentVersionId || undefined) : undefined}
                   >
-                    Current draft (internal ref): {row.currentVersionId ? formatInternalIdRef(row.currentVersionId) : 'none'}{' '}
-                    · Updated {formatDateTimeLabel(row.updatedAt)}
+                    {showStrictDebugPanels
+                      ? `Current draft (internal ref): ${row.currentVersionId ? formatInternalIdRef(row.currentVersionId) : 'none'} · Updated ${formatDateTimeLabel(row.updatedAt)}`
+                      : `Current draft: ${teacherFacingDraftTitle(
+                        versions.find((v) => v.id === row.currentVersionId)?.versionNumber,
+                        versions.find((v) => v.id === row.currentVersionId)?.generationSource
+                      )} · Updated ${formatDateTimeLabel(row.updatedAt)}`}
                   </p>
                 </button>
               ))}
@@ -1485,7 +1489,7 @@ export default function AiParentReports() {
               </div>
               <Collapsible defaultOpen={false} className="rounded-md border bg-muted/30 text-sm">
                 <CollapsibleTrigger className="flex w-full items-center justify-between gap-2 p-3 text-left font-medium text-foreground outline-none hover:bg-muted/40 rounded-md [&[data-state=open]>svg]:rotate-180">
-                  <span>Advanced UUID fallback (debug/manual only)</span>
+                  <span>Advanced manual fallback (debug only)</span>
                   <ChevronDown className="h-4 w-4 shrink-0 text-muted-foreground transition-transform" aria-hidden />
                 </CollapsibleTrigger>
                 <CollapsibleContent>
@@ -1603,7 +1607,7 @@ export default function AiParentReports() {
               </div>
               <Collapsible defaultOpen={false} className="rounded-md border bg-muted/30 text-sm">
                 <CollapsibleTrigger className="flex w-full items-center justify-between gap-2 p-3 text-left font-medium text-foreground outline-none hover:bg-muted/40 rounded-md [&[data-state=open]>svg]:rotate-180">
-                  <span>Advanced UUID fallback (debug/manual only)</span>
+                  <span>Advanced manual fallback (debug only)</span>
                   <ChevronDown className="h-4 w-4 shrink-0 text-muted-foreground transition-transform" aria-hidden />
                 </CollapsibleTrigger>
                 <CollapsibleContent>
@@ -1823,7 +1827,7 @@ export default function AiParentReports() {
           <div className="flex flex-wrap items-center gap-2">
             <h2 className="font-semibold">Source Evidence Preview</h2>
             <Badge variant="outline">
-              {inDemoMode ? 'Demo/fallback evidence' : 'System evidence preview'}
+              {inDemoMode ? 'Demo/fallback evidence' : 'Evidence summary'}
             </Badge>
           </div>
           <p className="text-xs text-muted-foreground">
@@ -2332,8 +2336,16 @@ export default function AiParentReports() {
           </div>
           {selectedReport ? (
             <p className="text-xs text-muted-foreground" title={selectedReport.id}>
-              Selected report (internal ref):{' '}
-              <span className="font-mono font-medium">{formatInternalIdRef(selectedReport.id)}</span> · Status{' '}
+              {showStrictDebugPanels ? (
+                <>
+                  Selected report (internal ref):{' '}
+                  <span className="font-mono font-medium">{formatInternalIdRef(selectedReport.id)}</span> · Status{' '}
+                </>
+              ) : (
+                <>
+                  Selected report · Status{' '}
+                </>
+              )}
               <span className="font-medium">{selectedReport.status || 'draft'}</span>
             </p>
           ) : null}

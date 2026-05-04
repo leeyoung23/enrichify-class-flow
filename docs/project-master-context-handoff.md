@@ -1619,3 +1619,21 @@ Handoff status: complete for continuity. Use this file as the primary context an
   - no SQL/RLS/auth/provider/release/visibility boundary widening.
 - Recommended next lane:
   - Validation Mode Cleanup Phase 3 (final cross-page wording pass + centralized debug drawer + final manual validator walkthrough).
+
+### Validation Mode Cleanup Phase 3 note (2026-05-04)
+
+- Scope remained bounded to AI Parent Reports + ParentView validator-facing polish.
+- Real-mode staff polish completed:
+  - further reduced internal/dev phrasing on report rows and fallback messaging,
+  - advanced fallback relabeled to manual/debug wording,
+  - internal refs stay hidden unless explicit `debug` mode.
+- Real-mode parent posture unchanged and clean:
+  - parent-facing progress/report surfaces remain released/current-only and non-technical.
+- Debug/demo behavior unchanged:
+  - helper tools remain opt-in via `?debug=1` or `?demoRole=...`.
+- Validator walkthrough checklist added in:
+  - `docs/ai-parent-reports-validation-mode-cleanup-phase2-checkpoint.md`.
+- Safety boundaries unchanged:
+  - no SQL/RLS/auth/provider/release/visibility changes.
+- Recommended next lane:
+  - final manual validator sign-off pass and production-hardening planning (outside this bounded cleanup lane).

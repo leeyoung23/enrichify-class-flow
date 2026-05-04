@@ -42,3 +42,14 @@ Validation Mode Cleanup Phase 3:
 - finish final validator copy pass across remaining staff surfaces,
 - centralize debug helpers into one explicit debug drawer/panel,
 - run a final manual validator walkthrough checklist (staff + linked parent).
+
+## Validator walkthrough checklist (Phase 3-ready)
+
+- Staff opens `AI Parent Reports` in normal real mode (no `demoRole`, no `debug`).
+- Staff creates a report shell.
+- Staff generates a real AI draft.
+- Staff checks draft history and selects the intended draft.
+- Staff submits for review, approves, then releases selected draft.
+- Linked parent opens `ParentView` and sees released/current report content only.
+- Confirm parent cannot see drafts, old versions, or evidence links.
+- Optional: open `?debug=1` to verify debug helpers still exist and remain opt-in.
