@@ -1694,3 +1694,27 @@ Handoff status: complete for continuity. Use this file as the primary context an
   - no SQL/RLS changes,
   - no auth bypass,
   - parent/student create checks remain blocked assertions.
+
+### Homework + Parent Communication validator sign-off note (2026-05-04)
+
+- New checkpoint doc:
+  - `docs/homework-parent-communication-validator-signoff-checkpoint.md`
+- Bounded manual walkthrough status recorded for:
+  - Homework teacher flow,
+  - Parent Communication teacher flow,
+  - My Tasks quick actions.
+- Walkthrough confirms:
+  - required homework fields and staged create/review/share flows are clear,
+  - parent-facing visibility remains release/share gated,
+  - My Tasks quick actions route teachers to `/homework` and `/parent-updates`,
+  - mobile-safe button layout remains intact for quick actions and core teacher actions.
+- Safety boundaries reconfirmed:
+  - no SQL/RLS changes,
+  - no service-role frontend usage,
+  - no auth relaxation,
+  - no parent/student homework-task creation path,
+  - no parent visibility into draft/internal staff notes,
+  - no notification/email behavior changes,
+  - no AI Parent Reports/ParentView behavior changes in this checkpoint.
+- Environment note:
+  - intermittent Supabase auth/rate-limit failures in smoke runs are tracked as environment instability unless deterministic reproduction appears.
