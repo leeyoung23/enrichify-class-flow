@@ -36,6 +36,10 @@ Date: 2026-05-05
 
 - After a successful `releaseAiParentReport` (report row updated to `released` with `current_version_id` / `released_at` / `released_by_profile_id`), `src/services/supabaseWriteService.js` calls `notifyLinkedParentsAfterAiParentReportRelease` (non-blocking on failure; dev-only safe warnings). Recipients come only from `list_parent_profile_ids_for_student_staff_scope_035` (guardian links). **Idempotency (best-effort):** same **actor** + report + `releasedVersionId` via `notification_events.metadata` — not a global unique constraint; another staff re-release can still duplicate.
 
+### Parent inbox UI (read-only surface)
+
+- **`src/pages/ParentView.jsx`** — authenticated **parent** role: **Notifications** card loads `listMyInAppNotifications` / `markNotificationRead` (recipient-scoped RLS only). UI shows **title, body, time, read/unread**; no raw metadata, ids, or internal refs. Optional **child filter**: rows with `student_id` are shown when it matches the dashboard child or when `student_id` is null (RLS still gates rows to the signed-in parent).
+
 ### Safety boundaries (unchanged after apply)
 
 - No live sending, no email/SMS/push provider, no webhooks, no Edge sender

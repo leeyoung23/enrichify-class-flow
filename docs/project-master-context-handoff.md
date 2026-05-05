@@ -1,5 +1,10 @@
 # Project Master Context Handoff
 
+## Checkpoint update (parent in-app notification inbox in ParentView — 2026-05-05)
+
+- **`src/pages/ParentView.jsx`** — **Notifications** card for real parent sessions: `listMyInAppNotifications` + `markNotificationRead` (RLS recipient scope); title/body/time/unread + mark-as-read; empty state and demo sign-in hint; no metadata/ids in UI.
+- **Doc:** `docs/notifications-foundation-checkpoint.md` (parent inbox section).
+
 ## Checkpoint update (AI parent report release → in-app notification — 2026-05-05)
 
 - **SQL:** `supabase/sql/035_ai_parent_report_notification_guardian_lookup.sql` (RPC parent profile lookup); `supabase/sql/036_notifications_creator_select_and_teacher_insert_scope.sql` (staff creator **SELECT** on `notifications` for INSERT RETURNING; teacher insert scope aligned with AI report manage rules).

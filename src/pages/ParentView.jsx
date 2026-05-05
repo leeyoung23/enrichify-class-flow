@@ -23,6 +23,7 @@ import {
   listAiParentReports,
   getAiParentReportDetail,
   getAiParentReportCurrentVersion,
+  listMyInAppNotifications,
 } from '@/services/supabaseReadService';
 import {
   uploadFeeReceipt,
@@ -39,7 +40,7 @@ import {
   listParentAnnouncementMedia,
   getParentAnnouncementMediaSignedUrl,
 } from '@/services/supabaseUploadService';
-import { markParentAnnouncementRead } from '@/services/supabaseWriteService';
+import { markParentAnnouncementRead, markNotificationRead } from '@/services/supabaseWriteService';
 import { useSupabaseAuthState } from '@/hooks/useSupabaseAuthState';
 import { isSupabaseConfigured } from '@/services/supabaseClient';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -49,7 +50,7 @@ import { Separator } from '@/components/ui/separator';
 import { Textarea } from '@/components/ui/textarea';
 import {
   GraduationCap, CheckCircle2, XCircle, Clock, Umbrella,
-  BookOpen, BookX, Minus, ExternalLink, FileText, Loader2, Sparkles
+  BookOpen, BookX, Minus, ExternalLink, FileText, Loader2, Sparkles, Bell,
 } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -1229,6 +1230,116 @@ function LatestWeeklyProgressReport({ updates }) {
   );
 }
 
+function formatParentNotificationDateTime(value) {
+  if (!value) return '';
+  const d = new Date(value);
+  if (Number.isNaN(d.getTime())) return '';
+  return d.toLocaleString(undefined, { dateStyle: 'medium', timeStyle: 'short' });
+}
+
+/**
+ * In-app notification inbox for authenticated parents. Rows come only from RLS (recipient = self).
+ * Displays title/body/time/read state only — no metadata, ids, or internal refs.
+ */
+function ParentInAppNotificationsSection({
+  demoMode,
+  hasSupabaseSession,
+  supabaseReady,
+  loading,
+  error,
+  notifications,
+  unreadCount,
+  markingId,
+  onMarkRead,
+}) {
+  const unreadBadge =
+    unreadCount > 0 ? (
+      <Badge variant="outline" className="ml-2 font-normal text-xs">
+        {unreadCount} unread
+      </Badge>
+    ) : null;
+
+  let bodyContent;
+  if (demoMode) {
+    bodyContent = <p className="text-sm text-muted-foreground">No new notifications yet.</p>;
+  } else if (!supabaseReady || !hasSupabaseSession) {
+    bodyContent = (
+      <p className="text-sm text-muted-foreground">Sign in with your parent account to see notifications.</p>
+    );
+  } else if (loading) {
+    bodyContent = (
+      <div className="flex items-center gap-2 text-sm text-muted-foreground">
+        <Loader2 className="h-4 w-4 animate-spin" />
+        Loading notifications…
+      </div>
+    );
+  } else if (error) {
+    bodyContent = <p className="text-sm text-destructive">{error}</p>;
+  } else if (!notifications.length) {
+    bodyContent = <p className="text-sm text-muted-foreground">No new notifications yet.</p>;
+  } else {
+    bodyContent = (
+      <ul className="space-y-3">
+        {notifications.map((n) => {
+          const unread = !n.read_at;
+          return (
+            <li
+              key={n.id}
+              className={`rounded-lg border p-3 ${unread ? 'border-primary/25 bg-muted/40' : ''}`}
+            >
+              <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
+                <div className="min-w-0 flex-1">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <p className="text-sm font-medium text-foreground">{n.title}</p>
+                    {unread ? (
+                      <Badge className="text-xs">Unread</Badge>
+                    ) : (
+                      <span className="text-xs text-muted-foreground">Read</span>
+                    )}
+                  </div>
+                  {n.body ? (
+                    <p className="mt-1 whitespace-pre-line text-sm text-muted-foreground">{n.body}</p>
+                  ) : null}
+                  <p className="mt-2 text-xs text-muted-foreground">{formatParentNotificationDateTime(n.created_at)}</p>
+                </div>
+                {unread ? (
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    className="shrink-0 self-start"
+                    disabled={markingId === n.id}
+                    onClick={() => onMarkRead(n.id)}
+                  >
+                    {markingId === n.id ? (
+                      <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                    ) : (
+                      'Mark as read'
+                    )}
+                  </Button>
+                ) : null}
+              </div>
+            </li>
+          );
+        })}
+      </ul>
+    );
+  }
+
+  return (
+    <Card id="parent-in-app-notifications" className="mb-6">
+      <CardHeader className="pb-3">
+        <div className="flex flex-wrap items-center gap-2">
+          <Bell className="h-4 w-4 flex-shrink-0 text-muted-foreground" aria-hidden />
+          <CardTitle className="text-base">Notifications</CardTitle>
+          {unreadBadge}
+        </div>
+      </CardHeader>
+      <CardContent>{bodyContent}</CardContent>
+    </Card>
+  );
+}
+
 function TeacherFeedback({ updates, isStudentPreview }) {
   const latest = updates[0];
 
@@ -1612,6 +1723,24 @@ export default function ParentView() {
   const [parentProgressReportDetail, setParentProgressReportDetail] = useState(null);
   const [parentProgressReportCurrentVersion, setParentProgressReportCurrentVersion] = useState(null);
   const [pdfBranchLabel, setPdfBranchLabel] = useState('');
+  const [parentInAppNotificationRows, setParentInAppNotificationRows] = useState([]);
+  const [parentInAppNotificationsLoading, setParentInAppNotificationsLoading] = useState(false);
+  const [parentInAppNotificationsError, setParentInAppNotificationsError] = useState('');
+  const [parentInAppMarkingId, setParentInAppMarkingId] = useState(null);
+
+  const isParentViewerRole = normalizeRole(viewer?.role) === ROLES.PARENT;
+  const parentInAppNotificationsForChild = useMemo(() => {
+    if (!student?.id) {
+      return parentInAppNotificationRows;
+    }
+    return parentInAppNotificationRows.filter(
+      (row) => !row.student_id || row.student_id === student.id
+    );
+  }, [parentInAppNotificationRows, student?.id]);
+  const parentInAppUnreadForChild = useMemo(
+    () => parentInAppNotificationsForChild.filter((row) => !row.read_at).length,
+    [parentInAppNotificationsForChild]
+  );
 
   const latestApprovedUpdate = useMemo(() => updates[0], [updates]);
   const parentHomeworkTasksWithStatus = useMemo(() => {
@@ -1939,6 +2068,70 @@ export default function ParentView() {
   useEffect(() => {
     void loadParentProgressReports();
   }, [loadParentProgressReports]);
+
+  const loadParentInAppNotifications = useCallback(async () => {
+    if (isDemoStudentPreview || !isParentViewerRole) {
+      setParentInAppNotificationRows([]);
+      setParentInAppNotificationsError('');
+      setParentInAppNotificationsLoading(false);
+      return;
+    }
+    if (isDemoMode) {
+      setParentInAppNotificationRows([]);
+      setParentInAppNotificationsError('');
+      setParentInAppNotificationsLoading(false);
+      return;
+    }
+    if (!hasSupabaseSession || !isSupabaseConfigured()) {
+      setParentInAppNotificationRows([]);
+      setParentInAppNotificationsError('');
+      setParentInAppNotificationsLoading(false);
+      return;
+    }
+
+    setParentInAppNotificationsLoading(true);
+    setParentInAppNotificationsError('');
+    try {
+      const listResult = await listMyInAppNotifications({ limit: 50 });
+      if (listResult.error) {
+        throw new Error(listResult.error.message || 'Unable to load notifications.');
+      }
+      setParentInAppNotificationRows(Array.isArray(listResult.data) ? listResult.data : []);
+    } catch (error) {
+      setParentInAppNotificationRows([]);
+      setParentInAppNotificationsError(error?.message || 'Unable to load notifications.');
+    } finally {
+      setParentInAppNotificationsLoading(false);
+    }
+  }, [isDemoStudentPreview, isDemoMode, hasSupabaseSession, isParentViewerRole]);
+
+  useEffect(() => {
+    void loadParentInAppNotifications();
+  }, [loadParentInAppNotifications]);
+
+  const handleMarkParentNotificationRead = useCallback(async (notificationId) => {
+    if (!isUuidLike(notificationId)) {
+      return;
+    }
+    setParentInAppMarkingId(notificationId);
+    try {
+      const result = await markNotificationRead({ notificationId });
+      if (result.error) {
+        toast.error(result.error.message || 'Could not mark notification as read.');
+        return;
+      }
+      const readAt = result.data?.read_at || new Date().toISOString();
+      setParentInAppNotificationRows((prev) =>
+        prev.map((row) =>
+          row.id === notificationId ? { ...row, read_at: readAt, status: 'read' } : row
+        )
+      );
+    } catch (error) {
+      toast.error(error?.message || 'Could not mark notification as read.');
+    } finally {
+      setParentInAppMarkingId(null);
+    }
+  }, []);
 
   useEffect(() => {
     let cancelled = false;
@@ -2680,6 +2873,20 @@ export default function ParentView() {
             </div>
           </div>
         </div>
+
+        {!isDemoStudentPreview && isParentViewerRole ? (
+          <ParentInAppNotificationsSection
+            demoMode={isDemoMode}
+            hasSupabaseSession={hasSupabaseSession}
+            supabaseReady={isSupabaseConfigured()}
+            loading={parentInAppNotificationsLoading}
+            error={parentInAppNotificationsError}
+            notifications={parentInAppNotificationsForChild}
+            unreadCount={parentInAppUnreadForChild}
+            markingId={parentInAppMarkingId}
+            onMarkRead={handleMarkParentNotificationRead}
+          />
+        ) : null}
 
         {!isDemoStudentPreview && (
           isDemoMode
