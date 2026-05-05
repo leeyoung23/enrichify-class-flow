@@ -3,6 +3,29 @@
 Date: 2026-05-05  
 Type: planning-only checkpoint (no code/SQL/RLS/auth-config changes)
 
+## 2026-05-05 implementation checkpoint addendum (Phase 1E Step 3A active sessions visibility v1)
+
+- Added a minimal read-only **Active Sessions** surface for parent self-visibility:
+  - new reusable component: `src/components/account/ActiveSessionsCard.jsx`
+  - wired into `src/pages/ParentView.jsx` under parent account area near communication settings
+- Data source: existing `listMyAuthSessions` helper (`auth_sessions` via existing RLS self-scope).
+- Displayed fields (privacy-safe):
+  - status (`active`, `signed_out`, `timed_out`, `revoked`)
+  - remember-me on/off
+  - started time
+  - last seen time
+  - safe device label (`Current browser` + `safe_device_label` fallback)
+- Current session highlighting:
+  - compares row `id` with `enrichify_current_auth_session_id` marker from session governance helpers.
+- Privacy boundaries preserved:
+  - no raw IP, no full user-agent, no fingerprint, no location/GPS, no token/password display.
+  - internal session id hidden in normal mode; optional truncated reference only when `?debug=1`.
+- Scope intentionally deferred:
+  - no revoke button
+  - no logout-all-devices
+  - no HQ/staff revoke controls in this step
+  - no SQL/RLS change
+
 ## 2026-05-05 implementation checkpoint addendum (Phase 1E Step 2 tiny runtime wiring)
 
 Runtime wiring added (small, conservative integration):

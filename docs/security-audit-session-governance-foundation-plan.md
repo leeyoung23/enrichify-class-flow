@@ -3,6 +3,24 @@
 Date: 2026-05-04  
 Type: planning-only checkpoint (no code/SQL/auth/UI changes in this milestone)
 
+## 2026-05-05 implementation checkpoint addendum: Phase 1E Step 3A active sessions visibility v1
+
+- Added privacy-safe read-only active session visibility for parent self account:
+  - component: `src/components/account/ActiveSessionsCard.jsx`
+  - placement: `src/pages/ParentView.jsx` account area (near communication settings)
+- Uses existing policy boundaries:
+  - existing helper `listMyAuthSessions` (RLS self-scope)
+  - no SQL or RLS mutation in this step
+- Safe display set:
+  - status, remember-me flag, started/last-seen timestamps, safe device label
+  - current browser badge using locally stored current auth session marker
+- Explicitly excluded from UI:
+  - raw IP/exact location/full user-agent/fingerprint/token/password
+  - revoke controls and logout-all-devices controls
+- Debug posture:
+  - internal ids are hidden by default
+  - only truncated internal reference shown when debug query mode is enabled (`?debug=1`)
+
 ## 2026-05-05 implementation checkpoint addendum: Phase 1E Step 2 runtime session-state wiring
 
 - Runtime session-state wiring is now active (small scope, no SQL/RLS changes):

@@ -3,6 +3,24 @@
 Date: 2026-05-05  
 Type: planning + diagnosis checkpoint only (no code/SQL/RLS/auth-config changes)
 
+## 2026-05-05 implementation checkpoint addendum (Phase 1E Step 3A active sessions visibility v1)
+
+- Parent self-service visibility is now available as read-only **Active Sessions** in `ParentView`.
+- UI source remains existing auth session inventory:
+  - `listMyAuthSessions()` for row listing
+  - `enrichify_current_auth_session_id` marker for current-browser highlighting
+- Remember-me visibility in UI:
+  - each row shows remember-me on/off state from `remember_me_enabled`.
+- Safe data exposure only:
+  - status + timestamps + safe device label
+  - no raw IP / full user-agent / fingerprint / token data
+  - internal session id hidden except truncated reference in debug query mode (`?debug=1`)
+- No behavior changes in this milestone:
+  - no timeout-policy changes
+  - no revoke action UI
+  - no logout-all-devices
+  - no SQL/RLS changes
+
 ## 2026-05-05 implementation checkpoint addendum (Phase 1E Step 2 tiny runtime wiring)
 
 - Login runtime now creates `auth_sessions` row after successful profile resolution in real mode.

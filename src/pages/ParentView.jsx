@@ -55,6 +55,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
 import { Textarea } from '@/components/ui/textarea';
+import ActiveSessionsCard from '@/components/account/ActiveSessionsCard';
 import {
   GraduationCap, CheckCircle2, XCircle, Clock, Umbrella,
   BookOpen, BookX, Minus, ExternalLink, FileText, Loader2, Sparkles, Bell,
@@ -3576,6 +3577,9 @@ export default function ParentView() {
             onConfirmOperationalService={handleConfirmOperationalServicePreference}
             onSave={handleSaveParentNotificationSettings}
           />
+        ) : null}
+        {!isDemoStudentPreview && isParentViewerRole ? (
+          <ActiveSessionsCard className="mb-6" />
         ) : null}
 
         {!isDemoStudentPreview && (

@@ -1,5 +1,27 @@
 # Project Master Context Handoff
 
+## Checkpoint update (active sessions visibility v1, Phase 1E Step 3A — 2026-05-05)
+
+- **Parent UI added (read-only):**
+  - `src/components/account/ActiveSessionsCard.jsx` created.
+  - Wired into `src/pages/ParentView.jsx` near communication settings as **Account security**.
+- **Data source:** existing `listMyAuthSessions` helper + existing `auth_sessions` RLS self visibility.
+- **Current-session indicator:** row `id` compared against `enrichify_current_auth_session_id`.
+- **Displayed fields (safe):**
+  - session status (`active`, `signed_out`, `timed_out`, `revoked`)
+  - remember-me on/off
+  - started and last-seen timestamps
+  - safe device label (`Current browser` + fallback safe label)
+- **Privacy boundaries preserved:**
+  - no raw IP, no location/GPS, no full user-agent, no fingerprint, no password/token/session-token display.
+  - internal id hidden in normal mode; truncated ref only in debug mode (`?debug=1`).
+- **Scope intentionally deferred:**
+  - no revoke buttons
+  - no logout-all-devices
+  - no HQ/staff revoke UI in this step
+  - no SQL/RLS changes
+- **Recommended next milestone:** Phase 1E Step 3B self-revoke old sessions (parent/staff self scope), then Step 3C HQ read-only session review, then Step 3D HQ revoke staff sessions.
+
 ## Checkpoint update (session governance Phase 1E Step 2 runtime wiring — 2026-05-05)
 
 - **Runtime integration added (tiny scope):**
