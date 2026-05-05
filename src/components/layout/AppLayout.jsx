@@ -11,6 +11,14 @@ import { useSupabaseAuthState } from '@/hooks/useSupabaseAuthState';
 import { isSupabaseConfigured } from '@/services/supabaseClient';
 import { listEligibleCompanyNewsPopups } from '@/services/supabaseReadService';
 import { dismissCompanyNewsPopup, markCompanyNewsPopupSeen } from '@/services/supabaseWriteService';
+import { signOutSupabasePrimary } from '@/services/supabaseAuthService';
+import {
+  getInactivityTimeoutMsForRole,
+  getKeepSignedInPreference,
+  hasActiveBrowserSessionMarker,
+  markLastActiveNow,
+  setActiveBrowserSessionMarker,
+} from '@/services/sessionGovernanceService';
 import { ShieldAlert } from 'lucide-react';
 
 const STAFF_ROLES = new Set(['hq_admin', 'branch_supervisor', 'teacher']);
@@ -57,9 +65,15 @@ export default function AppLayout() {
   const navigate = useNavigate();
   const selectedDemoRole = getSelectedDemoRole();
   const isDebugMode = isDebugModeEnabled();
-  const { appUser, loading: supabaseAuthLoading, isSupabaseAuthAvailable } = useSupabaseAuthState();
+  const {
+    appUser,
+    session,
+    loading: supabaseAuthLoading,
+    isSupabaseAuthAvailable,
+  } = useSupabaseAuthState();
   const popupFetchAttemptedRef = useRef(false);
   const popupSeenMarkedRef = useRef(new Set());
+  const enforcementSignOutInFlightRef = useRef(false);
 
   const isDemoActive = Boolean(selectedDemoRole);
   const showDemoTools = Boolean(isDemoActive || isDebugMode);
@@ -112,6 +126,94 @@ export default function AppLayout() {
   const popupBodyPreview = popupCandidate?.bodyPreview || popupCandidate?.subtitle || '';
   const popupEmoji = popupCandidate?.popupEmoji || '';
   const shouldRenderPopup = Boolean(popupCandidate && isStaffRole);
+
+  useEffect(() => {
+    if (isDemoActive) return;
+    if (!isSupabaseAuthAvailable || supabaseAuthLoading) return;
+    if (!session?.user) return;
+    if (enforcementSignOutInFlightRef.current) return;
+
+    const keepSignedIn = getKeepSignedInPreference();
+    const hasBrowserSessionMarker = hasActiveBrowserSessionMarker();
+
+    if (!keepSignedIn && !hasBrowserSessionMarker) {
+      enforcementSignOutInFlightRef.current = true;
+      void (async () => {
+        try {
+          await signOutSupabasePrimary({ reason: 'browser_session_restored_without_marker' });
+        } finally {
+          navigate('/login?session=expired', { replace: true });
+          enforcementSignOutInFlightRef.current = false;
+        }
+      })();
+      return;
+    }
+
+    setActiveBrowserSessionMarker();
+    markLastActiveNow();
+  }, [isDemoActive, isSupabaseAuthAvailable, supabaseAuthLoading, session?.user, navigate]);
+
+  useEffect(() => {
+    if (isDemoActive) return undefined;
+    if (!isSupabaseAuthAvailable || supabaseAuthLoading) return undefined;
+    if (!session?.user) return undefined;
+    if (enforcementSignOutInFlightRef.current) return undefined;
+
+    const keepSignedIn = getKeepSignedInPreference();
+    const timeoutMs = getInactivityTimeoutMsForRole({ role, keepSignedIn });
+    let timeoutHandle = null;
+    let lastMouseMoveAt = 0;
+
+    const executeTimeoutSignOut = () => {
+      if (enforcementSignOutInFlightRef.current) return;
+      enforcementSignOutInFlightRef.current = true;
+      void (async () => {
+        try {
+          await signOutSupabasePrimary({ reason: 'session_timeout' });
+        } finally {
+          navigate('/login?session=expired', { replace: true });
+          enforcementSignOutInFlightRef.current = false;
+        }
+      })();
+    };
+
+    const resetTimeout = () => {
+      markLastActiveNow();
+      if (timeoutHandle) {
+        window.clearTimeout(timeoutHandle);
+      }
+      timeoutHandle = window.setTimeout(executeTimeoutSignOut, timeoutMs);
+    };
+
+    const onMouseMove = () => {
+      const now = Date.now();
+      if (now - lastMouseMoveAt < 15000) return;
+      lastMouseMoveAt = now;
+      resetTimeout();
+    };
+
+    const onActivity = () => {
+      resetTimeout();
+    };
+
+    resetTimeout();
+    window.addEventListener('click', onActivity);
+    window.addEventListener('keydown', onActivity);
+    window.addEventListener('touchstart', onActivity);
+    window.addEventListener('focus', onActivity);
+    window.addEventListener('mousemove', onMouseMove);
+
+    return () => {
+      if (timeoutHandle) {
+        window.clearTimeout(timeoutHandle);
+      }
+      window.removeEventListener('click', onActivity);
+      window.removeEventListener('keydown', onActivity);
+      window.removeEventListener('touchstart', onActivity);
+      window.removeEventListener('focus', onActivity);
+      window.removeEventListener('mousemove', onMouseMove);
+    };
+  }, [isDemoActive, isSupabaseAuthAvailable, supabaseAuthLoading, session?.user, role, navigate]);
 
   const isPopupSessionHidden = (announcementId) => readSessionIds(POPUP_SESSION_HIDDEN_KEY).has(announcementId);
 

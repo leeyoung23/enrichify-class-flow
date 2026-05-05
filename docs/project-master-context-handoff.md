@@ -1,5 +1,21 @@
 # Project Master Context Handoff
 
+## Checkpoint update (session governance Phase 1C app-level enforcement v1 — 2026-05-05)
+
+- **Runtime enforcement added:** app-level session governance in real mode (`src/services/sessionGovernanceService.js` + `AppLayout` integration).
+- **Remember-me behavior now meaningful in app runtime:** unchecked users without active browser-session marker are signed out on restore (`/login?session=expired`).
+- **Inactivity timeout policy active:**
+  - `parent`/`student`: 12h (keep signed in), 2h (unchecked)
+  - `teacher`: 2h
+  - `branch_supervisor`/`hq_admin`: 1h
+  - role-unknown fallback: 1h
+- **Session markers used:**
+  - localStorage: `enrichify_keep_signed_in`, `enrichify_session_started_at`, `enrichify_last_active_at`
+  - sessionStorage: `enrichify_active_browser_session`
+- **Sign-out behavior:** Supabase-primary sign-out clears active markers; remember-me preference is retained as UI preference.
+- **Demo safety:** `demoRole` preview bypasses enforcement/timers.
+- **Still deferred:** SQL-backed session audit/revocation model, cross-device governance, and Supabase dashboard auth policy changes.
+
 ## Checkpoint update (session governance Phase 1B remember-me UX — 2026-05-05)
 
 - **Login UX:** `src/pages/Login.jsx` now shows remember-me checkbox + helper copy:

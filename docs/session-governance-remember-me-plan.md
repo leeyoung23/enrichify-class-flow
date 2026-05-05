@@ -42,6 +42,43 @@ Type: planning + diagnosis checkpoint only (no code/SQL/RLS/auth-config changes)
   - enforce unchecked mode with shorter/session-only persistence strategy
   - inactivity timeout + audit/session governance controls
 
+## 2026-05-05 implementation checkpoint addendum (Phase 1C)
+
+- Added app-level session enforcement v1 without SQL/RLS/Supabase-dashboard changes.
+- New helper: `src/services/sessionGovernanceService.js`.
+- Storage keys used:
+  - localStorage:
+    - `enrichify_keep_signed_in` (`1`/`0`)
+    - `enrichify_session_started_at` (ms timestamp)
+    - `enrichify_last_active_at` (ms timestamp)
+  - sessionStorage:
+    - `enrichify_active_browser_session` (`1`)
+- Login behavior:
+  - On successful real sign-in, app initializes session markers (`session_started`, `last_active`, `active_browser_session`).
+- App load behavior (real mode, no `demoRole`):
+  - if Supabase session exists and `keep_signed_in !== 1` and browser-session marker is missing, app signs out Supabase-primary and redirects to `/login?session=expired`.
+  - otherwise marker/activity are refreshed.
+- Inactivity timeout policy implemented:
+  - parent/student: keep signed in = 12h, unchecked = 2h
+  - teacher: 2h
+  - branch supervisor/hq admin: 1h
+  - unknown role fallback: 1h
+- Activity signals used: `click`, `keydown`, `touchstart`, `focus`, `mousemove` (mousemove throttled).
+- Sign-out behavior:
+  - manual and timeout sign-out clear active session markers (`active_browser_session`, `session_started_at`, `last_active_at`)
+  - `enrichify_keep_signed_in` is retained as user UI preference
+  - Supabase session remains the authority for actual logout.
+- Demo safety:
+  - `demoRole` bypasses enforcement and timers.
+- Optional UX:
+  - login now shows safe notice on timeout redirect: `Your session expired for security. Please sign in again.`
+
+Limitations (still deferred):
+
+- No server-backed session audit/revocation table yet.
+- No cross-device revocation controls yet.
+- No role-specific remember-me eligibility toggles yet.
+
 ## Scope and hard constraints
 
 - This checkpoint is planning-only.

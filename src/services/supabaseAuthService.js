@@ -1,6 +1,7 @@
 import { supabase, isSupabaseConfigured } from "./supabaseClient.js";
 import { getRole } from "./permissionService.js";
 import { base44 } from "../api/base44Client.js";
+import { clearSessionGovernanceMarkers } from "./sessionGovernanceService.js";
 
 /**
  * Phase 1: Supabase Auth helpers only. Does not replace demoRole or authService (Base44).
@@ -86,8 +87,8 @@ export async function signInWithEmailPassword(email, password) {
   }
 }
 
-export async function signOut() {
-  const { supabaseError } = await signOutSupabasePrimary();
+export async function signOut(options = {}) {
+  const { supabaseError } = await signOutSupabasePrimary(options);
   return { error: supabaseError ?? null };
 }
 
@@ -113,13 +114,20 @@ function clearSessionUiStateBestEffort() {
  * - Legacy Base44 cleanup is best-effort and non-blocking.
  * - Clears only safe session UI keys used by current app shell.
  */
-export async function signOutSupabasePrimary() {
+export async function signOutSupabasePrimary({ reason = "manual_sign_out" } = {}) {
   let supabaseError = null;
   let legacyCleanupError = null;
 
   if (!isSupabaseConfigured() || !supabase) {
     clearSessionUiStateBestEffort();
-    return { success: true, error: null, supabaseError: null, legacyCleanupError: null };
+    clearSessionGovernanceMarkers({ clearKeepSignedInPreference: false });
+    return {
+      success: true,
+      error: null,
+      supabaseError: null,
+      legacyCleanupError: null,
+      reason,
+    };
   }
 
   try {
@@ -139,12 +147,14 @@ export async function signOutSupabasePrimary() {
   }
 
   clearSessionUiStateBestEffort();
+  clearSessionGovernanceMarkers({ clearKeepSignedInPreference: false });
 
   return {
     success: !supabaseError,
     error: supabaseError ?? null,
     supabaseError: supabaseError ?? null,
     legacyCleanupError: legacyCleanupError ?? null,
+    reason,
   };
 }
 

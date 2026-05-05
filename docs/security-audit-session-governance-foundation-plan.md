@@ -69,6 +69,27 @@ Risk notes:
   - inactivity timeout/session policy enforcement
   - session/audit model and revocation controls
 
+## 2026-05-05 Phase 1C implementation note: app-level session enforcement v1
+
+- Added app-level enforcement layer (no SQL/RLS/auth-dashboard change):
+  - browser-session marker enforcement for unchecked remember-me
+  - role-aware inactivity timeout sign-out in app runtime
+- Session markers:
+  - `enrichify_keep_signed_in` (UI preference)
+  - `enrichify_session_started_at`
+  - `enrichify_last_active_at`
+  - `enrichify_active_browser_session`
+- Inactivity defaults now active in app:
+  - parent/student: 12h (checked), 2h (unchecked)
+  - teacher: 2h
+  - branch_supervisor/hq_admin: 1h
+  - unknown role fallback: 1h
+- Timeout action:
+  - Supabase-primary sign-out
+  - redirect to login with safe expiration message
+- Manual sign-out continues to clear active session markers while retaining remember-me preference.
+- Demo preview mode remains bypassed to avoid mutating real auth state from URL preview flows.
+
 ## Scope and constraints
 
 This document defines the next production-hardening foundation after internal prototype validation for:

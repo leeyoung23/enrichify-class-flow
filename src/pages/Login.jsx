@@ -14,28 +14,11 @@ import {
 import { parseReturnUrlQueryParam } from "@/lib/supabaseAuthReturnUrl.js";
 import { getDefaultLandingPathForRole } from "@/lib/roleLanding.js";
 import { useSupabaseAuthState } from "@/hooks/useSupabaseAuthState";
-
-const KEEP_SIGNED_IN_PREFERENCE_KEY = "enrichify_keep_signed_in";
-
-function loadKeepSignedInPreference() {
-  try {
-    if (typeof window === "undefined" || !window.localStorage) return true;
-    const stored = window.localStorage.getItem(KEEP_SIGNED_IN_PREFERENCE_KEY);
-    if (stored == null) return true;
-    return stored === "1";
-  } catch (_error) {
-    return true;
-  }
-}
-
-function saveKeepSignedInPreference(value) {
-  try {
-    if (typeof window === "undefined" || !window.localStorage) return;
-    window.localStorage.setItem(KEEP_SIGNED_IN_PREFERENCE_KEY, value ? "1" : "0");
-  } catch (_error) {
-    // Ignore preference-write failures; login behavior should remain stable.
-  }
-}
+import {
+  getKeepSignedInPreference,
+  initializeSessionGovernanceOnSignIn,
+  setKeepSignedInPreference,
+} from "@/services/sessionGovernanceService";
 
 export default function Login() {
   const navigate = useNavigate();
@@ -46,7 +29,7 @@ export default function Login() {
   const [password, setPassword] = useState("");
   const [busy, setBusy] = useState(false);
   const [formError, setFormError] = useState(null);
-  const [keepSignedIn, setKeepSignedIn] = useState(loadKeepSignedInPreference);
+  const [keepSignedIn, setKeepSignedIn] = useState(getKeepSignedInPreference);
 
   const configured = isSupabaseConfigured();
 
@@ -61,7 +44,7 @@ export default function Login() {
     if (!configured) return;
     setBusy(true);
     setFormError(null);
-    saveKeepSignedInPreference(keepSignedIn);
+    setKeepSignedInPreference(keepSignedIn);
     try {
       const { error: signErr } = await signInWithEmailPassword(email, password);
       if (signErr) {
@@ -79,6 +62,7 @@ export default function Login() {
         await signOut();
         return;
       }
+      initializeSessionGovernanceOnSignIn();
       await refreshAuthState();
       goAfterSignIn(mapProfileToAppUser(profile));
     } catch (err) {
@@ -104,6 +88,10 @@ export default function Login() {
   const handleContinue = () => {
     goAfterSignIn();
   };
+
+  const sessionNotice = searchParams.get("session") === "expired"
+    ? "Your session expired for security. Please sign in again."
+    : null;
 
   if (!configured) {
     return (
@@ -255,6 +243,10 @@ export default function Login() {
               {formError ? (
                 <p className="text-sm text-destructive" role="alert">
                   {formError}
+                </p>
+              ) : sessionNotice ? (
+                <p className="text-sm text-amber-700" role="status">
+                  {sessionNotice}
                 </p>
               ) : null}
               <Button type="submit" className="w-full gap-2" disabled={busy}>
