@@ -8,6 +8,13 @@ Date: 2026-05-05
 - **Apply method:** Supabase **SQL Editor** (manual run against the linked project)
 - **Alternative apply (not used for this verification):** `supabase db query --linked --file supabase/sql/034_notifications_foundation.sql`
 
+## Linked project: AI parent report release + notification RLS follow-up (2026-05-05)
+
+- **`supabase/sql/035_ai_parent_report_notification_guardian_lookup.sql`:** `list_parent_profile_ids_for_student_staff_scope_035` (guardian→parent profile ids; staff-scoped).
+- **`supabase/sql/036_notifications_creator_select_and_teacher_insert_scope.sql`**
+  - **Creator select:** staff (`hq_admin`, `branch_supervisor`, `teacher`) may **select** `notifications` rows they created — fixes `INSERT ... RETURNING` when the recipient is a parent (same failure mode as `031_fix_ai_parent_reports_insert_rls.sql`).
+  - **Teacher insert scope:** `notification_events` + `notifications` teacher branch aligned with `can_manage_ai_parent_report` (class teacher **or** `is_teacher_for_student` **or** assigned teacher on an `ai_parent_reports` row for that student+branch).
+
 ### Post-apply smoke tests (linked project)
 
 | Command | Result |
@@ -21,20 +28,25 @@ Date: 2026-05-05
 
 - **Recipient self-read:** parent (or any recipient) can read and update only **own** `notifications` rows (`recipient_profile_id = auth.uid()`).
 - **Unrelated users blocked:** teacher (or other authenticated user) cannot read another profile’s notification row by id.
+- **Staff creator read (036):** staff can read `notifications` rows they **created** (outbox / RETURNING); does not grant parents access to other families’ rows.
 - **HQ/admin read path:** smoke uses HQ to create event/notification rows and delivery-log test row; HQ policies allow broad read where defined.
 - **Delivery logs restricted:** `notification_delivery_logs` — parents do not have select; insert/read limited to **HQ** in this foundation (smoke confirms parent cannot read delivery logs for the test notification).
+
+### In-app trigger (app code, not DB trigger)
+
+- After a successful `releaseAiParentReport` (report row updated to `released` with `current_version_id` / `released_at` / `released_by_profile_id`), `src/services/supabaseWriteService.js` calls `notifyLinkedParentsAfterAiParentReportRelease` (non-blocking on failure; dev-only safe warnings). Recipients come only from `list_parent_profile_ids_for_student_staff_scope_035` (guardian links). **Idempotency (best-effort):** same **actor** + report + `releasedVersionId` via `notification_events.metadata` — not a global unique constraint; another staff re-release can still duplicate.
 
 ### Safety boundaries (unchanged after apply)
 
 - No live sending, no email/SMS/push provider, no webhooks, no Edge sender
-- No automatic database triggers or product flows wired to create notifications on domain events yet
+- In-app **notification records** only; first product trigger: **AI parent report released** (see above)
 - No service-role key in frontend; anon + JWT only
 - No parent cross-family visibility; RLS remains recipient-scoped for inbox rows
 - No changes to Edge, PDF, OCR, or provider integrations in this verification milestone
 
 ### Next recommended milestone
 
-- **In-app “report released” notification** (or equivalent first trigger): strict **released**-state gating, idempotency, then re-run cross-family and HQ read smokes before any email channel work.
+- **Email/SMS/push** only after review; optional DB **unique** partial index on `(entity_id, event_type, metadata->>'releasedVersionId', created_by_profile_id)` if hard idempotency is required across staff.
 
 ---
 

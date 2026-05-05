@@ -1,5 +1,13 @@
 # Project Master Context Handoff
 
+## Checkpoint update (AI parent report release → in-app notification — 2026-05-05)
+
+- **SQL:** `supabase/sql/035_ai_parent_report_notification_guardian_lookup.sql` (RPC parent profile lookup); `supabase/sql/036_notifications_creator_select_and_teacher_insert_scope.sql` (staff creator **SELECT** on `notifications` for INSERT RETURNING; teacher insert scope aligned with AI report manage rules).
+- **App:** `releaseAiParentReport` in `src/services/supabaseWriteService.js` invokes `notifyLinkedParentsAfterAiParentReportRelease` after successful release update (non-blocking; dev-only safe warnings on failure).
+- **Smoke:** `scripts/supabase-ai-parent-reports-smoke-test.mjs` — baseline parent notification count before release, increment after teacher release, duplicate release idempotency path; unrelated-parent probe CHECK when credentials missing.
+- **Post-change smokes (PASS):** `test:supabase:notifications`, `test:supabase:ai-parent-reports`, `test:supabase:audit-events`, `test:supabase:parent-updates:write`.
+- **Doc:** `docs/notifications-foundation-checkpoint.md` (035/036 + trigger notes).
+
 ## Checkpoint update (notifications foundation applied verification — 2026-05-05)
 
 - **Docs-only checkpoint:** `supabase/sql/034_notifications_foundation.sql` has been **applied to the linked Supabase project** via the **Supabase SQL Editor** (not CLI in this step).

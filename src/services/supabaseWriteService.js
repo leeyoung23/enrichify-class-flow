@@ -99,6 +99,10 @@ const AUDIT_MAX_METADATA_KEYS = 12;
 const AUDIT_MAX_STRING_LENGTH = 280;
 const NOTIFICATION_EVENT_STATUS_VALUES = new Set(["draft", "pending", "processed", "cancelled"]);
 const NOTIFICATION_STATUS_VALUES = new Set(["pending", "delivered", "read", "archived", "suppressed", "failed"]);
+const AI_PARENT_REPORT_NOTIFICATION_EVENT_TYPE = "ai_parent_report.released";
+const AI_PARENT_REPORT_RELEASE_NOTIFY_TITLE = "New progress report available";
+const AI_PARENT_REPORT_RELEASE_NOTIFY_BODY =
+  "A new progress report has been released for your child.";
 
 function isUuidLike(value) {
   if (typeof value !== "string") return false;
@@ -292,6 +296,13 @@ function warnAuditFailureInDev(error, context = "") {
   const message = trimString(error?.message) || "unknown";
   // eslint-disable-next-line no-console
   console.warn(`[audit_events] ${context || "write failure"}: ${message}`);
+}
+
+function warnNotificationFailureInDev(error, context = "") {
+  if (!isDevRuntime()) return;
+  const message = trimString(error?.message) || "unknown";
+  // eslint-disable-next-line no-console
+  console.warn(`[notifications] ${context || "write failure"}: ${message}`);
 }
 
 function sanitizeAuditValue(value) {
@@ -2857,6 +2868,118 @@ async function insertAiParentReportReleaseEvent({
   return { data: insertResult.data, error: null };
 }
 
+async function hasExistingAiParentReportReleaseNotificationEvent({
+  actorProfileId,
+  reportId,
+  releasedVersionId,
+} = {}) {
+  if (!isUuidLike(actorProfileId) || !isUuidLike(reportId) || !isUuidLike(releasedVersionId)) {
+    return false;
+  }
+  const versionKey = trimString(releasedVersionId);
+  const read = await supabase
+    .from("notification_events")
+    .select("id,metadata")
+    .eq("created_by_profile_id", trimString(actorProfileId))
+    .eq("entity_type", "ai_parent_report")
+    .eq("entity_id", trimString(reportId))
+    .eq("event_type", AI_PARENT_REPORT_NOTIFICATION_EVENT_TYPE);
+  if (read.error || !Array.isArray(read.data)) return false;
+  return read.data.some((row) => trimString(row?.metadata?.releasedVersionId) === versionKey);
+}
+
+async function resolveParentProfileIdsForAiReportNotification(studentId) {
+  if (!isUuidLike(studentId)) return [];
+  const rpcResult = await supabase.rpc("list_parent_profile_ids_for_student_staff_scope_035", {
+    p_student_id: trimString(studentId),
+  });
+  if (rpcResult.error) {
+    warnNotificationFailureInDev(rpcResult.error, "resolveParentProfileIdsForAiReportNotification.rpc");
+    return [];
+  }
+  if (!Array.isArray(rpcResult.data)) return [];
+  const ids = rpcResult.data
+    .map((entry) => {
+      if (typeof entry === "string") return trimString(entry);
+      if (entry && typeof entry === "object" && isUuidLike(entry.profile_id)) {
+        return trimString(entry.profile_id);
+      }
+      return "";
+    })
+    .filter((id) => isUuidLike(id));
+  return [...new Set(ids)];
+}
+
+/**
+ * Best-effort idempotency: skips when this actor already recorded a matching notification_event
+ * (same report, same releasedVersionId in metadata). Does not prevent duplicate parent rows if
+ * another staff member releases the same version, or if the event row was deleted — see docs.
+ */
+async function notifyLinkedParentsAfterAiParentReportRelease({ actorProfileId, report, releasedVersionId } = {}) {
+  if (!isSupabaseConfigured() || !supabase) {
+    return { error: null, skipped: true };
+  }
+  if (!isUuidLike(actorProfileId) || !report?.id || !isUuidLike(releasedVersionId)) {
+    return { error: null, skipped: true };
+  }
+  const studentId = report.student_id;
+  if (!isUuidLike(studentId)) {
+    return { error: null, skipped: true };
+  }
+
+  const alreadySent = await hasExistingAiParentReportReleaseNotificationEvent({
+    actorProfileId,
+    reportId: report.id,
+    releasedVersionId,
+  });
+  if (alreadySent) {
+    return { error: null, skipped: true };
+  }
+
+  const recipientIds = await resolveParentProfileIdsForAiReportNotification(studentId);
+  if (recipientIds.length === 0) {
+    return { error: null, skipped: true };
+  }
+
+  const eventResult = await createNotificationEvent({
+    eventType: AI_PARENT_REPORT_NOTIFICATION_EVENT_TYPE,
+    entityType: "ai_parent_report",
+    entityId: report.id,
+    branchId: report.branch_id,
+    classId: report.class_id,
+    studentId,
+    status: "processed",
+    metadata: {
+      reportType: trimString(report.report_type),
+      versionReleased: true,
+      releasedVersionId: trimString(releasedVersionId),
+    },
+  });
+  if (eventResult.error || !eventResult.data?.id) {
+    return { error: eventResult.error || { message: "Unable to record notification event." }, skipped: false };
+  }
+
+  const notificationEventId = eventResult.data.id;
+  for (const recipientProfileId of recipientIds) {
+    const rowResult = await createInAppNotification({
+      eventId: notificationEventId,
+      recipientProfileId,
+      recipientRole: "parent",
+      branchId: report.branch_id,
+      classId: report.class_id,
+      studentId,
+      title: AI_PARENT_REPORT_RELEASE_NOTIFY_TITLE,
+      body: AI_PARENT_REPORT_RELEASE_NOTIFY_BODY,
+      status: "pending",
+    });
+    if (rowResult.error) {
+      warnNotificationFailureInDev(rowResult.error, "notifyLinkedParentsAfterAiParentReportRelease.row");
+    }
+  }
+
+  return { error: null, skipped: false };
+}
+
 export async function createAiParentReportDraft({
   studentId,
   classId,
@@ -3404,6 +3527,15 @@ export async function releaseAiParentReport({ reportId, versionId } = {}) {
     });
     if (auditResult.error) {
       warnAuditFailureInDev(auditResult.error, "releaseAiParentReport");
+    }
+
+    const notifyResult = await notifyLinkedParentsAfterAiParentReportRelease({
+      actorProfileId: profileId,
+      report: updateResult.data,
+      releasedVersionId: trimString(versionId),
+    });
+    if (notifyResult?.error) {
+      warnNotificationFailureInDev(notifyResult.error, "releaseAiParentReport");
     }
 
     return {

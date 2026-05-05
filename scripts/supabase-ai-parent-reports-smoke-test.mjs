@@ -14,6 +14,9 @@ const DEFAULT_FAKE_BRANCH_ID = "11111111-1111-1111-1111-111111111111";
 const DEFAULT_FAKE_CLASS_ID = "33333333-3333-3333-3333-333333333331";
 const DEFAULT_FAKE_STUDENT_ID = "55555555-5555-5555-5555-555555555555";
 
+/** Must match `AI_PARENT_REPORT_RELEASE_NOTIFY_TITLE` in supabaseWriteService.js */
+const AI_REPORT_RELEASE_IN_APP_TITLE = "New progress report available";
+
 function printResult(kind, message) {
   console.log(`[${kind}] ${message}`);
 }
@@ -337,6 +340,10 @@ async function run() {
 
   let draftReportId = null;
   let releasedVersionId = null;
+  /** Count of matching in-app notifications for linked parent + fixture student (before release). */
+  let parentNotifBaselineForStudent = null;
+  /** Latest matching notification id after release (for unrelated-parent RLS check). */
+  let linkedParentSampleNotificationId = null;
 
   const hqSignIn = await signInRole(hqUser, deps);
   if (hqSignIn.ok) {
@@ -525,6 +532,30 @@ async function run() {
 
   const parentBeforeReleaseSignIn = await signInRole(parentUser, deps);
   if (parentBeforeReleaseSignIn.ok) {
+    const authSelf = await supabase.auth.getUser();
+    const parentProfileIdSelf = authSelf?.data?.user?.id || null;
+    if (isUuidLike(parentProfileIdSelf)) {
+      const notifBaselineRead = await supabase
+        .from("notifications")
+        .select("id", { count: "exact", head: true })
+        .eq("recipient_profile_id", parentProfileIdSelf)
+        .eq("channel", "in_app")
+        .eq("title", AI_REPORT_RELEASE_IN_APP_TITLE)
+        .eq("student_id", fixtureStudentId);
+      if (notifBaselineRead.error) {
+        printResult("CHECK", `Parent: pre-release notification baseline CHECK (${notifBaselineRead.error.message || "unknown"})`);
+      } else {
+        parentNotifBaselineForStudent =
+          typeof notifBaselineRead.count === "number" ? notifBaselineRead.count : 0;
+        printResult(
+          "PASS",
+          `Parent: pre-release matching in-app notification count=${parentNotifBaselineForStudent}`
+        );
+      }
+    } else {
+      printResult("CHECK", "Parent: pre-release notification baseline skipped (no profile id)");
+    }
+
     if (!draftReportId) {
       printResult("CHECK", "Parent draft visibility check skipped (draft fixture unavailable)");
     } else {
@@ -586,6 +617,16 @@ async function run() {
           printResult("PASS", "Release lifecycle event insert succeeded");
         }
       }
+
+      const dupReleaseResult = await releaseAiParentReport({
+        reportId: draftReportId,
+        versionId: releasedVersionId,
+      });
+      if (dupReleaseResult.error) {
+        printResult("CHECK", `Teacher duplicate release CHECK (${dupReleaseResult.error.message || "unknown"})`);
+      } else {
+        printResult("PASS", "Teacher duplicate release call completed (idempotent notification path expected)");
+      }
     }
   } else {
     printResult("CHECK", "Teacher lifecycle checks skipped");
@@ -637,6 +678,55 @@ async function run() {
         printResult("WARNING", "Parent: direct evidence-link read unexpectedly visible");
         failureCount += 1;
       }
+
+      const authSelfAfter = await supabase.auth.getUser();
+      const parentPidAfter = authSelfAfter?.data?.user?.id || null;
+      if (isUuidLike(parentPidAfter)) {
+        const notifAfterRead = await supabase
+          .from("notifications")
+          .select("id", { count: "exact", head: true })
+          .eq("recipient_profile_id", parentPidAfter)
+          .eq("channel", "in_app")
+          .eq("title", AI_REPORT_RELEASE_IN_APP_TITLE)
+          .eq("student_id", fixtureStudentId);
+        const afterCount =
+          typeof notifAfterRead.count === "number" && !notifAfterRead.error ? notifAfterRead.count : null;
+        if (afterCount == null) {
+          printResult(
+            "CHECK",
+            `Parent: post-release notification count CHECK (${notifAfterRead.error?.message || "unknown"})`
+          );
+        } else if (typeof parentNotifBaselineForStudent === "number") {
+          if (afterCount > parentNotifBaselineForStudent) {
+            printResult(
+              "PASS",
+              `Parent: release created in-app notification(s) (count ${parentNotifBaselineForStudent} -> ${afterCount})`
+            );
+          } else {
+            printResult(
+              "WARNING",
+              `Parent: expected new in-app notification after release (baseline=${parentNotifBaselineForStudent}, after=${afterCount}); apply supabase/sql/035_ai_parent_report_notification_guardian_lookup.sql if missing`
+            );
+            failureCount += 1;
+          }
+        } else {
+          printResult("CHECK", "Parent: post-release notification count CHECK (baseline unavailable)");
+        }
+
+        const sampleRow = await supabase
+          .from("notifications")
+          .select("id")
+          .eq("recipient_profile_id", parentPidAfter)
+          .eq("channel", "in_app")
+          .eq("title", AI_REPORT_RELEASE_IN_APP_TITLE)
+          .eq("student_id", fixtureStudentId)
+          .order("created_at", { ascending: false })
+          .limit(1)
+          .maybeSingle();
+        if (!sampleRow.error && sampleRow.data?.id) {
+          linkedParentSampleNotificationId = sampleRow.data.id;
+        }
+      }
     }
   } else {
     printResult("CHECK", "Parent released visibility checks skipped");
@@ -654,6 +744,22 @@ async function run() {
       } else {
         printResult("WARNING", "Unrelated parent unexpectedly accessed released report");
         failureCount += 1;
+      }
+
+      if (isUuidLike(linkedParentSampleNotificationId)) {
+        const foreignPeek = await supabase
+          .from("notifications")
+          .select("id")
+          .eq("id", linkedParentSampleNotificationId)
+          .maybeSingle();
+        if (foreignPeek.error || !foreignPeek.data?.id) {
+          printResult("PASS", "Unrelated parent: cannot read linked parent's notification row");
+        } else {
+          printResult("WARNING", "Unrelated parent unexpectedly read another family's notification");
+          failureCount += 1;
+        }
+      } else {
+        printResult("CHECK", "Unrelated parent notification isolation skipped (no sample notification id)");
       }
     }
   } else {
