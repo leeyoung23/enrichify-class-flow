@@ -153,6 +153,69 @@ Deferred pending legal/compliance + privacy notice review:
 - IP handling/fingerprinting/device fingerprinting
 - expanded device telemetry and retention policy
 
+## 2026-05-05 implementation checkpoint addendum (Phase 1D)
+
+Implemented auth lifecycle audit foundation using existing `audit_events` (no new table/migration).
+
+Event taxonomy now written by app runtime:
+
+- `user.login`
+- `user.logout`
+- `user.session_timeout`
+- `user.remember_me_enabled`
+- `user.remember_me_disabled`
+
+Entity type used:
+
+- `user_session`
+
+Write points:
+
+- Login success path in `src/pages/Login.jsx`:
+  - writes `user.login`
+  - writes remember-me toggle event when login checkbox preference changes
+- Manual sign-out path in `src/services/supabaseAuthService.js`:
+  - writes `user.logout` before Supabase sign-out (best-effort, non-blocking)
+- Inactivity timeout path in `src/components/layout/AppLayout.jsx`:
+  - writes `user.session_timeout` before timeout sign-out (best-effort, non-blocking)
+
+Helper:
+
+- Added `recordAuthLifecycleAudit(...)` in `src/services/supabaseWriteService.js`.
+- Uses existing `recordAuditEvent(...)` and metadata sanitizer; no secrets/tokens/password fields are written.
+
+Privacy-safe metadata in auth lifecycle events:
+
+- `role`
+- `rememberMeEnabled`
+- `reason`
+- `source`
+
+Excluded:
+
+- passwords
+- tokens
+- raw IP
+- full user agent
+- exact device fingerprint
+- child/student data
+
+Failure behavior:
+
+- Audit writes are non-blocking.
+- Sign-in/sign-out/timeout flows proceed even if audit write fails.
+- Dev-only warning pattern used through existing audit warning path.
+
+Demo behavior:
+
+- No auth lifecycle audit writes in demoRole timeout/sign-out paths.
+
+Validation/smoke:
+
+- Added `scripts/supabase-auth-lifecycle-audit-smoke-test.mjs`.
+- Added npm script `test:supabase:auth-lifecycle-audit`.
+- Existing `test:supabase:auth` alias/import issue remains a separate pre-existing hygiene item.
+
 ## Scope and hard constraints
 
 - This checkpoint is planning-only.

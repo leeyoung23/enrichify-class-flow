@@ -10,7 +10,7 @@ import { getCurrentUser, getSelectedDemoRole, getDemoUser, normalizeRole, isDebu
 import { useSupabaseAuthState } from '@/hooks/useSupabaseAuthState';
 import { isSupabaseConfigured } from '@/services/supabaseClient';
 import { listEligibleCompanyNewsPopups } from '@/services/supabaseReadService';
-import { dismissCompanyNewsPopup, markCompanyNewsPopupSeen } from '@/services/supabaseWriteService';
+import { dismissCompanyNewsPopup, markCompanyNewsPopupSeen, recordAuthLifecycleAudit } from '@/services/supabaseWriteService';
 import { signOutSupabasePrimary } from '@/services/supabaseAuthService';
 import {
   getInactivityTimeoutMsForRole,
@@ -169,6 +169,13 @@ export default function AppLayout() {
       enforcementSignOutInFlightRef.current = true;
       void (async () => {
         try {
+          await recordAuthLifecycleAudit({
+            actionType: 'user.session_timeout',
+            role: role || 'unknown',
+            rememberMeEnabled: keepSignedIn,
+            reason: 'inactivity_timeout',
+            source: 'timeout',
+          });
           await signOutSupabasePrimary({ reason: 'session_timeout' });
         } finally {
           navigate('/login?session=expired', { replace: true });

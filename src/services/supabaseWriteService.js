@@ -601,6 +601,48 @@ export async function recordAuditEvent({
   }
 }
 
+const AUTH_LIFECYCLE_ACTION_TYPES = new Set([
+  "user.login",
+  "user.logout",
+  "user.session_timeout",
+  "user.remember_me_enabled",
+  "user.remember_me_disabled",
+  "user.session_revoked",
+]);
+
+export async function recordAuthLifecycleAudit({
+  actionType,
+  role = null,
+  rememberMeEnabled = null,
+  reason = null,
+  source = null,
+} = {}) {
+  const safeActionType = trimString(actionType);
+  if (!AUTH_LIFECYCLE_ACTION_TYPES.has(safeActionType)) {
+    return { data: null, error: { message: "actionType is invalid" } };
+  }
+  const safeRole = trimString(role) || "unknown";
+  const safeSource = trimString(source) || "unknown";
+  const safeReason = trimString(reason) || "not_set";
+
+  const result = await recordAuditEvent({
+    actionType: safeActionType,
+    entityType: "user_session",
+    entityId: null,
+    metadata: {
+      role: safeRole,
+      rememberMeEnabled: typeof rememberMeEnabled === "boolean" ? rememberMeEnabled : null,
+      reason: safeReason,
+      source: safeSource,
+    },
+  });
+
+  if (result.error) {
+    warnAuditFailureInDev(result.error, `recordAuthLifecycleAudit.${safeActionType}`);
+  }
+  return result;
+}
+
 export async function createNotificationEvent({
   eventType,
   entityType,

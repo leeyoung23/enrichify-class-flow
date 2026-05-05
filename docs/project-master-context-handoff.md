@@ -1,5 +1,17 @@
 # Project Master Context Handoff
 
+## Checkpoint update (session governance Phase 1D auth lifecycle audit foundation — 2026-05-05)
+
+- **No SQL/RLS change required:** Phase 1D reuses existing `audit_events` foundation for auth lifecycle events.
+- **New helper:** `recordAuthLifecycleAudit` in `src/services/supabaseWriteService.js` (privacy-safe wrapper over `recordAuditEvent`).
+- **Events now written:** `user.login`, `user.logout`, `user.session_timeout`, `user.remember_me_enabled`, `user.remember_me_disabled`.
+- **Write points:** login success (`Login.jsx`), manual sign-out (`signOutSupabasePrimary` pre-signout), and timeout path (`AppLayout` pre-timeout signout).
+- **Metadata policy:** `role`, `rememberMeEnabled`, `reason`, `source` only; no password/token/raw IP/full user-agent/device fingerprint/child data.
+- **Runtime safety:** audit writes are non-blocking and do not block sign-in/sign-out/timeout flows.
+- **Demo safety:** demoRole preview does not emit lifecycle audit events in timeout/sign-out paths.
+- **Smoke coverage:** added `scripts/supabase-auth-lifecycle-audit-smoke-test.mjs` + npm script `test:supabase:auth-lifecycle-audit`.
+- **Known separate hygiene item:** `test:supabase:auth` alias/import issue (`@/lib`) remains pre-existing and unrelated to this milestone.
+
 ## Checkpoint update (session governance Phase 1C app-level enforcement v1 — 2026-05-05)
 
 - **Runtime enforcement added:** app-level session governance in real mode (`src/services/sessionGovernanceService.js` + `AppLayout` integration).

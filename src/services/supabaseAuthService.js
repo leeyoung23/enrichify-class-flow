@@ -2,6 +2,7 @@ import { supabase, isSupabaseConfigured } from "./supabaseClient.js";
 import { getRole } from "./permissionService.js";
 import { base44 } from "../api/base44Client.js";
 import { clearSessionGovernanceMarkers } from "./sessionGovernanceService.js";
+import { recordAuthLifecycleAudit } from "./supabaseWriteService.js";
 
 /**
  * Phase 1: Supabase Auth helpers only. Does not replace demoRole or authService (Base44).
@@ -117,6 +118,15 @@ function clearSessionUiStateBestEffort() {
 export async function signOutSupabasePrimary({ reason = "manual_sign_out" } = {}) {
   let supabaseError = null;
   let legacyCleanupError = null;
+
+  if (reason === "manual_sign_out") {
+    // Best-effort audit only; logout must never depend on audit writes.
+    await recordAuthLifecycleAudit({
+      actionType: "user.logout",
+      reason: "manual_sign_out",
+      source: "manual_sign_out",
+    });
+  }
 
   if (!isSupabaseConfigured() || !supabase) {
     clearSessionUiStateBestEffort();

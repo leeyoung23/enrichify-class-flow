@@ -11,6 +11,7 @@ import {
   signInWithEmailPassword,
   signOut,
 } from "@/services/supabaseAuthService.js";
+import { recordAuthLifecycleAudit } from "@/services/supabaseWriteService.js";
 import { parseReturnUrlQueryParam } from "@/lib/supabaseAuthReturnUrl.js";
 import { getDefaultLandingPathForRole } from "@/lib/roleLanding.js";
 import { useSupabaseAuthState } from "@/hooks/useSupabaseAuthState";
@@ -44,6 +45,8 @@ export default function Login() {
     if (!configured) return;
     setBusy(true);
     setFormError(null);
+    const previousKeepSignedIn = getKeepSignedInPreference();
+    const isDemoPreview = Boolean(searchParams.get("demoRole"));
     setKeepSignedInPreference(keepSignedIn);
     try {
       const { error: signErr } = await signInWithEmailPassword(email, password);
@@ -64,7 +67,28 @@ export default function Login() {
       }
       initializeSessionGovernanceOnSignIn();
       await refreshAuthState();
-      goAfterSignIn(mapProfileToAppUser(profile));
+      const mappedAppUser = mapProfileToAppUser(profile);
+
+      if (!isDemoPreview) {
+        await recordAuthLifecycleAudit({
+          actionType: "user.login",
+          role: mappedAppUser?.role || "unknown",
+          rememberMeEnabled: keepSignedIn,
+          reason: "authenticated_sign_in",
+          source: "login",
+        });
+        if (previousKeepSignedIn !== keepSignedIn) {
+          await recordAuthLifecycleAudit({
+            actionType: keepSignedIn ? "user.remember_me_enabled" : "user.remember_me_disabled",
+            role: mappedAppUser?.role || "unknown",
+            rememberMeEnabled: keepSignedIn,
+            reason: "login_checkbox_changed",
+            source: "login_checkbox",
+          });
+        }
+      }
+
+      goAfterSignIn(mappedAppUser);
     } catch (err) {
       setFormError(err?.message || "Something went wrong. Please try again.");
     } finally {

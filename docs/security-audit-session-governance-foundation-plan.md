@@ -123,6 +123,26 @@ Phase 1D recommended implementation direction:
 - Metadata scope must remain privacy-safe (role + remember_me + reason + timestamps only).
 - Any IP/fingerprint/device telemetry remains deferred until legal/compliance review and privacy notice wording are approved.
 
+## 2026-05-05 Phase 1D implementation note: auth lifecycle audit foundation
+
+- Reused existing `audit_events` foundation; no new auth session table or SQL migration required in this phase.
+- Added runtime helper `recordAuthLifecycleAudit` (writes through existing `recordAuditEvent` + metadata sanitization).
+- Implemented event writes:
+  - `user.login`
+  - `user.logout`
+  - `user.session_timeout`
+  - `user.remember_me_enabled`
+  - `user.remember_me_disabled`
+- Entity type used for lifecycle events: `user_session` (`entity_id` remains null in v1).
+- Metadata policy remains privacy-safe:
+  - included: `role`, `rememberMeEnabled`, `reason`, `source`
+  - excluded: password/token/raw IP/full user-agent/device fingerprint/child data
+- Behavior posture:
+  - audit writes are non-blocking
+  - auth/session flows do not fail when audit insert fails
+  - demoRole preview does not produce auth lifecycle audit writes
+- Added focused smoke: `test:supabase:auth-lifecycle-audit`.
+
 ## Scope and constraints
 
 This document defines the next production-hardening foundation after internal prototype validation for:
