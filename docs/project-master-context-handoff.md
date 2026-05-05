@@ -1,5 +1,12 @@
 # Project Master Context Handoff
 
+## Checkpoint update (email consent/preferences readiness plan — 2026-05-05)
+
+- **New planning doc:** `docs/email-notification-consent-preferences-readiness-plan.md`.
+- **Scope:** planning only for email/Gmail readiness; no SQL migration, no provider integration, no live sending.
+- **Covers:** consent categories, recommended parent/guardian consent model, safety copy boundaries, future preference schema concept, prerequisites before email enablement, and phased rollout order.
+- **Core rule:** portal remains source of truth; email notifies parents to sign in rather than exposing sensitive student/payment/report content in email body.
+
 ## Checkpoint update (parent notification action routing v1 — 2026-05-05)
 
 - **ParentView UX:** `src/pages/ParentView.jsx` notification inbox now includes per-row **View** action buttons that scroll to existing sections (same page only; keeps `?student=` query).

@@ -1,0 +1,135 @@
+# Email notification consent & preferences readiness plan (planning only)
+
+Date: 2026-05-05  
+Type: **planning only** — no SQL migration, no Gmail/provider integration, no real email sending, no trigger wiring changes in this milestone.
+
+## Scope and product direction
+
+Current production-safe behavior remains **in-app notification first** via `notification_events` + `notifications` and HQ-governed template copy.  
+Before enabling any external email channel, the product needs explicit consent modeling, parent preference controls, and safe category boundaries.
+
+**Rule:** Email is an external channel. The portal remains the source of truth.  
+Email should notify parents to sign in and view details in ParentView; email should not become a sensitive data transport layer.
+
+---
+
+## 1) Recommended consent categories
+
+Use category-level consent/preference controls (channel-aware), with a clear distinction between essential service operations and optional communications:
+
+1. **Portal in-app notifications** (baseline in-product channel)
+2. **Operational/service email** (account/process notices needed for service operation)
+3. **Billing/e-invoice email** (fee and invoice lifecycle notices)
+4. **Learning/report/homework email** (learning updates, released feedback/report availability notices)
+5. **Attendance/safety email** (absence/arrival/safety-related alerts)
+6. **Marketing/events/promotional email** (non-essential campaigns, events, promotions)
+7. **Media/photo-related notification** (media release/availability notices)
+
+Recommended default interpretation:
+- **Essential** categories (operational, billing, attendance/safety) are governed by service/legal basis rules.
+- **Optional** categories (marketing/events/promotional) require explicit opt-in and easy opt-out.
+
+---
+
+## 2) Recommended parent consent model
+
+Consent should be captured with auditable context and later surfaced in ParentView:
+
+- Capture parent/guardian consent during enrolment/onboarding.
+- Parent can manage preferences later in ParentView (self-service UI phase).
+- HQ can view consent/preference status (read-only oversight view).
+- Store consent context fields in future schema:
+  - `consented_at` / `withdrawn_at`
+  - `consent_source` (enrolment form, parent portal toggle, staff-assisted update)
+  - `actor_profile_id` (who performed change)
+  - `policy_version` / notice-version shown at consent time
+- Keep **marketing consent separate** from essential service notices.
+- Support child-specific preference scope where needed (family-level default + optional student-level override).
+
+---
+
+## 3) Email safety rules (pre-send policy)
+
+For first email channel rollout, enforce conservative content rules:
+
+- Default email copy remains generic and action-oriented.
+- Do **not** include child report body text in email.
+- Do **not** attach homework files directly in v1.
+- Do **not** include receipt file paths, storage keys, or raw URLs.
+- Do **not** include internal notes or staff-only review context.
+- Do **not** include provider payloads or AI raw output.
+- Do **not** include sensitive child data unless explicitly approved in a reviewed category design.
+- Prefer: “Sign in to the parent portal to view details.”
+
+---
+
+## 4) Future schema concept (planning only)
+
+No migration in this milestone. Proposed model:
+
+### A. `communication_consents` (or `parent_notification_preferences`)
+
+Suggested columns:
+- `id` (uuid)
+- `parent_profile_id` (required)
+- `student_id` (nullable; allows per-child override if needed)
+- `channel` (`in_app`, `email`, future channels)
+- `category` (consent category enum/string)
+- `enabled` (boolean preference toggle)
+- `consent_status` (e.g. `granted`, `withdrawn`, `pending`, `not_set`)
+- `consent_source` (enrolment, portal, staff-assisted)
+- `consented_at` (timestamptz)
+- `withdrawn_at` (timestamptz)
+- `policy_version` (text)
+- `created_at`, `updated_at`
+- optional: `updated_by_profile_id` / `actor_profile_id`
+
+### B. Audit + delivery linkage
+
+- Consent/preference changes should be mirrored in `audit_events`.
+- Email send attempts should use existing `notification_delivery_logs` foundation (with reviewed channel expansion in a future migration).
+
+---
+
+## 5) Email/Gmail automation prerequisites
+
+Before enabling any email provider (including Gmail APIs), all of the following should be true:
+
+1. Consent/preference schema exists with RLS and auditability.
+2. Parent email verification flow is defined and enforced.
+3. Unsubscribe/manage-preferences path exists for non-essential messages.
+4. Delivery logging exists for email attempts, retries, outcomes, and suppression.
+5. Template category/channel review workflow exists (HQ governance + safety checks).
+6. Rate limiting and retry policy is defined.
+7. Staff cannot send arbitrary free-text mass email from frontend.
+8. Provider credentials are server-side only (Edge/backend), never in browser.
+9. No service-role key exposure in frontend.
+
+---
+
+## 6) Suggested implementation order
+
+1. **Phase 1:** consent/preferences SQL + RLS + audit model
+2. **Phase 2:** ParentView notification settings UI (self-service controls)
+3. **Phase 3:** HQ read-only consent overview (monitoring/compliance visibility)
+4. **Phase 4:** server-side email provider integration for one low-risk trigger
+5. **Phase 5:** e-invoice attachment/signed-link flow with strict entitlement checks
+6. **Phase 6:** marketing/event email only after opt-in + unsubscribe path is proven
+
+---
+
+## 7) Relationship to current foundation
+
+- `notification_templates.channel = 'email'` currently supports copy planning only; no sender is enabled.
+- Current `notifications` insert policy is constrained to `channel = 'in_app'` in the foundation.
+- Parent notification routing in ParentView stays internal and safe; no external email link behavior is added in this plan.
+
+---
+
+## 8) Out of scope for this document
+
+- SQL DDL/RLS implementation text
+- Gmail/provider SDK setup
+- Outbound email job workers
+- Live sending tests
+- Attachment/PDF implementation details beyond readiness guidance

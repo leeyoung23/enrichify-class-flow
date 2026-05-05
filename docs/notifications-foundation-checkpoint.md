@@ -98,6 +98,7 @@ Date: 2026-05-05
 ### Next recommended milestone
 
 - **Email/SMS/push** only after review; optional DB **unique** partial index on `(entity_id, event_type, metadata->>'releasedVersionId', created_by_profile_id)` if hard idempotency is required across staff.
+- **Email consent/preferences readiness plan:** `docs/email-notification-consent-preferences-readiness-plan.md` (planning only) defines consent categories, preference model, safety rules, prerequisites, and phased order before any Gmail/email provider integration.
 
 ---
 
