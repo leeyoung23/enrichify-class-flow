@@ -97,13 +97,15 @@ Credential note:
 
 1. Sign in as parent.
 2. Confirm first-login acknowledgement gate appears where applicable.
-3. Open ParentView for linked child.
-4. Validate released report visibility.
-5. Validate notification inbox and unread behavior.
-6. Validate notification action routing.
-7. Validate communication settings load/save.
-8. Confirm **Settings** shows **Communication & Notification Settings** only (no Account Security / Active Sessions for parents).
-9. Confirm the notification list shows **three** items by default when more exist, with **View more** / **View less**; repeat with `?debug=1` if you need to see suppressed smoke/fixture copy (still no internal metadata).
+3. Open **`/parent-view`** **without** `?student=` — confirm warm **no child linked yet** copy (centre links profiles; contact centre if wrong; no technical IDs, no class picker, no create-student action).
+4. (Optional negative check) Open **`/parent-view?student=`** with a UUID the parent is **not** linked to — confirm blocked message and **no** exposure of that student’s data.
+5. Open ParentView for linked child (normal path: **`?student=`** matching **`guardian_student_links`** / centre-provided link).
+6. Validate released report visibility.
+7. Validate notification inbox and unread behavior.
+8. Validate notification action routing.
+9. Validate communication settings load/save.
+10. Confirm **Settings** shows **Communication & Notification Settings** only (no Account Security / Active Sessions for parents).
+11. Confirm the notification list shows **three** items by default when more exist, with **View more** / **View less**; repeat with `?debug=1` if you need to see suppressed smoke/fixture copy (still no internal metadata).
 
 ---
 

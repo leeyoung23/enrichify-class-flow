@@ -1,5 +1,16 @@
 # Project Master Context Handoff
 
+## Checkpoint update (Parent onboarding / student linking readiness — 2026-05-06)
+
+- **Regression guard sweep (static):** `Students.jsx`, `ParentUpdates.jsx`, `ParentView.jsx`, `Sidebar.jsx`, `sessionGovernanceService.js`, `supabaseAuthService.js`, `permissionService.js` — **no new UAT regressions** vs the known guard list; no code changes required in those files for this pass.
+- **ParentView:** Warm blocked states when **`?student=` is missing** vs **linked access denied / not linked** — centre-managed guardian linkage, **no** class picker, **no** student self-create, **no** technical IDs; placeholder action is **contact your centre** only (no outbound channel added).
+- **Architecture:** Parent identity via **`profiles` + `guardians`**; parent↔child access boundary via **`guardian_student_links`**; DB helper **`is_guardian_for_student`**; app helper **`canAccessStudentRecord`** for parents.
+- **New planning doc:** `docs/parent-onboarding-student-linking-readiness-plan.md` — v1 staff-first student record + staff-mediated guardian links; invite-code/magic-link **deferred**; legal/compliance before real parent rollout.
+- **Docs updated:** `docs/validation-uat-readiness-checklist.md`, `docs/manual-walkthrough-execution-guide.md`, `docs/student-profile-learning-notes-foundation-plan.md` (cross-reference).
+- **SQL/RLS:** **Unchanged** this checkpoint (review deployed write policies separately before production).
+- **Smokes (this checkpoint):** `npm run build`, `lint`, `typecheck`; `test:supabase:notifications`, `test:supabase:audit-events`, `test:supabase:parent-notification-preferences`. **No** `npm` script dedicated to guardian/parent-view UI — manual / code-path verification.
+- **Product rule:** HQ/Branch Supervisor remains source of truth for official student + class + guardian link; parents cannot self-assign class or self-create official records.
+
 ## Checkpoint update (Homework upload smoke fixture stability — 2026-05-06)
 
 - **Root cause:** `test:supabase:homework:upload` failed **exit 1** when **Branch Supervisor** could not see the parent-linked student/submission — **fixture branch mismatch** under branch-scoped RLS, not a product bug.

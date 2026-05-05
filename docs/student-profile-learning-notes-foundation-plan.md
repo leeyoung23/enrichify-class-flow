@@ -96,6 +96,7 @@ Teacher access:
 - HQ/Branch Supervisor remains source of truth for branch/class assignment.
 - Parents do not self-assign class membership.
 - `guardian_student_links` remains the relationship boundary.
+- Expanded rollout posture (staff-mediated onboarding, invite-code deferrals, ParentView no-linked UX): `docs/parent-onboarding-student-linking-readiness-plan.md`.
 
 ## Deferred items
 

@@ -2265,6 +2265,8 @@ export default function ParentView() {
   const [updates, setUpdates] = useState([]);
   const [loading, setLoading] = useState(true);
   const [notFound, setNotFound] = useState(false);
+  /** Why the parent dashboard did not load — drives warm onboarding copy (no technical ids). */
+  const [parentViewBlockedKind, setParentViewBlockedKind] = useState(null);
   const [viewer, setViewer] = useState(null);
   const [feeStatus, setFeeStatus] = useState(null);
   const [selectedReceiptFile, setSelectedReceiptFile] = useState(null);
@@ -2403,6 +2405,7 @@ export default function ParentView() {
 
   useEffect(() => {
     if (!studentId) {
+      setParentViewBlockedKind('missing_student_query');
       setNotFound(true);
       setLoading(false);
       return;
@@ -2410,6 +2413,8 @@ export default function ParentView() {
     let cancelled = false;
     (async () => {
       try {
+        setNotFound(false);
+        setParentViewBlockedKind(null);
         let currentUser;
         if (isDemoMode) {
           currentUser = await getCurrentUser();
@@ -2433,6 +2438,7 @@ export default function ParentView() {
             isDemoMode,
           });
           if (!targetStudentId) {
+            setParentViewBlockedKind('not_linked_or_denied');
             setNotFound(true);
             setLoading(false);
             return;
@@ -2447,6 +2453,7 @@ export default function ParentView() {
             { guardian_parent_id: currentUser?.guardian_parent_id, student_id: s.id },
           ])
         ) {
+          setParentViewBlockedKind('not_linked_or_denied');
           setNotFound(true);
           setLoading(false);
           return;
@@ -2467,7 +2474,10 @@ export default function ParentView() {
         if (cancelled) return;
         setFeeStatus(fee || null);
       } catch {
-        if (!cancelled) setNotFound(true);
+        if (!cancelled) {
+          setParentViewBlockedKind('not_linked_or_denied');
+          setNotFound(true);
+        }
       } finally {
         if (!cancelled) setLoading(false);
       }
@@ -3688,16 +3698,26 @@ export default function ParentView() {
   }
 
   if (notFound) {
+    const missingQuery = parentViewBlockedKind === 'missing_student_query';
+    const title = missingQuery ? 'No child linked yet' : 'This Parent Dashboard isn’t available';
+    const primary = missingQuery
+      ? 'Open Parent Dashboard using the link your centre gave you (it includes which child to show). Parents cannot pick or create a class here — your centre manages enrolment and guardian links.'
+      : 'Your centre connects approved student profiles to this parent account. If you followed a link from your centre and still see this message, your guardian link may not be ready yet.';
+    const secondary = missingQuery
+      ? 'If you opened this page without a centre-provided link, go back and use the Parent Dashboard URL they shared, or speak with reception.'
+      : 'Please contact your centre if this seems wrong. You cannot self-assign a child or edit branch, class, or programme from this portal.';
     return (
       <div className="min-h-screen flex items-center justify-center bg-background px-4">
-        <div className="text-center max-w-sm">
-          <GraduationCap className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-          <h2 className="text-xl font-semibold mb-2">Dashboard not available</h2>
-          <p className="text-muted-foreground text-sm">
-            {isDemoMode
-              ? 'This demo parent view could not be opened for the selected student.'
-              : 'This parent view could not be opened. Check that the parent account is linked to this student.'}
-          </p>
+        <div className="text-center max-w-md space-y-4">
+          <GraduationCap className="h-12 w-12 text-muted-foreground mx-auto" aria-hidden />
+          <h2 className="text-xl font-semibold">{title}</h2>
+          <p className="text-muted-foreground text-sm leading-relaxed">{primary}</p>
+          <p className="text-muted-foreground text-sm leading-relaxed">{secondary}</p>
+          {isDemoMode ? (
+            <p className="text-xs text-muted-foreground border-t border-border pt-4">
+              Demo preview: add <code className="rounded bg-muted px-1 text-[11px]">?student=…</code> or use demo role navigation from the staff sidebar.
+            </p>
+          ) : null}
         </div>
       </div>
     );

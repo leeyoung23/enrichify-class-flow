@@ -102,6 +102,8 @@ Spot-check quickly before sign-off:
 ## 3) Parent walkthrough
 
 - [ ] First-login acknowledgement gate appears where required.
+- [ ] **`/parent-view`** without **`?student=`** shows the warm **no child linked yet** state (centre-managed linking; contact-centre guidance; **no** class picker; **no** student creation).
+- [ ] **`/parent-view?student=<uuid>`** when the parent is **not** linked to that student shows a blocked/denied message — **no** other family’s data, **no** self-serve linking UI.
 - [ ] ParentView opens for linked child in real mode.
 - [ ] Notification inbox renders with unread indicator behavior.
 - [ ] Dashboard notification preview limits to **three** items by default; **View more** / **View less** toggles expanded list when more filtered rows exist.
@@ -186,6 +188,8 @@ Spot-check quickly before sign-off:
 - [ ] No raw IP/device fingerprint telemetry by design.
 - [ ] No real parent rollout until policy/legal review is complete.
 - [ ] No dedicated automated smoke for **`/students`** UI in `package.json` — regressions rely on code-path review plus manual teacher/HQ verification.
+- [ ] No dedicated automated smoke for **guardian link / ParentView resolution** in `package.json` — rely on manual ParentView checks above plus RLS posture.
+- [ ] Staff-mediated **`guardian_student_links`** and deployed write policies remain prerequisites for real parent rollout (see `docs/parent-onboarding-student-linking-readiness-plan.md`).
 
 ---
 
