@@ -88,6 +88,7 @@ Teacher access:
 
 - Normalize list query results (`null` / non-array safe) before any array operations on `/students`.
 - Local `StudentsErrorBoundary` prevents a single subtree fault from blanking the whole staff view.
+- **School / Learning Context:** when a Supabase-linked student has **no** `student_school_profile` row, the UI must guard `parent_goals` / `teacher_notes` (and related fields) with optional access so the card shows “No school profile yet” instead of throwing on `null.parent_goals`.
 
 ## Parent linking and class assignment boundary
 

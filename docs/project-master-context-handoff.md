@@ -1,5 +1,16 @@
 # Project Master Context Handoff
 
+## Checkpoint update (UAT hardening — `/students` crash + parent notification preview — 2026-05-06)
+
+- **Root cause (fixed):** In `src/pages/Students.jsx`, the Supabase “School / Learning Context” IIFE rendered `{schoolProfile.parent_goals}` / `{schoolProfile.teacher_notes}` **after** a `!schoolProfile` branch without guarding `null`, so teachers with UUID students and **no** school profile row hit `Cannot read properties of null (reading 'parent_goals')` and `StudentsErrorBoundary` swallowed the page.
+- **Fix:** Optional access on those blocks (`schoolProfile?.…`) plus stable list keys for goals missing `id`; error boundary now shows message/stack only when `?debug=1` (via `isDebugModeEnabled()`), keeping normal UAT copy generic.
+- **Parent notifications:** Dashboard preview defaults to **three** visible rows (`PARENT_NOTIFICATION_DEFAULT_VISIBLE`); smoke/fixture suppression skips rows that match known smoke strings **unless** they also match an operational phrase guard (payments, homework/feedback, attendance, reports, communications, etc.); `?debug=1` shows unfiltered rows including smoke.
+- **Parent Settings (confirmed):** `ParentView` Settings section is **Communication & Notification Settings** only — no `ActiveSessionsCard` / Account Security for parents; HQ `/session-review` unchanged in app routing.
+- **Class Memory (confirmed):** Teacher **Parent Communication** page: class selector precedes upload controls; submit disabled until class + caption + file; copy states sharing with parents linked to that class after approval (class-scoped upload); no branch-wide parent feed change.
+- **Docs:** `docs/manual-walkthrough-execution-guide.md`, `docs/validation-uat-readiness-checklist.md`, `docs/student-profile-learning-notes-foundation-plan.md` updated with UAT retest discipline and the above behaviors.
+- **Validation run:** `npm run build`, `lint`, `typecheck`; smokes `test:supabase:notifications`, `test:supabase:parent-notification-preferences`, `test:supabase:audit-events`. **No** dedicated `npm` script for `/students` route UI (manual/code-path verification only).
+- **Boundaries:** No SQL/RLS change, no smoke data deletion, no branch-wide memories, no restoration of parent session security UI.
+
 ## Checkpoint update (manual walkthrough execution guide docs-only — 2026-05-05)
 
 - **New docs-only execution guide added:**

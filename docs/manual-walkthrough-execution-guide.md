@@ -23,6 +23,22 @@ Goal: execute a full manual walkthrough of the current validation-ready internal
 7. Open DevTools only when needed (network/debug checks), not by default.
 8. Use **real mode** unless `demoRole` is explicitly requested for a specific check.
 
+### UAT retest discipline (SaaS production quality)
+
+Before asking a human validator to retest a changed area, the implementer should **specifically verify** each affected route or flow using:
+
+- **Code-path diagnosis** — identify the failing render/hook/data shape and the minimal fix.
+- **Build / lint / typecheck** — `npm run build`, `npm run lint`, `npm run typecheck`.
+- **Relevant automated smokes** — when a script exists for the touched surface, run it before handoff.
+- **Route-specific verification note** — short written record of what was checked (e.g. `/students` opened with teacher who has students with and without school profile rows).
+
+**Product posture (v1):**
+
+- Parent UX should stay warm and simple.
+- Teacher UX should stay guided (clear empty states, scoped actions).
+- Technical, security, or admin features should not surface to parents unless clearly needed for the parent job-to-be-done.
+- Legal/compliance review remains required before any real parent rollout.
+
 ---
 
 ## 2) Accounts / roles needed
@@ -78,8 +94,8 @@ Credential note:
 5. Validate notification inbox and unread behavior.
 6. Validate notification action routing.
 7. Validate communication settings load/save.
-8. Open Active Sessions card.
-9. End old own session if available (non-current active row).
+8. Confirm **Settings** shows **Communication & Notification Settings** only (no Account Security / Active Sessions for parents).
+9. Confirm the notification list shows **three** items by default when more exist, with **View more** / **View less**; repeat with `?debug=1` if you need to see suppressed smoke/fixture copy (still no internal metadata).
 
 ---
 
@@ -141,8 +157,8 @@ Capture at least one clear screenshot for each:
 - Notification inbox
 - Notification settings
 - First-login acknowledgement gate
-- Active Sessions card
-- HQ Session Review
+- HQ Session Review (staff)
+- `/students` (teacher/HQ — list + expanded profile card; optional `?debug=1` on error boundary dev detail only)
 - Payment proof request flow
 - Homework feedback release flow
 - Attendance arrival notification flow
@@ -208,7 +224,7 @@ Use this quick pass during ParentView checks:
 3. Confirm parent sidebar includes **Settings**.
 4. Open **Settings** and verify:
    - Communication & Notification Settings appear there.
-   - Account Security / Active Sessions appear there.
+   - Account Security / Active Sessions **do not** appear for parents in v1 (HQ **Session Review** remains the staff surface for operational session governance).
 5. Open Class Memories in real parent mode with no released items:
    - confirm warm empty state appears,
    - confirm no demo/fake wording is shown.
@@ -234,13 +250,14 @@ Use this quick pass during ParentView checks:
 12. Confirm `/students` route behavior:
    - page renders with loading/error/empty states (never blank white page),
    - teacher/HQ student cards still render when data is available,
+   - **school profile absent** for a UUID student must not crash the School / Learning Context card (nullable `schoolProfile` guarded; empty state instead of dereferencing null),
    - TanStack Query arrays are normalised (avoid `null` data breaking `.map` / `.filter`),
-   - a local error boundary catches unexpected render failures instead of a full white screen,
+   - a local error boundary catches unexpected render failures instead of a full white screen (`?debug=1` surfaces message/stack for internal UAT only),
    - parent-facing `ParentView` avatar does not assume `student.name[0]` exists (use `full_name` fallback).
 13. Confirm notifications list behavior:
-   - default shows limited recent items,
-   - View more / View less toggle works,
-   - smoke-test notification copy is hidden in normal mode and visible in debug mode.
+   - default shows **three** recent relevant items (`PARENT_NOTIFICATION_DEFAULT_VISIBLE`),
+   - View more / View less expands/collapses the filtered list,
+   - smoke/fixture-like copy stays hidden in normal mode; operational phrases (payments, homework/feedback, attendance, reports, class updates/communication, etc.) are **not** classified as smoke; use `?debug=1` to include smoke/fixture rows for QA.
 14. Confirm keep-me-signed-in behavior:
    - checked preference survives refresh/new tab without browser-session marker dependency,
    - manual sign out still clears active session as expected.

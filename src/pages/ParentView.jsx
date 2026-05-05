@@ -105,7 +105,7 @@ const PARENT_NOTIFICATION_PREFERENCE_ROWS = [
   { category: 'media_photo', label: 'Class memories', subtitle: 'Photo updates from your child\'s class.' },
   { category: 'marketing_events', label: 'Events and promotional updates' },
 ];
-const PARENT_NOTIFICATION_DEFAULT_VISIBLE = 5;
+const PARENT_NOTIFICATION_DEFAULT_VISIBLE = 3;
 const PARENT_NOTIFICATION_SMOKE_PATTERNS = [
   'smoke notification for parent',
   'smoke self notification',
@@ -114,6 +114,51 @@ const PARENT_NOTIFICATION_SMOKE_PATTERNS = [
   'supabase-notifications-foundation-smoke-test',
   'smoke.notification.parent_ready',
 ];
+const PARENT_NOTIFICATION_EXTRA_SMOKE_PATTERNS = [
+  'uat smoke',
+  'fixture notification',
+  'test fixture',
+  'sandbox notification',
+  'dev-only notification',
+  'cursor smoke fixture',
+];
+
+function isLikelyOperationalParentInAppNotification(row) {
+  const haystack = `${row?.title || ''} ${row?.body || ''} ${row?.category || ''} ${row?.event_type || ''}`.toLowerCase();
+  const normalized = haystack.trim();
+  if (!normalized) return false;
+  const phrases = [
+    'payment proof',
+    'payment verified',
+    'payment rejected',
+    'proof rejected',
+    'payment needs review',
+    'payment update',
+    'payment request',
+    'invoice',
+    'billing notice',
+    'billing update',
+    'fee notice',
+    'fee update',
+    'homework',
+    'feedback',
+    'marked file',
+    'attendance',
+    'arrived',
+    'weekly progress',
+    'parent comment',
+    'class update',
+    'progress report',
+    'report released',
+    'released to parents',
+    'released to parent',
+    'released to guardian',
+    'released to guardians',
+    'parent communication',
+    'ai parent report',
+  ];
+  return phrases.some((phrase) => normalized.includes(phrase));
+}
 const PARENT_FIRST_LOGIN_POLICY_KEY = 'parent_portal_terms_privacy';
 const PARENT_FIRST_LOGIN_POLICY_VERSION = 'v1';
 
@@ -1424,8 +1469,14 @@ function formatParentNotificationDateTime(value) {
 }
 
 function isLikelySmokeNotification(row) {
+  if (isLikelyOperationalParentInAppNotification(row)) {
+    return false;
+  }
   const haystack = `${row?.title || ''} ${row?.body || ''} ${row?.category || ''} ${row?.event_type || ''}`.toLowerCase();
-  return PARENT_NOTIFICATION_SMOKE_PATTERNS.some((token) => haystack.includes(token));
+  if (PARENT_NOTIFICATION_SMOKE_PATTERNS.some((token) => haystack.includes(token))) {
+    return true;
+  }
+  return PARENT_NOTIFICATION_EXTRA_SMOKE_PATTERNS.some((token) => haystack.includes(token));
 }
 
 /**

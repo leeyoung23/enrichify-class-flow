@@ -2,6 +2,7 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { useNavigate, useOutletContext } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { listStudents, listClasses, createStudent, invokeParentReport, getStudentFeeStatus, listHomeworkAttachments, getReadDataSource } from '@/services/dataService';
+import { isDebugModeEnabled } from '@/services/authService';
 import { listAttendanceRecords } from '@/services/dataService';
 import { getStudentLearningContext, listCurriculumProfiles } from '@/services/supabaseReadService';
 import { upsertStudentSchoolProfile } from '@/services/supabaseWriteService';
@@ -56,6 +57,8 @@ class StudentsErrorBoundary extends React.Component {
 
   render() {
     if (this.state.error) {
+      const err = this.state.error;
+      const showTech = typeof window !== 'undefined' && isDebugModeEnabled();
       return (
         <div className="p-6">
           <Card className="border-destructive/30 p-6">
@@ -63,6 +66,15 @@ class StudentsErrorBoundary extends React.Component {
             <p className="mt-2 text-xs text-muted-foreground">
               Please refresh <code className="rounded bg-muted px-1">/students</code>. If it continues, contact support and mention this route.
             </p>
+            {showTech ? (
+              <div className="mt-4 rounded-md border border-dashed bg-muted/40 p-3 text-left">
+                <p className="text-xs font-medium text-foreground">Debug detail (add <code className="rounded bg-background px-1">?debug=1</code> to the URL)</p>
+                <pre className="mt-2 max-h-40 overflow-auto text-[11px] whitespace-pre-wrap text-muted-foreground">
+                  {String(err?.message || err)}
+                  {err?.stack ? `\n${err.stack}` : ''}
+                </pre>
+              </div>
+            ) : null}
           </Card>
         </div>
       );
@@ -481,12 +493,12 @@ function StudentsPage() {
                           </p>
                         </>
                       )}
-                      {schoolProfile.parent_goals ? (
+                      {schoolProfile?.parent_goals ? (
                         <p>
                           <span className="text-muted-foreground">Parent goals:</span> {schoolProfile.parent_goals}
                         </p>
                       ) : null}
-                      {schoolProfile.teacher_notes ? (
+                      {schoolProfile?.teacher_notes ? (
                         <p>
                           <span className="text-muted-foreground">Teacher notes:</span> {schoolProfile.teacher_notes}
                         </p>
@@ -495,8 +507,8 @@ function StudentsPage() {
                         <div className="pt-1">
                           <p className="text-xs text-muted-foreground">Active student goals</p>
                           <ul className="list-disc pl-5 text-sm space-y-0.5">
-                            {activeStudentGoals.map((goal) => (
-                              <li key={goal.id}>{goal.goal_title || 'Untitled goal'}</li>
+                            {activeStudentGoals.map((goal, idx) => (
+                              <li key={goal?.id || `goal-${student.id}-${idx}`}>{goal.goal_title || 'Untitled goal'}</li>
                             ))}
                           </ul>
                         </div>

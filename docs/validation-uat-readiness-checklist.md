@@ -7,6 +7,24 @@ Use this checklist for manual walkthrough validation by internal reviewers, staf
 
 ---
 
+## 0) UAT retest discipline (implementer checklist)
+
+Before asking someone to rerun manual UAT on a touched surface:
+
+- [ ] Code-path diagnosis for each affected route (render path, data shape, empty states).
+- [ ] `npm run build`, `npm run lint`, `npm run typecheck`.
+- [ ] Any relevant automated smoke scripts in `package.json` for that area.
+- [ ] Short route-specific verification note captured (what was exercised and expected outcome).
+
+**Product posture:**
+
+- Parent experience: warm and simple by default.
+- Teacher experience: guided flows and clear scoped actions.
+- Do not expose technical/security/admin UI to parents unless needed for their task.
+- Legal/compliance approval still gates real parent rollout.
+
+---
+
 ## 1) Pre-validation setup
 
 - [ ] Confirm branch is `cursor/safe-lint-typecheck-486d`.
@@ -64,6 +82,8 @@ Use this checklist for manual walkthrough validation by internal reviewers, staf
 - [ ] First-login acknowledgement gate appears where required.
 - [ ] ParentView opens for linked child in real mode.
 - [ ] Notification inbox renders with unread indicator behavior.
+- [ ] Dashboard notification preview limits to **three** items by default; **View more** / **View less** toggles expanded list when more filtered rows exist.
+- [ ] Operational notification phrases (payments, homework/feedback, attendance, reports/released, communications) are visible in normal mode; smoke/fixture wording stays hidden unless `?debug=1`.
 - [ ] Notification action routing opens/scrolls to expected target sections.
 - [ ] Communication & notification settings load/save correctly.
 - [ ] Parent portal v1: no Active Sessions / technical session history UI (deferred); HQ Session Review unchanged for staff.
@@ -76,6 +96,7 @@ Use this checklist for manual walkthrough validation by internal reviewers, staf
 
 ## 4) Teacher walkthrough
 
+- [ ] `/students` renders for authenticated teacher/HQ — list, expanded profile shell, homework inbox strip — without hitting the Students error boundary in normal fixture conditions (students **without** a `student_school_profile` row must not crash the School / Learning Context card).
 - [ ] Parent communication release flow works.
 - [ ] Homework feedback release flow works.
 - [ ] Attendance marking flow works.
@@ -139,6 +160,7 @@ Use this checklist for manual walkthrough validation by internal reviewers, staf
 - [ ] No finalized monitoring/backup/runbook package yet.
 - [ ] No raw IP/device fingerprint telemetry by design.
 - [ ] No real parent rollout until policy/legal review is complete.
+- [ ] No dedicated automated smoke for **`/students`** UI in `package.json` — regressions rely on code-path review plus manual teacher/HQ verification.
 
 ---
 
@@ -151,7 +173,7 @@ Capture and archive screenshots for each major flow:
 - [ ] Parent notification inbox
 - [ ] Parent notification settings
 - [ ] Parent first-login acknowledgement gate
-- [ ] Parent active sessions card
+- [ ] Teacher/HQ `/students` list + expanded card (student with no school profile row optional)
 - [ ] HQ session review page
 - [ ] Payment proof request flow
 - [ ] Homework feedback release flow
