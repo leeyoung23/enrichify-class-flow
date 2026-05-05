@@ -4,6 +4,23 @@ Date: 2026-05-05
 Type: Planning + Phase 1 foundation checkpoint.  
 No Gmail/provider integration, no real email sending, and no email trigger wiring in this milestone.
 
+## Phase 2 update: ParentView Notification Settings UI v1 (2026-05-05)
+
+- Surface added in `src/pages/ParentView.jsx`: **Communication & Notification Settings** (`#parent-notification-settings`), shown for parent view mode.
+- Placement: directly below the in-app notification inbox with a quick-jump button label **Communication Settings** in the ParentView portal links card.
+- Active v1 channel: **`in_app` only**. Email/SMS/push are displayed as future channels and remain non-editable in this phase.
+- V1 categories shown:
+  - `operational_service` (required acknowledgement row)
+  - `attendance_safety`
+  - `learning_report_homework`
+  - `parent_communication`
+  - `billing_invoice`
+  - `media_photo`
+  - `marketing_events`
+- Save path uses existing parent self-service helper `upsertMyNotificationPreference` and reads via `listMyNotificationPreferences`.
+- V1 scope strategy: save as **parent-level defaults** (`student_id = null`) so future child-specific overrides can be added later without changing current behavior.
+- Triggers are unchanged in this phase: preferences are stored, but notification trigger helpers do not yet enforce preference filtering. Preference enforcement remains a future phase.
+
 ## Scope and product direction
 
 Current production-safe behavior remains **in-app notification first** via `notification_events` + `notifications` and HQ-governed template copy.  

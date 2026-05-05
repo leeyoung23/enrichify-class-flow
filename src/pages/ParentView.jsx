@@ -24,6 +24,7 @@ import {
   getAiParentReportDetail,
   getAiParentReportCurrentVersion,
   listMyInAppNotifications,
+  listMyNotificationPreferences,
 } from '@/services/supabaseReadService';
 import {
   uploadFeeReceipt,
@@ -40,7 +41,11 @@ import {
   listParentAnnouncementMedia,
   getParentAnnouncementMediaSignedUrl,
 } from '@/services/supabaseUploadService';
-import { markParentAnnouncementRead, markNotificationRead } from '@/services/supabaseWriteService';
+import {
+  markParentAnnouncementRead,
+  markNotificationRead,
+  upsertMyNotificationPreference,
+} from '@/services/supabaseWriteService';
 import { useSupabaseAuthState } from '@/hooks/useSupabaseAuthState';
 import { isSupabaseConfigured } from '@/services/supabaseClient';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -89,6 +94,47 @@ const MAX_HOMEWORK_UPLOAD_BYTES = 5 * 1024 * 1024;
 const PARENT_VIEW_HASH_ALIASES = {
   'latest-report': 'parent-progress-reports',
 };
+
+const PARENT_NOTIFICATION_PREFERENCE_ROWS = [
+  { category: 'attendance_safety', label: 'Attendance and safety updates' },
+  { category: 'learning_report_homework', label: 'Reports and homework feedback' },
+  { category: 'parent_communication', label: 'Class updates and parent communication' },
+  { category: 'billing_invoice', label: 'Billing and payment notices' },
+  { category: 'media_photo', label: 'Class memories and photo-related updates' },
+  { category: 'marketing_events', label: 'Events and promotional updates' },
+];
+
+function buildDefaultParentNotificationPreferences() {
+  return {
+    operational_service: { enabled: true, consentStatus: 'required_service' },
+    attendance_safety: { enabled: true, consentStatus: 'consented' },
+    learning_report_homework: { enabled: true, consentStatus: 'consented' },
+    parent_communication: { enabled: true, consentStatus: 'consented' },
+    billing_invoice: { enabled: true, consentStatus: 'consented' },
+    media_photo: { enabled: false, consentStatus: 'not_set' },
+    marketing_events: { enabled: false, consentStatus: 'not_set' },
+  };
+}
+
+function normalizeParentPreferenceValue(row, fallbackValue) {
+  const base = fallbackValue || { enabled: false, consentStatus: 'not_set' };
+  const consentStatus = typeof row?.consent_status === 'string' ? row.consent_status.trim() : '';
+  return {
+    enabled: typeof row?.enabled === 'boolean' ? row.enabled : base.enabled,
+    consentStatus: consentStatus || base.consentStatus,
+  };
+}
+
+function deriveConsentStatusForSave({ category, enabled, previousConsentStatus }) {
+  if (category === 'operational_service') return 'required_service';
+  if (enabled) return 'consented';
+  if (category === 'marketing_events' || category === 'media_photo') {
+    return previousConsentStatus === 'consented' || previousConsentStatus === 'withdrawn'
+      ? 'withdrawn'
+      : 'not_set';
+  }
+  return 'withdrawn';
+}
 
 function normalizeNotificationText(value) {
   return typeof value === 'string' ? value.trim().toLowerCase() : '';
@@ -1395,6 +1441,156 @@ function ParentInAppNotificationsSection({
   );
 }
 
+function ParentNotificationSettingsSection({
+  demoMode,
+  hasSupabaseSession,
+  supabaseReady,
+  loading,
+  error,
+  saving,
+  saveMessage,
+  saveError,
+  preferences,
+  onToggleCategory,
+  onConfirmOperationalService,
+  onSave,
+}) {
+  const operationalPref = preferences.operational_service || { enabled: true, consentStatus: 'required_service' };
+  const operationalNeedsConfirm = operationalPref.consentStatus === 'not_set';
+  const isRealModeReady = !demoMode && supabaseReady && hasSupabaseSession;
+  const canEdit = demoMode || isRealModeReady;
+
+  return (
+    <Card id="parent-notification-settings" className="mb-6" role="region" aria-label="Communication and notification settings">
+      <CardHeader className="pb-3">
+        <CardTitle className="text-base">Communication &amp; Notification Settings</CardTitle>
+      </CardHeader>
+      <CardContent className="space-y-4">
+        <p className="text-sm text-muted-foreground">
+          Your parent portal is the main place to view your child&apos;s learning updates, reports, homework feedback, attendance information, and payment notices.
+        </p>
+        {demoMode ? (
+          <p className="text-xs text-muted-foreground">
+            Changes in demo parent mode are visual only and are not saved to Supabase.
+          </p>
+        ) : null}
+        {!demoMode && (!supabaseReady || !hasSupabaseSession) ? (
+          <p className="text-xs text-muted-foreground">
+            Sign in with your parent account to manage communication settings.
+          </p>
+        ) : null}
+        {loading ? (
+          <div className="flex items-center gap-2 text-sm text-muted-foreground">
+            <Loader2 className="h-4 w-4 animate-spin" aria-hidden />
+            <span>Loading your communication settings…</span>
+          </div>
+        ) : null}
+        {error ? <p className="text-sm text-destructive">{error}</p> : null}
+
+        <div className="rounded-lg border p-3 sm:p-4 space-y-3">
+          <p className="text-sm font-medium">Required service communication</p>
+          <p className="text-sm text-muted-foreground">
+            I acknowledge that the centre may send essential service updates through the parent portal.
+          </p>
+          <div className="flex flex-wrap items-center gap-2">
+            <Badge variant="outline">{operationalNeedsConfirm ? 'Confirmation pending' : 'Acknowledged'}</Badge>
+            <Badge variant="secondary">In-app only</Badge>
+          </div>
+          <Button
+            type="button"
+            variant={operationalNeedsConfirm ? 'default' : 'outline'}
+            onClick={onConfirmOperationalService}
+            disabled={!canEdit || loading || saving || !operationalNeedsConfirm}
+            aria-label="Confirm required service communication acknowledgement"
+            className="w-full sm:w-auto"
+          >
+            {operationalNeedsConfirm ? 'Confirm acknowledgement' : 'Acknowledged'}
+          </Button>
+        </div>
+
+        <div className="space-y-3">
+          {PARENT_NOTIFICATION_PREFERENCE_ROWS.map((row) => {
+            const pref = preferences[row.category] || { enabled: false, consentStatus: 'not_set' };
+            const statusLabel = pref.consentStatus === 'not_set'
+              ? 'Not set'
+              : pref.consentStatus === 'required_service'
+                ? 'Required'
+                : pref.consentStatus === 'withdrawn'
+                  ? 'Withdrawn'
+                  : 'Consented';
+            return (
+              <div key={row.category} className="rounded-lg border p-3 sm:p-4">
+                <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+                  <div>
+                    <p className="text-sm font-medium">{row.label}</p>
+                    <p className="text-xs text-muted-foreground">In-app channel</p>
+                  </div>
+                  <div className="flex flex-wrap items-center gap-2">
+                    <Badge variant="outline">{statusLabel}</Badge>
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant={pref.enabled ? 'default' : 'outline'}
+                      className="min-w-20"
+                      onClick={() => onToggleCategory(row.category, true)}
+                      disabled={!canEdit || loading || saving}
+                      aria-label={`Turn on ${row.label}`}
+                    >
+                      On
+                    </Button>
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant={!pref.enabled ? 'default' : 'outline'}
+                      className="min-w-20"
+                      onClick={() => onToggleCategory(row.category, false)}
+                      disabled={!canEdit || loading || saving}
+                      aria-label={`Turn off ${row.label}`}
+                    >
+                      Off
+                    </Button>
+                  </div>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+
+        <div className="rounded-lg border border-dashed p-3 sm:p-4 space-y-2">
+          <p className="text-sm font-medium">Future channels</p>
+          <p className="text-sm text-muted-foreground">
+            Email/SMS notifications are not active yet. When enabled, you will be able to manage them here.
+          </p>
+        </div>
+
+        <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+          <p className="text-xs text-muted-foreground">
+            Preferences are stored now for portal communication settings. Notification trigger enforcement is planned for a future phase.
+          </p>
+          <Button
+            type="button"
+            onClick={onSave}
+            disabled={!canEdit || loading || saving}
+            aria-label="Save communication settings"
+            className="w-full sm:w-auto"
+          >
+            {saving ? (
+              <>
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                Saving...
+              </>
+            ) : (
+              'Save settings'
+            )}
+          </Button>
+        </div>
+        {saveMessage ? <p className="text-sm text-green-700">{saveMessage}</p> : null}
+        {saveError ? <p className="text-sm text-destructive">{saveError}</p> : null}
+      </CardContent>
+    </Card>
+  );
+}
+
 function TeacherFeedback({ updates, isStudentPreview }) {
   const latest = updates[0];
 
@@ -1783,6 +1979,17 @@ export default function ParentView() {
   const [parentInAppNotificationsError, setParentInAppNotificationsError] = useState('');
   const [parentInAppMarkingId, setParentInAppMarkingId] = useState(null);
   const [parentInAppActionNotice, setParentInAppActionNotice] = useState('');
+  const [parentNotificationPreferences, setParentNotificationPreferences] = useState(
+    buildDefaultParentNotificationPreferences()
+  );
+  const [initialParentNotificationPreferences, setInitialParentNotificationPreferences] = useState(
+    buildDefaultParentNotificationPreferences()
+  );
+  const [parentNotificationPreferencesLoading, setParentNotificationPreferencesLoading] = useState(false);
+  const [parentNotificationPreferencesError, setParentNotificationPreferencesError] = useState('');
+  const [parentNotificationPreferencesSaving, setParentNotificationPreferencesSaving] = useState(false);
+  const [parentNotificationPreferencesSaveMessage, setParentNotificationPreferencesSaveMessage] = useState('');
+  const [parentNotificationPreferencesSaveError, setParentNotificationPreferencesSaveError] = useState('');
 
   const isParentViewerRole = normalizeRole(viewer?.role) === ROLES.PARENT;
   const parentInAppNotificationsForChild = useMemo(() => {
@@ -2165,6 +2372,61 @@ export default function ParentView() {
     void loadParentInAppNotifications();
   }, [loadParentInAppNotifications]);
 
+  const loadParentNotificationPreferences = useCallback(async () => {
+    const defaults = buildDefaultParentNotificationPreferences();
+    if (isDemoStudentPreview || !isParentViewerRole) {
+      setParentNotificationPreferences(defaults);
+      setInitialParentNotificationPreferences(defaults);
+      setParentNotificationPreferencesError('');
+      setParentNotificationPreferencesLoading(false);
+      return;
+    }
+    if (isDemoMode) {
+      setParentNotificationPreferences(defaults);
+      setInitialParentNotificationPreferences(defaults);
+      setParentNotificationPreferencesError('');
+      setParentNotificationPreferencesLoading(false);
+      return;
+    }
+    if (!hasSupabaseSession || !isSupabaseConfigured()) {
+      setParentNotificationPreferences(defaults);
+      setInitialParentNotificationPreferences(defaults);
+      setParentNotificationPreferencesError('');
+      setParentNotificationPreferencesLoading(false);
+      return;
+    }
+
+    setParentNotificationPreferencesLoading(true);
+    setParentNotificationPreferencesError('');
+    try {
+      const listResult = await listMyNotificationPreferences({ includeDisabled: true, limit: 200 });
+      if (listResult.error) {
+        throw new Error(listResult.error.message || 'Unable to load communication settings.');
+      }
+      const rows = Array.isArray(listResult.data) ? listResult.data : [];
+      const nextPreferences = { ...defaults };
+      const inAppRows = rows.filter((row) => row?.channel === 'in_app');
+      for (const category of Object.keys(nextPreferences)) {
+        const categoryRows = inAppRows.filter((row) => row?.category === category);
+        const parentLevel = categoryRows.find((row) => row?.student_id == null);
+        const pickedRow = parentLevel || categoryRows[0];
+        nextPreferences[category] = normalizeParentPreferenceValue(pickedRow, defaults[category]);
+      }
+      setParentNotificationPreferences(nextPreferences);
+      setInitialParentNotificationPreferences(nextPreferences);
+    } catch (error) {
+      setParentNotificationPreferences(defaults);
+      setInitialParentNotificationPreferences(defaults);
+      setParentNotificationPreferencesError(error?.message || 'Unable to load communication settings.');
+    } finally {
+      setParentNotificationPreferencesLoading(false);
+    }
+  }, [hasSupabaseSession, isDemoMode, isDemoStudentPreview, isParentViewerRole]);
+
+  useEffect(() => {
+    void loadParentNotificationPreferences();
+  }, [loadParentNotificationPreferences]);
+
   const handleMarkParentNotificationRead = useCallback(async (notificationId) => {
     if (!isUuidLike(notificationId)) {
       return;
@@ -2220,6 +2482,104 @@ export default function ParentView() {
     if (!fallbackOk) return;
     setParentInAppActionNotice('That section is not available in this view yet. You can still review the notification details here.');
   }, [handleMarkParentNotificationRead, scrollToParentSection]);
+
+  const handleToggleParentNotificationCategory = useCallback((category, enabled) => {
+    if (!Object.prototype.hasOwnProperty.call(parentNotificationPreferences, category)) return;
+    setParentNotificationPreferences((prev) => {
+      const existing = prev[category] || { enabled: false, consentStatus: 'not_set' };
+      return {
+        ...prev,
+        [category]: {
+          ...existing,
+          enabled,
+          consentStatus: deriveConsentStatusForSave({
+            category,
+            enabled,
+            previousConsentStatus: existing.consentStatus,
+          }),
+        },
+      };
+    });
+    setParentNotificationPreferencesSaveMessage('');
+    setParentNotificationPreferencesSaveError('');
+  }, [parentNotificationPreferences]);
+
+  const handleConfirmOperationalServicePreference = useCallback(() => {
+    setParentNotificationPreferences((prev) => ({
+      ...prev,
+      operational_service: {
+        enabled: true,
+        consentStatus: 'required_service',
+      },
+    }));
+    setParentNotificationPreferencesSaveMessage('');
+    setParentNotificationPreferencesSaveError('');
+  }, []);
+
+  const handleSaveParentNotificationSettings = useCallback(async () => {
+    if (!isParentViewerRole || isDemoStudentPreview) return;
+    if (isDemoMode) {
+      setParentNotificationPreferencesSaveError('');
+      setParentNotificationPreferencesSaveMessage('Demo mode: visual changes were kept locally for this preview.');
+      return;
+    }
+    if (!hasSupabaseSession || !isSupabaseConfigured()) return;
+
+    setParentNotificationPreferencesSaving(true);
+    setParentNotificationPreferencesSaveError('');
+    setParentNotificationPreferencesSaveMessage('');
+    try {
+      const categories = ['operational_service', ...PARENT_NOTIFICATION_PREFERENCE_ROWS.map((row) => row.category)];
+      const pendingUpdates = categories.filter((category) => {
+        const current = parentNotificationPreferences[category];
+        const initial = initialParentNotificationPreferences[category];
+        return current?.enabled !== initial?.enabled || current?.consentStatus !== initial?.consentStatus;
+      });
+
+      if (pendingUpdates.length === 0) {
+        setParentNotificationPreferencesSaveMessage('No changes to save.');
+        return;
+      }
+
+      for (const category of pendingUpdates) {
+        const current = parentNotificationPreferences[category];
+        const previousConsentStatus = initialParentNotificationPreferences[category]?.consentStatus || 'not_set';
+        const consentStatus = deriveConsentStatusForSave({
+          category,
+          enabled: Boolean(current?.enabled),
+          previousConsentStatus,
+        });
+        const result = await upsertMyNotificationPreference({
+          studentId: null, // v1 strategy: parent-level defaults; child overrides can be added later.
+          channel: 'in_app',
+          category,
+          enabled: Boolean(current?.enabled),
+          consentStatus,
+          consentSource: 'parent_portal_settings',
+          policyVersion: 'v1',
+        });
+        if (result.error) {
+          throw new Error(result.error.message || 'Could not save communication settings.');
+        }
+      }
+
+      setInitialParentNotificationPreferences(parentNotificationPreferences);
+      setParentNotificationPreferencesSaveMessage('Communication settings saved.');
+    } catch (error) {
+      setParentNotificationPreferencesSaveError(
+        error?.message || 'Could not save communication settings. Please try again.'
+      );
+    } finally {
+      setParentNotificationPreferencesSaving(false);
+    }
+  }, [
+    hasSupabaseSession,
+    initialParentNotificationPreferences,
+    isDemoMode,
+    isDemoStudentPreview,
+    isParentViewerRole,
+    parentNotificationPreferences,
+  ]);
 
   useEffect(() => {
     let cancelled = false;
@@ -2992,6 +3352,22 @@ export default function ParentView() {
             actionNotice={parentInAppActionNotice}
           />
         ) : null}
+        {!isDemoStudentPreview && isParentViewerRole ? (
+          <ParentNotificationSettingsSection
+            demoMode={isDemoMode}
+            hasSupabaseSession={hasSupabaseSession}
+            supabaseReady={isSupabaseConfigured()}
+            loading={parentNotificationPreferencesLoading}
+            error={parentNotificationPreferencesError}
+            saving={parentNotificationPreferencesSaving}
+            saveMessage={parentNotificationPreferencesSaveMessage}
+            saveError={parentNotificationPreferencesSaveError}
+            preferences={parentNotificationPreferences}
+            onToggleCategory={handleToggleParentNotificationCategory}
+            onConfirmOperationalService={handleConfirmOperationalServicePreference}
+            onSave={handleSaveParentNotificationSettings}
+          />
+        ) : null}
 
         {!isDemoStudentPreview && (
           isDemoMode
@@ -3059,6 +3435,16 @@ export default function ParentView() {
                   <FileText className="h-4 w-4" />
                   View Approved Teacher Feedback
                 </Button>
+                {isParentViewerRole ? (
+                  <Button
+                    variant="outline"
+                    className="justify-start gap-2"
+                    onClick={() => document.getElementById('parent-notification-settings')?.scrollIntoView({ behavior: 'smooth' })}
+                  >
+                    <Bell className="h-4 w-4" />
+                    Communication Settings
+                  </Button>
+                ) : null}
               </div>
             </CardContent>
           </Card>

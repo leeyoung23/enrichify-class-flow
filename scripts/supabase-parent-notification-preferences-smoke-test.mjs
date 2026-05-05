@@ -103,11 +103,11 @@ async function run() {
   }
 
   const createPreference = await upsertMyNotificationPreference({
-    studentId: parentStudentId,
-    channel: "email",
-    category: "parent_communication",
+    studentId: null,
+    channel: "in_app",
+    category: "operational_service",
     enabled: true,
-    consentStatus: "consented",
+    consentStatus: "required_service",
     consentSource: "parent_portal_smoke",
     policyVersion: "v1-smoke",
   });
@@ -120,13 +120,13 @@ async function run() {
     }
     failureCount += 1;
   } else {
-    printResult("PASS", "Parent: created/updated own notification preference");
+    printResult("PASS", "Parent: created/updated required operational in-app preference");
   }
 
   const updatePreference = await upsertMyNotificationPreference({
-    studentId: parentStudentId,
-    channel: "email",
-    category: "parent_communication",
+    studentId: null,
+    channel: "in_app",
+    category: "marketing_events",
     enabled: false,
     consentStatus: "withdrawn",
     consentSource: "parent_portal_smoke_withdraw",
@@ -136,10 +136,10 @@ async function run() {
     printResult("WARNING", `Parent: update preference failed (${updatePreference.error?.message || "unknown"})`);
     failureCount += 1;
   } else if (updatePreference.data.enabled !== false || updatePreference.data.consent_status !== "withdrawn") {
-    printResult("WARNING", "Parent: updated preference did not persist expected withdrawn state");
+    printResult("WARNING", "Parent: marketing preference did not persist expected withdrawn state");
     failureCount += 1;
   } else {
-    printResult("PASS", "Parent: updated own preference to withdrawn/disabled");
+    printResult("PASS", "Parent: updated marketing preference to withdrawn/disabled");
   }
 
   const listMine = await listMyNotificationPreferences({ limit: 50 });
@@ -149,9 +149,9 @@ async function run() {
   } else {
     const mine = (Array.isArray(listMine.data) ? listMine.data : []).find(
       (row) =>
-        row?.channel === "email"
-        && row?.category === "parent_communication"
-        && ((row?.student_id || null) === (parentStudentId || null))
+        row?.channel === "in_app"
+        && row?.category === "operational_service"
+        && row?.student_id == null
     );
     if (!mine) {
       printResult("WARNING", "Parent: expected own preference row not found in self list");
@@ -167,7 +167,7 @@ async function run() {
       .insert({
         parent_profile_id: "11111111-1111-1111-1111-111111111111",
         student_id: parentStudentId,
-        channel: "email",
+        channel: "in_app",
         category: "marketing_events",
         enabled: true,
         consent_status: "consented",
@@ -203,7 +203,7 @@ async function run() {
 
     const studentWrite = await upsertMyNotificationPreference({
       studentId: parentStudentId,
-      channel: "email",
+      channel: "in_app",
       category: "marketing_events",
       enabled: true,
       consentStatus: "consented",
@@ -229,8 +229,8 @@ async function run() {
       .from("parent_notification_preferences")
       .select("id,parent_profile_id,channel,category,consent_status")
       .eq("parent_profile_id", parentProfileId)
-      .eq("channel", "email")
-      .eq("category", "parent_communication")
+      .eq("channel", "in_app")
+      .eq("category", "operational_service")
       .limit(1)
       .maybeSingle();
     if (hqRead.error || !hqRead.data?.id) {
@@ -252,8 +252,8 @@ async function run() {
   } else {
     const supervisorRead = await listNotificationPreferencesForStudent({
       studentId: parentStudentId,
-      channel: "email",
-      category: "parent_communication",
+      channel: "in_app",
+      category: "operational_service",
       limit: 20,
     });
     if (supervisorRead.error) {

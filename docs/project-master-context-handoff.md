@@ -1,5 +1,17 @@
 # Project Master Context Handoff
 
+## Checkpoint update (ParentView communication settings UI v1 — 2026-05-05)
+
+- **UI:** `src/pages/ParentView.jsx` now renders **Communication & Notification Settings** for parent mode at `#parent-notification-settings`, placed beneath the in-app notifications card.
+- **Navigation:** ParentView quick links now include **Communication Settings** button, preserving real/demo URL query params and hash navigation behavior.
+- **Read/write helpers:** `listMyNotificationPreferences` loads parent rows; `upsertMyNotificationPreference` saves parent self-service updates (anon+JWT+RLS only).
+- **V1 category coverage:** `operational_service`, `attendance_safety`, `learning_report_homework`, `parent_communication`, `billing_invoice`, `media_photo`, `marketing_events`.
+- **Channel scope in v1:** `in_app` editable; email/SMS/push shown as future channels only.
+- **Persistence strategy:** save parent-level defaults with `student_id = null` in v1; child-specific overrides deferred to future phase.
+- **Demo mode behavior:** section is visible with local visual toggles and local save feedback only; no Supabase writes.
+- **Trigger enforcement status:** preferences are now stored in UI, but notification trigger helpers do not yet enforce preference filtering in this milestone.
+- **Safety boundaries unchanged:** no Gmail/email sending, no SMS/push sending, no provider integration, no service-role frontend, no RLS changes.
+
 ## Checkpoint update (parent notification preferences foundation — 2026-05-05)
 
 - **SQL:** `supabase/sql/040_parent_notification_preferences_foundation.sql` adds `parent_notification_preferences` (channel/category consent model with optional student scope).

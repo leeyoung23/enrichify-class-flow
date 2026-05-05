@@ -50,6 +50,18 @@ Date: 2026-05-05
   - `npm run test:supabase:audit-events` — PASS
 - **Boundary unchanged:** still no email sending/Gmail integration/provider credentials in frontend.
 
+## ParentView communication settings UI v1 (portal consent/preferences surface)
+
+- **UI surface:** `src/pages/ParentView.jsx` adds parent-facing **Communication & Notification Settings** section (`id="parent-notification-settings"`).
+- **Location:** rendered below parent in-app inbox; ParentView portal links now include **Communication Settings** quick-jump.
+- **Copy and safety posture:** portal remains source of truth; required service acknowledgement text is shown in-card.
+- **Editable channel now:** `in_app` only.
+- **Future channels now:** email/SMS/push are shown as disabled/future copy only (no write calls for those channels).
+- **V1 categories:** `operational_service`, `attendance_safety`, `learning_report_homework`, `parent_communication`, `billing_invoice`, `media_photo`, `marketing_events`.
+- **Persistence helper path:** `listMyNotificationPreferences` (load) + `upsertMyNotificationPreference` (save).
+- **Scope strategy (v1):** parent-level defaults only (`student_id = null`) with child-specific overrides deferred.
+- **Trigger behavior:** notification triggers are not changed to enforce preferences in this milestone; enforcement is a future phase.
+
 ## Notification templates admin UI v1 (HQ)
 
 - **Surface:** `src/pages/Announcements.jsx` adds **Message Templates** section for HQ admin under Announcements (no new route required).
