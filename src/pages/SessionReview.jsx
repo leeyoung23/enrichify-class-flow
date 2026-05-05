@@ -5,9 +5,12 @@ import EmptyState from '@/components/shared/EmptyState';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Button } from '@/components/ui/button';
 import { Shield } from 'lucide-react';
 import { listAuthSessionsForAdmin } from '@/services/supabaseReadService';
 import { isDebugModeEnabled } from '@/services/authService';
+import { getCurrentAuthSessionId } from '@/services/sessionGovernanceService';
+import { revokeAuthSession } from '@/services/supabaseWriteService';
 
 const STATUS_FILTERS = ['all', 'active', 'signed_out', 'timed_out', 'revoked'];
 const ROLE_FILTERS = ['all', 'hq_admin', 'branch_supervisor', 'teacher', 'parent', 'student'];
@@ -42,13 +45,27 @@ export default function SessionReview() {
   const [error, setError] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
   const [roleFilter, setRoleFilter] = useState('all');
+  const [actionMessage, setActionMessage] = useState('');
+  const [actionError, setActionError] = useState('');
+  const [revokingSessionId, setRevokingSessionId] = useState('');
 
   const canAccess = role === 'hq_admin';
+  const currentSessionId = useMemo(() => getCurrentAuthSessionId(), []);
+
+  const isStaffRole = (value) => value === 'teacher' || value === 'branch_supervisor';
+  const canRevokeRow = (row) => {
+    if (!canAccess) return false;
+    if (!row || row.session_status !== 'active') return false;
+    if (!isStaffRole(row.role)) return false;
+    if (row.id === currentSessionId) return false;
+    return true;
+  };
 
   const loadSessions = async () => {
     if (!canAccess) return;
     setLoading(true);
     setError('');
+    setActionError('');
     const result = await listAuthSessionsForAdmin({
       status: statusFilter === 'all' ? null : statusFilter,
       limit: 300,
@@ -60,6 +77,30 @@ export default function SessionReview() {
       setRows(Array.isArray(result.data) ? result.data : []);
     }
     setLoading(false);
+  };
+
+  const handleRevokeSession = async (row) => {
+    if (!canRevokeRow(row)) return;
+    const sessionId = typeof row?.id === 'string' ? row.id.trim() : '';
+    if (!sessionId) return;
+    const confirmed = window.confirm('Revoke this staff session? The user may need to sign in again on that browser.');
+    if (!confirmed) return;
+    setRevokingSessionId(sessionId);
+    setActionError('');
+    setActionMessage('');
+    const result = await revokeAuthSession({
+      sessionId,
+      reason: 'hq_revoked_staff_session',
+      source: 'session_review',
+      targetRole: row?.role || null,
+    });
+    if (result.error) {
+      setActionError('Could not revoke that session right now. Please try again.');
+    } else {
+      setActionMessage('Session revoked.');
+      await loadSessions();
+    }
+    setRevokingSessionId('');
   };
 
   useEffect(() => {
@@ -85,7 +126,7 @@ export default function SessionReview() {
     <div>
       <PageHeader
         title="Session Review"
-        description="Read-only account session visibility for HQ. No revoke actions are available on this page yet."
+        description="HQ session visibility with staff revoke controls for active teacher/supervisor sessions only."
       />
 
       <Card className="mb-6">
@@ -142,6 +183,20 @@ export default function SessionReview() {
           </CardContent>
         </Card>
       ) : null}
+      {!loading && !error && actionError ? (
+        <Card className="mb-4">
+          <CardContent className="pt-6">
+            <p className="text-sm text-destructive">{actionError}</p>
+          </CardContent>
+        </Card>
+      ) : null}
+      {!loading && !error && actionMessage ? (
+        <Card className="mb-4">
+          <CardContent className="pt-6">
+            <p className="text-sm text-muted-foreground">{actionMessage}</p>
+          </CardContent>
+        </Card>
+      ) : null}
 
       {!loading && !error && filteredRows.length === 0 ? (
         <Card>
@@ -176,6 +231,19 @@ export default function SessionReview() {
                       <p>Session ref: {formatRef(row?.id)}</p>
                       <p>Profile ref: {formatRef(row?.profile_id)}</p>
                       <p>Branch ref: {formatRef(row?.branch_id)}</p>
+                    </div>
+                  ) : null}
+                  {canRevokeRow(row) ? (
+                    <div className="pt-1">
+                      <Button
+                        type="button"
+                        size="sm"
+                        variant="outline"
+                        onClick={() => handleRevokeSession(row)}
+                        disabled={revokingSessionId === row?.id}
+                      >
+                        {revokingSessionId === row?.id ? 'Revoking…' : 'Revoke session'}
+                      </Button>
                     </div>
                   ) : null}
                 </CardContent>

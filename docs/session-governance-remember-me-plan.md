@@ -51,6 +51,24 @@ Type: planning + diagnosis checkpoint only (no code/SQL/RLS/auth-config changes)
   - no IP/full user-agent/fingerprint/location/token fields
   - internal identifiers shown only as truncated refs in debug mode (`?debug=1`)
 
+## 2026-05-05 implementation checkpoint addendum (Phase 1E Step 3D HQ revoke staff sessions v1)
+
+- `SessionReview` now includes HQ revoke controls for active staff sessions only.
+- Staff roles in scope:
+  - `teacher`
+  - `branch_supervisor`
+- Deferred in this step:
+  - parent/student revoke from UI
+  - HQ current-session revoke
+  - logout-all-devices
+  - branch supervisor revoke controls
+- Helper behavior:
+  - existing `revokeAuthSession` remains HQ-only and now writes non-blocking revoke audit metadata.
+- Remember-me/session-timeout behavior unchanged:
+  - no timeout policy change
+  - no storage-key change
+  - no telemetry expansion
+
 ## 2026-05-05 implementation checkpoint addendum (Phase 1E Step 2 tiny runtime wiring)
 
 - Login runtime now creates `auth_sessions` row after successful profile resolution in real mode.

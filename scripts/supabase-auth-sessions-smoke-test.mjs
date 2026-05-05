@@ -85,6 +85,8 @@ async function run() {
   let parentSessionId = null;
   let parentProfileId = null;
   let studentSessionId = null;
+  let teacherSessionId = null;
+  let teacherProfileId = null;
 
   const parentSignIn = await signInRole(parentUser, { signInWithEmailPassword, signOut });
   if (!parentSignIn.ok) process.exit(1);
@@ -254,6 +256,19 @@ async function run() {
     warningCount += 1;
     printResult("CHECK", "Teacher: skipped parent-session read check (missing parent session id)");
   } else {
+    const teacherAuth = await supabase.auth.getUser();
+    teacherProfileId = teacherAuth?.data?.user?.id || null;
+    const teacherCreate = await createAuthSession({
+      rememberMeEnabled: false,
+      safeDeviceLabel: "teacher-smoke-browser",
+    });
+    if (teacherCreate.error || !teacherCreate.data?.id) {
+      printResult("WARNING", `Teacher: fixture session create failed (${teacherCreate.error?.message || "unknown"})`);
+      failureCount += 1;
+    } else {
+      teacherSessionId = teacherCreate.data.id;
+    }
+
     const teacherReadParent = await supabase
       .from("auth_sessions")
       .select("id")
@@ -264,6 +279,21 @@ async function run() {
     } else {
       printResult("WARNING", "Teacher: unexpectedly read parent auth session");
       failureCount += 1;
+    }
+
+    if (parentSessionId) {
+      const teacherRevokeParent = await revokeAuthSession({
+        sessionId: parentSessionId,
+        reason: "teacher_should_not_revoke",
+        source: "auth_sessions_smoke",
+        targetRole: "parent",
+      });
+      if (teacherRevokeParent.error || !teacherRevokeParent.data?.id) {
+        printResult("PASS", "Teacher: cannot revoke another user's auth session");
+      } else {
+        printResult("WARNING", "Teacher: unexpectedly revoked another user's auth session");
+        failureCount += 1;
+      }
     }
   }
   await signOut();
@@ -285,6 +315,21 @@ async function run() {
     } else {
       printResult("WARNING", "Parent: unexpectedly ended another profile auth session");
       failureCount += 1;
+    }
+
+    if (teacherSessionId) {
+      const parentRevokeTeacher = await revokeAuthSession({
+        sessionId: teacherSessionId,
+        reason: "parent_should_not_revoke",
+        source: "auth_sessions_smoke",
+        targetRole: "teacher",
+      });
+      if (parentRevokeTeacher.error || !parentRevokeTeacher.data?.id) {
+        printResult("PASS", "Parent: cannot revoke another user's auth session");
+      } else {
+        printResult("WARNING", "Parent: unexpectedly revoked another user's auth session");
+        failureCount += 1;
+      }
     }
   }
   await signOut();
@@ -308,15 +353,30 @@ async function run() {
       printResult("PASS", "HQ Admin: can read auth session row");
     }
 
-    const hqRevoke = await revokeAuthSession({
-      sessionId: parentSessionId,
-      reason: "smoke_test_revoke",
-    });
-    if (hqRevoke.error || !hqRevoke.data?.id || hqRevoke.data.session_status !== "revoked") {
-      printResult("WARNING", `HQ Admin: revoke session failed (${hqRevoke.error?.message || "unknown"})`);
-      failureCount += 1;
+    if (!teacherSessionId || !teacherProfileId) {
+      warningCount += 1;
+      printResult("CHECK", "HQ Admin: skipped staff-revoke check (missing teacher session fixture)");
     } else {
-      printResult("PASS", "HQ Admin: can revoke auth session row");
+      const hqRevoke = await revokeAuthSession({
+        sessionId: teacherSessionId,
+        reason: "smoke_test_staff_revoke",
+        source: "auth_sessions_smoke",
+        targetRole: "teacher",
+      });
+      if (hqRevoke.error || !hqRevoke.data?.id || hqRevoke.data.session_status !== "revoked") {
+        printResult("WARNING", `HQ Admin: revoke staff session failed (${hqRevoke.error?.message || "unknown"})`);
+        failureCount += 1;
+      } else {
+        printResult("PASS", "HQ Admin: can revoke teacher auth session row");
+      }
+
+      const hqVerifyRevokedVisible = await listAuthSessionsForAdmin({ profileId: teacherProfileId, status: "revoked", limit: 30 });
+      if (hqVerifyRevokedVisible.error || !Array.isArray(hqVerifyRevokedVisible.data) || !hqVerifyRevokedVisible.data.some((row) => row?.id === teacherSessionId)) {
+        printResult("WARNING", "HQ Admin: revoked teacher session not visible in review query");
+        failureCount += 1;
+      } else {
+        printResult("PASS", "HQ Admin: revoked teacher session remains visible");
+      }
     }
 
     const hqDelete = await supabase

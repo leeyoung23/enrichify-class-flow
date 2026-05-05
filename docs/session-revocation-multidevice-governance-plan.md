@@ -78,6 +78,34 @@ Type: planning-only checkpoint (no code/SQL/RLS/auth-config changes)
 - Branch supervisor scope:
   - not added in this step (deferred)
 
+## 2026-05-05 implementation checkpoint addendum (Phase 1E Step 3D HQ revoke staff sessions v1)
+
+- Added explicit HQ-only revoke action in `SessionReview` for staff sessions.
+- Revoke button visibility is strictly limited to rows where:
+  - viewer is HQ admin
+  - row status is `active`
+  - target role is `teacher` or `branch_supervisor`
+  - target session is not the current HQ browser session marker
+- Revoke action remains unavailable for:
+  - parent and student sessions
+  - non-active rows (`signed_out`, `timed_out`, `revoked`)
+  - current HQ browser session in v1
+  - branch supervisor viewers (no supervisor revoke access)
+- Confirmation copy:
+  - `Revoke this staff session? The user may need to sign in again on that browser.`
+- On success:
+  - row remains visible and status moves to `revoked`
+  - list refreshes; no destructive removal
+- Helper/audit posture:
+  - `revokeAuthSession` remains HQ-only and performs the update via existing RLS trigger path
+  - non-blocking audit write added for revoke:
+    - `action_type=user.session_revoked`
+    - `entity_type=auth_session`
+    - metadata `{ reason: "hq_revoked", source: "session_review", targetRole }`
+  - audit failure does not block successful revoke
+- SQL/RLS posture:
+  - no migration or policy change required in this step
+
 ## 2026-05-05 implementation checkpoint addendum (Phase 1E Step 2 tiny runtime wiring)
 
 Runtime wiring added (small, conservative integration):

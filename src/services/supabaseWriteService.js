@@ -1123,7 +1123,12 @@ export async function endOwnAuthSession({ sessionId, source = "active_sessions_c
   return updateResult;
 }
 
-export async function revokeAuthSession({ sessionId, reason = null } = {}) {
+export async function revokeAuthSession({
+  sessionId,
+  reason = null,
+  source = "session_review",
+  targetRole = null,
+} = {}) {
   if (!isSupabaseConfigured() || !supabase) {
     return { data: null, error: { message: "Supabase is not configured" } };
   }
@@ -1131,6 +1136,8 @@ export async function revokeAuthSession({ sessionId, reason = null } = {}) {
     return { data: null, error: { message: "sessionId must be a UUID" } };
   }
   const normalizedReason = normalizeNullableText(reason, { maxLength: 180 }) || "revoked_by_admin";
+  const safeSource = trimString(source) || "session_review";
+  const safeTargetRole = trimString(targetRole) || null;
   const nowIso = new Date().toISOString();
 
   try {
@@ -1156,6 +1163,20 @@ export async function revokeAuthSession({ sessionId, reason = null } = {}) {
         "id,profile_id,role,branch_id,remember_me_enabled,session_status,started_at,last_seen_at,signed_out_at,timed_out_at,revoked_at,revoked_by_profile_id,revoke_reason,safe_device_label,created_at,updated_at"
       )
       .maybeSingle();
+    if (!updateResult.error && updateResult.data?.id) {
+      // Non-blocking audit write for HQ revoke actions.
+      void recordAuditEvent({
+        actionType: "user.session_revoked",
+        entityType: "auth_session",
+        entityId: trimString(sessionId),
+        includeResultRow: false,
+        metadata: {
+          reason: "hq_revoked",
+          source: safeSource,
+          targetRole: safeTargetRole,
+        },
+      });
+    }
     return { data: updateResult.data ?? null, error: updateResult.error ?? null };
   } catch (err) {
     return { data: null, error: { message: err?.message || String(err) } };

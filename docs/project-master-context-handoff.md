@@ -1,5 +1,38 @@
 # Project Master Context Handoff
 
+## Checkpoint update (HQ revoke staff sessions, Phase 1E Step 3D — 2026-05-05)
+
+- **HQ revoke control added on Session Review:**
+  - `src/pages/SessionReview.jsx` now shows `Revoke session` for active staff rows only.
+  - uses confirmation copy: `Revoke this staff session? The user may need to sign in again on that browser.`
+- **Roles in scope for revoke button:**
+  - `teacher`
+  - `branch_supervisor`
+- **Revoke button hidden for:**
+  - `parent`, `student`
+  - `signed_out`, `timed_out`, `revoked` rows
+  - current HQ browser session
+  - non-HQ viewers
+- **Helper/audit changes:**
+  - `revokeAuthSession(...)` remains HQ-only and now writes non-blocking revoke audit metadata:
+    - `action_type=user.session_revoked`
+    - `entity_type=auth_session`
+    - metadata includes `reason=hq_revoked`, `source=session_review`, `targetRole`
+  - audit failure does not block successful revoke
+- **Smoke updates (`scripts/supabase-auth-sessions-smoke-test.mjs`):**
+  - HQ can revoke teacher session
+  - revoked staff row remains visible to HQ query
+  - parent cannot revoke another user session
+  - teacher cannot revoke another user session
+  - delete blocked + telemetry columns absent checks preserved
+- **Safety boundaries preserved:**
+  - no SQL/RLS policy changes
+  - no branch supervisor revoke controls
+  - no logout-all-devices
+  - no timeout behavior change
+  - no telemetry expansion (IP/full UA/fingerprint/GPS/token)
+- **Next recommended milestone:** extend HQ controls cautiously to broader policy-reviewed revoke scopes (if approved), or move to logout-all-devices orchestration planning as a separate milestone.
+
 ## Checkpoint update (HQ read-only session review, Phase 1E Step 3C — 2026-05-05)
 
 - **HQ-only review surface added:**

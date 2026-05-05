@@ -61,6 +61,24 @@ Type: planning-only checkpoint (no code/SQL/auth/UI changes in this milestone)
   - only privacy-safe auth session fields rendered
   - internal IDs hidden by default; debug-only truncated refs supported
 
+## 2026-05-05 implementation checkpoint addendum: Phase 1E Step 3D HQ revoke staff sessions v1
+
+- Added HQ-only staff session revoke control on the `SessionReview` page.
+- Safety scope:
+  - revoke button only on active staff sessions (`teacher`, `branch_supervisor`)
+  - hidden for parent/student sessions and non-active statuses
+  - hidden for current HQ browser session
+  - branch supervisor users still cannot revoke sessions
+- RLS/security posture:
+  - uses existing HQ revoke path from `043` (no policy expansion)
+  - no SQL migration in this step
+- Audit posture:
+  - non-blocking audit event for HQ revoke writes safe metadata only:
+    - reason `hq_revoked`
+    - source `session_review`
+    - target role snapshot
+  - no IP/user-agent/fingerprint/token fields added
+
 ## 2026-05-05 implementation checkpoint addendum: Phase 1E Step 2 runtime session-state wiring
 
 - Runtime session-state wiring is now active (small scope, no SQL/RLS changes):
