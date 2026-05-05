@@ -2,6 +2,31 @@
 
 Date: 2026-05-05
 
+## Notification preference enforcement hardening (RPC 042)
+
+- Added migration: `supabase/sql/042_notification_preference_enforcement_rpc.sql`.
+- Added staff-scoped RPC: `public.should_send_parent_in_app_notification_042(p_parent_profile_id, p_student_id, p_category)`.
+- RPC returns only decision shape: `allowed` + `reason` (no raw preference row payload).
+- Why RPC: keep `parent_notification_preferences` table RLS unchanged (no teacher direct table read widening) while allowing teacher-trigger paths to evaluate preference safely.
+- Scope checks inside RPC:
+  - HQ admin
+  - branch supervisor for the student branch
+  - teacher for the student/class
+  - parent self for own linked child context
+- RPC also validates:
+  - parent profile role is `parent`
+  - guardian linkage exists between `p_parent_profile_id` and `p_student_id`
+- Decision rules remain:
+  - explicit `enabled=false` -> blocked
+  - explicit `consent_status=withdrawn` -> blocked
+  - explicit allowed states -> allowed
+  - no row -> service-adjacent categories allow, marketing/media default block
+- JS helper `shouldSendParentInAppNotification` now uses RPC first, with fallback to prior table-read path only when RPC is missing (migration not applied yet).
+- Failure posture unchanged:
+  - business action remains non-blocking
+  - notification suppression is fail-safe when decision cannot be confirmed
+- Boundary unchanged: no email/SMS/push sending, no provider integration, no parent metadata exposure.
+
 ## Notification preference enforcement v1 (in_app only)
 
 - Implemented in `src/services/supabaseWriteService.js` before parent in-app row creation in parent-facing trigger helpers.

@@ -69,6 +69,16 @@ async function run() {
     email: process.env.RLS_TEST_HQ_EMAIL || "hq.demo@example.test",
     passwordVar: "RLS_TEST_HQ_PASSWORD",
   };
+  const teacherUser = {
+    label: "Teacher",
+    email: process.env.RLS_TEST_TEACHER_EMAIL || "teacher.demo@example.test",
+    passwordVar: "RLS_TEST_TEACHER_PASSWORD",
+  };
+  const studentUser = {
+    label: "Student",
+    email: process.env.RLS_TEST_STUDENT_EMAIL || "student.demo@example.test",
+    passwordVar: "RLS_TEST_STUDENT_PASSWORD",
+  };
 
   let failureCount = 0;
   let warningCount = 0;
@@ -157,6 +167,62 @@ async function run() {
     } else {
       printResult("WARNING", "HQ: marketing_events expected blocked by default");
       failureCount += 1;
+    }
+  }
+  await signOut();
+
+  const teacherSignIn = await signInRole(teacherUser, { signInWithEmailPassword, signOut });
+  if (!teacherSignIn.ok) {
+    warningCount += 1;
+    printResult("CHECK", "Teacher: skipped RPC check (credentials unavailable)");
+  } else if (!isUuidLike(parentProfileId) || !isUuidLike(parentStudentId)) {
+    warningCount += 1;
+    printResult("CHECK", "Teacher: skipped RPC check (parent fixture unavailable)");
+  } else {
+    const teacherRpcCheck = await supabase.rpc("should_send_parent_in_app_notification_042", {
+      p_parent_profile_id: parentProfileId,
+      p_student_id: parentStudentId,
+      p_category: "learning_report_homework",
+    });
+    if (teacherRpcCheck.error) {
+      printResult("WARNING", `Teacher: RPC check failed (${teacherRpcCheck.error.message || "unknown"})`);
+      failureCount += 1;
+    } else {
+      const row = Array.isArray(teacherRpcCheck.data) ? teacherRpcCheck.data[0] : null;
+      if (row && typeof row.allowed === "boolean") {
+        printResult("PASS", `Teacher: RPC returned decision (${row.reason || "no_reason"})`);
+      } else {
+        printResult("WARNING", "Teacher: RPC did not return a valid decision row");
+        failureCount += 1;
+      }
+    }
+  }
+  await signOut();
+
+  const studentSignIn = await signInRole(studentUser, { signInWithEmailPassword, signOut });
+  if (!studentSignIn.ok) {
+    warningCount += 1;
+    printResult("CHECK", "Student: skipped RPC denial check (credentials unavailable)");
+  } else if (!isUuidLike(parentProfileId) || !isUuidLike(parentStudentId)) {
+    warningCount += 1;
+    printResult("CHECK", "Student: skipped RPC denial check (parent fixture unavailable)");
+  } else {
+    const studentRpcCheck = await supabase.rpc("should_send_parent_in_app_notification_042", {
+      p_parent_profile_id: parentProfileId,
+      p_student_id: parentStudentId,
+      p_category: "learning_report_homework",
+    });
+    if (studentRpcCheck.error) {
+      printResult("WARNING", `Student: RPC call failed unexpectedly (${studentRpcCheck.error.message || "unknown"})`);
+      failureCount += 1;
+    } else {
+      const row = Array.isArray(studentRpcCheck.data) ? studentRpcCheck.data[0] : null;
+      if (row?.allowed === false && row?.reason === "scope_denied") {
+        printResult("PASS", "Student: RPC scope denied as expected");
+      } else {
+        printResult("WARNING", `Student: expected scope_denied, got ${row?.reason || "unknown"}`);
+        failureCount += 1;
+      }
     }
   }
   await signOut();

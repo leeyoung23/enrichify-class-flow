@@ -489,6 +489,34 @@ export async function shouldSendParentInAppNotification({
   }
 
   try {
+    const rpcResult = await supabase.rpc("should_send_parent_in_app_notification_042", {
+      p_parent_profile_id: trimString(parentProfileId),
+      p_student_id: trimString(studentId),
+      p_category: safeCategory,
+    });
+    if (!rpcResult.error) {
+      const rpcRows = Array.isArray(rpcResult.data) ? rpcResult.data : [];
+      const first = rpcRows[0] || null;
+      if (first && typeof first.allowed === "boolean") {
+        return {
+          allowed: first.allowed,
+          reason: trimString(first.reason) || "rpc_decision",
+        };
+      }
+      return { allowed: false, reason: "rpc_invalid_response" };
+    }
+
+    const rpcErrorCode = trimString(rpcResult.error?.code).toUpperCase();
+    const rpcErrorMessage = trimString(rpcResult.error?.message).toLowerCase();
+    const rpcMissing =
+      rpcErrorCode === "PGRST202"
+      || rpcErrorMessage.includes("could not find the function")
+      || rpcErrorMessage.includes("does not exist");
+    if (!rpcMissing) {
+      return { allowed: false, reason: "rpc_error" };
+    }
+    warnNotificationFailureInDev(rpcResult.error, "shouldSendParentInAppNotification.rpc_missing_fallback");
+
     const preferenceRead = await supabase
       .from("parent_notification_preferences")
       .select("id,student_id,enabled,consent_status")

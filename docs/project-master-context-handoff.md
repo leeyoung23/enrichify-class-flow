@@ -1,5 +1,16 @@
 # Project Master Context Handoff
 
+## Checkpoint update (notification preference enforcement RPC hardening — 2026-05-05)
+
+- **SQL migration added:** `supabase/sql/042_notification_preference_enforcement_rpc.sql`.
+- **RPC added:** `should_send_parent_in_app_notification_042(parent_profile_id, student_id, category)` returning only `allowed` + `reason`.
+- **Reason for RPC:** preserve conservative `parent_notification_preferences` table RLS (no teacher direct table-read widening) while supporting teacher-trigger notification preference checks.
+- **Scope enforced in RPC:** HQ admin, branch supervisor (student branch), teacher (student/class), and parent self context only.
+- **Additional guards:** parent profile role + guardian linkage to student are validated before preference decision.
+- **Helper behavior:** `shouldSendParentInAppNotification` now uses RPC-first; if RPC is missing (migration not applied), falls back to previous table-read behavior with safe dev warning.
+- **Runtime posture:** notification decision failures remain fail-safe (suppress notification) and do not roll back main business actions.
+- **Safety boundaries unchanged:** no email/Gmail/SMS/push sending, no provider integration, no parent metadata exposure.
+
 ## Checkpoint update (notification preference enforcement v1 — 2026-05-05)
 
 - **Implementation:** `src/services/supabaseWriteService.js` now applies parent notification preference gating for parent-facing in-app trigger paths before inserting notification rows.

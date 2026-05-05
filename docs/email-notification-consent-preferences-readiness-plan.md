@@ -78,6 +78,14 @@ Applied + verified (linked project):
 - Suppressed notifications do not roll back the underlying business release/update action.
 - Scope unchanged: no external email/SMS/push delivery and no provider integration.
 
+## Notification preference enforcement hardening RPC (042, 2026-05-05)
+
+- Added staff-scoped decision RPC `should_send_parent_in_app_notification_042` to avoid widening direct table RLS for teacher paths.
+- Helper behavior now prefers RPC and falls back to legacy table-read logic only when RPC is not yet available on the linked DB.
+- Decision output remains minimal (`allowed`, `reason`) and does not expose preference rows to parent-facing surfaces.
+- Category defaults and explicit withdraw/disable block semantics remain unchanged.
+- Safety posture unchanged: no Gmail/email/SMS/push sending and no provider integration.
+
 ## Scope and product direction
 
 Current production-safe behavior remains **in-app notification first** via `notification_events` + `notifications` and HQ-governed template copy.  
