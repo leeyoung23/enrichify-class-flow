@@ -1,5 +1,16 @@
 # Project Master Context Handoff
 
+## Checkpoint update (Parent Portal first-login consent gate plan — 2026-05-05)
+
+- **Planning doc added:** `docs/parent-portal-first-login-consent-gate-plan.md`.
+- **Purpose:** define first parent login gate for required policy acknowledgements before full portal access; keep portal as source of truth.
+- **Required acknowledgements:** Privacy Notice, Parent Portal Terms of Use, Parent Communication Policy, essential service communication notice.
+- **Optional categories (future-facing):** email notifications, SMS/push notifications, marketing/events/promotional messages, media/photo-related updates, optional e-invoice/email delivery where applicable.
+- **Recommended UX:** first-login gate with summary cards + policy links, required checkbox group, optional toggles, then continue to ParentView.
+- **Metadata plan:** save `policy_version`, timestamp, and `consent_source = parent_portal_first_login`; later allow edits in ParentView Notification Settings.
+- **Schema direction (planning):** dedicated `parent_policy_acknowledgements` table (preferred) or carefully-scoped extension path; no legal text blobs per row.
+- **Boundaries unchanged:** no SQL/RLS changes, no email/Gmail/provider integration, no SMS/push sending, no ParentView settings behavior change in this checkpoint.
+
 ## Checkpoint update (ParentView communication settings UI v1 — 2026-05-05)
 
 - **UI:** `src/pages/ParentView.jsx` now renders **Communication & Notification Settings** for parent mode at `#parent-notification-settings`, placed beneath the in-app notifications card.

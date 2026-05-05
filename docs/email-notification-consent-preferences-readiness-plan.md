@@ -21,6 +21,14 @@ No Gmail/provider integration, no real email sending, and no email trigger wirin
 - V1 scope strategy: save as **parent-level defaults** (`student_id = null`) so future child-specific overrides can be added later without changing current behavior.
 - Triggers are unchanged in this phase: preferences are stored, but notification trigger helpers do not yet enforce preference filtering. Preference enforcement remains a future phase.
 
+## Planning checkpoint: Parent Portal first-login acknowledgement gate (2026-05-05)
+
+- New planning doc: `docs/parent-portal-first-login-consent-gate-plan.md`.
+- Scope: planning-only gate before full parent portal access (required policy acknowledgements + optional consent controls).
+- Required acknowledgement set defined: Privacy Notice, Parent Portal Terms of Use, Parent Communication Policy, and essential service communication notice.
+- Optional consent set defined for future channels and categories (email/SMS/push, marketing/events, media/photo, optional e-invoice/email delivery where applicable).
+- No SQL, no RLS, no ParentView behavior changes, and no email/Gmail/provider implementation in this checkpoint.
+
 ## Scope and product direction
 
 Current production-safe behavior remains **in-app notification first** via `notification_events` + `notifications` and HQ-governed template copy.  
