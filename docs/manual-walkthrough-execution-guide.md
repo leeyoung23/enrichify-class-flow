@@ -43,6 +43,8 @@ Before asking a human validator to retest a changed area, the implementer should
 
 **AI Parent Reports note:** Capability and deferrals summarised in `docs/ai-parent-reports-production-readiness-checkpoint.md`.
 
+**Homework upload smoke:** If automated `homework:upload` logs supervisor **CHECK** “fixture scope”, verify parent and supervisor test users target the **same branch** per `docs/homework-upload-smoke-fixture-stability-checkpoint.md` — do not treat as an app defect without confirming RLS intent.
+
 ---
 
 ## 2) Accounts / roles needed

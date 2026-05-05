@@ -23,6 +23,11 @@ Before asking someone to rerun manual UAT on a touched surface:
 - Do not expose technical/security/admin UI to parents unless needed for their task.
 - Legal/compliance approval still gates real parent rollout.
 
+### Homework upload smoke (`npm run test:supabase:homework:upload`)
+
+- [ ] Script exits **0** on your branch (CI gate).
+- [ ] If **CHECK** lines mention **fixture scope** / parent-linked student outside supervisor branch, treat as **data alignment**, not RLS regression — align `parent.demo` linked student with `supervisor.demo` branch or accept CHECK-only supervisor section per `docs/homework-upload-smoke-fixture-stability-checkpoint.md`.
+
 ### UAT regression guard list (repeat every milestone)
 
 Spot-check quickly before sign-off:

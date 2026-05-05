@@ -3,6 +3,10 @@
 Date: 2026-05-06  
 Type: foundation / planning (this milestone: documentation + copy clarity; no OCR provider in product path)
 
+### Homework upload smoke (`test:supabase:homework:upload`)
+
+The script is **parent-centric** (uses the parent’s linked student). **Branch Supervisor** rows are only asserted when that student is **RLS-visible** to the supervisor user (same supervised branch). If your parent fixture points at a different branch than `supervisor.demo@example.test`, the run logs **CHECK** and skips supervisor-only assertions — see `docs/homework-upload-smoke-fixture-stability-checkpoint.md`. **No RLS weakening**; fix data alignment to get full supervisor PASS lines.
+
 ---
 
 ## Current homework architecture (prototype)

@@ -1,5 +1,13 @@
 # Project Master Context Handoff
 
+## Checkpoint update (Homework upload smoke fixture stability — 2026-05-06)
+
+- **Root cause:** `test:supabase:homework:upload` failed **exit 1** when **Branch Supervisor** could not see the parent-linked student/submission — **fixture branch mismatch** under branch-scoped RLS, not a product bug.
+- **Fix:** Early **supervisor scope probe** (`students` row visible to supervisor session). If the parent-linked student is outside the supervisor’s RLS scope, **CHECK** + skip supervisor submission visibility and optional draft-feedback insert — **no `failureCount`**. Core parent/teacher upload, metadata, signed URL, and isolation checks unchanged.
+- **SQL/RLS:** **Unchanged.**
+- **Docs:** `docs/homework-upload-smoke-fixture-stability-checkpoint.md`; updates to homework readiness plan, validation checklist, manual walkthrough.
+- **Policy documented:** supervisor sees **branch-scoped** homework only; parent drafts/internal notes remain protected.
+
 ## Checkpoint update (Homework AI marking / OCR readiness — 2026-05-06)
 
 - **Regression guard sweep:** Items 1–10 re-checked via static pass on `Students.jsx`, `ParentUpdates.jsx`, `ParentView.jsx`, `Sidebar.jsx`, session/auth services — **no regressions requiring code repair** ahead of homework copy edits.
