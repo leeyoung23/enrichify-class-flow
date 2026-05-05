@@ -1,7 +1,8 @@
 # Email notification consent & preferences readiness plan (planning only)
 
 Date: 2026-05-05  
-Type: **planning only** — no SQL migration, no Gmail/provider integration, no real email sending, no trigger wiring changes in this milestone.
+Type: Planning + Phase 1 foundation checkpoint.  
+No Gmail/provider integration, no real email sending, and no email trigger wiring in this milestone.
 
 ## Scope and product direction
 
@@ -133,3 +134,26 @@ Before enabling any email provider (including Gmail APIs), all of the following 
 - Outbound email job workers
 - Live sending tests
 - Attachment/PDF implementation details beyond readiness guidance
+
+---
+
+## 9) Phase 1 foundation status (implemented)
+
+- Added migration file: `supabase/sql/040_parent_notification_preferences_foundation.sql`
+- Added table: `parent_notification_preferences`
+- Added conservative RLS:
+  - parent self read/insert/update
+  - HQ read/insert/update
+  - branch supervisor read-only for branch-linked parent records
+  - no teacher/student access
+  - no delete policy (withdraw/disable model)
+- Added service helpers:
+  - `listMyNotificationPreferences`
+  - `listNotificationPreferencesForStudent`
+  - `upsertMyNotificationPreference`
+- Added smoke: `scripts/supabase-parent-notification-preferences-smoke-test.mjs`
+- Added npm script: `test:supabase:parent-notification-preferences`
+
+Apply note:
+- CLI apply may require `SUPABASE_DB_PASSWORD`.
+- If CLI apply is unavailable, paste/run `supabase/sql/040_parent_notification_preferences_foundation.sql` in Supabase SQL Editor first, then run the new smoke.

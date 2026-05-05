@@ -79,6 +79,24 @@ const AI_PARENT_REPORT_TYPE_VALUES = new Set([
 const NOTIFICATION_STATUS_VALUES = new Set(["pending", "delivered", "read", "archived", "suppressed", "failed"]);
 const NOTIFICATION_FIELDS =
   "id,event_id,recipient_profile_id,recipient_role,branch_id,class_id,student_id,channel,title,body,status,read_at,created_by_profile_id,created_at";
+const PARENT_NOTIFICATION_PREFERENCE_CHANNEL_VALUES = new Set(["in_app", "email", "sms", "push"]);
+const PARENT_NOTIFICATION_PREFERENCE_CATEGORY_VALUES = new Set([
+  "operational_service",
+  "billing_invoice",
+  "learning_report_homework",
+  "attendance_safety",
+  "parent_communication",
+  "marketing_events",
+  "media_photo",
+]);
+const PARENT_NOTIFICATION_PREFERENCE_STATUS_VALUES = new Set([
+  "not_set",
+  "consented",
+  "withdrawn",
+  "required_service",
+]);
+const PARENT_NOTIFICATION_PREFERENCE_FIELDS =
+  "id,parent_profile_id,student_id,channel,category,enabled,consent_status,consent_source,policy_version,consented_at,withdrawn_at,updated_by_profile_id,created_at,updated_at";
 const NOTIFICATION_TEMPLATE_FIELDS =
   "id,template_key,event_type,channel,title_template,body_template,allowed_variables,branch_id,is_active,created_by_profile_id,updated_by_profile_id,created_at,updated_at";
 
@@ -2112,6 +2130,92 @@ export async function getMyUnreadInAppNotificationCount() {
     return { data: { count: Number.isInteger(count) ? count : 0 }, error: null };
   } catch (error) {
     return { data: { count: 0 }, error };
+  }
+}
+
+export async function listMyNotificationPreferences({ includeDisabled = true, limit = 200 } = {}) {
+  if (!isSupabaseConfigured() || !supabase) {
+    return { data: [], error: { message: "Supabase is not configured" } };
+  }
+  if (includeDisabled != null && typeof includeDisabled !== "boolean") {
+    return { data: [], error: { message: "includeDisabled must be a boolean when provided" } };
+  }
+  const safeLimit = Number.isInteger(limit) && limit > 0 ? Math.min(limit, 500) : 200;
+
+  try {
+    let query = supabase
+      .from("parent_notification_preferences")
+      .select(PARENT_NOTIFICATION_PREFERENCE_FIELDS)
+      .order("student_id", { ascending: true, nullsFirst: true })
+      .order("channel", { ascending: true })
+      .order("category", { ascending: true })
+      .limit(safeLimit);
+
+    if (!includeDisabled) query = query.eq("enabled", true);
+    const { data, error } = await query;
+    if (error) return { data: [], error };
+    return { data: Array.isArray(data) ? data : [], error: null };
+  } catch (error) {
+    return { data: [], error };
+  }
+}
+
+export async function listNotificationPreferencesForStudent({
+  studentId,
+  channel,
+  category,
+  includeDisabled = true,
+  limit = 200,
+} = {}) {
+  if (!isSupabaseConfigured() || !supabase) {
+    return { data: [], error: { message: "Supabase is not configured" } };
+  }
+  if (!isUuidLike(studentId)) {
+    return { data: [], error: { message: "studentId must be a UUID" } };
+  }
+  if (
+    channel != null
+    && channel !== ""
+    && !PARENT_NOTIFICATION_PREFERENCE_CHANNEL_VALUES.has(trimString(channel))
+  ) {
+    return { data: [], error: { message: "channel is invalid" } };
+  }
+  if (
+    category != null
+    && category !== ""
+    && !PARENT_NOTIFICATION_PREFERENCE_CATEGORY_VALUES.has(trimString(category))
+  ) {
+    return { data: [], error: { message: "category is invalid" } };
+  }
+  if (includeDisabled != null && typeof includeDisabled !== "boolean") {
+    return { data: [], error: { message: "includeDisabled must be a boolean when provided" } };
+  }
+  const safeLimit = Number.isInteger(limit) && limit > 0 ? Math.min(limit, 500) : 200;
+
+  try {
+    let query = supabase
+      .from("parent_notification_preferences")
+      .select(PARENT_NOTIFICATION_PREFERENCE_FIELDS)
+      .eq("student_id", trimString(studentId))
+      .order("channel", { ascending: true })
+      .order("category", { ascending: true })
+      .limit(safeLimit);
+
+    if (channel != null && channel !== "") query = query.eq("channel", trimString(channel));
+    if (category != null && category !== "") query = query.eq("category", trimString(category));
+    if (!includeDisabled) query = query.eq("enabled", true);
+
+    const { data, error } = await query;
+    if (error) return { data: [], error };
+
+    const normalized = (Array.isArray(data) ? data : []).filter((row) =>
+      PARENT_NOTIFICATION_PREFERENCE_CHANNEL_VALUES.has(trimString(row?.channel))
+      && PARENT_NOTIFICATION_PREFERENCE_CATEGORY_VALUES.has(trimString(row?.category))
+      && PARENT_NOTIFICATION_PREFERENCE_STATUS_VALUES.has(trimString(row?.consent_status))
+    );
+    return { data: normalized, error: null };
+  } catch (error) {
+    return { data: [], error };
   }
 }
 

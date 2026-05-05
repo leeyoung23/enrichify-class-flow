@@ -100,6 +100,22 @@ const AUDIT_MAX_METADATA_KEYS = 12;
 const AUDIT_MAX_STRING_LENGTH = 280;
 const NOTIFICATION_EVENT_STATUS_VALUES = new Set(["draft", "pending", "processed", "cancelled"]);
 const NOTIFICATION_STATUS_VALUES = new Set(["pending", "delivered", "read", "archived", "suppressed", "failed"]);
+const PARENT_NOTIFICATION_PREFERENCE_CHANNEL_VALUES = new Set(["in_app", "email", "sms", "push"]);
+const PARENT_NOTIFICATION_PREFERENCE_CATEGORY_VALUES = new Set([
+  "operational_service",
+  "billing_invoice",
+  "learning_report_homework",
+  "attendance_safety",
+  "parent_communication",
+  "marketing_events",
+  "media_photo",
+]);
+const PARENT_NOTIFICATION_PREFERENCE_STATUS_VALUES = new Set([
+  "not_set",
+  "consented",
+  "withdrawn",
+  "required_service",
+]);
 const AI_PARENT_REPORT_NOTIFICATION_EVENT_TYPE = "ai_parent_report.released";
 const AI_PARENT_REPORT_RELEASE_NOTIFY_TITLE = "New progress report available";
 const AI_PARENT_REPORT_RELEASE_NOTIFY_BODY =
@@ -582,6 +598,111 @@ export async function markNotificationRead({ notificationId } = {}) {
       .select("id,recipient_profile_id,status,read_at")
       .maybeSingle();
     return { data: updateResult.data ?? null, error: updateResult.error ?? null };
+  } catch (err) {
+    return { data: null, error: { message: err?.message || String(err) } };
+  }
+}
+
+export async function upsertMyNotificationPreference({
+  studentId = null,
+  channel,
+  category,
+  enabled,
+  consentStatus,
+  consentSource,
+  policyVersion,
+} = {}) {
+  if (!isSupabaseConfigured() || !supabase) {
+    return { data: null, error: { message: "Supabase is not configured" } };
+  }
+  const safeChannel = trimString(channel);
+  const safeCategory = trimString(category);
+  if (!PARENT_NOTIFICATION_PREFERENCE_CHANNEL_VALUES.has(safeChannel)) {
+    return { data: null, error: { message: "channel is invalid" } };
+  }
+  if (!PARENT_NOTIFICATION_PREFERENCE_CATEGORY_VALUES.has(safeCategory)) {
+    return { data: null, error: { message: "category is invalid" } };
+  }
+  if (enabled != null && typeof enabled !== "boolean") {
+    return { data: null, error: { message: "enabled must be a boolean when provided" } };
+  }
+  const safeConsentStatus = consentStatus == null || consentStatus === "" ? null : trimString(consentStatus);
+  if (safeConsentStatus != null && !PARENT_NOTIFICATION_PREFERENCE_STATUS_VALUES.has(safeConsentStatus)) {
+    return { data: null, error: { message: "consentStatus is invalid" } };
+  }
+  if (studentId != null && studentId !== "" && !isUuidLike(studentId)) {
+    return { data: null, error: { message: "studentId must be a UUID when provided" } };
+  }
+
+  try {
+    const { profileId, role, error: roleError } = await getCurrentProfileRole();
+    if (roleError || !profileId) {
+      return { data: null, error: roleError || { message: "Authenticated user is required" } };
+    }
+    if (role !== "parent") {
+      return { data: null, error: { message: "Only parent profiles can update self notification preferences" } };
+    }
+
+    const normalizedStudentId = isUuidLike(studentId) ? trimString(studentId) : null;
+    let existingQuery = supabase
+      .from("parent_notification_preferences")
+      .select("id,parent_profile_id,student_id,channel,category")
+      .eq("parent_profile_id", profileId)
+      .eq("channel", safeChannel)
+      .eq("category", safeCategory)
+      .limit(1);
+    existingQuery = normalizedStudentId
+      ? existingQuery.eq("student_id", normalizedStudentId)
+      : existingQuery.is("student_id", null);
+
+    const existingRead = await existingQuery.maybeSingle();
+    if (existingRead.error) {
+      return { data: null, error: existingRead.error };
+    }
+
+    const nowIso = new Date().toISOString();
+    const payload = {
+      enabled: typeof enabled === "boolean" ? enabled : true,
+      consent_status: safeConsentStatus || "not_set",
+      consent_source: normalizeNullableText(consentSource, { maxLength: 120 }),
+      policy_version: normalizeNullableText(policyVersion, { maxLength: 80 }),
+      updated_by_profile_id: profileId,
+      updated_at: nowIso,
+    };
+    if (payload.consent_status === "withdrawn") {
+      payload.withdrawn_at = nowIso;
+    } else if (payload.consent_status === "consented") {
+      payload.consented_at = nowIso;
+      payload.withdrawn_at = null;
+    }
+
+    if (existingRead.data?.id) {
+      const updateResult = await supabase
+        .from("parent_notification_preferences")
+        .update(payload)
+        .eq("id", existingRead.data.id)
+        .select(
+          "id,parent_profile_id,student_id,channel,category,enabled,consent_status,consent_source,policy_version,consented_at,withdrawn_at,updated_by_profile_id,created_at,updated_at"
+        )
+        .maybeSingle();
+      return { data: updateResult.data ?? null, error: updateResult.error ?? null };
+    }
+
+    const insertResult = await supabase
+      .from("parent_notification_preferences")
+      .insert({
+        parent_profile_id: profileId,
+        student_id: normalizedStudentId,
+        channel: safeChannel,
+        category: safeCategory,
+        ...payload,
+        created_at: nowIso,
+      })
+      .select(
+        "id,parent_profile_id,student_id,channel,category,enabled,consent_status,consent_source,policy_version,consented_at,withdrawn_at,updated_by_profile_id,created_at,updated_at"
+      )
+      .maybeSingle();
+    return { data: insertResult.data ?? null, error: insertResult.error ?? null };
   } catch (err) {
     return { data: null, error: { message: err?.message || String(err) } };
   }

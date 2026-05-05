@@ -35,6 +35,17 @@ Date: 2026-05-05
 - **Idempotency (best-effort):** same **actor** + **`fee_record`** + **`event_type`** as other flows; another supervisor could still insert a duplicate event row.
 - **Smoke:** **`npm run test:supabase:fee-receipt:verify`** asserts parent inbox count increases after supervisor verify.
 
+## Parent notification preferences foundation (manual apply — 040)
+
+- **Migration:** `supabase/sql/040_parent_notification_preferences_foundation.sql` — adds `parent_notification_preferences` for parent communication consent/preferences by `channel` + `category`, optional `student_id` scope.
+- **Allowed channel values:** `in_app`, `email`, `sms`, `push`.
+- **Allowed category values:** `operational_service`, `billing_invoice`, `learning_report_homework`, `attendance_safety`, `parent_communication`, `marketing_events`, `media_photo`.
+- **Consent semantics:** `consent_status` in `not_set`, `consented`, `withdrawn`, `required_service`; withdrawal represented by `consent_status='withdrawn'` + `withdrawn_at`, often paired with `enabled=false`.
+- **RLS posture (conservative):** parent self read/insert/update; HQ read/insert/update; branch supervisor read-only for branch-linked parent records; teacher/student no access; no delete policy in v1.
+- **Service helpers:** `listMyNotificationPreferences`, `listNotificationPreferencesForStudent`, `upsertMyNotificationPreference`.
+- **Smoke:** `npm run test:supabase:parent-notification-preferences` (requires 040 applied on target DB).
+- **Boundary unchanged:** still no email sending/Gmail integration/provider credentials in frontend.
+
 ## Notification templates admin UI v1 (HQ)
 
 - **Surface:** `src/pages/Announcements.jsx` adds **Message Templates** section for HQ admin under Announcements (no new route required).
