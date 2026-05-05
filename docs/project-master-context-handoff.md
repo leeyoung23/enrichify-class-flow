@@ -1,5 +1,11 @@
 # Project Master Context Handoff
 
+## Checkpoint update (UAT evidence log template — 2026-05-06)
+
+- **Artifact:** `docs/uat-evidence-log-template.md` — reusable **environment header**, **roles matrix**, **flow evidence table** (Flow IDs, Pass/Blocker/Major/Minor/Polish, screenshots), **required-flow checklist**, **severity definitions**, **critical stop conditions**, **batch-fix-after-full-walkthrough rule** (blockers → majors → minor/polish deferrals) to avoid tiny retest loops.
+- **Companion:** `docs/manual-walkthrough-execution-guide.md`, `docs/validation-uat-readiness-checklist.md`.
+- **Scope:** **Docs-only** — no code/SQL/auth changes.
+
 ## Checkpoint update (Production readiness audit — 2026-05-06)
 
 - **Artifact:** `docs/production-readiness-audit.md` — domain-by-domain assessment (auth, parent portal, AI reports, homework, comms/memories, payments/notifications, guardian linking, security/RLS, DevOps); **honest categorisation** (internal prototype vs UAT vs staff polish vs legal gates vs not production); **Malaysia PDPA / child-data / media / marketing consent** called out as compliance gaps; **production gap list** and **next 10 milestones** (UAT evidence → staging split → legal pack → guardian writes → invite/PDF/email/OCR deferred lanes).
