@@ -22,6 +22,26 @@ Type: planning + diagnosis checkpoint only (no code/SQL/RLS/auth-config changes)
   - session tracking table / SQL
   - Supabase auth settings changes
 
+## 2026-05-05 implementation checkpoint addendum (Phase 1B)
+
+- Added login UX for remember-me intent in `src/pages/Login.jsx`:
+  - checkbox: `Keep me signed in on this device`
+  - helper copy: `Use this only on a private device. You can sign out anytime.`
+- Added non-sensitive UI preference persistence only:
+  - localStorage key: `enrichify_keep_signed_in` (`1` / `0`)
+  - stores user preference for future session policy wiring
+  - does not store passwords or tokens
+- Important behavior note:
+  - Supabase client is still a singleton created with default options in `src/services/supabaseClient.js`.
+  - This means effective session persistence remains Supabase default in this phase.
+  - Unchecked state is currently a declared preference, not a fully enforced session-only mode.
+- Sign-out behavior remains from Phase 1A:
+  - `signOutSupabasePrimary()` always clears active Supabase session.
+  - legacy Base44 cleanup remains best-effort only.
+- Deferred to next phase:
+  - enforce unchecked mode with shorter/session-only persistence strategy
+  - inactivity timeout + audit/session governance controls
+
 ## Scope and hard constraints
 
 - This checkpoint is planning-only.

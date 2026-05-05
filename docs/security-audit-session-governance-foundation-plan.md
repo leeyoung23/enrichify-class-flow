@@ -55,6 +55,20 @@ Risk notes:
 - Demo preview safety preserved:
   - URL `demoRole` flows remain preview-only and do not force real-session mutation when exiting demo via sidebar sign-out.
 
+## 2026-05-05 Phase 1B implementation note: remember-me UX (safe, limited)
+
+- Added login checkbox + helper copy in `src/pages/Login.jsx` for explicit user intent:
+  - `Keep me signed in on this device`
+  - `Use this only on a private device. You can sign out anytime.`
+- Added non-sensitive preference key only: `enrichify_keep_signed_in`.
+- No password storage and no token logging introduced.
+- Current technical limit (intentional for safety):
+  - session persistence policy is not dynamically switched per login yet because current Supabase singleton client uses default storage/persistence behavior.
+  - unchecked state is currently preference capture, not full session-duration enforcement.
+- Next security-governance work remains required:
+  - inactivity timeout/session policy enforcement
+  - session/audit model and revocation controls
+
 ## Scope and constraints
 
 This document defines the next production-hardening foundation after internal prototype validation for:

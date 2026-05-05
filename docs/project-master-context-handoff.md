@@ -1,5 +1,15 @@
 # Project Master Context Handoff
 
+## Checkpoint update (session governance Phase 1B remember-me UX — 2026-05-05)
+
+- **Login UX:** `src/pages/Login.jsx` now shows remember-me checkbox + helper copy:
+  - `Keep me signed in on this device`
+  - `Use this only on a private device. You can sign out anytime.`
+- **Preference storage:** non-sensitive local preference key `enrichify_keep_signed_in` captured (`1` / `0`) for future session policy wiring.
+- **Current behavior scope:** Supabase session persistence behavior is unchanged in this phase (singleton client default persistence still applies).
+- **Security boundaries preserved:** no password storage, no SQL/RLS changes, no Supabase dashboard/auth-setting changes, no demoRole behavior break, no Base44 auth-authority regression.
+- **Still deferred:** true unchecked session-only enforcement, inactivity timeout, session tracking/audit model.
+
 ## Checkpoint update (session governance Phase 1A sign-out alignment — 2026-05-05)
 
 - **Runtime auth fix:** sidebar sign-out now uses Supabase-primary helper path (`signOutSupabasePrimary`) instead of Base44-as-primary.

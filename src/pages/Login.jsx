@@ -15,6 +15,28 @@ import { parseReturnUrlQueryParam } from "@/lib/supabaseAuthReturnUrl.js";
 import { getDefaultLandingPathForRole } from "@/lib/roleLanding.js";
 import { useSupabaseAuthState } from "@/hooks/useSupabaseAuthState";
 
+const KEEP_SIGNED_IN_PREFERENCE_KEY = "enrichify_keep_signed_in";
+
+function loadKeepSignedInPreference() {
+  try {
+    if (typeof window === "undefined" || !window.localStorage) return true;
+    const stored = window.localStorage.getItem(KEEP_SIGNED_IN_PREFERENCE_KEY);
+    if (stored == null) return true;
+    return stored === "1";
+  } catch (_error) {
+    return true;
+  }
+}
+
+function saveKeepSignedInPreference(value) {
+  try {
+    if (typeof window === "undefined" || !window.localStorage) return;
+    window.localStorage.setItem(KEEP_SIGNED_IN_PREFERENCE_KEY, value ? "1" : "0");
+  } catch (_error) {
+    // Ignore preference-write failures; login behavior should remain stable.
+  }
+}
+
 export default function Login() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
@@ -24,6 +46,7 @@ export default function Login() {
   const [password, setPassword] = useState("");
   const [busy, setBusy] = useState(false);
   const [formError, setFormError] = useState(null);
+  const [keepSignedIn, setKeepSignedIn] = useState(loadKeepSignedInPreference);
 
   const configured = isSupabaseConfigured();
 
@@ -38,6 +61,7 @@ export default function Login() {
     if (!configured) return;
     setBusy(true);
     setFormError(null);
+    saveKeepSignedInPreference(keepSignedIn);
     try {
       const { error: signErr } = await signInWithEmailPassword(email, password);
       if (signErr) {
@@ -207,6 +231,26 @@ export default function Login() {
                   placeholder="Enter your password"
                   disabled={busy}
                 />
+              </div>
+              <div className="rounded-md border border-border/70 bg-muted/20 px-3 py-2.5">
+                <label className="flex items-start gap-2.5 cursor-pointer" htmlFor="login-keep-signed-in">
+                  <input
+                    id="login-keep-signed-in"
+                    type="checkbox"
+                    className="mt-0.5 h-4 w-4 rounded border-border text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                    checked={keepSignedIn}
+                    onChange={(ev) => setKeepSignedIn(ev.target.checked)}
+                    disabled={busy}
+                  />
+                  <span className="space-y-0.5">
+                    <span className="block text-sm font-medium text-foreground">
+                      Keep me signed in on this device
+                    </span>
+                    <span className="block text-xs text-muted-foreground">
+                      Use this only on a private device. You can sign out anytime.
+                    </span>
+                  </span>
+                </label>
               </div>
               {formError ? (
                 <p className="text-sm text-destructive" role="alert">
