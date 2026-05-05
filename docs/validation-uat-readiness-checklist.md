@@ -5,6 +5,8 @@ Type: docs-only validation checklist (no code/SQL/RLS/runtime changes)
 
 Use this checklist for manual walkthrough validation by internal reviewers, staff pilot validators, and readiness stakeholders.
 
+**Production / pilot posture:** See **`docs/production-readiness-audit.md`** for cross-domain readiness, compliance gates (including Malaysia PDPA-related themes), and what is safe for internal demo vs staff pilot vs real parent rollout.
+
 ---
 
 ## 0) UAT retest discipline (implementer checklist)

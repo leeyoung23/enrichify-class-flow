@@ -1,5 +1,12 @@
 # Project Master Context Handoff
 
+## Checkpoint update (Production readiness audit — 2026-05-06)
+
+- **Artifact:** `docs/production-readiness-audit.md` — domain-by-domain assessment (auth, parent portal, AI reports, homework, comms/memories, payments/notifications, guardian linking, security/RLS, DevOps); **honest categorisation** (internal prototype vs UAT vs staff polish vs legal gates vs not production); **Malaysia PDPA / child-data / media / marketing consent** called out as compliance gaps; **production gap list** and **next 10 milestones** (UAT evidence → staging split → legal pack → guardian writes → invite/PDF/email/OCR deferred lanes).
+- **Regression guards (static):** Spot-check on `Students.jsx`, `ParentUpdates.jsx`, `ParentView.jsx`, `Sidebar.jsx`, `sessionGovernanceService.js`, `supabaseAuthService.js`, `permissionService.js` — **no code changes** this checkpoint; **no new blocker** flagged vs known UAT list from audit perspective.
+- **Docs touched:** `docs/validation-uat-readiness-checklist.md`, `docs/manual-walkthrough-execution-guide.md` — pointers to the audit.
+- **Explicit non-goals:** No features, no SQL/RLS, no auth/session behaviour change, no guardian writes — **docs-only**.
+
 ## Checkpoint update (Guardian link management planning — 2026-05-06)
 
 - **Regression guards (static):** `Students.jsx`, `ParentUpdates.jsx`, `ParentView.jsx`, `Sidebar.jsx`, `sessionGovernanceService.js`, `supabaseAuthService.js`, `permissionService.js` — **no material conflicts** with UAT guards from this docs + copy-only UI tweak.

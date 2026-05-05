@@ -7,6 +7,8 @@ Audience: beginner operator / internal validator
 
 Goal: execute a full manual walkthrough of the current validation-ready internal prototype and capture clear pass/fail evidence.
 
+**Readiness context:** For **overall** internal vs UAT vs production posture, compliance gates, and recommended milestone order, see **`docs/production-readiness-audit.md`**.
+
 ---
 
 ## 1) Before starting
