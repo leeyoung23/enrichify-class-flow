@@ -223,6 +223,7 @@ function ParentHomeworkStatusSection({
   onSubmitTaskUpload,
   onViewMarkedWork,
 }) {
+  const PARENT_HOMEWORK_DEFAULT_VISIBLE = 5;
   const HOMEWORK_FILTERS = [
     { key: 'all', label: 'All' },
     { key: 'assigned', label: 'Assigned' },
@@ -232,6 +233,7 @@ function ParentHomeworkStatusSection({
   ];
   const [homeworkFilter, setHomeworkFilter] = useState('all');
   const [expandedTaskId, setExpandedTaskId] = useState(null);
+  const [showAllHomework, setShowAllHomework] = useState(false);
 
   const filteredTasks = useMemo(() => {
     if (homeworkFilter === 'all') return tasks;
@@ -249,6 +251,14 @@ function ParentHomeworkStatusSection({
     }
     return tasks;
   }, [tasks, homeworkFilter]);
+  const visibleTasks = showAllHomework
+    ? filteredTasks
+    : filteredTasks.slice(0, PARENT_HOMEWORK_DEFAULT_VISIBLE);
+  const canExpandHomework = filteredTasks.length > PARENT_HOMEWORK_DEFAULT_VISIBLE;
+
+  useEffect(() => {
+    setShowAllHomework(false);
+  }, [homeworkFilter]);
 
   useEffect(() => {
     if (!filteredTasks.length) {
@@ -328,7 +338,7 @@ function ParentHomeworkStatusSection({
             No homework items match this filter right now.
           </div>
         ) : null}
-        {filteredTasks.map((task) => {
+        {visibleTasks.map((task) => {
           const statusMeta = PARENT_HOMEWORK_STATUS_META[task.parentStatus] || PARENT_HOMEWORK_STATUS_META.not_submitted;
           const feedbackRow = task.latestSubmissionId ? feedbackBySubmissionId[task.latestSubmissionId] : null;
           const markedWorkItems = task.latestSubmissionId
@@ -463,6 +473,18 @@ function ParentHomeworkStatusSection({
             </div>
           );
         })}
+        {canExpandHomework ? (
+          <div className="pt-1">
+            <Button
+              type="button"
+              size="sm"
+              variant="outline"
+              onClick={() => setShowAllHomework((prev) => !prev)}
+            >
+              {showAllHomework ? 'View less' : `View more (${filteredTasks.length - PARENT_HOMEWORK_DEFAULT_VISIBLE} more)`}
+            </Button>
+          </div>
+        ) : null}
       </CardContent>
     </Card>
   );
@@ -1577,6 +1599,54 @@ function ParentNotificationSettingsSection({
   const operationalNeedsConfirm = operationalPref.consentStatus === 'not_set';
   const isRealModeReady = !demoMode && supabaseReady && hasSupabaseSession;
   const canEdit = demoMode || isRealModeReady;
+  const [showOptionalCategories, setShowOptionalCategories] = useState(false);
+  const coreRows = PARENT_NOTIFICATION_PREFERENCE_ROWS.filter((row) => row.category !== 'media_photo' && row.category !== 'marketing_events');
+  const optionalRows = PARENT_NOTIFICATION_PREFERENCE_ROWS.filter((row) => row.category === 'media_photo' || row.category === 'marketing_events');
+  const renderPreferenceRow = (row) => {
+    const pref = preferences[row.category] || { enabled: false, consentStatus: 'not_set' };
+    const statusLabel = pref.consentStatus === 'not_set'
+      ? 'Not set'
+      : pref.consentStatus === 'required_service'
+        ? 'Required'
+        : pref.consentStatus === 'withdrawn'
+          ? 'Withdrawn'
+          : 'Consented';
+    return (
+      <div key={row.category} className="rounded-lg border p-3 sm:p-4">
+        <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+          <div>
+            <p className="text-sm font-medium">{row.label}</p>
+            <p className="text-xs text-muted-foreground">{row.subtitle || 'In-app channel'}</p>
+          </div>
+          <div className="flex flex-wrap items-center gap-2">
+            <Badge variant="outline">{statusLabel}</Badge>
+            <Button
+              type="button"
+              size="sm"
+              variant={pref.enabled ? 'default' : 'outline'}
+              className="min-w-20"
+              onClick={() => onToggleCategory(row.category, true)}
+              disabled={!canEdit || loading || saving}
+              aria-label={`Turn on ${row.label}`}
+            >
+              On
+            </Button>
+            <Button
+              type="button"
+              size="sm"
+              variant={!pref.enabled ? 'default' : 'outline'}
+              className="min-w-20"
+              onClick={() => onToggleCategory(row.category, false)}
+              disabled={!canEdit || loading || saving}
+              aria-label={`Turn off ${row.label}`}
+            >
+              Off
+            </Button>
+          </div>
+        </div>
+      </div>
+    );
+  };
 
   return (
     <Card id="parent-notification-settings" className="mb-6" role="region" aria-label="Communication and notification settings">
@@ -1627,51 +1697,26 @@ function ParentNotificationSettingsSection({
         </div>
 
         <div className="space-y-3">
-          {PARENT_NOTIFICATION_PREFERENCE_ROWS.map((row) => {
-            const pref = preferences[row.category] || { enabled: false, consentStatus: 'not_set' };
-            const statusLabel = pref.consentStatus === 'not_set'
-              ? 'Not set'
-              : pref.consentStatus === 'required_service'
-                ? 'Required'
-                : pref.consentStatus === 'withdrawn'
-                  ? 'Withdrawn'
-                  : 'Consented';
-            return (
-              <div key={row.category} className="rounded-lg border p-3 sm:p-4">
-                <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-                  <div>
-                    <p className="text-sm font-medium">{row.label}</p>
-                    <p className="text-xs text-muted-foreground">{row.subtitle || 'In-app channel'}</p>
-                  </div>
-                  <div className="flex flex-wrap items-center gap-2">
-                    <Badge variant="outline">{statusLabel}</Badge>
-                    <Button
-                      type="button"
-                      size="sm"
-                      variant={pref.enabled ? 'default' : 'outline'}
-                      className="min-w-20"
-                      onClick={() => onToggleCategory(row.category, true)}
-                      disabled={!canEdit || loading || saving}
-                      aria-label={`Turn on ${row.label}`}
-                    >
-                      On
-                    </Button>
-                    <Button
-                      type="button"
-                      size="sm"
-                      variant={!pref.enabled ? 'default' : 'outline'}
-                      className="min-w-20"
-                      onClick={() => onToggleCategory(row.category, false)}
-                      disabled={!canEdit || loading || saving}
-                      aria-label={`Turn off ${row.label}`}
-                    >
-                      Off
-                    </Button>
-                  </div>
-                </div>
-              </div>
-            );
-          })}
+          <p className="text-sm font-medium">Service updates</p>
+          {coreRows.map((row) => renderPreferenceRow(row))}
+        </div>
+
+        <div className="space-y-3">
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <p className="text-sm font-medium">Optional updates</p>
+            <Button
+              type="button"
+              size="sm"
+              variant="outline"
+              onClick={() => setShowOptionalCategories((prev) => !prev)}
+              disabled={loading || saving}
+            >
+              {showOptionalCategories ? 'Show less' : 'More notification categories'}
+            </Button>
+          </div>
+          {showOptionalCategories ? optionalRows.map((row) => renderPreferenceRow(row)) : (
+            <p className="text-xs text-muted-foreground">Media and events preferences are available under More notification categories.</p>
+          )}
         </div>
 
         <div className="rounded-lg border border-dashed p-3 sm:p-4 space-y-2">

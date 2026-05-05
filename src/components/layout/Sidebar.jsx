@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import {
   LayoutDashboard, Building2, BookOpen, Users, GraduationCap,
@@ -83,13 +83,57 @@ function isParentViewNavItemActive(itemPath, location) {
   return locHash === itemHash;
 }
 
+const PARENT_VIEW_SECTION_IDS = [
+  'parent-portal-overview',
+  'parent-updates-feed',
+  'attendance-summary',
+  'parent-homework-status',
+  'parent-progress-reports',
+  'parent-settings',
+];
+
 export default function Sidebar({ user, collapsed, onToggle }) {
   const location = useLocation();
   const navigate = useNavigate();
   const selectedDemoRole = getSelectedDemoRole();
   const [signingOut, setSigningOut] = useState(false);
+  const [observedParentViewHash, setObservedParentViewHash] = useState('');
   const role = selectedDemoRole || normalizeRole(user?.role) || null;
   const items = role ? getRoleNavigation(role) : [];
+
+  useEffect(() => {
+    if (location.pathname !== '/parent-view') return undefined;
+    const hashFromLocation = (location.hash || '').replace(/^#/, '');
+    if (hashFromLocation) {
+      setObservedParentViewHash(hashFromLocation);
+    }
+    const observerSupported = typeof window !== 'undefined' && 'IntersectionObserver' in window;
+    if (!observerSupported) return undefined;
+
+    const idToEntryRatio = new Map();
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          idToEntryRatio.set(entry.target.id, entry.isIntersecting ? entry.intersectionRatio : 0);
+        });
+        const best = [...idToEntryRatio.entries()]
+          .sort((a, b) => b[1] - a[1])
+          .find((entry) => entry[1] > 0.15);
+        if (!best?.[0]) return;
+        setObservedParentViewHash((prev) => (prev === best[0] ? prev : best[0]));
+      },
+      { threshold: [0.15, 0.35, 0.55, 0.75], rootMargin: '-20% 0px -55% 0px' }
+    );
+
+    PARENT_VIEW_SECTION_IDS.forEach((id) => {
+      const el = document.getElementById(id);
+      if (el) observer.observe(el);
+    });
+
+    return () => {
+      observer.disconnect();
+    };
+  }, [location.pathname, location.hash]);
 
   const handleSignOut = async () => {
     if (signingOut) return;
@@ -136,8 +180,9 @@ export default function Sidebar({ user, collapsed, onToggle }) {
         ) : null}
         {items.map((item) => {
           const itemPath = item.path.split('#')[0];
+          const itemHash = item.path.includes('#') ? item.path.slice(item.path.indexOf('#') + 1) : '';
           const isActive = itemPath === '/parent-view'
-            ? isParentViewNavItemActive(item.path, location)
+            ? (itemHash ? observedParentViewHash === itemHash : isParentViewNavItemActive(item.path, location))
             : location.pathname === itemPath;
           return (
             <Link

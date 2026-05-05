@@ -799,6 +799,18 @@ export default function ParentUpdates() {
                   <h3 className="text-base font-semibold mb-1">Add class memory</h3>
                   <p className="text-sm text-muted-foreground mb-4">Upload a class moment for review. Parents only see approved Memories.</p>
                   <div className="space-y-3">
+                    <div className="space-y-1.5">
+                      <p className="text-sm font-medium">Choose class for this memory</p>
+                      <Select value={selectedClassId} onValueChange={(v) => { setSelectedClassId(v); setSelectedStudentId(''); }}>
+                        <SelectTrigger className="w-full min-h-11"><SelectValue placeholder="Choose class" /></SelectTrigger>
+                        <SelectContent>
+                          {classes.map((c) => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}
+                        </SelectContent>
+                      </Select>
+                      <p className="text-xs text-muted-foreground">
+                        This memory will be shared with parents linked to this class after approval.
+                      </p>
+                    </div>
                     <Input
                       value={memoryTitle}
                       onChange={(e) => setMemoryTitle(e.target.value)}
@@ -882,7 +894,7 @@ export default function ParentUpdates() {
 
                 <Card className="p-4 sm:p-5 border-l-4 border-l-primary/40 shadow-sm">
                   <p className="text-xs font-semibold uppercase tracking-wide text-primary mb-1">Choose class and student</p>
-                  <h3 className="text-base font-semibold mb-3">Select class and student</h3>
+                  <h3 className="text-base font-semibold mb-3">Select class and student for comments/reports</h3>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     <Select value={selectedClassId} onValueChange={(v) => { setSelectedClassId(v); setSelectedStudentId(''); }}>
                       <SelectTrigger className="w-full min-h-11"><SelectValue placeholder="Choose class" /></SelectTrigger>

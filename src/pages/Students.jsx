@@ -112,14 +112,6 @@ export default function Students() {
     () => homeworkInboxItems.filter((item) => item.student_id === selectedStudentId),
     [homeworkInboxItems, selectedStudentId]
   );
-  const selectedStudentContext = useMemo(() => {
-    if (!selectedStudent?.id) return null;
-    const context = studentContextById[selectedStudent.id] || null;
-    const schoolProfile = context?.student_school_profile || null;
-    const goals = Array.isArray(context?.learning_goals) ? context.learning_goals : [];
-    return { schoolProfile, goals };
-  }, [selectedStudent?.id, studentContextById]);
-
   useEffect(() => {
     if (!user || classStudents.length === 0) return;
     Promise.all(classStudents.map(async (student) => [student.id, await getStudentFeeStatus(user, student.id)])).then((entries) => {
@@ -171,6 +163,14 @@ export default function Students() {
       return Object.fromEntries(entries);
     },
   });
+
+  const selectedStudentContext = useMemo(() => {
+    if (!selectedStudent?.id) return null;
+    const context = studentContextById[selectedStudent.id] || null;
+    const schoolProfile = context?.student_school_profile || null;
+    const goals = Array.isArray(context?.learning_goals) ? context.learning_goals : [];
+    return { schoolProfile, goals };
+  }, [selectedStudent?.id, studentContextById]);
 
   const startEditSchoolProfile = (studentId, schoolProfile) => {
     if (!studentId) return;

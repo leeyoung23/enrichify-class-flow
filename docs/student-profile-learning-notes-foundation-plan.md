@@ -78,6 +78,12 @@ Teacher access:
 - No existing lightweight UI smoke/unit pattern was found for route-level `/students` copy assertions.
 - Validation remains build/lint/typecheck for this copy-only update.
 
+## Stability follow-up
+
+- `/students` full-page blank route symptom can occur from render-time initialization order bugs, not only card null handling.
+- A route crash risk was removed by ensuring student learning-context state is declared before dependent memo access.
+- This keeps teacher/HQ ownership/read-only boundaries unchanged while preventing white-screen failure.
+
 ## Parent linking and class assignment boundary
 
 - Parent links to an existing student record.

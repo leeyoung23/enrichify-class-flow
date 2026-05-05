@@ -232,7 +232,8 @@ Use this quick pass during ParentView checks:
    - parent links to existing student record rather than defining class membership.
 12. Confirm `/students` route behavior:
    - page renders with loading/error/empty states (never blank white page),
-   - teacher/HQ student cards still render when data is available.
+   - teacher/HQ student cards still render when data is available,
+   - route no longer hard-crashes on profile open due to pre-initialization learning-context access.
 13. Confirm notifications list behavior:
    - default shows limited recent items,
    - View more / View less toggle works,
@@ -248,7 +249,19 @@ Use this quick pass during ParentView checks:
 17. Confirm teacher learning-notes posture:
    - teacher can navigate to existing learning evidence modules from student detail,
    - learning-notes copy states internal staff evidence and parent visibility only through approved report/released communication.
-18. Confirm parent linking boundary:
+18. Confirm class memory targeting UX:
+   - class is selected in the Class Memory card before submit,
+   - helper copy states memory is shared only with parents linked to that class after approval.
+19. Confirm parent homework list control:
+   - filter applies first, then list shows only recent default rows,
+   - View more / View less toggles the filtered result set.
+20. Confirm parent settings sectioning:
+   - settings shows grouped headings (service updates, optional updates, account security),
+   - optional categories can be expanded without hiding required communication controls.
+21. Confirm parent sidebar highlight behavior:
+   - active parent nav item updates while scrolling through major sections,
+   - hash-based direct links still highlight the matching sidebar item.
+22. Confirm parent linking boundary:
    - parent links to existing student record only,
    - class assignment remains staff-owned (no parent self-assignment).
 

@@ -2487,3 +2487,23 @@ Handoff status: complete for continuity. Use this file as the primary context an
   - no SQL/RLS changes,
   - no parent visibility expansion into internal notes,
   - no provider/email/SMS/chat work.
+
+### UAT blocker polish follow-up note (2026-05-06)
+
+- `/students` blank white-screen root cause:
+  - route render crash in `Students.jsx` from referencing `studentContextById` before initialization in `selectedStudentContext` memo (temporal dead-zone `ReferenceError` risk).
+  - fix: move `selectedStudentContext` memo below the `studentContextById` query declaration; preserve existing loading/error/empty/access behavior.
+- Parent Communication class memory targeting UX:
+  - class selector moved into Class Memory card with explicit copy: class must be chosen before submit; memory is class-linked after approval.
+  - no branch-wide targeting behavior introduced; approval/release flow unchanged.
+- Parent homework list polish:
+  - filtered homework list now shows latest limited rows by default, with View more / View less controls.
+  - filter is applied before list limiting.
+- Parent settings polish:
+  - communication settings grouped as service updates + optional updates (expand/collapse), while keeping required controls visible.
+- Parent sidebar highlight polish:
+  - sidebar now tracks parent section visibility with IntersectionObserver and hash, so active item follows scroll/hash across updates, attendance, homework, reports, and settings.
+- Safety boundaries preserved:
+  - no SQL/RLS change,
+  - no parent access widening to drafts/internal refs/evidence,
+  - no provider/email/SMS/push/chat/OCR/AI lane changes.

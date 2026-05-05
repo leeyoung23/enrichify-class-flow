@@ -199,6 +199,7 @@ Decision note:
 - [ ] Parent announcements empty state uses centre-updates placeholder wording.
 - [ ] Parent homework section supports status filtering and cleaner open-detail viewing.
 - [ ] `/students` route has non-blank loading, error, and empty render paths.
+- [ ] `/students` no longer route-crashes when opening student profile details.
 - [ ] Parent notifications default to limited recent rows with View more / View less controls.
 - [ ] Smoke-test notification copy is hidden in normal mode and visible in debug mode.
 - [ ] Keep-me-signed-in checked path survives refresh/new tab without forced marker sign-out.
@@ -207,6 +208,10 @@ Decision note:
 - [ ] Student profile detail ownership copy says official profile/class/branch/guardian links are HQ or Branch Supervisor managed.
 - [ ] Teacher learning-notes copy says notes are internal staff evidence and parent visibility only occurs through approved report/released communication.
 - [ ] Student detail quick links route to attendance/homework/observations/parent communication.
+- [ ] Parent Communication Class Memory card requires class selection before submit and clearly states class-linked parent targeting after approval.
+- [ ] Parent homework section applies filter before default limit and supports View more / View less.
+- [ ] Parent Settings is grouped into service updates, optional updates, and account security without hiding required controls.
+- [ ] Parent sidebar active item updates on parent-view section scroll/hash changes.
 - [ ] Parent linking rule remains existing-student-link only (no parent class self-assignment).
 - [ ] Confirm no RLS/SQL widening and no email/SMS/push or chat features were introduced.
 
