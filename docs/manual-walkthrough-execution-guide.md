@@ -242,6 +242,15 @@ Use this quick pass during ParentView checks:
    - manual sign out still clears active session as expected.
 15. Confirm warmth polish:
    - parent updates, memories, and notifications use subtle warm accent styling (not flat/cold).
+16. Confirm student profile ownership boundaries:
+   - `/students` shows student profile detail foundation when opening a card,
+   - official identity/enrolment/class/guardian/billing fields remain HQ/branch-supervisor-owned.
+17. Confirm teacher learning-notes posture:
+   - teacher can navigate to existing learning evidence modules from student detail,
+   - internal learning notes are not exposed to parents by default.
+18. Confirm parent linking boundary:
+   - parent links to existing student record only,
+   - class assignment remains staff-owned (no parent self-assignment).
 
 ---
 

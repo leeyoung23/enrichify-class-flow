@@ -2460,3 +2460,27 @@ Handoff status: complete for continuity. Use this file as the primary context an
   - no SQL/RLS migration,
   - no email/SMS/push/chat lanes,
   - no service-role frontend usage.
+
+### Student profile / learning notes foundation note (2026-05-06)
+
+- Scope: diagnose current student information architecture and implement smallest safe teacher-facing foundation.
+- Architecture diagnosis summary:
+  - `/students` already exposes student identity/class context and school/learning context reads.
+  - teacher currently has no dedicated student-detail route and no dedicated teacher-writeable learning-notes path from `/students`.
+  - observations flow exists but teacher create path is currently restricted; observations remain internal staff workflow.
+  - parent-visible release flows remain through approved communication/report surfaces only.
+- Foundation implemented in `/students`:
+  - each student card can open a profile detail panel,
+  - profile panel includes safe summary fields + module navigation links,
+  - internal learning-notes placeholder copy added for teacher workflow,
+  - explicit ownership boundary copy added: official profile/enrolment/guardian/billing fields stay HQ/branch-supervisor controlled.
+- Ownership model documented:
+  - core profile: HQ/branch supervisor owned,
+  - learning notes: teacher internal workflow (future dedicated write path),
+  - parent link boundary: existing student link only; no parent class self-assignment.
+- New supporting doc:
+  - `docs/student-profile-learning-notes-foundation-plan.md`
+- Boundaries preserved:
+  - no SQL/RLS changes,
+  - no parent visibility expansion into internal notes,
+  - no provider/email/SMS/chat work.

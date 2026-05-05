@@ -203,6 +203,11 @@ Decision note:
 - [ ] Smoke-test notification copy is hidden in normal mode and visible in debug mode.
 - [ ] Keep-me-signed-in checked path survives refresh/new tab without forced marker sign-out.
 - [ ] Parent landing visual style remains warm (subtle rose/violet accents) while mobile-safe.
+- [ ] `/students` student card can open profile detail section safely.
+- [ ] Student profile detail shows official-field ownership boundary (HQ/branch supervisor owned).
+- [ ] Teacher learning-notes section is internal-only and not parent-visible by default.
+- [ ] Student detail quick links route to attendance/homework/observations/parent communication.
+- [ ] Parent linking rule remains existing-student-link only (no parent class self-assignment).
 - [ ] Confirm no RLS/SQL widening and no email/SMS/push or chat features were introduced.
 
 ---

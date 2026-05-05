@@ -2,6 +2,7 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { useNavigate, useOutletContext } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { listStudents, listClasses, createStudent, invokeParentReport, getStudentFeeStatus, listHomeworkAttachments, getReadDataSource } from '@/services/dataService';
+import { listAttendanceRecords } from '@/services/dataService';
 import { getStudentLearningContext, listCurriculumProfiles } from '@/services/supabaseReadService';
 import { upsertStudentSchoolProfile } from '@/services/supabaseWriteService';
 import { canManageStudents, isTeacherRole } from '@/services/permissionService';
@@ -51,6 +52,7 @@ export default function Students() {
   const [editingSchoolProfileStudentId, setEditingSchoolProfileStudentId] = useState(null);
   const [schoolProfileFormByStudentId, setSchoolProfileFormByStudentId] = useState({});
   const [savingSchoolProfileStudentId, setSavingSchoolProfileStudentId] = useState(null);
+  const [selectedStudentId, setSelectedStudentId] = useState(null);
   const queryClient = useQueryClient();
   const isTeacher = isTeacherRole(user);
 
@@ -69,6 +71,11 @@ export default function Students() {
   const { data: homeworkInboxItems = [], error: homeworkInboxError } = useQuery({
     queryKey: ['homework-attachments', user?.role, user?.email],
     queryFn: () => listHomeworkAttachments(user),
+    enabled: !!user,
+  });
+  const { data: attendanceRecords = [] } = useQuery({
+    queryKey: ['students-attendance-summary', user?.role, user?.email],
+    queryFn: () => listAttendanceRecords(user),
     enabled: !!user,
   });
 
@@ -93,6 +100,25 @@ export default function Students() {
   }, [isTeacher, students, classes]);
 
   const [feeStatuses, setFeeStatuses] = useState({});
+  const selectedStudent = useMemo(
+    () => classStudents.find((student) => student.id === selectedStudentId) || null,
+    [classStudents, selectedStudentId]
+  );
+  const selectedStudentAttendance = useMemo(
+    () => attendanceRecords.filter((record) => record.student_id === selectedStudentId),
+    [attendanceRecords, selectedStudentId]
+  );
+  const selectedStudentHomeworkUploads = useMemo(
+    () => homeworkInboxItems.filter((item) => item.student_id === selectedStudentId),
+    [homeworkInboxItems, selectedStudentId]
+  );
+  const selectedStudentContext = useMemo(() => {
+    if (!selectedStudent?.id) return null;
+    const context = studentContextById[selectedStudent.id] || null;
+    const schoolProfile = context?.student_school_profile || null;
+    const goals = Array.isArray(context?.learning_goals) ? context.learning_goals : [];
+    return { schoolProfile, goals };
+  }, [selectedStudent?.id, studentContextById]);
 
   useEffect(() => {
     if (!user || classStudents.length === 0) return;
@@ -272,6 +298,7 @@ export default function Students() {
           description={isTeacher ? 'Assigned students will appear here for your classes only.' : 'Add students to your classes to get started.'}
         />
       ) : (
+        <>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
           {classStudents.map((student) => (
             <Card key={student.id} className="p-5 border-muted/80">
@@ -345,6 +372,14 @@ export default function Students() {
                     Demo Report Link
                   </Button>
                 )}
+                <Button
+                  size="sm"
+                  variant={selectedStudentId === student.id ? "default" : "outline"}
+                  className="gap-1.5 text-xs"
+                  onClick={() => setSelectedStudentId((prev) => (prev === student.id ? null : student.id))}
+                >
+                  {selectedStudentId === student.id ? 'Hide profile' : 'Open profile'}
+                </Button>
               </div>
               <div className="mt-3 border-t pt-3 space-y-2">
                 <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">School / Learning Context</p>
@@ -532,6 +567,82 @@ export default function Students() {
 
           ))}
         </div>
+        {selectedStudent ? (
+          <Card className="mt-6 p-5 border-primary/20 bg-muted/10">
+            <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
+              <div>
+                <h3 className="text-lg font-semibold">{selectedStudent.name || selectedStudent.full_name || 'Unnamed student'}</h3>
+                <p className="text-sm text-muted-foreground">Student profile and learning context (teacher-safe view)</p>
+              </div>
+              <Badge variant="outline">
+                Class: {getClassName(selectedStudent.class_id)}
+              </Badge>
+            </div>
+
+            <div className="mt-4 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 text-sm">
+              <div className="rounded-md border p-3">
+                <p className="text-xs text-muted-foreground">Programme / subject</p>
+                <p className="font-medium">{classes.find((c) => c.id === selectedStudent.class_id)?.subject || 'Not set'}</p>
+              </div>
+              <div className="rounded-md border p-3">
+                <p className="text-xs text-muted-foreground">Branch</p>
+                <p className="font-medium">{selectedStudent.branch_id || user?.branch_id || 'Not set'}</p>
+              </div>
+              <div className="rounded-md border p-3">
+                <p className="text-xs text-muted-foreground">Attendance records</p>
+                <p className="font-medium">{selectedStudentAttendance.length}</p>
+              </div>
+              <div className="rounded-md border p-3">
+                <p className="text-xs text-muted-foreground">Homework uploads</p>
+                <p className="font-medium">{selectedStudentHomeworkUploads.length}</p>
+              </div>
+            </div>
+
+            <div className="mt-4 rounded-md border border-dashed p-3 space-y-1.5">
+              <p className="text-sm font-medium">Learning notes</p>
+              {isTeacher ? (
+                <p className="text-sm text-muted-foreground">
+                  Teacher learning notes will be added here in a future phase. For now, use Observations to record student learning evidence.
+                </p>
+              ) : (
+                <p className="text-sm text-muted-foreground">
+                  Learning notes are internal-only and remain separate from parent-visible content unless explicitly released through approved communication.
+                </p>
+              )}
+              {selectedStudentContext?.schoolProfile?.teacher_notes ? (
+                <p className="text-xs text-muted-foreground">
+                  Latest internal note: {selectedStudentContext.schoolProfile.teacher_notes}
+                </p>
+              ) : null}
+              {selectedStudentContext?.goals?.length ? (
+                <p className="text-xs text-muted-foreground">
+                  Active learning goals: {selectedStudentContext.goals.filter((goal) => goal?.status === 'active').length}
+                </p>
+              ) : null}
+            </div>
+
+            <div className="mt-4 flex flex-wrap gap-2">
+              <Button size="sm" variant="outline" onClick={() => navigate('/attendance')}>
+                View attendance
+              </Button>
+              <Button size="sm" variant="outline" onClick={() => navigate('/homework')}>
+                View homework
+              </Button>
+              <Button size="sm" variant="outline" onClick={() => navigate('/observations')}>
+                Add observation / learning note
+              </Button>
+              <Button size="sm" variant="outline" onClick={() => navigate('/parent-updates')}>
+                Parent communication
+              </Button>
+            </div>
+
+            <div className="mt-4 rounded-md border border-amber-200 bg-amber-50/50 p-3 text-xs text-amber-900">
+              Official student identity, enrolment, class assignment, guardian links, and billing fields are owned by HQ/Branch Supervisor.
+              Teacher view here is read-only for those official profile fields.
+            </div>
+          </Card>
+        ) : null}
+        </>
       )}
 
       {isTeacher && (
