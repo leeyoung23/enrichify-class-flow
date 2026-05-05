@@ -1,5 +1,14 @@
 # Project Master Context Handoff
 
+## Checkpoint update (notifications foundation applied verification — 2026-05-05)
+
+- **Docs-only checkpoint:** `supabase/sql/034_notifications_foundation.sql` has been **applied to the linked Supabase project** via the **Supabase SQL Editor** (not CLI in this step).
+- **Post-apply smokes (PASS):** `npm run test:supabase:notifications`, `npm run test:supabase:audit-events`, `npm run test:supabase:ai-parent-reports`, `npm run test:supabase:parent-updates:write`.
+- **RLS posture confirmed by smoke:** recipient can read/update own `notifications` rows; unrelated authenticated users blocked from reading others’ rows; HQ path used for fixture creation and cleanup; `notification_delivery_logs` not broadly readable (HQ-only policy).
+- **Safety boundaries unchanged:** no live sending; no email/SMS/push provider; no auto-trigger wiring from product flows yet; no service-role in frontend; no cross-family parent visibility expansion.
+- **Next milestone:** first in-app trigger for **AI parent report released** (or equivalent) with strict release gating + idempotency, then expand channels only after review.
+- **Doc:** `docs/notifications-foundation-checkpoint.md` (applied + verified section).
+
 ## Checkpoint update (notifications SQL/RLS foundation phase 1 — 2026-05-05)
 
 - Added conservative notification persistence foundation via `supabase/sql/034_notifications_foundation.sql`:
@@ -14,11 +23,7 @@
   - `src/services/supabaseWriteService.js`: `createNotificationEvent`, `createInAppNotification`, `markNotificationRead`
   - `src/services/supabaseReadService.js`: `listMyInAppNotifications`, `getMyUnreadInAppNotificationCount`
 - Added focused smoke: `scripts/supabase-notifications-foundation-smoke-test.mjs` and npm script `test:supabase:notifications`.
-- Validation snapshot:
-  - `build/lint/typecheck`: pass
-  - `test:supabase:audit-events`, `test:supabase:ai-parent-reports`, `test:supabase:parent-updates:write`: pass
-  - `test:supabase:notifications`: expected fail until `034_notifications_foundation.sql` is applied to linked project
-  - apply command: `supabase db query --linked --file supabase/sql/034_notifications_foundation.sql` (this workspace run was blocked by missing `SUPABASE_DB_PASSWORD`)
+- **Apply + verify:** see **Checkpoint update (notifications foundation applied verification — 2026-05-05)** above; migration applied via **SQL Editor**; post-apply smokes all pass.
 - Boundaries preserved:
   - no email/SMS/push sender implementation
   - no automatic trigger wiring to attendance/homework/reports/announcements/fees

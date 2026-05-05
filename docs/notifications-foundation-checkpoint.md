@@ -2,6 +2,42 @@
 
 Date: 2026-05-05
 
+## Linked project: migration applied and verified (2026-05-05)
+
+- **Migration file applied:** `supabase/sql/034_notifications_foundation.sql`
+- **Apply method:** Supabase **SQL Editor** (manual run against the linked project)
+- **Alternative apply (not used for this verification):** `supabase db query --linked --file supabase/sql/034_notifications_foundation.sql`
+
+### Post-apply smoke tests (linked project)
+
+| Command | Result |
+|--------|--------|
+| `npm run test:supabase:notifications` | PASS |
+| `npm run test:supabase:audit-events` | PASS |
+| `npm run test:supabase:ai-parent-reports` | PASS |
+| `npm run test:supabase:parent-updates:write` | PASS |
+
+### RLS verification (as exercised by notification smoke + policy design)
+
+- **Recipient self-read:** parent (or any recipient) can read and update only **own** `notifications` rows (`recipient_profile_id = auth.uid()`).
+- **Unrelated users blocked:** teacher (or other authenticated user) cannot read another profile’s notification row by id.
+- **HQ/admin read path:** smoke uses HQ to create event/notification rows and delivery-log test row; HQ policies allow broad read where defined.
+- **Delivery logs restricted:** `notification_delivery_logs` — parents do not have select; insert/read limited to **HQ** in this foundation (smoke confirms parent cannot read delivery logs for the test notification).
+
+### Safety boundaries (unchanged after apply)
+
+- No live sending, no email/SMS/push provider, no webhooks, no Edge sender
+- No automatic database triggers or product flows wired to create notifications on domain events yet
+- No service-role key in frontend; anon + JWT only
+- No parent cross-family visibility; RLS remains recipient-scoped for inbox rows
+- No changes to Edge, PDF, OCR, or provider integrations in this verification milestone
+
+### Next recommended milestone
+
+- **In-app “report released” notification** (or equivalent first trigger): strict **released**-state gating, idempotency, then re-run cross-family and HQ read smokes before any email channel work.
+
+---
+
 ## Scope
 
 - `supabase/sql/034_notifications_foundation.sql`
@@ -132,25 +168,11 @@ Coverage:
   - action audit via `audit_events`
   - notification intent/outcome via `notification_events` and `notification_delivery_logs`
 
-## Apply command
+## Apply command (reference)
 
-- `supabase db query --linked --file supabase/sql/034_notifications_foundation.sql`
+- **Used for linked verification:** Supabase SQL Editor (see **Linked project: migration applied and verified** above).
+- **CLI option:** `supabase db query --linked --file supabase/sql/034_notifications_foundation.sql` (requires working linked CLI credentials, e.g. `SUPABASE_DB_PASSWORD` when needed)
 
-Apply status in this workspace run:
+## Build/lint snapshot (implementation branch; optional)
 
-- Not applied from this run because CLI login role init failed with missing `SUPABASE_DB_PASSWORD` in environment.
-- Linked-project apply remains required before notification table smokes can pass.
-
-## Validation run snapshot
-
-- `npm run build` -> PASS
-- `npm run lint` -> PASS
-- `npm run typecheck` -> PASS
-- `npm run test:supabase:notifications` -> FAIL (expected until migration is applied; missing `public.notification_events`/`public.notifications`)
-- `npm run test:supabase:audit-events` -> PASS
-- `npm run test:supabase:ai-parent-reports` -> PASS
-- `npm run test:supabase:parent-updates:write` -> PASS
-
-## Next recommended milestone
-
-- Notification Phase 2: wire one low-risk in-app trigger (`report released`) behind strict release-state gate + idempotency key strategy, then validate parent self-read and cross-family block behavior before any email channel work.
+- `npm run build` / `npm run lint` / `npm run typecheck` were run on the implementation commit; this docs checkpoint does not re-run them.
