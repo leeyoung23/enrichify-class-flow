@@ -1,5 +1,34 @@
 # Project Master Context Handoff
 
+## Checkpoint update (validation/UAT readiness checklist docs-only — 2026-05-05)
+
+- **New docs-only artifact added:**
+  - `docs/validation-uat-readiness-checklist.md`
+- **Purpose:**
+  - full manual validation/UAT walkthrough checklist covering staff/HQ, parent, teacher, security/RLS, notifications, and session governance.
+- **Checklist includes required sections:**
+  - pre-validation setup
+  - staff/HQ walkthrough
+  - parent walkthrough
+  - teacher walkthrough
+  - security/RLS checks
+  - notification checks
+  - session governance checks
+  - known limitations
+  - evidence capture checklist
+  - validation decision status gates
+- **Readiness guidance captured:**
+  - internal validation can proceed
+  - real parent pilot requires legal/compliance review
+  - production readiness requires staging/prod split + monitoring/backup/runbook + policy pack
+- **Recommended next milestone captured:**
+  - manual walkthrough + screenshot evidence pass, then production readiness audit
+- **No implementation changes in this checkpoint:**
+  - no code/SQL/RLS changes
+  - no new features
+  - no session-governance expansion
+  - no email/SMS/push expansion
+
 ## Checkpoint update (session governance security milestone docs-only — 2026-05-05)
 
 - **Docs-only milestone checkpoint added:**
