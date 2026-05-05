@@ -1,5 +1,35 @@
 # Project Master Context Handoff
 
+## Checkpoint update (manual walkthrough execution guide docs-only — 2026-05-05)
+
+- **New docs-only execution guide added:**
+  - `docs/manual-walkthrough-execution-guide.md`
+- **Audience/intent:**
+  - beginner operator manual walkthrough for current validation-ready internal prototype.
+- **Guide includes required sections:**
+  - before starting
+  - accounts/roles needed
+  - flow A: HQ/staff setup
+  - flow B: AI parent report
+  - flow C: ParentView
+  - flow D: homework
+  - flow E: attendance
+  - flow F: parent communication
+  - flow G: fee/payment proof
+  - flow H: security/RLS spot checks
+  - screenshot checklist
+  - pass/fail record format
+  - stop conditions
+  - after walkthrough actions
+- **Operational guardrails captured:**
+  - real mode preferred unless demoRole explicitly requested
+  - do not expose secrets from `.env.local`
+  - stop immediately on critical privacy/RLS regressions
+- **No implementation changes in this checkpoint:**
+  - no code/SQL/RLS changes
+  - no new features
+  - no session-governance expansion
+
 ## Checkpoint update (validation/UAT readiness checklist docs-only — 2026-05-05)
 
 - **New docs-only artifact added:**
