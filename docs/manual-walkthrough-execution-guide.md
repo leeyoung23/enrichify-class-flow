@@ -244,10 +244,10 @@ Use this quick pass during ParentView checks:
    - parent updates, memories, and notifications use subtle warm accent styling (not flat/cold).
 16. Confirm student profile ownership boundaries:
    - `/students` shows student profile detail foundation when opening a card,
-   - official identity/enrolment/class/guardian/billing fields remain HQ/branch-supervisor-owned.
+   - ownership copy reads: "Official profile, class, branch, and guardian links are managed by HQ or Branch Supervisors."
 17. Confirm teacher learning-notes posture:
    - teacher can navigate to existing learning evidence modules from student detail,
-   - internal learning notes are not exposed to parents by default.
+   - learning-notes copy states internal staff evidence and parent visibility only through approved report/released communication.
 18. Confirm parent linking boundary:
    - parent links to existing student record only,
    - class assignment remains staff-owned (no parent self-assignment).

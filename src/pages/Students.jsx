@@ -600,15 +600,9 @@ export default function Students() {
 
             <div className="mt-4 rounded-md border border-dashed p-3 space-y-1.5">
               <p className="text-sm font-medium">Learning notes</p>
-              {isTeacher ? (
-                <p className="text-sm text-muted-foreground">
-                  Teacher learning notes will be added here in a future phase. For now, use Observations to record student learning evidence.
-                </p>
-              ) : (
-                <p className="text-sm text-muted-foreground">
-                  Learning notes are internal-only and remain separate from parent-visible content unless explicitly released through approved communication.
-                </p>
-              )}
+              <p className="text-sm text-muted-foreground">
+                Learning notes are internal staff evidence. Parents will not see these notes unless they are later included in an approved report or released parent communication.
+              </p>
               {selectedStudentContext?.schoolProfile?.teacher_notes ? (
                 <p className="text-xs text-muted-foreground">
                   Latest internal note: {selectedStudentContext.schoolProfile.teacher_notes}
@@ -622,6 +616,9 @@ export default function Students() {
             </div>
 
             <div className="mt-4 flex flex-wrap gap-2">
+              <p className="w-full text-xs text-muted-foreground">
+                Use the tools below to record evidence through the existing workflows.
+              </p>
               <Button size="sm" variant="outline" onClick={() => navigate('/attendance')}>
                 View attendance
               </Button>
@@ -637,7 +634,7 @@ export default function Students() {
             </div>
 
             <div className="mt-4 rounded-md border border-amber-200 bg-amber-50/50 p-3 text-xs text-amber-900">
-              Official student identity, enrolment, class assignment, guardian links, and billing fields are owned by HQ/Branch Supervisor.
+              Official profile, class, branch, and guardian links are managed by HQ or Branch Supervisors.
               Teacher view here is read-only for those official profile fields.
             </div>
           </Card>

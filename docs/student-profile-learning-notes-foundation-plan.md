@@ -66,9 +66,17 @@ Teacher access:
   - attendance/homework summary counts,
   - links to existing modules (`/attendance`, `/homework`, `/observations`, `/parent-updates`).
 - Learning notes section is internal-facing and includes clear placeholder copy for teacher workflow:
-  - "Teacher learning notes will be added here in a future phase. For now, use Observations to record student learning evidence."
+  - "Learning notes are internal staff evidence. Parents will not see these notes unless they are later included in an approved report or released parent communication."
 - Official ownership boundary is explicitly stated in UI copy:
-  - teacher read-only for official identity/enrolment/guardian/billing fields.
+  - "Official profile, class, branch, and guardian links are managed by HQ or Branch Supervisors."
+  - teacher read-only for those official profile fields.
+- Quick-link guidance in student detail panel:
+  - "Use the tools below to record evidence through the existing workflows."
+
+## Test posture for this polish pass
+
+- No existing lightweight UI smoke/unit pattern was found for route-level `/students` copy assertions.
+- Validation remains build/lint/typecheck for this copy-only update.
 
 ## Parent linking and class assignment boundary
 

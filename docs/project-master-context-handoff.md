@@ -2472,8 +2472,11 @@ Handoff status: complete for continuity. Use this file as the primary context an
 - Foundation implemented in `/students`:
   - each student card can open a profile detail panel,
   - profile panel includes safe summary fields + module navigation links,
-  - internal learning-notes placeholder copy added for teacher workflow,
-  - explicit ownership boundary copy added: official profile/enrolment/guardian/billing fields stay HQ/branch-supervisor controlled.
+  - internal learning-notes copy now explicitly states staff-internal evidence + approved-release-only parent visibility,
+  - explicit ownership boundary copy now states official profile/class/branch/guardian links are managed by HQ or Branch Supervisors.
+- Follow-up polish note:
+  - quick-link helper copy clarifies these buttons are existing evidence workflows,
+  - no route-level lightweight UI smoke pattern exists for `/students` copy assertions; validation stays build/lint/typecheck for this pass.
 - Ownership model documented:
   - core profile: HQ/branch supervisor owned,
   - learning notes: teacher internal workflow (future dedicated write path),
