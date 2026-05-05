@@ -1,5 +1,15 @@
 # Project Master Context Handoff
 
+## Checkpoint update (payment proof request notification v1 — 2026-05-05)
+
+- **UI:** `src/pages/FeeTracking.jsx` adds staff action button **Request payment proof** in the per-row action area (HQ/branch supervisor page scope only; no parent/student surface).
+- **Write helper:** `requestFeePaymentProof({ feeRecordId })` in `src/services/supabaseWriteService.js` reads scoped `fee_records` row and emits message-only in-app notification flow.
+- **Event:** `fee_payment.proof_requested`, `entity_type` `fee_record`, safe metadata `{ requestKind: "payment_proof" }`.
+- **Recipients:** guardian-linked parent profiles via existing RPC `list_parent_profile_ids_for_student_staff_scope_035`.
+- **Safety:** no email/SMS/push, no PDF/e-invoice generation, no attachment links, no storage paths, no payment amount/bank details/internal note in notification copy or metadata.
+- **Idempotency:** best-effort duplicate suppression by actor + entity + event type (same pattern as existing notification triggers).
+- **Smoke:** added `scripts/supabase-fee-payment-proof-request-smoke-test.mjs` + npm script `test:supabase:fee-payment-proof-request`.
+
 ## Checkpoint update (notification templates admin UI v1 — 2026-05-05)
 
 - **UI:** `src/pages/Announcements.jsx` now includes HQ-only **Message Templates** section (safe editor + parent-preview card).

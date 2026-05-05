@@ -123,6 +123,10 @@ const PARENT_COMMUNICATION_CLASS_UPDATE_BODY =
   "Your child's teacher has shared a new class update.";
 const FEE_PAYMENT_PROOF_VERIFIED_EVENT_TYPE = "fee_payment.proof_verified";
 const FEE_PAYMENT_PROOF_REJECTED_EVENT_TYPE = "fee_payment.proof_rejected";
+const FEE_PAYMENT_PROOF_REQUESTED_EVENT_TYPE = "fee_payment.proof_requested";
+const FEE_PAYMENT_PROOF_REQUESTED_NOTIFY_TITLE = "Payment proof requested";
+const FEE_PAYMENT_PROOF_REQUESTED_NOTIFY_BODY =
+  "Please upload your payment proof in the parent portal when convenient.";
 const FEE_PAYMENT_PROOF_VERIFIED_NOTIFY_TITLE = "Payment proof verified";
 const FEE_PAYMENT_PROOF_VERIFIED_NOTIFY_BODY =
   "Your uploaded payment proof has been reviewed.";
@@ -1706,6 +1710,60 @@ async function getAuthenticatedProfileId() {
     return { profileId: null, error: { message: error?.message || "Authenticated user is required" } };
   }
   return { profileId: data.user.id, error: null };
+}
+
+/**
+ * Request parent payment proof upload (exception path) without changing fee status.
+ * Message-only in-app notification; no email/pdf/attachments.
+ */
+export async function requestFeePaymentProof({ feeRecordId } = {}) {
+  if (!isSupabaseConfigured() || !supabase) {
+    return { data: null, error: { message: "Supabase is not configured" } };
+  }
+  if (!feeRecordId || typeof feeRecordId !== "string") {
+    return { data: null, error: { message: "feeRecordId is required" } };
+  }
+
+  try {
+    const feeRead = await supabase
+      .from("fee_records")
+      .select("id,branch_id,class_id,student_id,verification_status")
+      .eq("id", trimString(feeRecordId))
+      .maybeSingle();
+    if (feeRead.error || !feeRead.data?.id) {
+      return { data: null, error: feeRead.error || { message: "Fee record not visible for proof request" } };
+    }
+
+    const row = feeRead.data;
+    const auditResult = await recordAuditEvent({
+      actionType: "fee_payment_proof.requested",
+      entityType: "fee_record",
+      entityId: row.id,
+      branchId: row.branch_id,
+      classId: row.class_id,
+      studentId: row.student_id,
+      metadata: {
+        requestKind: "payment_proof",
+        verificationStatus: row.verification_status || null,
+      },
+    });
+    if (auditResult.error) {
+      warnAuditFailureInDev(auditResult.error, "requestFeePaymentProof");
+    }
+
+    const notifyResult = await notifyLinkedParentsAfterFeeProofStaffDecision({
+      feeRecordRow: row,
+      eventType: FEE_PAYMENT_PROOF_REQUESTED_EVENT_TYPE,
+      metadata: { requestKind: "payment_proof" },
+    });
+    if (notifyResult?.error) {
+      warnNotificationFailureInDev(notifyResult.error, "requestFeePaymentProof");
+    }
+
+    return { data: row, error: null };
+  } catch (err) {
+    return { data: null, error: { message: err?.message || String(err) } };
+  }
 }
 
 /**
@@ -3325,7 +3383,11 @@ async function notifyLinkedParentsAfterParentCommunicationStaffRelease({
  * Recipients: guardian-linked parents (RPC). Non-blocking on failure. Best-effort idempotency: same
  * actor + fee_record + event_type. Another staff user may still create a second event — see docs.
  */
-async function notifyLinkedParentsAfterFeeProofStaffDecision({ feeRecordRow, eventType } = {}) {
+async function notifyLinkedParentsAfterFeeProofStaffDecision({
+  feeRecordRow,
+  eventType,
+  metadata = null,
+} = {}) {
   const { profileId: actorProfileId, error: authError } = await getAuthenticatedProfileId();
   if (authError || !actorProfileId) {
     return { error: null, skipped: true };
@@ -3336,7 +3398,10 @@ async function notifyLinkedParentsAfterFeeProofStaffDecision({ feeRecordRow, eve
 
   let fallbackTitle;
   let fallbackBody;
-  if (trimString(eventType) === FEE_PAYMENT_PROOF_VERIFIED_EVENT_TYPE) {
+  if (trimString(eventType) === FEE_PAYMENT_PROOF_REQUESTED_EVENT_TYPE) {
+    fallbackTitle = FEE_PAYMENT_PROOF_REQUESTED_NOTIFY_TITLE;
+    fallbackBody = FEE_PAYMENT_PROOF_REQUESTED_NOTIFY_BODY;
+  } else if (trimString(eventType) === FEE_PAYMENT_PROOF_VERIFIED_EVENT_TYPE) {
     fallbackTitle = FEE_PAYMENT_PROOF_VERIFIED_NOTIFY_TITLE;
     fallbackBody = FEE_PAYMENT_PROOF_VERIFIED_NOTIFY_BODY;
   } else if (trimString(eventType) === FEE_PAYMENT_PROOF_REJECTED_EVENT_TYPE) {
@@ -3364,8 +3429,14 @@ async function notifyLinkedParentsAfterFeeProofStaffDecision({ feeRecordRow, eve
     fallbackBody,
   });
 
-  const proofDecision =
-    trimString(eventType) === FEE_PAYMENT_PROOF_VERIFIED_EVENT_TYPE ? "verified" : "rejected";
+  let defaultMetadata = {};
+  if (trimString(eventType) === FEE_PAYMENT_PROOF_REQUESTED_EVENT_TYPE) {
+    defaultMetadata = { requestKind: "payment_proof" };
+  } else if (trimString(eventType) === FEE_PAYMENT_PROOF_VERIFIED_EVENT_TYPE) {
+    defaultMetadata = { proofDecision: "verified" };
+  } else if (trimString(eventType) === FEE_PAYMENT_PROOF_REJECTED_EVENT_TYPE) {
+    defaultMetadata = { proofDecision: "rejected" };
+  }
 
   return notifyLinkedParentsHomeworkParentReleaseCore({
     actorProfileId,
@@ -3375,7 +3446,10 @@ async function notifyLinkedParentsAfterFeeProofStaffDecision({ feeRecordRow, eve
     studentId: feeRecordRow.student_id,
     branchId: feeRecordRow.branch_id,
     classId: feeRecordRow.class_id,
-    metadata: { proofDecision },
+    metadata: {
+      ...defaultMetadata,
+      ...(metadata && typeof metadata === "object" ? metadata : {}),
+    },
     title: rendered.title,
     body: rendered.body,
   });

@@ -4,7 +4,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { getSelectedDemoRole } from '@/services/authService';
 import { listFeeRecords, markFeeRecordPaid, getFeeDashboardSummary } from '@/services/dataService';
 import { getFeeReceiptSignedUrl } from '@/services/supabaseUploadService';
-import { rejectFeeReceipt, verifyFeeReceipt } from '@/services/supabaseWriteService';
+import { rejectFeeReceipt, requestFeePaymentProof, verifyFeeReceipt } from '@/services/supabaseWriteService';
 import { useSupabaseAuthState } from '@/hooks/useSupabaseAuthState';
 import PageHeader from '@/components/shared/PageHeader';
 import EmptyState from '@/components/shared/EmptyState';
@@ -34,6 +34,7 @@ export default function FeeTracking() {
   const [proofLoadingByRecord, setProofLoadingByRecord] = useState({});
   const [verifyLoadingRecordId, setVerifyLoadingRecordId] = useState(null);
   const [rejectLoadingRecordId, setRejectLoadingRecordId] = useState(null);
+  const [requestProofLoadingRecordId, setRequestProofLoadingRecordId] = useState(null);
 
   const { data: feeRecords = [] } = useQuery({
     queryKey: ['fee-records', user?.role, user?.email, user?.branch_id],
@@ -89,6 +90,24 @@ export default function FeeTracking() {
     onError: (error) => {
       toast.error(error?.message || 'Unable to request resubmission');
       setRejectLoadingRecordId(null);
+    },
+  });
+  const requestProofMutation = useMutation({
+    mutationFn: async ({ feeRecordId }) => {
+      const result = await requestFeePaymentProof({ feeRecordId });
+      if (result?.error || !result?.data) {
+        throw new Error(result?.error?.message || 'Unable to request payment proof');
+      }
+      return result.data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['fee-records'] });
+      toast.success('Payment proof request sent to linked parent inbox.');
+      setRequestProofLoadingRecordId(null);
+    },
+    onError: (error) => {
+      toast.error(error?.message || 'Unable to request payment proof');
+      setRequestProofLoadingRecordId(null);
     },
   });
 
@@ -166,6 +185,24 @@ export default function FeeTracking() {
       feeRecordId: recordId,
       internalNote: reason.trim(),
     });
+  };
+
+  const handleRequestPaymentProof = (record) => {
+    if (isDemoMode) {
+      toast.message('Demo mode keeps proof requests local and does not write to Supabase.');
+      return;
+    }
+    if (!hasSupabaseSession || record?.data_source !== 'supabase_fee_records') {
+      toast.message('Proof requests are available only for authenticated Supabase staff records.');
+      return;
+    }
+    const recordId = record?.fee_record_id || record?.id;
+    if (!recordId) {
+      toast.message('Fee record id is not available for proof request.');
+      return;
+    }
+    setRequestProofLoadingRecordId(recordId);
+    requestProofMutation.mutate({ feeRecordId: recordId });
   };
 
   if (!canAccess) {
@@ -251,6 +288,21 @@ export default function FeeTracking() {
                       className="w-full xl:min-w-[210px]"
                     >
                       {proofLoadingByRecord[record.fee_record_id || record.id] ? 'Opening Proof...' : 'View Uploaded Proof'}
+                    </Button>
+                  </div>
+                )}
+                {(record.verification_status !== 'submitted'
+                  && record.verification_status !== 'under_review') && (
+                  <div className="w-full">
+                    <Button
+                      variant="outline"
+                      onClick={() => handleRequestPaymentProof(record)}
+                      disabled={requestProofMutation.isPending}
+                      className="w-full xl:min-w-[210px]"
+                    >
+                      {requestProofMutation.isPending && requestProofLoadingRecordId === (record.fee_record_id || record.id)
+                        ? 'Requesting...'
+                        : 'Request payment proof'}
                     </Button>
                   </div>
                 )}

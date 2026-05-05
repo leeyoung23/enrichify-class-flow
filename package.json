@@ -18,6 +18,7 @@
     "test:supabase:weekly-report:write": "node scripts/supabase-weekly-report-write-smoke-test.mjs",
     "test:supabase:fee-receipt:upload": "node scripts/supabase-fee-receipt-upload-smoke-test.mjs",
     "test:supabase:fee-receipt:verify": "node scripts/supabase-fee-receipt-verification-smoke-test.mjs",
+    "test:supabase:fee-payment-proof-request": "node scripts/supabase-fee-payment-proof-request-smoke-test.mjs",
     "test:supabase:class-memories:upload": "node scripts/supabase-class-memories-upload-smoke-test.mjs",
     "test:supabase:class-memories:approval": "node scripts/supabase-class-memories-approval-smoke-test.mjs",
     "test:supabase:school-curriculum:read": "node scripts/supabase-school-curriculum-read-smoke-test.mjs",

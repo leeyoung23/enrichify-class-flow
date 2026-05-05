@@ -112,6 +112,7 @@ Align with **`fee-receipt-upload-readiness-review.md`**: parent **receipt proof*
 
 - **Message-only** in-app notifications when HQ/staff workflows are ready to **emit intent only**:
   - New `event_type` + template rows (HQ-seeded): e.g. “Your billing update is available” / “Sign in to the parent portal to view your invoice.”  
+  - Exception path now prototyped: `fee_payment.proof_requested` in-app request from staff to linked parents (still no email/PDF/attachments).
   - **No attachment rows**, **no PDF job**, **no new storage paths**.
 - Deep link *within the app shell* may point to ParentView/fees routes **already governed by existing RLS** — still **no** storage path embedded in notification text.
 
