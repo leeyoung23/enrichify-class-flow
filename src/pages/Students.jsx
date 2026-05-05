@@ -54,19 +54,19 @@ export default function Students() {
   const queryClient = useQueryClient();
   const isTeacher = isTeacherRole(user);
 
-  const { data: students = [], isLoading } = useQuery({
+  const { data: students = [], isLoading, error: studentsError } = useQuery({
     queryKey: ['students', user?.role, user?.email],
     queryFn: () => listStudents(user),
     enabled: !!user,
   });
 
-  const { data: classes = [] } = useQuery({
+  const { data: classes = [], error: classesError } = useQuery({
     queryKey: ['all-classes', user?.role, user?.email],
     queryFn: () => listClasses(user),
     enabled: !!user,
   });
 
-  const { data: homeworkInboxItems = [] } = useQuery({
+  const { data: homeworkInboxItems = [], error: homeworkInboxError } = useQuery({
     queryKey: ['homework-attachments', user?.role, user?.email],
     queryFn: () => listHomeworkAttachments(user),
     enabled: !!user,
@@ -254,7 +254,18 @@ export default function Students() {
       />
       <p className="text-xs text-muted-foreground mb-3">{sourceLabel}</p>
 
-      {classStudents.length === 0 && !isLoading ? (
+      {isLoading ? (
+        <Card className="p-5 border-muted/80">
+          <p className="text-sm text-muted-foreground">Loading students...</p>
+        </Card>
+      ) : (studentsError || classesError || homeworkInboxError) ? (
+        <Card className="p-5 border-dashed border-amber-200 bg-amber-50/50">
+          <p className="text-sm font-medium text-amber-900">We could not load students right now.</p>
+          <p className="mt-1 text-xs text-amber-800">
+            Please refresh this page. If it continues, contact support with this route: <code>/students</code>.
+          </p>
+        </Card>
+      ) : classStudents.length === 0 ? (
         <EmptyState
           icon={GraduationCap}
           title={isTeacher ? 'No assigned students yet' : 'No students yet'}
@@ -266,10 +277,10 @@ export default function Students() {
             <Card key={student.id} className="p-5 border-muted/80">
               <div className="flex items-center gap-3 mb-3">
                 <div className="h-10 w-10 rounded-full bg-accent flex items-center justify-center text-accent-foreground font-bold">
-                  {student.name[0].toUpperCase()}
+                  {String(student.name || student.full_name || '?').charAt(0).toUpperCase() || '?'}
                 </div>
                 <div className="flex-1 min-w-0">
-                  <h3 className="font-semibold truncate">{student.name}</h3>
+                  <h3 className="font-semibold truncate">{student.name || student.full_name || 'Unnamed student'}</h3>
                   <Badge variant="outline" className="text-xs mt-0.5">{getClassName(student.class_id)}</Badge>
                 </div>
               </div>

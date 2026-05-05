@@ -106,6 +106,15 @@ const PARENT_NOTIFICATION_PREFERENCE_ROWS = [
   { category: 'media_photo', label: 'Class memories', subtitle: 'Photo updates from your child\'s class.' },
   { category: 'marketing_events', label: 'Events and promotional updates' },
 ];
+const PARENT_NOTIFICATION_DEFAULT_VISIBLE = 5;
+const PARENT_NOTIFICATION_SMOKE_PATTERNS = [
+  'smoke notification for parent',
+  'smoke self notification',
+  'safe in-app notification body for read access check',
+  'notification foundation self-read check',
+  'supabase-notifications-foundation-smoke-test',
+  'smoke.notification.parent_ready',
+];
 const PARENT_FIRST_LOGIN_POLICY_KEY = 'parent_portal_terms_privacy';
 const PARENT_FIRST_LOGIN_POLICY_VERSION = 'v1';
 
@@ -1393,6 +1402,11 @@ function formatParentNotificationDateTime(value) {
   return d.toLocaleString(undefined, { dateStyle: 'medium', timeStyle: 'short' });
 }
 
+function isLikelySmokeNotification(row) {
+  const haystack = `${row?.title || ''} ${row?.body || ''} ${row?.category || ''} ${row?.event_type || ''}`.toLowerCase();
+  return PARENT_NOTIFICATION_SMOKE_PATTERNS.some((token) => haystack.includes(token));
+}
+
 /**
  * In-app notification inbox for authenticated parents. Rows come only from RLS (recipient = self).
  * Displays title/body/time/read state only — no metadata, ids, or internal refs.
@@ -1409,7 +1423,17 @@ function ParentInAppNotificationsSection({
   onMarkRead,
   onOpenTarget,
   actionNotice,
+  isDebugMode,
 }) {
+  const [showAllNotifications, setShowAllNotifications] = useState(false);
+  const filteredNotifications = useMemo(
+    () => (isDebugMode ? notifications : notifications.filter((row) => !isLikelySmokeNotification(row))),
+    [notifications, isDebugMode]
+  );
+  const visibleNotifications = showAllNotifications
+    ? filteredNotifications
+    : filteredNotifications.slice(0, PARENT_NOTIFICATION_DEFAULT_VISIBLE);
+  const canExpandNotifications = filteredNotifications.length > PARENT_NOTIFICATION_DEFAULT_VISIBLE;
   const unreadBadge =
     unreadCount > 0 ? (
       <Badge variant="outline" className="ml-2 font-normal text-xs">
@@ -1433,7 +1457,7 @@ function ParentInAppNotificationsSection({
     );
   } else if (error) {
     bodyContent = <p className="text-sm text-destructive">{error}</p>;
-  } else if (!notifications.length) {
+  } else if (!filteredNotifications.length) {
     bodyContent = <p className="text-sm text-muted-foreground">No new notifications yet.</p>;
   } else {
     bodyContent = (
@@ -1442,7 +1466,7 @@ function ParentInAppNotificationsSection({
           <p className="text-xs text-muted-foreground">{actionNotice}</p>
         ) : null}
         <ul className="space-y-3">
-          {notifications.map((n) => {
+          {visibleNotifications.map((n) => {
           const unread = !n.read_at;
           const action = resolveParentNotificationAction(n);
           return (
@@ -1500,12 +1524,28 @@ function ParentInAppNotificationsSection({
           );
           })}
         </ul>
+        {canExpandNotifications ? (
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            className="px-0 text-xs text-primary"
+            onClick={() => setShowAllNotifications((open) => !open)}
+          >
+            {showAllNotifications ? 'View less' : `View more (${filteredNotifications.length - PARENT_NOTIFICATION_DEFAULT_VISIBLE} more)`}
+          </Button>
+        ) : null}
       </div>
     );
   }
 
   return (
-    <Card id="parent-in-app-notifications" className="mb-6" role="region" aria-label="Your notifications">
+    <Card
+      id="parent-in-app-notifications"
+      className="mb-6 border-rose-100/80 bg-gradient-to-b from-rose-50/30 via-card to-violet-50/20"
+      role="region"
+      aria-label="Your notifications"
+    >
       <CardHeader className="pb-3">
         <div className="flex flex-wrap items-center gap-2">
           <Bell className="h-4 w-4 flex-shrink-0 text-muted-foreground" aria-hidden />
@@ -2202,9 +2242,15 @@ export default function ParentView() {
       (row) => !row.student_id || row.student_id === student.id
     );
   }, [parentInAppNotificationRows, student?.id]);
+  const parentInAppNotificationsVisibleForUi = useMemo(
+    () => (isDebugMode
+      ? parentInAppNotificationsForChild
+      : parentInAppNotificationsForChild.filter((row) => !isLikelySmokeNotification(row))),
+    [parentInAppNotificationsForChild, isDebugMode]
+  );
   const parentInAppUnreadForChild = useMemo(
-    () => parentInAppNotificationsForChild.filter((row) => !row.read_at).length,
-    [parentInAppNotificationsForChild]
+    () => parentInAppNotificationsVisibleForUi.filter((row) => !row.read_at).length,
+    [parentInAppNotificationsVisibleForUi]
   );
 
   const latestApprovedUpdate = useMemo(() => updates[0], [updates]);
@@ -3609,7 +3655,7 @@ export default function ParentView() {
       </div>
 
       {/* Student identity */}
-      <div className="max-w-2xl mx-auto px-4 py-6">
+      <div className="max-w-2xl mx-auto px-4 py-6 bg-gradient-to-b from-rose-50/30 via-background to-violet-50/20 rounded-2xl">
         <div id="parent-portal-overview">
           <div className="flex items-center gap-4 mb-6">
             <div className="h-14 w-14 rounded-full bg-accent flex items-center justify-center text-accent-foreground text-xl font-bold flex-shrink-0">
@@ -3626,7 +3672,11 @@ export default function ParentView() {
         </div>
 
         {!isDemoStudentPreview && (
-          <section id="parent-updates-feed" className="mb-6 space-y-4" aria-label="Updates feed">
+          <section
+            id="parent-updates-feed"
+            className="mb-6 space-y-4 rounded-xl border border-rose-100/80 bg-gradient-to-b from-rose-50/45 via-white to-violet-50/35 p-4"
+            aria-label="Updates feed"
+          >
             <div className="space-y-1">
               <h2 className="text-lg font-semibold tracking-tight">Updates from your centre and class</h2>
               <p className="text-sm text-muted-foreground">
@@ -3670,17 +3720,18 @@ export default function ParentView() {
             supabaseReady={isSupabaseConfigured()}
             loading={parentInAppNotificationsLoading}
             error={parentInAppNotificationsError}
-            notifications={parentInAppNotificationsForChild}
+            notifications={parentInAppNotificationsVisibleForUi}
             unreadCount={parentInAppUnreadForChild}
             markingId={parentInAppMarkingId}
             onMarkRead={handleMarkParentNotificationRead}
             onOpenTarget={handleOpenParentNotificationTarget}
             actionNotice={parentInAppActionNotice}
+            isDebugMode={isDebugMode}
           />
         ) : null}
 
         {!isDemoStudentPreview && (
-          <Card className="mb-6">
+          <Card className="mb-6 border-rose-100/80 bg-gradient-to-b from-rose-50/35 via-card to-violet-50/25">
             <CardHeader className="pb-3">
               <CardTitle className="text-base">Quick access</CardTitle>
             </CardHeader>
@@ -3726,7 +3777,7 @@ export default function ParentView() {
         )}
 
         {!isDemoStudentPreview && isParentViewerRole ? (
-          <section id="parent-settings" className="mb-6 space-y-4" aria-label="Settings">
+          <section id="parent-settings" className="mb-6 space-y-4 rounded-xl border border-border/70 bg-card/85 p-4" aria-label="Settings">
             <div className="space-y-1">
               <h2 className="text-lg font-semibold tracking-tight">Settings</h2>
               <p className="text-sm text-muted-foreground">

@@ -230,6 +230,18 @@ Use this quick pass during ParentView checks:
 11. Confirm enrollment/class-linking product rule in walkthrough notes:
    - staff/HQ stays source-of-truth for class assignment,
    - parent links to existing student record rather than defining class membership.
+12. Confirm `/students` route behavior:
+   - page renders with loading/error/empty states (never blank white page),
+   - teacher/HQ student cards still render when data is available.
+13. Confirm notifications list behavior:
+   - default shows limited recent items,
+   - View more / View less toggle works,
+   - smoke-test notification copy is hidden in normal mode and visible in debug mode.
+14. Confirm keep-me-signed-in behavior:
+   - checked preference survives refresh/new tab without browser-session marker dependency,
+   - manual sign out still clears active session as expected.
+15. Confirm warmth polish:
+   - parent updates, memories, and notifications use subtle warm accent styling (not flat/cold).
 
 ---
 

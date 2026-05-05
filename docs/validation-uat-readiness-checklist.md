@@ -198,6 +198,11 @@ Decision note:
 - [ ] Notification preference label uses `Class memories` with subtitle `Photo updates from your child's class.`
 - [ ] Parent announcements empty state uses centre-updates placeholder wording.
 - [ ] Parent homework section supports status filtering and cleaner open-detail viewing.
+- [ ] `/students` route has non-blank loading, error, and empty render paths.
+- [ ] Parent notifications default to limited recent rows with View more / View less controls.
+- [ ] Smoke-test notification copy is hidden in normal mode and visible in debug mode.
+- [ ] Keep-me-signed-in checked path survives refresh/new tab without forced marker sign-out.
+- [ ] Parent landing visual style remains warm (subtle rose/violet accents) while mobile-safe.
 - [ ] Confirm no RLS/SQL widening and no email/SMS/push or chat features were introduced.
 
 ---

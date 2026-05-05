@@ -2433,3 +2433,30 @@ Handoff status: complete for continuity. Use this file as the primary context an
   - no backend/provider lane expansion,
   - no SQL/RLS changes,
   - no email/SMS/push/chat implementation.
+
+### UAT blocker follow-up fixes note (2026-05-06)
+
+- Scope: targeted blocker/polish pass only (`/students`, parent notifications UX, remember-me persistence hardening, parent warmth polish).
+- `/students` blank-page diagnosis and fix:
+  - root cause was runtime fragility in student card rendering (`student.name[0]`) when student names are missing/null from live data rows.
+  - route now has explicit loading/error/empty states and defensive student name rendering (`Unnamed student` fallback) so `/students` no longer hard-crashes to blank white.
+  - no permission/RLS policy changes.
+- Parent notification inbox cleanup:
+  - default list now shows latest limited rows with `View more` / `View less`.
+  - smoke-test fixture copy is filtered in normal mode and remains visible in debug mode.
+  - unread badge count now aligns with visible/relevant notifications.
+  - no DB row deletion.
+- Keep-me-signed-in diagnosis/fix:
+  - AppLayout already avoids marker-enforced sign-out when keep-signed-in preference is true (`!keepSignedIn && !hasBrowserSessionMarker` guard).
+  - added preference parsing compatibility for legacy truthy/falsey stored values.
+  - Supabase client auth persistence is now explicit (`persistSession: true`).
+  - manual sign-out still intentionally ends the session and is expected behavior.
+- Parent visual warmth polish:
+  - parent landing wrapper and key cards (updates, notifications, quick access) now use subtle warm rose/violet gradients.
+  - no global staff/HQ theme changes.
+- Settings containment reaffirmed:
+  - communication settings + active sessions remain under `#parent-settings`; parent landing remains content-first.
+- Boundaries preserved:
+  - no SQL/RLS migration,
+  - no email/SMS/push/chat lanes,
+  - no service-role frontend usage.
