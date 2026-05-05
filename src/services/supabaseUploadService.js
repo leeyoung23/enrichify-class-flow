@@ -1,4 +1,8 @@
 import { isSupabaseConfigured, supabase } from "./supabaseClient.js";
+import {
+  notifyLinkedParentsAfterHomeworkFileStaffRelease,
+  warnNotificationFailureInDev,
+} from "./supabaseWriteService.js";
 
 const FEE_RECEIPTS_BUCKET = "fee-receipts";
 const CLASS_MEMORIES_BUCKET = "class-memories";
@@ -992,6 +996,21 @@ export async function releaseHomeworkFileToParent({ fileId } = {}) {
       .eq("id", trimString(fileId))
       .select("id,homework_submission_id,file_role,released_to_parent,released_at,released_by_profile_id,marked_by_profile_id,storage_bucket,storage_path,file_name,content_type,file_size_bytes,uploaded_by_profile_id,created_at")
       .maybeSingle();
+    if (!error && data?.id && isUuidLike(data.homework_submission_id)) {
+      const submissionRead = await supabase
+        .from("homework_submissions")
+        .select("id,branch_id,class_id,student_id,homework_task_id")
+        .eq("id", trimString(data.homework_submission_id))
+        .maybeSingle();
+      const submissionScope = submissionRead.error ? null : submissionRead.data;
+      const notifyResult = await notifyLinkedParentsAfterHomeworkFileStaffRelease({
+        homeworkFileRow: data,
+        submissionScope,
+      });
+      if (notifyResult?.error) {
+        warnNotificationFailureInDev(notifyResult.error, "releaseHomeworkFileToParent");
+      }
+    }
     return { data: data ?? null, error: error ?? null };
   } catch (err) {
     return { data: null, error: { message: err?.message || String(err) } };

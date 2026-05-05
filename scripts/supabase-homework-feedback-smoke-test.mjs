@@ -86,6 +86,8 @@ async function run() {
   let createdFeedback = null;
   let createdObjectPath = null;
   let linkedStudent = null;
+  /** Baseline count of in-app rows titled like homework parent-release notifications (RLS: parent's own inbox). */
+  let homeworkNotifyBaseline = -1;
 
   const parentSignIn = await signInRole(parentUser, { signInWithEmailPassword, signOut });
   if (!parentSignIn.ok) process.exit(1);
@@ -261,6 +263,20 @@ async function run() {
     await signOut();
   }
 
+  const parentBaselineSignIn = await signInRole(parentUser, { signInWithEmailPassword, signOut });
+  if (parentBaselineSignIn.ok) {
+    const bc = await supabase
+      .from("notifications")
+      .select("id", { count: "exact", head: true })
+      .eq("channel", "in_app")
+      .eq("title", "Homework feedback is ready");
+    homeworkNotifyBaseline = typeof bc.count === "number" ? bc.count : -1;
+    printResult("PASS", `Parent: pre-release homework notification baseline count=${homeworkNotifyBaseline}`);
+    await signOut();
+  } else {
+    printResult("CHECK", "Parent: pre-release notification baseline skipped (sign-in failed)");
+  }
+
   const teacherSignInForReview = await signInRole(teacherUser, { signInWithEmailPassword, signOut });
   feedbackActor = teacherSignInForReview.ok ? "Teacher" : "Branch Supervisor";
   if (!teacherSignInForReview.ok) {
@@ -301,6 +317,17 @@ async function run() {
     createdFeedback = releaseResult.data;
     printResult("PASS", `${feedbackActor}: feedback released to parent`);
   }
+
+  if (!releaseResult.error && releaseResult.data?.id) {
+    const dupReleaseResult = await releaseHomeworkFeedbackToParent({ homeworkFeedbackId: createdFeedback.id });
+    if (dupReleaseResult.error) {
+      printResult("CHECK", `Duplicate feedback release (${dupReleaseResult.error?.message || "unknown"})`);
+    } else {
+      printResult("PASS", `${feedbackActor}: duplicate feedback release call completed (idempotent notify expected)`);
+    }
+  } else {
+    printResult("CHECK", "Duplicate feedback release skipped (initial release did not succeed)");
+  }
   await signOut();
 
   const parentSignInReleaseCheck = await signInRole(parentUser, { signInWithEmailPassword, signOut });
@@ -323,6 +350,27 @@ async function run() {
       failureCount += 1;
     } else {
       printResult("PASS", "Parent: released feedback visible and internal_note hidden");
+    }
+
+    if (homeworkNotifyBaseline >= 0) {
+      const afterBc = await supabase
+        .from("notifications")
+        .select("id", { count: "exact", head: true })
+        .eq("channel", "in_app")
+        .eq("title", "Homework feedback is ready");
+      const afterN = typeof afterBc.count === "number" ? afterBc.count : -1;
+      if (afterN > homeworkNotifyBaseline) {
+        printResult(
+          "PASS",
+          `Parent: homework feedback release created in-app notification (${homeworkNotifyBaseline} -> ${afterN})`
+        );
+      } else {
+        printResult(
+          "WARNING",
+          `Parent: expected new in-app notification after feedback release (baseline=${homeworkNotifyBaseline}, after=${afterN})`
+        );
+        failureCount += 1;
+      }
     }
     await signOut();
   }

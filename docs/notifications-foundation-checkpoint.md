@@ -14,6 +14,8 @@ Date: 2026-05-05
 - **`supabase/sql/036_notifications_creator_select_and_teacher_insert_scope.sql`**
   - **Creator select:** staff (`hq_admin`, `branch_supervisor`, `teacher`) may **select** `notifications` rows they created — fixes `INSERT ... RETURNING` when the recipient is a parent (same failure mode as `031_fix_ai_parent_reports_insert_rls.sql`).
   - **Teacher insert scope:** `notification_events` + `notifications` teacher branch aligned with `can_manage_ai_parent_report` (class teacher **or** `is_teacher_for_student` **or** assigned teacher on an `ai_parent_reports` row for that student+branch).
+- **`supabase/sql/037_notifications_teacher_branch_fallback.sql`**
+  - **Teacher branch fallback:** when `current_user_branch_id() ≠` row `branch_id`, still allow insert if the teacher **teaches the class** (`is_teacher_for_class(class_id)`) and the **student** row exists for `student_id` + `branch_id`. Aligns with homework RLS (class-scoped teacher) so homework parent notifications can be recorded after release.
 
 ### Post-apply smoke tests (linked project)
 
@@ -36,6 +38,8 @@ Date: 2026-05-05
 
 - After a successful `releaseAiParentReport` (report row updated to `released` with `current_version_id` / `released_at` / `released_by_profile_id`), `src/services/supabaseWriteService.js` calls `notifyLinkedParentsAfterAiParentReportRelease` (non-blocking on failure; dev-only safe warnings). Recipients come only from `list_parent_profile_ids_for_student_staff_scope_035` (guardian links). **Idempotency (best-effort):** same **actor** + report + `releasedVersionId` via `notification_events.metadata` — not a global unique constraint; another staff re-release can still duplicate.
 
+- **Homework (feedback + marked file):** After `releaseHomeworkFeedbackToParent` updates `homework_feedback` to `released_to_parent` (and audit), the same RPC resolves parent recipients. After `releaseHomeworkFileToParent` in `supabaseUploadService.js` when `file_role` is `teacher_marked_homework` or `feedback_attachment`, a second path notifies with `entity_type` = `homework_file`. **Event types:** `homework_feedback.released_to_parent`, `homework_file.released_to_parent`. **Body/title** are fixed generic strings (no task text, paths, or file names). **Idempotency (best-effort):** same **actor** + `entity_id` + `entity_type` + `event_type` in `notification_events` — no new DB unique constraint in this pass.
+
 ### Parent inbox UI (read-only surface)
 
 - **`src/pages/ParentView.jsx`** — authenticated **parent** role: **Notifications** card loads `listMyInAppNotifications` / `markNotificationRead` (recipient-scoped RLS only). UI shows **title, body, time, read/unread**; no raw metadata, ids, or internal refs. Optional **child filter**: rows with `student_id` are shown when it matches the dashboard child or when `student_id` is null (RLS still gates rows to the signed-in parent).
@@ -44,7 +48,7 @@ Date: 2026-05-05
 ### Safety boundaries (unchanged after apply)
 
 - No live sending, no email/SMS/push provider, no webhooks, no Edge sender
-- In-app **notification records** only; first product trigger: **AI parent report released** (see above)
+- In-app **notification records** only; product triggers: **AI parent report released**, **homework feedback / marked file released to parent** (see above)
 - No service-role key in frontend; anon + JWT only
 - No parent cross-family visibility; RLS remains recipient-scoped for inbox rows
 - No changes to Edge, PDF, OCR, or provider integrations in this verification milestone

@@ -103,6 +103,12 @@ const AI_PARENT_REPORT_NOTIFICATION_EVENT_TYPE = "ai_parent_report.released";
 const AI_PARENT_REPORT_RELEASE_NOTIFY_TITLE = "New progress report available";
 const AI_PARENT_REPORT_RELEASE_NOTIFY_BODY =
   "A new progress report has been released for your child.";
+const HOMEWORK_FEEDBACK_PARENT_NOTIFICATION_EVENT_TYPE = "homework_feedback.released_to_parent";
+const HOMEWORK_FILE_PARENT_NOTIFICATION_EVENT_TYPE = "homework_file.released_to_parent";
+const HOMEWORK_PARENT_NOTIFY_TITLE = "Homework feedback is ready";
+const HOMEWORK_PARENT_NOTIFY_BODY =
+  "Your child's teacher has shared new homework feedback.";
+const HOMEWORK_FILE_PARENT_NOTIFY_ROLES = new Set(["teacher_marked_homework", "feedback_attachment"]);
 
 function isUuidLike(value) {
   if (typeof value !== "string") return false;
@@ -298,7 +304,7 @@ function warnAuditFailureInDev(error, context = "") {
   console.warn(`[audit_events] ${context || "write failure"}: ${message}`);
 }
 
-function warnNotificationFailureInDev(error, context = "") {
+export function warnNotificationFailureInDev(error, context = "") {
   if (!isDevRuntime()) return;
   const message = trimString(error?.message) || "unknown";
   // eslint-disable-next-line no-console
@@ -1239,6 +1245,13 @@ export async function releaseHomeworkFeedbackToParent({ homeworkFeedbackId } = {
       });
       if (auditResult.error) {
         warnAuditFailureInDev(auditResult.error, "releaseHomeworkFeedbackToParent");
+      }
+      const notifyResult = await notifyLinkedParentsAfterHomeworkFeedbackStaffRelease({
+        homeworkFeedbackId: data.id,
+        submissionScope: submissionData,
+      });
+      if (notifyResult?.error) {
+        warnNotificationFailureInDev(notifyResult.error, "releaseHomeworkFeedbackToParent");
       }
     }
     return { data: data ?? null, error: error ?? null };
@@ -2978,6 +2991,155 @@ async function notifyLinkedParentsAfterAiParentReportRelease({ actorProfileId, r
   }
 
   return { error: null, skipped: false };
+}
+
+async function hasExistingHomeworkParentReleaseNotificationEvent({
+  actorProfileId,
+  entityType,
+  entityId,
+  eventType,
+} = {}) {
+  if (!isUuidLike(actorProfileId) || !isUuidLike(entityId)) return false;
+  const safeEntityType = trimString(entityType);
+  const safeEventType = trimString(eventType);
+  if (!safeEntityType || !safeEventType) return false;
+  const read = await supabase
+    .from("notification_events")
+    .select("id")
+    .eq("created_by_profile_id", trimString(actorProfileId))
+    .eq("entity_type", safeEntityType)
+    .eq("entity_id", trimString(entityId))
+    .eq("event_type", safeEventType)
+    .limit(1);
+  if (read.error || !Array.isArray(read.data)) return false;
+  return read.data.length > 0;
+}
+
+/**
+ * Best-effort idempotency: same actor + homework_feedback or homework_file entity + event type.
+ * Another staff member releasing the same row could still duplicate rows if no matching event — see docs.
+ */
+async function notifyLinkedParentsHomeworkParentReleaseCore({
+  actorProfileId,
+  entityType,
+  entityId,
+  eventType,
+  studentId,
+  branchId,
+  classId,
+  metadata,
+} = {}) {
+  if (!isSupabaseConfigured() || !supabase) {
+    return { error: null, skipped: true };
+  }
+  if (!isUuidLike(actorProfileId) || !isUuidLike(entityId) || !isUuidLike(studentId)) {
+    return { error: null, skipped: true };
+  }
+  const duplicate = await hasExistingHomeworkParentReleaseNotificationEvent({
+    actorProfileId,
+    entityType,
+    entityId,
+    eventType,
+  });
+  if (duplicate) {
+    return { error: null, skipped: true };
+  }
+
+  const recipientIds = await resolveParentProfileIdsForAiReportNotification(studentId);
+  if (recipientIds.length === 0) {
+    return { error: null, skipped: true };
+  }
+
+  const eventResult = await createNotificationEvent({
+    eventType,
+    entityType,
+    entityId,
+    branchId: isUuidLike(branchId) ? trimString(branchId) : null,
+    classId: isUuidLike(classId) ? trimString(classId) : null,
+    studentId: trimString(studentId),
+    status: "processed",
+    metadata,
+  });
+  if (eventResult.error || !eventResult.data?.id) {
+    return { error: eventResult.error || { message: "Unable to record notification event." }, skipped: false };
+  }
+
+  const notificationEventId = eventResult.data.id;
+  for (const recipientProfileId of recipientIds) {
+    const rowResult = await createInAppNotification({
+      eventId: notificationEventId,
+      recipientProfileId,
+      recipientRole: "parent",
+      branchId: isUuidLike(branchId) ? trimString(branchId) : null,
+      classId: isUuidLike(classId) ? trimString(classId) : null,
+      studentId: trimString(studentId),
+      title: HOMEWORK_PARENT_NOTIFY_TITLE,
+      body: HOMEWORK_PARENT_NOTIFY_BODY,
+      status: "pending",
+    });
+    if (rowResult.error) {
+      warnNotificationFailureInDev(rowResult.error, "notifyLinkedParentsHomeworkParentReleaseCore.row");
+    }
+  }
+
+  return { error: null, skipped: false };
+}
+
+async function notifyLinkedParentsAfterHomeworkFeedbackStaffRelease({ homeworkFeedbackId, submissionScope } = {}) {
+  const { profileId: actorProfileId, error: authError } = await getAuthenticatedProfileId();
+  if (authError || !actorProfileId) {
+    return { error: null, skipped: true };
+  }
+  if (!isUuidLike(homeworkFeedbackId) || !submissionScope || !isUuidLike(submissionScope.student_id)) {
+    return { error: null, skipped: true };
+  }
+  return notifyLinkedParentsHomeworkParentReleaseCore({
+    actorProfileId,
+    entityType: "homework_feedback",
+    entityId: homeworkFeedbackId,
+    eventType: HOMEWORK_FEEDBACK_PARENT_NOTIFICATION_EVENT_TYPE,
+    studentId: submissionScope.student_id,
+    branchId: submissionScope.branch_id,
+    classId: submissionScope.class_id,
+    metadata: {
+      releaseKind: "feedback",
+      parentNotified: true,
+    },
+  });
+}
+
+/**
+ * Staff-only: invoked from supabaseUploadService after `homework_files` is released to parent.
+ * Skips parent_uploaded_homework (not “marked work” / attachment release in product sense).
+ */
+export async function notifyLinkedParentsAfterHomeworkFileStaffRelease({ homeworkFileRow, submissionScope } = {}) {
+  const { profileId: actorProfileId, error: authError } = await getAuthenticatedProfileId();
+  if (authError || !actorProfileId) {
+    return { error: null, skipped: true };
+  }
+  if (!homeworkFileRow?.id || !isUuidLike(homeworkFileRow.id)) {
+    return { error: null, skipped: true };
+  }
+  const role = trimString(homeworkFileRow.file_role);
+  if (!HOMEWORK_FILE_PARENT_NOTIFY_ROLES.has(role)) {
+    return { error: null, skipped: true };
+  }
+  if (!submissionScope || !isUuidLike(submissionScope.student_id)) {
+    return { error: null, skipped: true };
+  }
+  return notifyLinkedParentsHomeworkParentReleaseCore({
+    actorProfileId,
+    entityType: "homework_file",
+    entityId: homeworkFileRow.id,
+    eventType: HOMEWORK_FILE_PARENT_NOTIFICATION_EVENT_TYPE,
+    studentId: submissionScope.student_id,
+    branchId: submissionScope.branch_id,
+    classId: submissionScope.class_id,
+    metadata: {
+      releaseKind: "marked_file",
+      parentNotified: true,
+    },
+  });
 }
 
 export async function createAiParentReportDraft({
