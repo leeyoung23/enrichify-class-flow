@@ -81,9 +81,16 @@ export default function Students() {
     },
   });
 
-  const classStudents = isTeacher
-    ? students.filter(s => classes.some(c => c.id === s.class_id))
-    : students;
+  const classStudents = useMemo(() => {
+    if (!isTeacher) return students;
+    if (!Array.isArray(students) || students.length === 0) return [];
+    if (!Array.isArray(classes) || classes.length === 0) {
+      // Fallback: if class metadata is temporarily unavailable, keep teacher-scoped student rows visible.
+      return students;
+    }
+    const classIdSet = new Set(classes.map((c) => c.id).filter(Boolean));
+    return students.filter((student) => classIdSet.has(student.class_id));
+  }, [isTeacher, students, classes]);
 
   const [feeStatuses, setFeeStatuses] = useState({});
 

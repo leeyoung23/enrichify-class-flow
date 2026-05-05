@@ -795,7 +795,7 @@ export default function ParentUpdates() {
                 </p>
 
                 <Card className="p-4 sm:p-5 border-l-4 border-l-primary/40 shadow-sm">
-                  <p className="text-xs font-semibold uppercase tracking-wide text-primary mb-1">Step 1</p>
+                  <p className="text-xs font-semibold uppercase tracking-wide text-primary mb-1">Class Memory</p>
                   <h3 className="text-base font-semibold mb-1">Add class memory</h3>
                   <p className="text-sm text-muted-foreground mb-4">Upload a class moment for review. Parents only see approved Memories.</p>
                   <div className="space-y-3">
@@ -854,8 +854,8 @@ export default function ParentUpdates() {
                 </Card>
 
                 <Card className="p-4 sm:p-5 border-l-4 border-l-primary/40 shadow-sm">
-                  <p className="text-xs font-semibold uppercase tracking-wide text-primary mb-1">Step 2</p>
-                  <h3 className="text-base font-semibold mb-3">Choose update type</h3>
+                  <p className="text-xs font-semibold uppercase tracking-wide text-primary mb-1">Choose update type</p>
+                  <h3 className="text-base font-semibold mb-3">Quick Parent Comment or Weekly Progress Report</h3>
                   <div className="flex flex-col sm:flex-row gap-2 rounded-lg border border-border p-1 mb-3">
                     <Button
                       type="button"
@@ -881,7 +881,7 @@ export default function ParentUpdates() {
                 </Card>
 
                 <Card className="p-4 sm:p-5 border-l-4 border-l-primary/40 shadow-sm">
-                  <p className="text-xs font-semibold uppercase tracking-wide text-primary mb-1">Step 3</p>
+                  <p className="text-xs font-semibold uppercase tracking-wide text-primary mb-1">Choose class and student</p>
                   <h3 className="text-base font-semibold mb-3">Select class and student</h3>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     <Select value={selectedClassId} onValueChange={(v) => { setSelectedClassId(v); setSelectedStudentId(''); }}>

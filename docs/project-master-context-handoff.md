@@ -2405,3 +2405,31 @@ Handoff status: complete for continuity. Use this file as the primary context an
   - no email/SMS/push,
   - no realtime chat,
   - no draft/internal/evidence visibility expansion.
+
+### Parent/Teacher UX cleanup note (2026-05-06)
+
+- Scope limited to small UI/UX polish and one safe teacher-page bug fix.
+- Parent information architecture polish:
+  - parent landing now prioritizes content flow (updates, memories, notifications, quick access),
+  - settings remains a dedicated destination (`#parent-settings`) for communication + account security.
+- Parent navigation polish:
+  - parent sidebar now emphasizes `Updates` and keeps a lean sequence: home, updates, attendance, homework, reports, settings.
+- Homework UX polish in parent view:
+  - added status filters (`All`, `Assigned`, `Submitted`, `Under review`, `Feedback released`),
+  - added cleaner open/hide detail behavior to reduce long-list scanning burden.
+- Teacher "My Students" blank-page fix:
+  - root cause in UI filtering: teacher card list depended on class-list intersection; when class metadata is temporarily empty, student cards collapsed to empty.
+  - minimal fix: fallback to teacher-scoped student rows when class metadata list is empty.
+  - no permission widening or RLS changes.
+- Parent Communication wording cleanup:
+  - replaced rigid `Step 1/2/3` labels in the teacher workspace with clearer task-oriented headings (`Class Memory`, `Choose update type`, `Choose class and student`).
+- Memories targeting rule clarified:
+  - parent-side Class Memories copy now states that only released memories for linked child/class appear.
+  - no branch-wide visibility expansion.
+- Parent enrollment / class-linking product rule checkpoint:
+  - staff/HQ remains source-of-truth for branch/class assignment,
+  - parent links to existing student record and does not self-assign class membership.
+- Boundaries preserved:
+  - no backend/provider lane expansion,
+  - no SQL/RLS changes,
+  - no email/SMS/push/chat implementation.

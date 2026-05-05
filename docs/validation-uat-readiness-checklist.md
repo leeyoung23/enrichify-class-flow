@@ -191,9 +191,13 @@ Decision note:
 - [ ] Demo sign-out returns to `/welcome`.
 - [ ] Parent sidebar contains `Settings` entry linked to `#parent-settings`.
 - [ ] Parent Settings section groups communication preferences and account security.
+- [ ] Parent landing order is content-first (updates/memories/notifications/quick access before settings-heavy content).
+- [ ] Parent sidebar flow stays simple: Home, Updates, Attendance, Homework, Reports, Settings.
 - [ ] Real-mode Class Memories with no released rows shows warm empty state (no demo wording).
+- [ ] Real-mode Class Memories copy clearly states linked-class released visibility (not branch-wide feed).
 - [ ] Notification preference label uses `Class memories` with subtitle `Photo updates from your child's class.`
 - [ ] Parent announcements empty state uses centre-updates placeholder wording.
+- [ ] Parent homework section supports status filtering and cleaner open-detail viewing.
 - [ ] Confirm no RLS/SQL widening and no email/SMS/push or chat features were introduced.
 
 ---

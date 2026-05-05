@@ -214,6 +214,43 @@ function ParentHomeworkStatusSection({
   onSubmitTaskUpload,
   onViewMarkedWork,
 }) {
+  const HOMEWORK_FILTERS = [
+    { key: 'all', label: 'All' },
+    { key: 'assigned', label: 'Assigned' },
+    { key: 'submitted', label: 'Submitted' },
+    { key: 'under_review', label: 'Under review' },
+    { key: 'feedback_released', label: 'Feedback released' },
+  ];
+  const [homeworkFilter, setHomeworkFilter] = useState('all');
+  const [expandedTaskId, setExpandedTaskId] = useState(null);
+
+  const filteredTasks = useMemo(() => {
+    if (homeworkFilter === 'all') return tasks;
+    if (homeworkFilter === 'assigned') {
+      return tasks.filter((task) => ['not_submitted', 'returned_for_revision'].includes(task.parentStatus));
+    }
+    if (homeworkFilter === 'submitted') {
+      return tasks.filter((task) => task.parentStatus === 'submitted');
+    }
+    if (homeworkFilter === 'under_review') {
+      return tasks.filter((task) => ['under_review', 'reviewed'].includes(task.parentStatus));
+    }
+    if (homeworkFilter === 'feedback_released') {
+      return tasks.filter((task) => task.parentStatus === 'approved_for_parent');
+    }
+    return tasks;
+  }, [tasks, homeworkFilter]);
+
+  useEffect(() => {
+    if (!filteredTasks.length) {
+      setExpandedTaskId(null);
+      return;
+    }
+    if (!expandedTaskId || !filteredTasks.some((task) => task.id === expandedTaskId)) {
+      setExpandedTaskId(filteredTasks[0].id);
+    }
+  }, [filteredTasks, expandedTaskId]);
+
   if (loading) {
     return (
       <Card id="parent-homework-status">
@@ -260,7 +297,29 @@ function ParentHomeworkStatusSection({
             ? 'Demo-only preview: submit controls and status updates are simulated locally and do not upload to Supabase.'
             : 'Submit your child\'s work for assigned tasks and follow review status updates.'}
         </p>
-        {tasks.map((task) => {
+        <div className="space-y-2">
+          <p className="text-xs font-medium text-muted-foreground">Filter by status</p>
+          <div className="flex flex-wrap gap-2">
+            {HOMEWORK_FILTERS.map((filterOption) => (
+              <Button
+                key={filterOption.key}
+                type="button"
+                size="sm"
+                variant={homeworkFilter === filterOption.key ? 'default' : 'outline'}
+                className="min-h-8"
+                onClick={() => setHomeworkFilter(filterOption.key)}
+              >
+                {filterOption.label}
+              </Button>
+            ))}
+          </div>
+        </div>
+        {!filteredTasks.length ? (
+          <div className="rounded-md border border-dashed p-3 text-sm text-muted-foreground">
+            No homework items match this filter right now.
+          </div>
+        ) : null}
+        {filteredTasks.map((task) => {
           const statusMeta = PARENT_HOMEWORK_STATUS_META[task.parentStatus] || PARENT_HOMEWORK_STATUS_META.not_submitted;
           const feedbackRow = task.latestSubmissionId ? feedbackBySubmissionId[task.latestSubmissionId] : null;
           const markedWorkItems = task.latestSubmissionId
@@ -275,6 +334,7 @@ function ParentHomeworkStatusSection({
           const isSubmitting = Boolean(submitLoadingByTaskId[task.id]);
           const showWaitingCopy = !hasReleasedFeedback && ['submitted', 'under_review', 'reviewed'].includes(task.parentStatus);
           const showRevisionWaitingCopy = !hasReleasedFeedback && task.parentStatus === 'returned_for_revision';
+          const isExpanded = expandedTaskId === task.id;
           return (
             <div key={task.id} className="rounded-lg border p-3 space-y-2">
               <div className="flex items-start justify-between gap-3">
@@ -284,6 +344,17 @@ function ParentHomeworkStatusSection({
                 </Badge>
               </div>
               <p className="text-xs text-muted-foreground">Due date: {task.dueDateLabel}</p>
+              <Button
+                type="button"
+                size="sm"
+                variant="ghost"
+                className="px-0 h-auto text-xs text-primary"
+                onClick={() => setExpandedTaskId(isExpanded ? null : task.id)}
+              >
+                {isExpanded ? 'Hide details' : 'Open details'}
+              </Button>
+              {!isExpanded ? null : (
+                <>
               {hasReleasedFeedback ? (
                 <details className="rounded-md bg-muted/40 border px-2.5 py-2">
                   <summary className="cursor-pointer list-none text-sm font-medium text-foreground">
@@ -378,6 +449,8 @@ function ParentHomeworkStatusSection({
               ) : task.parentStatus !== 'approved_for_parent' ? (
                 <p className="text-xs text-muted-foreground">Your child&apos;s work has been submitted for teacher review.</p>
               ) : null}
+                </>
+              )}
             </div>
           );
         })}
@@ -1944,6 +2017,9 @@ function ParentClassMemoriesSection({ className, latestMemory, historyMemories, 
         <div>
           <h2 className="text-lg font-semibold tracking-tight">Latest Memory</h2>
           <p className="text-sm text-muted-foreground mt-1">A warm class moment from your child&apos;s learning journey.</p>
+          <p className="text-xs text-muted-foreground mt-1">
+            Only released memories from your linked child&apos;s class appear here.
+          </p>
         </div>
       </div>
 
@@ -3549,64 +3625,14 @@ export default function ParentView() {
           </div>
         </div>
 
-        {!isDemoStudentPreview && isParentViewerRole ? (
-          <ParentInAppNotificationsSection
-            demoMode={isDemoMode}
-            hasSupabaseSession={hasSupabaseSession}
-            supabaseReady={isSupabaseConfigured()}
-            loading={parentInAppNotificationsLoading}
-            error={parentInAppNotificationsError}
-            notifications={parentInAppNotificationsForChild}
-            unreadCount={parentInAppUnreadForChild}
-            markingId={parentInAppMarkingId}
-            onMarkRead={handleMarkParentNotificationRead}
-            onOpenTarget={handleOpenParentNotificationTarget}
-            actionNotice={parentInAppActionNotice}
-          />
-        ) : null}
-        {!isDemoStudentPreview && isParentViewerRole ? (
-          <section id="parent-settings" className="mb-6 space-y-4" aria-label="Settings">
+        {!isDemoStudentPreview && (
+          <section id="parent-updates-feed" className="mb-6 space-y-4" aria-label="Updates feed">
             <div className="space-y-1">
-              <h2 className="text-lg font-semibold tracking-tight">Settings</h2>
+              <h2 className="text-lg font-semibold tracking-tight">Updates from your centre and class</h2>
               <p className="text-sm text-muted-foreground">
-                Manage communication preferences and account security for your parent portal.
+                Announcements and class memories appear here after teacher review and release.
               </p>
             </div>
-            <ParentNotificationSettingsSection
-              demoMode={isDemoMode}
-              hasSupabaseSession={hasSupabaseSession}
-              supabaseReady={isSupabaseConfigured()}
-              loading={parentNotificationPreferencesLoading}
-              error={parentNotificationPreferencesError}
-              saving={parentNotificationPreferencesSaving}
-              saveMessage={parentNotificationPreferencesSaveMessage}
-              saveError={parentNotificationPreferencesSaveError}
-              preferences={parentNotificationPreferences}
-              onToggleCategory={handleToggleParentNotificationCategory}
-              onConfirmOperationalService={handleConfirmOperationalServicePreference}
-              onSave={handleSaveParentNotificationSettings}
-            />
-            <ActiveSessionsCard />
-          </section>
-        ) : null}
-
-        {!isDemoStudentPreview && (
-          isDemoMode
-            ? <ClassMemoriesDemoSection className={cls?.name} />
-            : (
-              <ParentClassMemoriesSection
-                className={cls?.name}
-                latestMemory={realClassMemories[0] || null}
-                historyMemories={realClassMemories.slice(1)}
-                signedUrlByMemoryId={classMemorySignedUrls}
-                loading={classMemoriesLoading}
-                error={classMemoriesError}
-              />
-            )
-        )}
-
-        {!isDemoStudentPreview && (
-          <div className="mb-6">
             <ParentAnnouncementsEventsSection
               isDemoMode={isDemoMode}
               loading={parentAnnouncementsLoading}
@@ -3622,13 +3648,41 @@ export default function ParentView() {
               mediaError={parentAnnouncementMediaError}
               onOpenMedia={handleOpenParentAnnouncementMedia}
             />
-          </div>
+            {isDemoMode ? (
+              <ClassMemoriesDemoSection className={cls?.name} />
+            ) : (
+              <ParentClassMemoriesSection
+                className={cls?.name}
+                latestMemory={realClassMemories[0] || null}
+                historyMemories={realClassMemories.slice(1)}
+                signedUrlByMemoryId={classMemorySignedUrls}
+                loading={classMemoriesLoading}
+                error={classMemoriesError}
+              />
+            )}
+          </section>
         )}
+
+        {!isDemoStudentPreview && isParentViewerRole ? (
+          <ParentInAppNotificationsSection
+            demoMode={isDemoMode}
+            hasSupabaseSession={hasSupabaseSession}
+            supabaseReady={isSupabaseConfigured()}
+            loading={parentInAppNotificationsLoading}
+            error={parentInAppNotificationsError}
+            notifications={parentInAppNotificationsForChild}
+            unreadCount={parentInAppUnreadForChild}
+            markingId={parentInAppMarkingId}
+            onMarkRead={handleMarkParentNotificationRead}
+            onOpenTarget={handleOpenParentNotificationTarget}
+            actionNotice={parentInAppActionNotice}
+          />
+        ) : null}
 
         {!isDemoStudentPreview && (
           <Card className="mb-6">
             <CardHeader className="pb-3">
-              <CardTitle className="text-base">Learning Portal</CardTitle>
+              <CardTitle className="text-base">Quick access</CardTitle>
             </CardHeader>
             <CardContent>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -3670,6 +3724,32 @@ export default function ParentView() {
             </CardContent>
           </Card>
         )}
+
+        {!isDemoStudentPreview && isParentViewerRole ? (
+          <section id="parent-settings" className="mb-6 space-y-4" aria-label="Settings">
+            <div className="space-y-1">
+              <h2 className="text-lg font-semibold tracking-tight">Settings</h2>
+              <p className="text-sm text-muted-foreground">
+                Manage communication preferences and account security for your parent portal.
+              </p>
+            </div>
+            <ParentNotificationSettingsSection
+              demoMode={isDemoMode}
+              hasSupabaseSession={hasSupabaseSession}
+              supabaseReady={isSupabaseConfigured()}
+              loading={parentNotificationPreferencesLoading}
+              error={parentNotificationPreferencesError}
+              saving={parentNotificationPreferencesSaving}
+              saveMessage={parentNotificationPreferencesSaveMessage}
+              saveError={parentNotificationPreferencesSaveError}
+              preferences={parentNotificationPreferences}
+              onToggleCategory={handleToggleParentNotificationCategory}
+              onConfirmOperationalService={handleConfirmOperationalServicePreference}
+              onSave={handleSaveParentNotificationSettings}
+            />
+            <ActiveSessionsCard />
+          </section>
+        ) : null}
 
         <Separator className="mb-6" />
 

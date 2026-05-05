@@ -221,6 +221,15 @@ Use this quick pass during ParentView checks:
    - no email/SMS/push behavior,
    - no chat/reply UI,
    - no draft/internal/evidence exposure.
+9. Confirm parent information architecture:
+   - landing feels content-first (updates, memories, notifications, quick access),
+   - Settings remains a dedicated destination for communication + account security.
+10. Confirm class-memory targeting guardrail text:
+   - parent sees only released memories for linked child/class,
+   - no branch-wide memory feed is exposed by default.
+11. Confirm enrollment/class-linking product rule in walkthrough notes:
+   - staff/HQ stays source-of-truth for class assignment,
+   - parent links to existing student record rather than defining class membership.
 
 ---
 
