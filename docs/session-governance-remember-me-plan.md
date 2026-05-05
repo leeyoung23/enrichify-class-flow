@@ -3,6 +3,22 @@
 Date: 2026-05-05  
 Type: planning + diagnosis checkpoint only (no code/SQL/RLS/auth-config changes)
 
+## 2026-05-05 stability checkpoint addendum (logout audit warning)
+
+- Root cause of warning `recordAuthLifecycleAudit.user.logout`:
+  - `recordAuditEvent` used `insert(...).select(...).maybeSingle()` for all audit writes.
+  - Parent role has insert permission on `audit_events` but no generic select policy.
+  - During logout audit writes, the `RETURNING` read path could be denied by RLS, producing a warning despite non-blocking flow.
+- Safety posture:
+  - No auth/RLS policy weakening and no SQL migration were needed.
+  - Auth/session behavior remains unchanged; audit writes stay best-effort and non-blocking.
+- Applied minimal runtime fix:
+  - Added optional write-only mode for auth lifecycle audit writes (`includeResultRow: false`) so logout/login/timeout audit events no longer require select visibility.
+  - Kept row-return mode available for smoke/helper paths that intentionally validate inserted rows.
+- Validation outcome:
+  - `build`, `lint`, `typecheck`, `test:supabase:audit-events`, `test:supabase:auth-lifecycle-audit` passed.
+  - Regression checks `test:supabase:notifications` and `test:supabase:parent-notification-preferences` passed.
+
 ## 2026-05-05 implementation checkpoint addendum (Phase 1A)
 
 - Implemented runtime auth authority/sign-out alignment (small safe fix).

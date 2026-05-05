@@ -76,6 +76,7 @@ export default function Login() {
           rememberMeEnabled: keepSignedIn,
           reason: "authenticated_sign_in",
           source: "login",
+          includeResultRow: false,
         });
         if (previousKeepSignedIn !== keepSignedIn) {
           await recordAuthLifecycleAudit({
@@ -84,6 +85,7 @@ export default function Login() {
             rememberMeEnabled: keepSignedIn,
             reason: "login_checkbox_changed",
             source: "login_checkbox",
+            includeResultRow: false,
           });
         }
       }

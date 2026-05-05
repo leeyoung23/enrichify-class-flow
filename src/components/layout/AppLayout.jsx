@@ -175,6 +175,7 @@ export default function AppLayout() {
             rememberMeEnabled: keepSignedIn,
             reason: 'inactivity_timeout',
             source: 'timeout',
+            includeResultRow: false,
           });
           await signOutSupabasePrimary({ reason: 'session_timeout' });
         } finally {

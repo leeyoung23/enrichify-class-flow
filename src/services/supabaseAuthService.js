@@ -125,6 +125,7 @@ export async function signOutSupabasePrimary({ reason = "manual_sign_out" } = {}
       actionType: "user.logout",
       reason: "manual_sign_out",
       source: "manual_sign_out",
+      includeResultRow: false,
     });
   }
 

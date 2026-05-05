@@ -3,6 +3,20 @@
 Date: 2026-05-04  
 Type: planning-only checkpoint (no code/SQL/auth/UI changes in this milestone)
 
+## 2026-05-05 stability checkpoint addendum: logout audit warning diagnosis
+
+- Diagnosed warning source: `recordAuthLifecycleAudit.user.logout` in runtime sign-out flow.
+- Root cause:
+  - audit helper wrote via `insert(...).select(...)`, which requires select visibility on inserted rows.
+  - parent role intentionally lacks broad `audit_events` select policy, so write-with-return could emit RLS warning in logout contexts.
+- Resolution approach:
+  - no SQL/RLS policy changes and no auth behavior changes.
+  - introduced write-only mode for auth lifecycle audit writes (`includeResultRow: false`) for login/logout/timeout runtime paths.
+  - retained selectable mode for focused smoke/helper validation paths.
+- Outcome:
+  - warning removed from auth/audit smoke flows.
+  - no auth/RLS weakening and no service-role usage.
+
 ## 2026-05-05 checkpoint addendum: Remember me / keep me signed in planning
 
 This addendum records diagnosis and policy direction for trusted-device session persistence.

@@ -1,5 +1,12 @@
 # Project Master Context Handoff
 
+## Checkpoint update (logout audit warning stabilization — 2026-05-05)
+
+- **Diagnosis result:** warning `recordAuthLifecycleAudit.user.logout` came from audit write path using `insert(...).select(...)` under RLS contexts where write is allowed but row-return select is intentionally restricted (notably parent role).
+- **Fix applied:** added optional write-only audit mode (`includeResultRow: false`) and used it in auth lifecycle runtime call sites (login/logout/session-timeout) to avoid requiring select visibility.
+- **Security posture preserved:** no SQL/RLS changes, no auth behavior changes, no service-role usage, no policy widening.
+- **Validation:** `build`, `lint`, `typecheck`, `test:supabase:audit-events`, `test:supabase:auth-lifecycle-audit`, `test:supabase:notifications`, and `test:supabase:parent-notification-preferences` passed.
+
 ## Checkpoint update (session governance Phase 1D auth lifecycle audit foundation — 2026-05-05)
 
 - **No SQL/RLS change required:** Phase 1D reuses existing `audit_events` foundation for auth lifecycle events.

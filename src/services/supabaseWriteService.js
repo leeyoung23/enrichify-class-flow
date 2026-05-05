@@ -562,6 +562,7 @@ export async function recordAuditEvent({
   classId,
   studentId,
   metadata,
+  includeResultRow = true,
 } = {}) {
   if (!isSupabaseConfigured() || !supabase) {
     return { data: null, error: { message: "Supabase is not configured" } };
@@ -590,6 +591,11 @@ export async function recordAuditEvent({
       created_at: new Date().toISOString(),
     };
 
+    if (!includeResultRow) {
+      const writeOnlyResult = await supabase.from("audit_events").insert(payload);
+      return { data: null, error: writeOnlyResult.error ?? null };
+    }
+
     const insertResult = await supabase
       .from("audit_events")
       .insert(payload)
@@ -616,6 +622,7 @@ export async function recordAuthLifecycleAudit({
   rememberMeEnabled = null,
   reason = null,
   source = null,
+  includeResultRow = true,
 } = {}) {
   const safeActionType = trimString(actionType);
   if (!AUTH_LIFECYCLE_ACTION_TYPES.has(safeActionType)) {
@@ -629,6 +636,7 @@ export async function recordAuthLifecycleAudit({
     actionType: safeActionType,
     entityType: "user_session",
     entityId: null,
+    includeResultRow,
     metadata: {
       role: safeRole,
       rememberMeEnabled: typeof rememberMeEnabled === "boolean" ? rememberMeEnabled : null,
