@@ -3,10 +3,13 @@
 ## Checkpoint update (parent notification preferences foundation — 2026-05-05)
 
 - **SQL:** `supabase/sql/040_parent_notification_preferences_foundation.sql` adds `parent_notification_preferences` (channel/category consent model with optional student scope).
+- **Apply status:** migration applied to linked Supabase project via SQL Editor (manual apply).
 - **RLS:** parent self read/insert/update; HQ read/insert/update; branch supervisor read-only branch-linked view; teacher/student denied; no delete policy in v1.
 - **Helpers:** `listMyNotificationPreferences`, `listNotificationPreferencesForStudent` (`supabaseReadService.js`) and `upsertMyNotificationPreference` (`supabaseWriteService.js`).
 - **Smoke:** `scripts/supabase-parent-notification-preferences-smoke-test.mjs` + `npm run test:supabase:parent-notification-preferences`.
+- **Post-apply verification:** `test:supabase:parent-notification-preferences`, `test:supabase:notifications`, `test:supabase:audit-events` run with expected PASS/check outcomes.
 - **Email boundary:** still no email sending, no Gmail/provider integration, no attachment/PDF behavior change.
+- **Next milestone:** ParentView Notification Settings UI v1.
 
 ## Checkpoint update (email consent/preferences readiness plan — 2026-05-05)
 

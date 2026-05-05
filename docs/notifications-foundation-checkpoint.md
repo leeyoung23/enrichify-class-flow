@@ -38,12 +38,16 @@ Date: 2026-05-05
 ## Parent notification preferences foundation (manual apply — 040)
 
 - **Migration:** `supabase/sql/040_parent_notification_preferences_foundation.sql` — adds `parent_notification_preferences` for parent communication consent/preferences by `channel` + `category`, optional `student_id` scope.
+- **Apply method:** Supabase SQL Editor (manual apply on linked project).
 - **Allowed channel values:** `in_app`, `email`, `sms`, `push`.
 - **Allowed category values:** `operational_service`, `billing_invoice`, `learning_report_homework`, `attendance_safety`, `parent_communication`, `marketing_events`, `media_photo`.
 - **Consent semantics:** `consent_status` in `not_set`, `consented`, `withdrawn`, `required_service`; withdrawal represented by `consent_status='withdrawn'` + `withdrawn_at`, often paired with `enabled=false`.
 - **RLS posture (conservative):** parent self read/insert/update; HQ read/insert/update; branch supervisor read-only for branch-linked parent records; teacher/student no access; no delete policy in v1.
 - **Service helpers:** `listMyNotificationPreferences`, `listNotificationPreferencesForStudent`, `upsertMyNotificationPreference`.
-- **Smoke:** `npm run test:supabase:parent-notification-preferences` (requires 040 applied on target DB).
+- **Post-apply smoke (linked):**
+  - `npm run test:supabase:parent-notification-preferences` — parent self read/insert/update PASS; cross-profile parent write blocked; student blocked; HQ read PASS; supervisor read-only behavior recorded.
+  - `npm run test:supabase:notifications` — PASS
+  - `npm run test:supabase:audit-events` — PASS
 - **Boundary unchanged:** still no email sending/Gmail integration/provider credentials in frontend.
 
 ## Notification templates admin UI v1 (HQ)
@@ -110,6 +114,7 @@ Date: 2026-05-05
 
 - **Email/SMS/push** only after review; optional DB **unique** partial index on `(entity_id, event_type, metadata->>'releasedVersionId', created_by_profile_id)` if hard idempotency is required across staff.
 - **Email consent/preferences readiness plan:** `docs/email-notification-consent-preferences-readiness-plan.md` (planning only) defines consent categories, preference model, safety rules, prerequisites, and phased order before any Gmail/email provider integration.
+- **ParentView Notification Settings UI v1** backed by `parent_notification_preferences` (self-service parent controls, no sender integration yet).
 
 ---
 

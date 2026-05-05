@@ -137,7 +137,7 @@ Before enabling any email provider (including Gmail APIs), all of the following 
 
 ---
 
-## 9) Phase 1 foundation status (implemented)
+## 9) Phase 1 foundation status (applied + verified)
 
 - Added migration file: `supabase/sql/040_parent_notification_preferences_foundation.sql`
 - Added table: `parent_notification_preferences`
@@ -155,5 +155,26 @@ Before enabling any email provider (including Gmail APIs), all of the following 
 - Added npm script: `test:supabase:parent-notification-preferences`
 
 Apply note:
+- **Applied to linked project:** `supabase/sql/040_parent_notification_preferences_foundation.sql`
+- **Apply method used:** Supabase SQL Editor (manual run)
 - CLI apply may require `SUPABASE_DB_PASSWORD`.
-- If CLI apply is unavailable, paste/run `supabase/sql/040_parent_notification_preferences_foundation.sql` in Supabase SQL Editor first, then run the new smoke.
+
+Post-apply validation (linked project):
+- `npm run test:supabase:parent-notification-preferences`
+- `npm run test:supabase:notifications`
+- `npm run test:supabase:audit-events`
+
+RLS verification recorded:
+- parent can self read/insert/update
+- parent cannot create preference for another profile
+- student read/write blocked
+- HQ read path works
+- branch supervisor read-only branch-linked behavior recorded (fixture-dependent pass/check)
+
+Safety boundaries remain:
+- no Gmail/email provider integration
+- no email/SMS/push sending
+- no service-role frontend usage
+- no student access
+- no marketing email automation without future opt-in/unsubscribe path
+- portal remains source of truth
