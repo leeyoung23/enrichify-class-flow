@@ -107,6 +107,7 @@ Spot-check quickly before sign-off:
 - [ ] Released progress reports are visible after release only.
 - [ ] Printable **layout** preview (released content) opens for parents without demo/debug-only gating — still no PDF download.
 - [ ] Homework feedback is visible after release only.
+- [ ] Homework uploads and unreleased drafts are **not** exposed as final feedback to parents (copy + behaviour align with centre-private review model).
 - [ ] Attendance arrival notification appears when triggered.
 - [ ] Payment proof request / verified / rejected messages appear when triggered.
 
@@ -117,6 +118,7 @@ Spot-check quickly before sign-off:
 - [ ] `/students` renders for authenticated teacher/HQ — list, expanded profile shell, homework inbox strip — without hitting the Students error boundary in normal fixture conditions (students **without** a `student_school_profile` row must not crash the School / Learning Context card).
 - [ ] Parent communication release flow works.
 - [ ] Homework feedback release flow works.
+- [ ] **`/homework`** PageHeader + feedback panel clarify **mock AI drafting** only (metadata/context)—no OCR/vision path in-app today; marked files remain staff-only until explicitly shared.
 - [ ] Attendance marking flow works.
 - [ ] Notifications are created only after parent-visible release events.
 - [ ] Teacher cannot access HQ-only Session Review.

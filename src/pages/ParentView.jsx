@@ -342,8 +342,9 @@ function ParentHomeworkStatusSection({
         <CardHeader className="pb-3">
           <CardTitle className="text-base">Homework</CardTitle>
         </CardHeader>
-        <CardContent className="text-sm text-muted-foreground">
-          No assigned homework is available right now for your linked child.
+        <CardContent className="space-y-2 text-sm text-muted-foreground">
+          <p>No homework tasks are showing for your linked child right now.</p>
+          <p className="text-xs">If something is due, your centre may still be setting it up—check back after your teacher publishes the task.</p>
         </CardContent>
       </Card>
     );
@@ -358,7 +359,7 @@ function ParentHomeworkStatusSection({
         <p className="text-sm text-muted-foreground">
           {isDemoMode
             ? 'Demo-only preview: submit controls and status updates are simulated locally and do not upload to Supabase.'
-            : 'Submit your child\'s work for assigned tasks and follow review status updates.'}
+            : 'Submit your child\'s work when teachers ask. Uploads stay with your centre\'s team until they finish review—teacher drafts, internal notes, and any future AI marking suggestions stay hidden until feedback is released for your family.'}
         </p>
         <div className="space-y-2">
           <p className="text-xs font-medium text-muted-foreground">Filter by status</p>

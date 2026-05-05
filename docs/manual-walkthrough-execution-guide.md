@@ -107,11 +107,13 @@ Credential note:
 
 ## 6) Walkthrough Flow D: Homework
 
-1. As staff/teacher, create or open homework path.
-2. Execute parent upload / teacher feedback / release flow.
-3. As parent, confirm:
-   - released feedback visibility
-   - related notification appears
+1. As staff/teacher, open **`/homework`** and confirm page copy stresses **privacy until release**, **mock AI only** (no OCR), and **no auto-notification** from drafts.
+2. Execute parent upload / teacher review / **share feedback** and (if used) **share marked work** when your role permits.
+3. Confirm optional **Draft feedback with AI (mock)** only prefills text from context summaries—not from reading submitted files—in this build.
+4. As parent, confirm uploads are described as staying with centre staff until review; teacher feedback/marked sheets appear **only after release**.
+5. Confirm related **in-app** notification behaviour when feedback is released (email/SMS still deferred globally).
+
+Planning reference: `docs/homework-ai-marking-readiness-plan.md`.
 
 ---
 
@@ -295,6 +297,10 @@ Use this quick pass during ParentView checks:
 23. Confirm parent linking boundary:
    - parent links to existing student record only,
    - class assignment remains staff-owned (no parent self-assignment).
+24. Confirm homework AI marking readiness posture:
+   - **`/homework`** explains mock AI drafting (no file OCR yet) and marked-work release rules,
+   - parent homework section copy matches privacy-after-upload expectations,
+   - see `docs/homework-ai-marking-readiness-plan.md` for architecture/future OCR notes.
 
 ---
 

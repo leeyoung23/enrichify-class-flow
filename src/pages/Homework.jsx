@@ -1145,7 +1145,7 @@ export default function Homework() {
     <div>
       <PageHeader
         title="Homework"
-        description="Create homework, review submissions, add teacher-marked work, and share feedback with families when ready. Families only see marked work and feedback after release, and nothing sends automatically."
+        description="Create homework, review submissions, add teacher-marked work, and share feedback when ready. Family uploads stay centre-private until reviewed. Mock AI drafting uses safe context summaries only—not file OCR—and never auto-shares for you. Parents only see released feedback and marked files you explicitly share; nothing sends automatically."
       />
 
       {!isStaffRole ? (
@@ -1813,7 +1813,10 @@ export default function Homework() {
                   </details>
                   <div className="mt-4 space-y-2">
                     <p className="text-sm font-medium">Student submission files</p>
-                    <p className="text-xs text-muted-foreground">Files the family uploaded for this homework.</p>
+                    <p className="text-xs text-muted-foreground">
+                      Files the family uploaded for this homework. They remain staff-scoped for review; parents see their own
+                      uploads, while corrected or marked versions stay internal until you share marked work separately.
+                    </p>
                     {filesBusy ? (
                       <p className="text-sm text-muted-foreground">Loading files...</p>
                     ) : submissionFileRows.length === 0 ? (
@@ -2012,7 +2015,7 @@ export default function Homework() {
                   ) : null}
                   <div className="rounded-lg border border-dashed p-3 space-y-2 bg-muted/20">
                     <div className="flex flex-wrap items-center justify-between gap-2">
-                      <p className="text-sm font-medium">AI draft assist (mock only)</p>
+                      <p className="text-sm font-medium">AI draft assist (mock only — future OCR later)</p>
                       <Button
                         type="button"
                         variant="outline"
@@ -2021,11 +2024,13 @@ export default function Homework() {
                         disabled={aiDraftLoading}
                       >
                         <Sparkles className="h-4 w-4 mr-1" />
-                        {aiDraftLoading ? 'Generating...' : 'Draft feedback with AI'}
+                        {aiDraftLoading ? 'Generating...' : 'Draft feedback with AI (mock)'}
                       </Button>
                     </div>
                     <p className="text-xs text-muted-foreground">
-                      Generates a mock AI draft from safe metadata/context only. You must review and edit before saving or sharing with families.
+                      Fills starter text from task/student learning context summaries only—it does{' '}
+                      <span className="font-medium text-foreground">not</span> read uploads, run OCR, or call a vision model in
+                      this build. Teacher review and your manual edits stay mandatory; nothing here auto-releases to parents.
                     </p>
                     {aiDraftSafetyNote ? (
                       <p className="text-xs text-amber-700">{aiDraftSafetyNote}</p>

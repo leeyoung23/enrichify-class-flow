@@ -1,5 +1,13 @@
 # Project Master Context Handoff
 
+## Checkpoint update (Homework AI marking / OCR readiness — 2026-05-06)
+
+- **Regression guard sweep:** Items 1–10 re-checked via static pass on `Students.jsx`, `ParentUpdates.jsx`, `ParentView.jsx`, `Sidebar.jsx`, session/auth services — **no regressions requiring code repair** ahead of homework copy edits.
+- **Homework UX copy only:** `Homework.jsx` PageHeader + student-file explainer + **mock AI / no OCR / no auto-release** clarification; sparkle button labelled **Draft feedback with AI (mock)**. `ParentView` homework empty + intro warmed and states uploads stay centre-private until teacher shares feedback (**no drafts/AI internals** surfaced).
+- **Planning doc:** `docs/homework-ai-marking-readiness-plan.md` — schema roles, privacy boundaries, future OCR integration behind teacher release, deferrals (vision provider, DPIA, audit).
+- **Validation:** `npm run build`, `lint`, `typecheck`; `test:supabase:homework:upload`, `:feedback`, `:assignment:write`, `test:supabase:notifications`, `test:supabase:audit-events`. **`test:ai:homework-edge:deployed` not run by default** (deployed-edge regression differs per environment).
+- **Deferred:** OCR/vision on homework binaries, automated AI marking payloads, parental PDF artefacts, outbound email/SMS.
+
 ## Checkpoint update (AI Parent Reports readiness + regression guards — 2026-05-06)
 
 - **Regression guards:** Walking `Students.jsx`, `ParentUpdates.jsx`, `ParentView.jsx`, `Sidebar.jsx`, `sessionGovernanceService.js`, `supabaseAuthService.js`, `permissionService.js` showed **no new UAT regressions** beyond the milestone fix list below (verified by code inspection on this checkpoint).
