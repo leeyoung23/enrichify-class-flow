@@ -38,6 +38,7 @@ const ANNOUNCEMENT_AUDIENCE_VALUES = new Set(["internal_staff", "parent_facing"]
 const ANNOUNCEMENT_TYPE_VALUES = new Set(["request", "company_news", "parent_event"]);
 const ANNOUNCEMENT_DONE_STATUS_VALUES = new Set(["pending", "done", "undone"]);
 const ANNOUNCEMENT_TASK_STATUS_VALUES = new Set(["unread", "pending", "undone", "overdue", "done"]);
+const NOTIFICATION_TEMPLATE_CHANNEL_VALUES = new Set(["in_app", "email"]);
 const PARENT_ANNOUNCEMENT_FIELDS =
   "id,title,subtitle,body,announcement_type,status,branch_id,class_id,published_at,event_start_at,event_end_at,location,created_at,updated_at";
 const PARENT_ANNOUNCEMENT_STATUS_VALUES = new Set(["draft", "published", "archived"]);
@@ -2111,6 +2112,43 @@ export async function getMyUnreadInAppNotificationCount() {
     return { data: { count: Number.isInteger(count) ? count : 0 }, error: null };
   } catch (error) {
     return { data: { count: 0 }, error };
+  }
+}
+
+export async function listNotificationTemplates({
+  channel,
+  eventType,
+  includeInactive = true,
+  limit = 200,
+} = {}) {
+  if (!isSupabaseConfigured() || !supabase) {
+    return { data: [], error: { message: "Supabase is not configured" } };
+  }
+  if (channel != null && channel !== "" && !NOTIFICATION_TEMPLATE_CHANNEL_VALUES.has(trimString(channel))) {
+    return { data: [], error: { message: "channel is invalid" } };
+  }
+  if (includeInactive != null && typeof includeInactive !== "boolean") {
+    return { data: [], error: { message: "includeInactive must be a boolean when provided" } };
+  }
+  const safeLimit = Number.isInteger(limit) && limit > 0 ? Math.min(limit, 500) : 200;
+
+  try {
+    let query = supabase
+      .from("notification_templates")
+      .select(NOTIFICATION_TEMPLATE_FIELDS)
+      .order("event_type", { ascending: true })
+      .order("channel", { ascending: true })
+      .order("template_key", { ascending: true })
+      .limit(safeLimit);
+    if (channel != null && channel !== "") query = query.eq("channel", trimString(channel));
+    if (eventType != null && eventType !== "") query = query.eq("event_type", trimString(eventType));
+    if (!includeInactive) query = query.eq("is_active", true);
+
+    const { data, error } = await query;
+    if (error) return { data: [], error };
+    return { data: Array.isArray(data) ? data : [], error: null };
+  } catch (error) {
+    return { data: [], error };
   }
 }
 

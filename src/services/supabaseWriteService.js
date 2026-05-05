@@ -129,6 +129,7 @@ const FEE_PAYMENT_PROOF_VERIFIED_NOTIFY_BODY =
 const FEE_PAYMENT_PROOF_REJECTED_NOTIFY_TITLE = "Payment proof needs review";
 const FEE_PAYMENT_PROOF_REJECTED_NOTIFY_BODY =
   "Please check the payment proof request in the parent portal.";
+const NOTIFICATION_TEMPLATE_CHANNEL_VALUES = new Set(["in_app", "email"]);
 
 function isUuidLike(value) {
   if (typeof value !== "string") return false;
@@ -577,6 +578,63 @@ export async function markNotificationRead({ notificationId } = {}) {
       .select("id,recipient_profile_id,status,read_at")
       .maybeSingle();
     return { data: updateResult.data ?? null, error: updateResult.error ?? null };
+  } catch (err) {
+    return { data: null, error: { message: err?.message || String(err) } };
+  }
+}
+
+export async function updateNotificationTemplate({
+  templateId,
+  titleTemplate,
+  bodyTemplate,
+  isActive,
+} = {}) {
+  if (!isSupabaseConfigured() || !supabase) {
+    return { data: null, error: { message: "Supabase is not configured" } };
+  }
+  if (!isUuidLike(templateId)) {
+    return { data: null, error: { message: "templateId must be a UUID" } };
+  }
+  if (typeof titleTemplate !== "string" || !trimString(titleTemplate)) {
+    return { data: null, error: { message: "titleTemplate is required" } };
+  }
+  if (typeof bodyTemplate !== "string" || !trimString(bodyTemplate)) {
+    return { data: null, error: { message: "bodyTemplate is required" } };
+  }
+  if (isActive != null && typeof isActive !== "boolean") {
+    return { data: null, error: { message: "isActive must be a boolean when provided" } };
+  }
+
+  try {
+    const { profileId, error: authError } = await getAuthenticatedProfileId();
+    if (authError || !profileId) {
+      return { data: null, error: authError || { message: "Authenticated user is required" } };
+    }
+
+    const payload = {
+      title_template: trimString(titleTemplate).slice(0, 240),
+      body_template: trimString(bodyTemplate).slice(0, 4000),
+      updated_by_profile_id: profileId,
+    };
+    if (typeof isActive === "boolean") payload.is_active = isActive;
+
+    const updateResult = await supabase
+      .from("notification_templates")
+      .update(payload)
+      .eq("id", trimString(templateId))
+      .select(
+        "id,template_key,event_type,channel,title_template,body_template,allowed_variables,branch_id,is_active,created_by_profile_id,updated_by_profile_id,created_at,updated_at"
+      )
+      .maybeSingle();
+
+    if (updateResult.error || !updateResult.data?.id) {
+      return { data: null, error: updateResult.error || { message: "Unable to update notification template" } };
+    }
+
+    if (!NOTIFICATION_TEMPLATE_CHANNEL_VALUES.has(trimString(updateResult.data.channel))) {
+      return { data: null, error: { message: "Template channel is invalid" } };
+    }
+    return { data: updateResult.data, error: null };
   } catch (err) {
     return { data: null, error: { message: err?.message || String(err) } };
   }

@@ -10,6 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Textarea } from '@/components/ui/textarea';
 import PageHeader from '@/components/shared/PageHeader';
 import EmptyState from '@/components/shared/EmptyState';
+import NotificationTemplateManager from '@/components/announcements/NotificationTemplateManager';
 import { BellRing, MessageSquare, Megaphone } from 'lucide-react';
 import { toast } from 'sonner';
 import { getSelectedDemoRole } from '@/services/authService';
@@ -22,6 +23,7 @@ import {
   listAnnouncementReplies,
   listAnnouncementStatuses,
   listAnnouncementTargets,
+  listNotificationTemplates,
   listParentAnnouncements,
 } from '@/services/supabaseReadService';
 import {
@@ -44,9 +46,10 @@ import {
   publishParentAnnouncement,
   publishCompanyNews,
   updateAnnouncementDoneStatus,
+  updateNotificationTemplate,
 } from '@/services/supabaseWriteService';
 
-const FILTERS = ['Requests', 'Parent Notices', 'Company News', 'Done', 'Pending'];
+const FILTERS = ['Requests', 'Parent Notices', 'Company News', 'Done', 'Pending', 'Message Templates'];
 const PARENT_NOTICE_TYPE_OPTIONS = [
   { value: 'event', label: 'Event' },
   { value: 'activity', label: 'Activity' },
@@ -543,6 +546,7 @@ export default function Announcements() {
   const canCreateInAuth = role === ROLES.HQ_ADMIN || role === ROLES.BRANCH_SUPERVISOR;
   const canCreateCompanyNewsInDemo = role === ROLES.HQ_ADMIN;
   const canCreateCompanyNewsInAuth = role === ROLES.HQ_ADMIN;
+  const canManageNotificationTemplates = role === ROLES.HQ_ADMIN;
   const canViewManagerOverview = role === ROLES.HQ_ADMIN || role === ROLES.BRANCH_SUPERVISOR;
   const canManageParentNoticeMedia = role === ROLES.HQ_ADMIN || role === ROLES.BRANCH_SUPERVISOR;
   const canUploadAttachments = roleCanUploadAttachment(role);
@@ -713,6 +717,7 @@ export default function Announcements() {
     if (activeFilter === 'Company News') return scoped.filter((row) => row.type === 'company_news');
     if (activeFilter === 'Done') return scoped.filter((row) => row.status === 'done');
     if (activeFilter === 'Pending') return scoped.filter((row) => row.status === 'pending' || row.status === 'undone');
+    if (activeFilter === 'Message Templates') return [];
     return scoped;
   }, [activeFilter, rows, role, isDemoMode, authenticatedRows, parentNoticeRows, authenticatedParentNoticeRows]);
 
@@ -777,6 +782,29 @@ export default function Announcements() {
       if (result.error) throw new Error('Unable to load parent media right now.');
       return Array.isArray(result.data) ? result.data : [];
     },
+  });
+
+  const templatesQuery = useQuery({
+    queryKey: ['notification-templates-admin', supabaseAppUser?.id, role, activeFilter],
+    enabled: canUseSupabaseAnnouncements && canManageNotificationTemplates && activeFilter === 'Message Templates',
+    queryFn: async () => {
+      const result = await listNotificationTemplates({ channel: 'in_app', includeInactive: true, limit: 300 });
+      if (result.error) throw new Error(result.error.message || 'Unable to load message templates right now.');
+      return Array.isArray(result.data) ? result.data : [];
+    },
+  });
+
+  const templateSaveMutation = useMutation({
+    mutationFn: async ({ templateId, titleTemplate, bodyTemplate, isActive }) => {
+      const result = await updateNotificationTemplate({ templateId, titleTemplate, bodyTemplate, isActive });
+      if (result.error) throw new Error(result.error.message || 'Unable to save message template right now.');
+      return result.data;
+    },
+    onSuccess: async () => {
+      toast.success('Message template updated.');
+      await queryClient.invalidateQueries({ queryKey: ['notification-templates-admin'] });
+    },
+    onError: (error) => toast.error(error?.message || 'Unable to save message template right now.'),
   });
 
   const refreshAnnouncements = async () => {
@@ -1501,7 +1529,9 @@ export default function Announcements() {
       <PageHeader
         title="Announcements"
         description="Requests: internal staff tasks and reminders. Company News: internal staff news. Parent Notices: official parent-facing centre notices and events. For teacher/class learning updates (memories, comments, weekly progress), use Parent Communication at /parent-updates—not a substitute for official notices."
-        action={activeFilter === 'Parent Notices'
+        action={activeFilter === 'Message Templates'
+          ? null
+          : (activeFilter === 'Parent Notices'
           ? (((isDemoMode && canCreateInDemo) || (!isDemoMode && canCreateInAuth)) ? (
             <Button className="min-h-10" onClick={() => setParentNoticeCreateOpen((prev) => !prev)}>
               Create Parent Notice
@@ -1529,7 +1559,7 @@ export default function Announcements() {
             <Button className="min-h-10" onClick={() => setCreateOpen((prev) => !prev)}>
               Create Request
             </Button>
-          ) : null))}
+          ) : null)))}
       />
 
       <Card className="p-4 border-dashed mb-4">
@@ -2060,7 +2090,7 @@ export default function Announcements() {
 
           <Card className="p-3">
             <div className="flex gap-2 overflow-x-auto">
-              {FILTERS.map((filter) => (
+              {(canManageNotificationTemplates ? FILTERS : FILTERS.filter((item) => item !== 'Message Templates')).map((filter) => (
                 <Button
                   key={filter}
                   size="sm"
@@ -2079,6 +2109,25 @@ export default function Announcements() {
             </div>
           </Card>
 
+          {activeFilter === 'Message Templates' ? (
+            canManageNotificationTemplates ? (
+              <NotificationTemplateManager
+                templates={Array.isArray(templatesQuery.data) ? templatesQuery.data : []}
+                isLoading={templatesQuery.isLoading}
+                isError={templatesQuery.isError}
+                canEdit
+                isSaving={templateSaveMutation.isPending}
+                onSaveTemplate={(payload) => templateSaveMutation.mutate(payload)}
+              />
+            ) : (
+              <Card className="p-4 sm:p-5 border-dashed">
+                <p className="text-sm font-medium">Message templates are HQ-managed</p>
+                <p className="text-xs text-muted-foreground mt-1">
+                  This section is available only to HQ Admin in v1.
+                </p>
+              </Card>
+            )
+          ) : null}
           {activeFilter === 'Company News' ? (
             <Card className="p-4 sm:p-5 border-dashed">
               <div className="flex items-center gap-2 mb-2">
@@ -2102,6 +2151,7 @@ export default function Announcements() {
             </Card>
           ) : null}
 
+          {activeFilter !== 'Message Templates' ? (
           <div className="grid grid-cols-1 xl:grid-cols-5 gap-4">
             <div className="xl:col-span-2 space-y-3">
               {visibleRows.map((row) => (
@@ -2644,6 +2694,7 @@ export default function Announcements() {
               )}
             </div>
           </div>
+          ) : null}
         </div>
       )}
     </div>

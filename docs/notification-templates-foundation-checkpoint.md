@@ -80,3 +80,15 @@ Automated notifications may later reference **secure attachments** (e-invoices, 
 ## Billing / payment message-only seeds (039)
 
 Migration **`supabase/sql/039_billing_payment_notification_templates.sql`** adds template rows for `fee_payment.proof_requested`, `fee_payment.proof_verified`, `fee_payment.proof_rejected`, and `invoice.available_message_only`. **Runtime wiring** (today): **`verifyFeeReceipt`** / **`rejectFeeReceipt`** in `supabaseWriteService.js` notify linked parents for verified/rejected only; **requested** / **invoice** rows are placeholders for staff request flows and invoice intent (see **`docs/notifications-foundation-checkpoint.md`** §039).
+
+## HQ admin UI v1 (Announcements)
+
+- Added **Message Templates** section in `src/pages/Announcements.jsx` for **HQ Admin only**.
+- Uses anon+JWT helpers:
+  - `listNotificationTemplates()` in `src/services/supabaseReadService.js`
+  - `updateNotificationTemplate()` in `src/services/supabaseWriteService.js`
+- Editable fields (HQ only): `title_template`, `body_template`, `is_active`.
+- Read-only display: `template_key`, `event_type`, `channel`, `allowed_variables`.
+- Preview panel is local-only (no send action).
+- Branch supervisors/teachers do not see this editor tab in v1; parent/student never access Announcements route.
+- No SQL/RLS changes for this UI milestone (existing 038 policies already allow HQ update).

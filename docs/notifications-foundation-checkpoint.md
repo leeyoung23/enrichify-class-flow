@@ -35,6 +35,16 @@ Date: 2026-05-05
 - **Idempotency (best-effort):** same **actor** + **`fee_record`** + **`event_type`** as other flows; another supervisor could still insert a duplicate event row.
 - **Smoke:** **`npm run test:supabase:fee-receipt:verify`** asserts parent inbox count increases after supervisor verify.
 
+## Notification templates admin UI v1 (HQ)
+
+- **Surface:** `src/pages/Announcements.jsx` adds **Message Templates** section for HQ admin under Announcements (no new route required).
+- **Read helper:** `listNotificationTemplates({ channel, eventType, includeInactive })` in `supabaseReadService.js`.
+- **Write helper:** `updateNotificationTemplate({ templateId, titleTemplate, bodyTemplate, isActive })` in `supabaseWriteService.js`.
+- **Editable fields:** `title_template`, `body_template`, `is_active` only.
+- **Read-only fields in UI:** `template_key`, `event_type`, `channel`, allowed placeholders.
+- **Safety copy in UI:** warns against private student details, payment amounts, internal notes, file links, and AI report text.
+- **Boundaries unchanged:** no sending, no attachment links, no service-role frontend usage, no notification trigger changes.
+
 ### Post-apply smoke tests (linked project)
 
 | Command | Result |

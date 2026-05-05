@@ -1,5 +1,13 @@
 # Project Master Context Handoff
 
+## Checkpoint update (notification templates admin UI v1 — 2026-05-05)
+
+- **UI:** `src/pages/Announcements.jsx` now includes HQ-only **Message Templates** section (safe editor + parent-preview card).
+- **Helpers:** `listNotificationTemplates` (`supabaseReadService.js`) + `updateNotificationTemplate` (`supabaseWriteService.js`) with anon+JWT+RLS only.
+- **Editable fields:** `title_template`, `body_template`, `is_active`; allowed placeholders shown read-only.
+- **Access:** HQ admin only in UI v1; supervisors/teachers keep announcement features but no template editor tab; parent/student blocked from staff Announcements.
+- **No SQL change required** for this UI pass (038 HQ update policy already sufficient); no trigger or delivery behavior change.
+
 ## Checkpoint update (billing payment message-only notifications — 2026-05-05)
 
 - **SQL:** `supabase/sql/039_billing_payment_notification_templates.sql` — seeds four billing-related `notification_templates` rows (proof requested / verified / rejected, invoice message-only). Apply via **SQL Editor** or `supabase db query --linked --file supabase/sql/039_billing_payment_notification_templates.sql`.
