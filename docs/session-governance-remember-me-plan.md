@@ -3,6 +3,27 @@
 Date: 2026-05-05  
 Type: planning + diagnosis checkpoint only (no code/SQL/RLS/auth-config changes)
 
+## 2026-05-05 checkpoint addendum (043 applied + verified)
+
+- Recorded manual apply of `supabase/sql/043_auth_sessions_foundation.sql` via Supabase SQL Editor.
+- Verified post-apply smoke run:
+  - `test:supabase:auth-sessions`
+  - `test:supabase:audit-events`
+  - `test:supabase:auth-lifecycle-audit`
+- Verified auth_sessions RLS outcomes:
+  - parent self create/read/update allowed
+  - parent cross-profile create blocked
+  - student/teacher cross-profile reads blocked
+  - HQ read + revoke allowed
+  - delete blocked
+- Privacy-safe boundary remains unchanged:
+  - no raw IP/exact location/full user-agent/fingerprinting/token storage fields.
+- Runtime status remains unchanged:
+  - auth session inventory exists in DB but is not yet wired into login/timeout runtime flows.
+  - `audit_events` continues as immutable lifecycle history.
+- Next implementation lane:
+  - Phase 1E Step 2 tiny runtime wiring (login create + sign-out/timeout status updates).
+
 ## 2026-05-05 implementation checkpoint addendum (Phase 1E Step 1 auth_sessions foundation)
 
 - Added conservative server-backed session foundation migration:

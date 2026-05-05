@@ -3,6 +3,33 @@
 Date: 2026-05-05  
 Type: planning-only checkpoint (no code/SQL/RLS/auth-config changes)
 
+## 2026-05-05 checkpoint addendum (043 applied + verified)
+
+- Migration applied: `supabase/sql/043_auth_sessions_foundation.sql`
+- Apply method: Supabase SQL Editor (manual apply to linked project)
+- Post-apply smoke verification:
+  - `npm run test:supabase:auth-sessions`
+  - `npm run test:supabase:audit-events`
+  - `npm run test:supabase:auth-lifecycle-audit`
+- RLS behavior verified:
+  - parent can create/read/update own auth session
+  - parent cannot create session for another profile
+  - student/teacher cannot read parent session
+  - HQ can read and revoke session rows
+  - delete remains blocked (no delete policy)
+- Privacy boundaries reaffirmed:
+  - no raw IP
+  - no exact location/GPS
+  - no full user-agent
+  - no fingerprinting
+  - no token/session token storage
+- Runtime status (unchanged in this checkpoint):
+  - `auth_sessions` foundation exists but is not yet wired into `Login`/`AppLayout` runtime flows
+  - `audit_events` remains immutable history
+  - `auth_sessions` remains the future current-state/revocation inventory
+- Next recommended milestone:
+  - Phase 1E Step 2 (tiny runtime wiring): create session row on login and mark `signed_out`/`timed_out` on existing sign-out/timeout paths.
+
 ## Scope and hard constraints
 
 - Planning only.

@@ -1,5 +1,25 @@
 # Project Master Context Handoff
 
+## Checkpoint update (auth_sessions 043 applied + verified — 2026-05-05)
+
+- **Migration applied:** `supabase/sql/043_auth_sessions_foundation.sql`.
+- **Apply method:** manual run in Supabase SQL Editor (linked project).
+- **Post-apply smokes verified:**
+  - `npm run test:supabase:auth-sessions`
+  - `npm run test:supabase:audit-events`
+  - `npm run test:supabase:auth-lifecycle-audit`
+- **RLS verification recorded:**
+  - parent self create/read/update pass
+  - parent cross-profile create blocked
+  - student/teacher cannot read parent session
+  - HQ can read/revoke
+  - delete blocked
+- **Privacy boundaries reaffirmed:**
+  - no raw IP/exact location/GPS/full user-agent/fingerprinting/token/session-token storage
+- **Runtime status:** auth_sessions foundation exists but remains unwired in Login/AppLayout runtime paths in this checkpoint.
+- **Architecture split remains:** `audit_events` = immutable history, `auth_sessions` = future current-state/revocation inventory.
+- **Next recommended milestone:** Phase 1E Step 2 (tiny runtime wiring for login create + sign-out/timeout status updates).
+
 ## Checkpoint update (session governance Phase 1E Step 1 auth_sessions foundation — 2026-05-05)
 
 - **SQL migration added:** `supabase/sql/043_auth_sessions_foundation.sql`.

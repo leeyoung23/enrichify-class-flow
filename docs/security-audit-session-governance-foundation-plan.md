@@ -3,6 +3,28 @@
 Date: 2026-05-04  
 Type: planning-only checkpoint (no code/SQL/auth/UI changes in this milestone)
 
+## 2026-05-05 checkpoint addendum: 043 auth_sessions applied verification
+
+- Applied migration: `supabase/sql/043_auth_sessions_foundation.sql`.
+- Apply path: manual Supabase SQL Editor execution on linked project.
+- Verification smokes passed post-apply:
+  - `npm run test:supabase:auth-sessions`
+  - `npm run test:supabase:audit-events`
+  - `npm run test:supabase:auth-lifecycle-audit`
+- Verified RLS posture:
+  - parent self session create/read/update works
+  - cross-profile parent create blocked
+  - student/teacher cannot read parent session rows
+  - HQ can read/revoke session rows
+  - delete remains blocked (no delete policy)
+- Privacy/compliance boundaries reaffirmed:
+  - no raw IP, exact location/GPS, full user-agent, fingerprinting, or token/session-token fields
+  - legal/compliance review remains required before any telemetry expansion
+- Architecture posture unchanged:
+  - `audit_events` remains immutable audit timeline
+  - `auth_sessions` is current-state/revocation inventory foundation
+  - runtime login/timeout flows are not wired to auth_sessions yet in this checkpoint
+
 ## 2026-05-05 implementation checkpoint addendum: Phase 1E Step 1 auth_sessions SQL/RLS foundation
 
 - Added migration: `supabase/sql/043_auth_sessions_foundation.sql`.
