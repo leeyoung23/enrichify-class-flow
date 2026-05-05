@@ -167,8 +167,8 @@ export async function signOutSupabasePrimary({ reason = "manual_sign_out" } = {}
   }
 
   try {
-    if (base44?.auth?.logout && typeof base44.auth.logout === "function") {
-      // Best-effort cleanup only; never the source of truth for sign-out.
+    if (typeof window === "undefined" && base44?.auth?.logout && typeof base44.auth.logout === "function") {
+      // Node/runtime helper usage only; browser sign-out stays Supabase-primary and non-navigating.
       base44.auth.logout();
     }
   } catch (e) {

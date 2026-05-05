@@ -79,6 +79,7 @@ export const ROLE_NAVIGATION = {
     { label: 'Child Homework', icon: 'homework', path: '/parent-view#parent-homework-status' },
     { label: 'Parent Reports', icon: 'parentUpdates', path: '/parent-view#parent-progress-reports' },
     { label: 'Student Learning Portal / Learning Materials', icon: 'classes', path: '/parent-view#student-learning-portal' },
+    { label: 'Settings', icon: 'sessionReview', path: '/parent-view#parent-settings' },
   ],
   [ROLES.STUDENT]: [
     { label: 'Student Learning Portal', icon: 'classes', path: '/parent-view#student-learning-portal' },

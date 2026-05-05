@@ -185,6 +185,19 @@ Decision note:
 
 ---
 
+## 11) UAT polish addendum (2026-05-06)
+
+- [ ] Sidebar sign-out in real mode redirects to `/login` (no `/api/apps/auth/logout` 404).
+- [ ] Demo sign-out returns to `/welcome`.
+- [ ] Parent sidebar contains `Settings` entry linked to `#parent-settings`.
+- [ ] Parent Settings section groups communication preferences and account security.
+- [ ] Real-mode Class Memories with no released rows shows warm empty state (no demo wording).
+- [ ] Notification preference label uses `Class memories` with subtitle `Photo updates from your child's class.`
+- [ ] Parent announcements empty state uses centre-updates placeholder wording.
+- [ ] Confirm no RLS/SQL widening and no email/SMS/push or chat features were introduced.
+
+---
+
 ## Recommended next milestone
 
 Manual walkthrough + screenshot evidence pass, then production readiness audit.

@@ -103,7 +103,7 @@ const PARENT_NOTIFICATION_PREFERENCE_ROWS = [
   { category: 'learning_report_homework', label: 'Reports and homework feedback' },
   { category: 'parent_communication', label: 'Class updates and parent communication' },
   { category: 'billing_invoice', label: 'Billing and payment notices' },
-  { category: 'media_photo', label: 'Class memories and photo-related updates' },
+  { category: 'media_photo', label: 'Class memories', subtitle: 'Photo updates from your child\'s class.' },
   { category: 'marketing_events', label: 'Events and promotional updates' },
 ];
 const PARENT_FIRST_LOGIN_POLICY_KEY = 'parent_portal_terms_privacy';
@@ -1098,7 +1098,7 @@ function ParentAnnouncementsEventsSection({
           <CardTitle className="text-base">Latest announcements and events</CardTitle>
         </CardHeader>
         <CardContent className="text-sm text-muted-foreground">
-          No parent announcements are available right now.
+          Centre updates will appear here when your centre shares an announcement.
         </CardContent>
       </Card>
     );
@@ -1528,7 +1528,7 @@ function ParentNotificationSettingsSection({
                 <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
                   <div>
                     <p className="text-sm font-medium">{row.label}</p>
-                    <p className="text-xs text-muted-foreground">In-app channel</p>
+                    <p className="text-xs text-muted-foreground">{row.subtitle || 'In-app channel'}</p>
                   </div>
                   <div className="flex flex-wrap items-center gap-2">
                     <Badge variant="outline">{statusLabel}</Badge>
@@ -1950,7 +1950,9 @@ function ParentClassMemoriesSection({ className, latestMemory, historyMemories, 
       {!latestMemory ? (
         <Card className="border-dashed">
           <CardContent className="pt-6">
-            <p className="text-sm text-muted-foreground">No approved Memories yet.</p>
+            <p className="text-sm text-muted-foreground">
+              No class memories have been shared yet. Your child&apos;s teacher will share class moments here after review.
+            </p>
           </CardContent>
         </Card>
       ) : (
@@ -3563,23 +3565,29 @@ export default function ParentView() {
           />
         ) : null}
         {!isDemoStudentPreview && isParentViewerRole ? (
-          <ParentNotificationSettingsSection
-            demoMode={isDemoMode}
-            hasSupabaseSession={hasSupabaseSession}
-            supabaseReady={isSupabaseConfigured()}
-            loading={parentNotificationPreferencesLoading}
-            error={parentNotificationPreferencesError}
-            saving={parentNotificationPreferencesSaving}
-            saveMessage={parentNotificationPreferencesSaveMessage}
-            saveError={parentNotificationPreferencesSaveError}
-            preferences={parentNotificationPreferences}
-            onToggleCategory={handleToggleParentNotificationCategory}
-            onConfirmOperationalService={handleConfirmOperationalServicePreference}
-            onSave={handleSaveParentNotificationSettings}
-          />
-        ) : null}
-        {!isDemoStudentPreview && isParentViewerRole ? (
-          <ActiveSessionsCard className="mb-6" />
+          <section id="parent-settings" className="mb-6 space-y-4" aria-label="Settings">
+            <div className="space-y-1">
+              <h2 className="text-lg font-semibold tracking-tight">Settings</h2>
+              <p className="text-sm text-muted-foreground">
+                Manage communication preferences and account security for your parent portal.
+              </p>
+            </div>
+            <ParentNotificationSettingsSection
+              demoMode={isDemoMode}
+              hasSupabaseSession={hasSupabaseSession}
+              supabaseReady={isSupabaseConfigured()}
+              loading={parentNotificationPreferencesLoading}
+              error={parentNotificationPreferencesError}
+              saving={parentNotificationPreferencesSaving}
+              saveMessage={parentNotificationPreferencesSaveMessage}
+              saveError={parentNotificationPreferencesSaveError}
+              preferences={parentNotificationPreferences}
+              onToggleCategory={handleToggleParentNotificationCategory}
+              onConfirmOperationalService={handleConfirmOperationalServicePreference}
+              onSave={handleSaveParentNotificationSettings}
+            />
+            <ActiveSessionsCard />
+          </section>
         ) : null}
 
         {!isDemoStudentPreview && (
@@ -3652,10 +3660,10 @@ export default function ParentView() {
                   <Button
                     variant="outline"
                     className="justify-start gap-2"
-                    onClick={() => document.getElementById('parent-notification-settings')?.scrollIntoView({ behavior: 'smooth' })}
+                    onClick={() => document.getElementById('parent-settings')?.scrollIntoView({ behavior: 'smooth' })}
                   >
                     <Bell className="h-4 w-4" />
-                    Communication Settings
+                    Settings
                   </Button>
                 ) : null}
               </div>

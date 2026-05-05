@@ -2375,3 +2375,33 @@ Handoff status: complete for continuity. Use this file as the primary context an
   - no SQL/RLS changes,
   - no runtime product UI/service behavior changes,
   - no parent/student visibility widening.
+
+### ParentView UAT polish note (2026-05-06)
+
+- Root-cause diagnosis completed for logout 404 (`/api/apps/auth/logout?...`) seen during manual walkthrough.
+- Root cause:
+  - legacy Base44 auth redirects were still reachable via `AuthContext` (`base44.auth.logout(window.location.href)` and `base44.auth.redirectToLogin(window.location.href)`), which can route to Base44 API paths not served in this local app shell.
+- Safe routing fix applied:
+  - sidebar real-mode sign out remains Supabase-primary (`signOutSupabasePrimary`) and redirects to `/login`,
+  - demo mode sign out remains route-local to `/welcome`,
+  - AuthContext login redirect now uses local `/login` route with safe returnUrl query,
+  - Base44 cleanup is kept non-navigating/best-effort only.
+- Parent UX polish applied:
+  - parent sidebar now includes `Settings` (`/parent-view#parent-settings`),
+  - ParentView now groups communication preferences + Active Sessions under a dedicated Settings section,
+  - quick action label updated to `Settings`.
+- Class Memories real-mode empty behavior updated:
+  - when no released real memories exist, ParentView now shows a warm empty state message,
+  - demo-only wording remains limited to demo mode.
+- Notification label polish:
+  - `Class memories and photo-related updates` shortened to `Class memories`,
+  - added subtitle `Photo updates from your child's class.`
+- Parent announcements status:
+  - existing safe parent-facing source already exists (`listParentAnnouncements` with published filtering),
+  - empty state copy updated to centre-updates placeholder text rather than adding new data path.
+- Boundaries preserved:
+  - no SQL/RLS change,
+  - no service-role frontend,
+  - no email/SMS/push,
+  - no realtime chat,
+  - no draft/internal/evidence visibility expansion.

@@ -199,6 +199,31 @@ Stop walkthrough and report immediately if any occurs:
 
 ---
 
+## 15) UAT polish checks (2026-05-06)
+
+Use this quick pass during ParentView checks:
+
+1. Sign out from the sidebar in real mode.
+2. Confirm logout returns to `/login` and does not open `/api/apps/auth/logout`.
+3. Confirm parent sidebar includes **Settings**.
+4. Open **Settings** and verify:
+   - Communication & Notification Settings appear there.
+   - Account Security / Active Sessions appear there.
+5. Open Class Memories in real parent mode with no released items:
+   - confirm warm empty state appears,
+   - confirm no demo/fake wording is shown.
+6. Check Notification Settings category label:
+   - **Class memories**
+   - subtitle: **Photo updates from your child’s class.**
+7. Check parent announcements empty state:
+   - **Centre updates will appear here when your centre shares an announcement.**
+8. Reconfirm safety boundaries:
+   - no email/SMS/push behavior,
+   - no chat/reply UI,
+   - no draft/internal/evidence exposure.
+
+---
+
 ## Recommended operating sequence
 
 Run flows in this order for consistency:
