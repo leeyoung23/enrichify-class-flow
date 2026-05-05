@@ -1,5 +1,14 @@
 # Project Master Context Handoff
 
+## Checkpoint update (AI Parent Reports readiness + regression guards — 2026-05-06)
+
+- **Regression guards:** Walking `Students.jsx`, `ParentUpdates.jsx`, `ParentView.jsx`, `Sidebar.jsx`, `sessionGovernanceService.js`, `supabaseAuthService.js`, `permissionService.js` showed **no new UAT regressions** beyond the milestone fix list below (verified by code inspection on this checkpoint).
+- **AI Parent Reports (staff):** Added `staffFacingReportStatusLabel` for badges/detail (Draft, Teacher review, Supervisor review, Approved, Released, Archived); corrected Lifecycle copy — **Release** queues **in-app** guardian notices when preferences allow (**not** email/SMS in v1); clarified header blurb that all AI drafts are staff-only until release.
+- **AI Parent Reports (parent):** Warmer empty state for Progress Reports; printable **layout** preview available whenever released HTML builds successfully (**no longer gated** on demo/`?debug=1` — still released-only content inside iframe).
+- **New doc:** `docs/ai-parent-reports-production-readiness-checkpoint.md` — capability, evidence aggregation today vs planned, deferrals (PDF/email), regression guard echoes.
+- **Smokes executed this checkpoint:** `npm run build`, `lint`, `typecheck`; `test:supabase:ai-parent-reports`, `test:supabase:notifications`, `test:supabase:audit-events`; lightweight AI-adjacent: `test:ai-parent-report:pdf-template`, `test:supabase:ai-parent-report:provider-adapter`, `test:supabase:ai-parent-report:edge-generation-auth`, `test:supabase:ai-parent-report:real-ai-persistence`. Intentionally **skipped** `test:supabase:ai-parent-report:edge-real-provider` and `test:ai-parent-report:real-provider-smoke` to avoid discretionary provider quota use.
+- **Next milestone suggestion:** guardian PDF MVP design note + staging runbook stubs; optional expanded smoke asserting parent cannot read non-`released` rows (RLS/script).
+
 ## Checkpoint update (UAT hardening — `/students` crash + parent notification preview — 2026-05-06)
 
 - **Root cause (fixed):** In `src/pages/Students.jsx`, the Supabase “School / Learning Context” IIFE rendered `{schoolProfile.parent_goals}` / `{schoolProfile.teacher_notes}` **after** a `!schoolProfile` branch without guarding `null`, so teachers with UUID students and **no** school profile row hit `Cannot read properties of null (reading 'parent_goals')` and `StudentsErrorBoundary` swallowed the page.

@@ -39,6 +39,10 @@ Before asking a human validator to retest a changed area, the implementer should
 - Technical, security, or admin features should not surface to parents unless clearly needed for the parent job-to-be-done.
 - Legal/compliance review remains required before any real parent rollout.
 
+**UAT regression guard list (maintain across milestones)** — `/students`; Class Memory selector; notifications (3 + expand); Parent Settings scope; **`/session-review`**; sidebar active order; logout URL; keep-signed-in sanity; class-targeted memories; no parent drafts/evidence.
+
+**AI Parent Reports note:** Capability and deferrals summarised in `docs/ai-parent-reports-production-readiness-checkpoint.md`.
+
 ---
 
 ## 2) Accounts / roles needed
@@ -75,13 +79,15 @@ Credential note:
 ## 4) Walkthrough Flow B: AI Parent Report
 
 1. Create/open a report shell in AI Parent Reports.
-2. Generate a real AI draft (if provider is configured in environment).
-3. Confirm draft appears in staff flow.
+2. Generate mock or real AI draft as appropriate (mock always available; **real** Edge draft only when signed-in staff + environment allows provider).
+3. Confirm draft appears only in staff flow (status labels readable: Draft → review → Approved → Released).
 4. Run submit/approve/release flow according to current product path.
-5. Capture staff screenshots for draft and release steps.
-6. Sign in as parent and confirm:
+5. Confirm staff Lifecycle copy aligns with behaviour: **Release** controls parent visibility and may enqueue **in-app** guardian notice — **email/SMS and PDF binary are deferred** in v1.
+6. Capture staff screenshots for draft and release steps.
+7. Sign in as parent and confirm:
    - released/current report is visible
    - draft/internal content is not visible
+   - optional **Open printable layout** works for released report (browser layout preview — not a downloadable PDF).
 
 ---
 

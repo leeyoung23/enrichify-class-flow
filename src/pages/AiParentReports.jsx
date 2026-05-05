@@ -80,6 +80,27 @@ function teacherFacingDraftTitle(versionNumber, generationSource) {
   return kind;
 }
 
+/** Human workflow label for report row status (snake_case DB values). */
+function staffFacingReportStatusLabel(statusRaw) {
+  const s = typeof statusRaw === 'string' ? statusRaw.trim().toLowerCase() : '';
+  switch (s) {
+    case 'draft':
+      return 'Draft';
+    case 'teacher_review':
+      return 'Teacher review';
+    case 'supervisor_review':
+      return 'Supervisor review';
+    case 'approved':
+      return 'Approved';
+    case 'released':
+      return 'Released';
+    case 'archived':
+      return 'Archived';
+    default:
+      return s ? s.replace(/_/g, ' ') : 'Draft';
+  }
+}
+
 /** Short internal ref for display; full value available via `title` for QA. */
 function formatInternalIdRef(id) {
   if (typeof id !== 'string' || !id) return '—';
@@ -1056,9 +1077,9 @@ export default function AiParentReports() {
       />
 
       <p className="text-xs text-muted-foreground border-l-2 border-muted pl-3 py-1 -mt-4 mb-2">
-        No report reaches parents until explicit staff release.{' '}
+        No report reaches parents until explicit staff release. AI drafts (test or real) stay staff-only until then.{' '}
         <span className="font-medium text-foreground">
-          Real AI draft generation is available for signed-in staff after selecting a report.
+          Real AI draft uses the Edge function after you select a live report (when the environment allows).
         </span>{' '}
         PDF/export to families is not live yet.
       </p>
@@ -1176,7 +1197,7 @@ export default function AiParentReports() {
                   <div className="flex flex-wrap items-center justify-between gap-2">
                     <p className="text-sm font-medium">{row.reportType || 'report'}</p>
                     <Badge variant="outline" className={STATUS_STYLES[row.status] || STATUS_STYLES.draft}>
-                      {row.status || 'draft'}
+                      {staffFacingReportStatusLabel(row.status)}
                     </Badge>
                   </div>
                   <p className="text-xs text-muted-foreground mt-1">
@@ -1692,7 +1713,10 @@ export default function AiParentReports() {
                   <span className="font-mono text-xs">{formatInternalIdRef(detail.id)}</span>
                 </p>
               ) : null}
-              <p><span className="text-muted-foreground">Status:</span> {detail.status}</p>
+              <p>
+                <span className="text-muted-foreground">Status:</span>{' '}
+                {staffFacingReportStatusLabel(detail.status)}
+              </p>
               <p><span className="text-muted-foreground">Student:</span> {detail.studentId || '—'}</p>
               <p><span className="text-muted-foreground">Class:</span> {detail.classId || '—'}</p>
               <p><span className="text-muted-foreground">Branch:</span> {detail.branchId || '—'}</p>
@@ -2268,10 +2292,15 @@ export default function AiParentReports() {
             </p>
             <p>
               <span className="font-medium text-foreground">Release selected draft to parents</span> is the only action
-              here that can make the draft you selected in <span className="font-medium text-foreground">Version history</span>{' '}
-              visible to linked parents (when your school rules allow).
+              here that makes the draft you selected in{' '}
+              <span className="font-medium text-foreground">Version history</span> visible to linked guardians on the portal
+              (when your branch rules allow). There is no auto-release step.
             </p>
-            <p className="text-xs">No automatic release, parent notifications, or PDF from this screen.</p>
+            <p className="text-xs">
+              After Release, guardians may receive an <span className="font-medium text-foreground">in-app</span> notice
+              (email/SMS are not wired in v1). PDF download for families stays deferred — staff use Preview tools only where
+              available.
+            </p>
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
             <Button
@@ -2346,7 +2375,7 @@ export default function AiParentReports() {
                   Selected report · Status{' '}
                 </>
               )}
-              <span className="font-medium">{selectedReport.status || 'draft'}</span>
+              <span className="font-medium">{staffFacingReportStatusLabel(selectedReport.status)}</span>
             </p>
           ) : null}
         </Card>

@@ -949,7 +949,6 @@ function resolveParentReportSection({ currentVersion, detail }, keys) {
 
 function ParentProgressReportsSection({
   isDemoMode,
-  showInternalPreview,
   loading,
   error,
   reports,
@@ -1022,8 +1021,9 @@ function ParentProgressReportsSection({
         <CardHeader className="pb-3">
           <CardTitle className="text-base">Progress Reports</CardTitle>
         </CardHeader>
-        <CardContent className="text-sm text-muted-foreground">
-          No released progress reports are available right now.
+        <CardContent className="space-y-2 text-sm text-muted-foreground">
+          <p>When your centre shares a progress report, it will appear here after release.</p>
+          <p className="text-xs">Drafts or in-review reports stay with staff only — you will not see them here.</p>
         </CardContent>
       </Card>
     );
@@ -1055,7 +1055,7 @@ function ParentProgressReportsSection({
         <p className="text-sm text-muted-foreground">
           {isDemoMode
             ? 'Demo-only preview: released report cards below use local fake data only.'
-            : 'Released reports shared by your child\'s teacher are shown here.'}
+            : 'These are reports your centre has released for your child. Anything still in draft stays on the staff side only.'}
         </p>
 
         <div className="rounded-lg border bg-muted/20 p-3 space-y-1.5">
@@ -1133,10 +1133,12 @@ function ParentProgressReportsSection({
                 </div>
               )}
 
-              {!detailLoading && !detailError && detail && currentVersion && showInternalPreview ? (
-                <div className="mt-4 space-y-2 border-t pt-3">
-                  {canShowPrintablePreview ? (
-                    <>
+              {!detailLoading && !detailError && detail && currentVersion && canShowPrintablePreview ? (
+                    <div className="mt-4 space-y-2 border-t pt-3">
+                      <p className="text-xs text-muted-foreground">
+                        On-screen preview only — no PDF file is created or stored yet. Use your browser print dialog if you
+                        want a paper copy.
+                      </p>
                       <Button
                         type="button"
                         variant="outline"
@@ -1144,21 +1146,23 @@ function ParentProgressReportsSection({
                         className="w-full sm:w-auto"
                         onClick={() => setShowPrintablePreview((open) => !open)}
                       >
-                        {showPrintablePreview ? 'Hide printable preview' : 'Preview printable report'}
+                        {showPrintablePreview ? 'Hide printable layout' : 'Open printable layout'}
                       </Button>
                       <p className="text-xs text-muted-foreground">
-                        This preview uses the released report content shown above. Download PDF will be added later.
+                        Same released content as above, formatted like a printable page. Your centre may add official PDF
+                        download later.
                       </p>
                       {showPrintablePreview ? (
                         <div className="rounded-xl border border-sky-200/90 bg-sky-50/50 dark:bg-sky-950/25 p-3 sm:p-4 space-y-3 max-w-full overflow-x-hidden">
-                          <p className="text-sm font-medium text-foreground">Printable report preview</p>
+                          <p className="text-sm font-medium text-foreground">Printable layout</p>
                           <ul className="text-[11px] text-muted-foreground list-disc pl-4 space-y-0.5">
                             <li>Released report content only</li>
                             <li>No file is generated or stored yet</li>
-                            <li>Download PDF will come later</li>
+                            <li>Official PDF download will come later</li>
                           </ul>
                           <p className="text-[11px] text-muted-foreground">
-                            Scroll inside the white area below to read the full page. This is a layout preview only — not a file download.
+                            Scroll inside the white area below to read the full page. This is a layout preview only — not a
+                            file download.
                           </p>
                           <div className="rounded-lg border border-border/80 bg-muted/30 p-1 sm:p-2 shadow-inner">
                             <iframe
@@ -1176,12 +1180,6 @@ function ParentProgressReportsSection({
                           </div>
                         </div>
                       ) : null}
-                    </>
-                  ) : (
-                    <p className="text-xs text-muted-foreground">
-                      Printable preview is not available for this report yet.
-                    </p>
-                  )}
                 </div>
               ) : null}
             </>
@@ -3896,7 +3894,6 @@ export default function ParentView() {
             />
             <ParentProgressReportsSection
               isDemoMode={isDemoMode}
-              showInternalPreview={showInternalDebugPanels}
               loading={parentProgressReportsLoading}
               error={parentProgressReportsError}
               reports={parentProgressReports}

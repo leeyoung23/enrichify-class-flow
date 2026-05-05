@@ -23,6 +23,21 @@ Before asking someone to rerun manual UAT on a touched surface:
 - Do not expose technical/security/admin UI to parents unless needed for their task.
 - Legal/compliance approval still gates real parent rollout.
 
+### UAT regression guard list (repeat every milestone)
+
+Spot-check quickly before sign-off:
+
+- [ ] **`/students`** loads for teacher/HQ — no Students error boundary in normal fixtures.
+- [ ] **`/parent-updates`** Class Memory class selector populated when teacher has classes, or HQ copy when none.
+- [ ] ParentView notifications — **three** rows default + View more / less; operational rows not hidden as smoke in normal mode.
+- [ ] Parent Settings — Communication & Notification only (no Active Sessions).
+- [ ] **`/session-review`** still reachable as HQ route.
+- [ ] Parent sidebar highlight follows viewport section order.
+- [ ] Sidebar sign-out does not open **`/api/apps/auth/logout`** (Supabase-first sign-out path).
+- [ ] Keep-me-signed-in behaves (refresh/new tab sanity).
+- [ ] Class memories remain class-scoped in teacher upload copy and parent visibility.
+- [ ] Parents see no draft AI report / internal evidence (Progress Reports lists **`released`** only).
+
 ---
 
 ## 1) Pre-validation setup
@@ -64,6 +79,8 @@ Before asking someone to rerun manual UAT on a touched surface:
 ### AI Parent Reports flow
 
 - [ ] Open AI Parent Reports shell/page.
+- [ ] Status badges read as **Draft / Teacher review / Supervisor review / Approved / Released / Archived** (not raw snake_case).
+- [ ] Lifecycle copy matches behaviour: guardians may receive **in-app** notice **after Release** only; email/SMS/PDF deferred.
 - [ ] Generate real AI draft.
 - [ ] Submit / approve / release report flow works.
 - [ ] Confirm parent sees only released/current report.
@@ -88,6 +105,7 @@ Before asking someone to rerun manual UAT on a touched surface:
 - [ ] Communication & notification settings load/save correctly.
 - [ ] Parent portal v1: no Active Sessions / technical session history UI (deferred); HQ Session Review unchanged for staff.
 - [ ] Released progress reports are visible after release only.
+- [ ] Printable **layout** preview (released content) opens for parents without demo/debug-only gating — still no PDF download.
 - [ ] Homework feedback is visible after release only.
 - [ ] Attendance arrival notification appears when triggered.
 - [ ] Payment proof request / verified / rejected messages appear when triggered.
