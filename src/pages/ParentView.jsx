@@ -1269,8 +1269,8 @@ function ParentInAppNotificationsSection({
   } else if (loading) {
     bodyContent = (
       <div className="flex items-center gap-2 text-sm text-muted-foreground">
-        <Loader2 className="h-4 w-4 animate-spin" />
-        Loading notifications…
+        <Loader2 className="h-4 w-4 animate-spin" aria-hidden />
+        <span>Loading your notifications…</span>
       </div>
     );
   } else if (error) {
@@ -1327,13 +1327,14 @@ function ParentInAppNotificationsSection({
   }
 
   return (
-    <Card id="parent-in-app-notifications" className="mb-6">
+    <Card id="parent-in-app-notifications" className="mb-6" role="region" aria-label="Your notifications">
       <CardHeader className="pb-3">
         <div className="flex flex-wrap items-center gap-2">
           <Bell className="h-4 w-4 flex-shrink-0 text-muted-foreground" aria-hidden />
           <CardTitle className="text-base">Notifications</CardTitle>
           {unreadBadge}
         </div>
+        <p className="sr-only">In-app messages for your account. No report text or internal details are shown here.</p>
       </CardHeader>
       <CardContent>{bodyContent}</CardContent>
     </Card>
@@ -2846,14 +2847,29 @@ export default function ParentView() {
     <div className="min-h-screen bg-background">
       {/* Header */}
       <div className="border-b border-border bg-card">
-        <div className="max-w-2xl mx-auto px-4 py-4 flex items-center gap-3">
-          <div className="h-9 w-9 rounded-xl bg-primary flex items-center justify-center flex-shrink-0">
-            <GraduationCap className="h-5 w-5 text-primary-foreground" />
+        <div className="max-w-2xl mx-auto px-4 py-4 flex items-center justify-between gap-3">
+          <div className="flex items-center gap-3 min-w-0">
+            <div className="h-9 w-9 rounded-xl bg-primary flex items-center justify-center flex-shrink-0">
+              <GraduationCap className="h-5 w-5 text-primary-foreground" />
+            </div>
+            <div className="min-w-0">
+              <h1 className="font-bold text-base">EduCentre</h1>
+              <p className="text-xs text-muted-foreground">{isDemoStudentPreview ? 'Student Learning Portal' : 'Parent Dashboard'}</p>
+            </div>
           </div>
-          <div>
-            <h1 className="font-bold text-base">EduCentre</h1>
-            <p className="text-xs text-muted-foreground">{isDemoStudentPreview ? 'Student Learning Portal' : 'Parent Dashboard'}</p>
-          </div>
+          {!isDemoStudentPreview && isParentViewerRole && !isDemoMode && hasSupabaseSession && isSupabaseConfigured() && parentInAppUnreadForChild > 0 ? (
+            <button
+              type="button"
+              className="flex shrink-0 items-center gap-1.5 rounded-full border border-primary/30 bg-primary/10 px-2.5 py-1 text-xs font-medium text-foreground hover:bg-primary/15 focus:outline-none focus:ring-2 focus:ring-ring"
+              onClick={() => {
+                document.getElementById('parent-in-app-notifications')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+              }}
+              aria-label={`${parentInAppUnreadForChild} unread notifications. Go to notifications.`}
+            >
+              <Bell className="h-3.5 w-3.5 text-primary" aria-hidden />
+              <span>{parentInAppUnreadForChild}</span>
+            </button>
+          ) : null}
         </div>
       </div>
 

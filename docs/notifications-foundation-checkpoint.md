@@ -39,6 +39,7 @@ Date: 2026-05-05
 ### Parent inbox UI (read-only surface)
 
 - **`src/pages/ParentView.jsx`** — authenticated **parent** role: **Notifications** card loads `listMyInAppNotifications` / `markNotificationRead` (recipient-scoped RLS only). UI shows **title, body, time, read/unread**; no raw metadata, ids, or internal refs. Optional **child filter**: rows with `student_id` are shown when it matches the dashboard child or when `student_id` is null (RLS still gates rows to the signed-in parent).
+- **Unread badge (parent header):** compact bell + count when there are unread rows **for the selected child** (derived from the same list as the inbox — not `getMyUnreadInAppNotificationCount`, which would count all unread across linked children and could disagree with the filtered inbox).
 
 ### Safety boundaries (unchanged after apply)
 
