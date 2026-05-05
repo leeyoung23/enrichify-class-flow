@@ -27,6 +27,33 @@ Date: 2026-05-05
   - notification suppression is fail-safe when decision cannot be confirmed
 - Boundary unchanged: no email/SMS/push sending, no provider integration, no parent metadata exposure.
 
+Applied + verified (linked project):
+- Migration file applied: `supabase/sql/042_notification_preference_enforcement_rpc.sql`.
+- Apply method: Supabase SQL Editor (manual apply on linked project).
+- Post-apply validation commands run:
+  - `npm run test:supabase:notification-preference-enforcement`
+  - `npm run test:supabase:parent-notification-preferences`
+  - `npm run test:supabase:notifications`
+  - `npm run test:supabase:ai-parent-reports`
+  - `npm run test:supabase:homework:feedback`
+  - `npm run test:supabase:attendance:write`
+  - `npm run test:supabase:audit-events`
+- Verified behavior:
+  - disabled/withdrawn preference blocks in-app parent notification decisions
+  - re-enabled preference restores allow decision
+  - service-adjacent categories default allow when no row exists
+  - `marketing_events` and `media_photo` default block without explicit consent
+  - teacher-trigger paths can use RPC decisioning without direct `parent_notification_preferences` table-read dependency
+  - student/unrelated scope is blocked for cross-profile preference inspection
+- Safety boundaries reaffirmed:
+  - no Gmail/email sending
+  - no SMS/push sending
+  - no service-role frontend usage
+  - no `parent_notification_preferences` table RLS widening
+  - no parent draft/internal metadata exposure
+  - business actions do not roll back when notifications are skipped/suppressed
+- Next recommended milestone: Session governance and Remember me planning.
+
 ## Notification preference enforcement v1 (in_app only)
 
 - Implemented in `src/services/supabaseWriteService.js` before parent in-app row creation in parent-facing trigger helpers.

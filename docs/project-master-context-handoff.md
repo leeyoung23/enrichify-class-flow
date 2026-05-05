@@ -10,6 +10,10 @@
 - **Helper behavior:** `shouldSendParentInAppNotification` now uses RPC-first; if RPC is missing (migration not applied), falls back to previous table-read behavior with safe dev warning.
 - **Runtime posture:** notification decision failures remain fail-safe (suppress notification) and do not roll back main business actions.
 - **Safety boundaries unchanged:** no email/Gmail/SMS/push sending, no provider integration, no parent metadata exposure.
+- **Applied status:** `supabase/sql/042_notification_preference_enforcement_rpc.sql` manually applied to linked project via Supabase SQL Editor.
+- **Post-apply validation:** `test:supabase:notification-preference-enforcement`, `test:supabase:parent-notification-preferences`, `test:supabase:notifications`, `test:supabase:ai-parent-reports`, `test:supabase:homework:feedback`, `test:supabase:attendance:write`, `test:supabase:audit-events`.
+- **Verified outcomes:** disabled/withdrawn block; re-enabled allow; service defaults allow; marketing/media defaults block; teacher path decision works via RPC without table RLS widening; student/unrelated cross-scope blocked.
+- **Next recommended milestone:** Session governance and Remember me planning.
 
 ## Checkpoint update (notification preference enforcement v1 — 2026-05-05)
 

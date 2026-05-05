@@ -86,6 +86,24 @@ Applied + verified (linked project):
 - Category defaults and explicit withdraw/disable block semantics remain unchanged.
 - Safety posture unchanged: no Gmail/email/SMS/push sending and no provider integration.
 
+Applied + verified (linked project):
+- Migration file applied: `supabase/sql/042_notification_preference_enforcement_rpc.sql`.
+- Apply method: Supabase SQL Editor (manual apply).
+- Post-apply validation run:
+  - `test:supabase:notification-preference-enforcement`
+  - `test:supabase:parent-notification-preferences`
+  - `test:supabase:notifications`
+  - `test:supabase:ai-parent-reports`
+  - `test:supabase:homework:feedback`
+  - `test:supabase:attendance:write`
+  - `test:supabase:audit-events`
+- Verification notes:
+  - explicit disabled/withdrawn states block
+  - re-enabled path allows
+  - service-adjacent defaults allow; marketing/media defaults block
+  - teacher path reads decision through RPC without widening table RLS
+  - student/unrelated scope remains blocked
+
 ## Scope and product direction
 
 Current production-safe behavior remains **in-app notification first** via `notification_events` + `notifications` and HQ-governed template copy.  
