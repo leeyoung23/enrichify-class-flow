@@ -53,6 +53,31 @@ Type: planning-only checkpoint (no code/SQL/RLS/auth-config changes)
   - no HQ revoke UI
   - no raw IP/full user-agent/fingerprint/GPS fields
 
+## 2026-05-05 implementation checkpoint addendum (Phase 1E Step 3C HQ read-only session review v1)
+
+- Added HQ-only read-only review surface:
+  - new page: `src/pages/SessionReview.jsx`
+  - route: `/session-review`
+  - sidebar/nav item: HQ only (`Session Review`)
+- Read helper used:
+  - existing `listAuthSessionsForAdmin({ profileId, status, limit })`
+  - no SQL/RLS changes required
+- v1 filters:
+  - status filter (`all`, `active`, `signed_out`, `timed_out`, `revoked`) server-filtered when selected
+  - role filter (`all`, `hq_admin`, `branch_supervisor`, `teacher`, `parent`, `student`) client-side
+- Read-only scope:
+  - no revoke buttons
+  - no logout-all-devices controls
+  - no cross-user mutation controls
+- Safe fields shown:
+  - role, status, remember-me on/off, safe device label
+  - started/last-seen/signed-out/timed-out/revoked timestamps
+- Sensitive fields excluded:
+  - no raw IP, full user-agent, fingerprint, GPS/location, token/password exposure
+  - profile/session/branch ids hidden in normal mode; truncated refs only in `?debug=1`
+- Branch supervisor scope:
+  - not added in this step (deferred)
+
 ## 2026-05-05 implementation checkpoint addendum (Phase 1E Step 2 tiny runtime wiring)
 
 Runtime wiring added (small, conservative integration):

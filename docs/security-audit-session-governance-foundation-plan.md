@@ -42,6 +42,25 @@ Type: planning-only checkpoint (no code/SQL/auth/UI changes in this milestone)
   - no IP/location/full user-agent/fingerprint/token exposure
   - no timeout behavior changes
 
+## 2026-05-05 implementation checkpoint addendum: Phase 1E Step 3C HQ read-only session review v1
+
+- Implemented an HQ-only read-only operational review surface for session inventory.
+- New route/page:
+  - `/session-review`
+  - `src/pages/SessionReview.jsx`
+- Access scope:
+  - HQ admin only in v1
+  - branch supervisor review deferred (no access expansion in this step)
+- Data source:
+  - existing `listAuthSessionsForAdmin` helper
+  - no SQL/RLS changes required
+- Controls:
+  - safe filters by status and role
+  - no mutation controls (no revoke, no logout-all-devices)
+- Data minimization:
+  - only privacy-safe auth session fields rendered
+  - internal IDs hidden by default; debug-only truncated refs supported
+
 ## 2026-05-05 implementation checkpoint addendum: Phase 1E Step 2 runtime session-state wiring
 
 - Runtime session-state wiring is now active (small scope, no SQL/RLS changes):

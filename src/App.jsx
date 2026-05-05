@@ -35,6 +35,7 @@ import SalesKit from '@/pages/SalesKit';
 import StaffTimeClock from '@/pages/StaffTimeClock';
 import AiParentReports from '@/pages/AiParentReports';
 import AiParentReportPdfPreview from '@/pages/AiParentReportPdfPreview';
+import SessionReview from '@/pages/SessionReview';
 import { SupabaseAuthStateProvider, useSupabaseAuthState } from '@/hooks/useSupabaseAuthState';
 import { getSelectedDemoRole } from '@/services/authService';
 import { sanitizeReturnUrlForRedirect } from '@/lib/supabaseAuthReturnUrl';
@@ -140,6 +141,7 @@ const AuthenticatedApp = () => {
         <Route path="/fee-tracking" element={<FeeTracking />} />
         <Route path="/sales-kit" element={<SalesKit />} />
         <Route path="/parent-view" element={<ParentView />} />
+        <Route path="/session-review" element={<SessionReview />} />
       </Route>
       <Route path="*" element={<PageNotFound />} />
     </Routes>

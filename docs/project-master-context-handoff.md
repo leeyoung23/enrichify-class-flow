@@ -1,5 +1,32 @@
 # Project Master Context Handoff
 
+## Checkpoint update (HQ read-only session review, Phase 1E Step 3C — 2026-05-05)
+
+- **HQ-only review surface added:**
+  - new page: `src/pages/SessionReview.jsx`
+  - new route: `/session-review`
+  - HQ sidebar item: `Session Review`
+- **Access and scope:**
+  - v1 access limited to `hq_admin` only
+  - branch supervisor read access not added in this step
+- **Data source:**
+  - existing `listAuthSessionsForAdmin({ profileId, status, limit })`
+  - no SQL/RLS changes required
+- **Filters added:**
+  - status filter (`all`, `active`, `signed_out`, `timed_out`, `revoked`)
+  - role filter (`all`, `hq_admin`, `branch_supervisor`, `teacher`, `parent`, `student`)
+- **Read-only behavior:**
+  - no revoke controls on Session Review page
+  - no logout-all-devices controls
+  - no cross-user update buttons
+- **Safe fields shown:**
+  - role, status, remember-me, safe device label
+  - started/last-seen/signed-out/timed-out/revoked timestamps
+- **Sensitive fields excluded:**
+  - no raw IP, full user-agent, fingerprint, location/GPS, password/token/session-token display
+  - profile/session/branch ids hidden in normal mode; debug-only truncated refs (`?debug=1`)
+- **Next recommended milestone:** Phase 1E Step 3D HQ revoke staff sessions (with strict scope and explicit revoke UX), while keeping logout-all-devices deferred.
+
 ## Checkpoint update (self end-session action v1, Phase 1E Step 3B — 2026-05-05)
 
 - **Parent Active Sessions action added:**

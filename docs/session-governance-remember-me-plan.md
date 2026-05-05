@@ -35,6 +35,22 @@ Type: planning + diagnosis checkpoint only (no code/SQL/RLS/auth-config changes)
 - No change to remember-me storage behavior or timeout policy.
 - No logout-all-devices, no HQ/staff dashboard UI, no SQL/RLS change in this step.
 
+## 2026-05-05 implementation checkpoint addendum (Phase 1E Step 3C HQ read-only session review v1)
+
+- Added HQ-only read-only Session Review page (`/session-review`) for cross-account session visibility.
+- Uses existing `listAuthSessionsForAdmin` helper and existing HQ-select RLS posture from `043`.
+- Includes simple filters:
+  - status (server-side via helper argument)
+  - role (client-side filter after fetch)
+- Read-only only:
+  - no revoke controls in this page
+  - no logout-all-devices
+  - no branch-supervisor visibility in this step
+- Safe display only:
+  - role/status/remember-me/safe device label/timestamps
+  - no IP/full user-agent/fingerprint/location/token fields
+  - internal identifiers shown only as truncated refs in debug mode (`?debug=1`)
+
 ## 2026-05-05 implementation checkpoint addendum (Phase 1E Step 2 tiny runtime wiring)
 
 - Login runtime now creates `auth_sessions` row after successful profile resolution in real mode.

@@ -17,6 +17,7 @@ export const ROLE_LABELS = {
 export const ROLE_NAVIGATION = {
   [ROLES.HQ_ADMIN]: [
     { label: 'Dashboard', icon: 'dashboard', path: '/' },
+    { label: 'Session Review', icon: 'sessionReview', path: '/session-review' },
     { label: 'Announcements', icon: 'announcements', path: '/announcements' },
     { label: 'AI Parent Reports', icon: 'parentReports', path: '/ai-parent-reports' },
     { label: 'Branches', icon: 'branches', path: '/branches' },
