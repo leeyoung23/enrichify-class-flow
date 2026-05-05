@@ -1,0 +1,139 @@
+# Session Revocation + Multi-Device Governance Plan (Phase 1E)
+
+Date: 2026-05-05  
+Type: planning-only checkpoint (no code/SQL/RLS/auth-config changes)
+
+## Scope and hard constraints
+
+- Planning only.
+- No app/runtime code changes.
+- No SQL or RLS changes.
+- No Supabase dashboard auth-setting changes.
+- No service-role frontend usage.
+- No email/Gmail/SMS/push work.
+- No IP/device fingerprint collection in this phase.
+- No changes to existing timeout behavior (Phase 1C remains as-is).
+
+## Current state (what exists now)
+
+1. Supabase-primary sign-out is active in real mode (`signOutSupabasePrimary`).
+2. Remember-me UI exists (`Keep me signed in on this device`) with non-sensitive local preference storage.
+3. App-level enforcement exists via browser markers + role-based inactivity timeout.
+4. Auth lifecycle audit events exist via `audit_events`:
+   - `user.login`
+   - `user.logout`
+   - `user.session_timeout`
+   - `user.remember_me_enabled`
+   - `user.remember_me_disabled`
+5. Runtime auth lifecycle writes use insert-only where appropriate (`includeResultRow: false`) to avoid noisy RLS return-row warnings.
+
+## Planning answers (Part B)
+
+1. **What session governance exists now?**
+   - Supabase session authority, manual sign-out, app-level inactivity timeout, remember-me preference capture, and lifecycle audit events.
+
+2. **What is still missing for multi-device/session revocation?**
+   - Server-backed session inventory, per-session status/revoke controls, cross-device revoke orchestration, and admin review/revoke workflow.
+
+3. **Can client-only markers revoke sessions across devices?**
+   - No. `localStorage`/`sessionStorage` markers are browser-local and cannot invalidate other devices or tabs with active refresh tokens.
+
+4. **What requires server-backed session records?**
+   - Sign-out-all-devices, HQ/supervisor session review and revoke, account-disable fan-out invalidation, and deterministic session lifecycle tracking.
+
+5. **What should “Sign out from all devices” mean in future?**
+   - Mark all active sessions (except optional current session) as revoked, trigger token/session invalidation for each, and force re-auth on next refresh/use.
+
+6. **How should HQ disable/revoke a staff account in future?**
+   - Two-step governance:
+     - mark account inactive/disabled in profile/access-control model
+     - revoke all active sessions linked to that profile with reason `account_disabled`
+   - Emit lifecycle/audit events for accountability.
+
+7. **How should a parent account be revoked if no longer linked to a child?**
+   - On guardian unlink/deactivation event:
+     - revoke active sessions tied to parent profile (or force reduced access mode if policy allows)
+     - emit `user.parent_child_link_removed` + `user.session_revoked` audit entries
+     - require fresh sign-in and re-evaluation of active links.
+
+8. **What privacy-safe session metadata is acceptable in v1?**
+   - `profile_id`, role snapshot, started/last_seen/signed_out/timed_out/revoked timestamps, remember-me flag, status, revoke reason, and optional user-provided safe device label.
+
+9. **What metadata should wait for legal/privacy review?**
+   - Any raw IP, precise location, full user-agent, fingerprinting identifiers, or derived tracking signals that increase identifiability.
+
+10. **Use `audit_events` only, or add dedicated `auth_sessions`/`user_sessions` later?**
+   - Use both:
+     - keep `audit_events` for immutable event trail
+     - add dedicated `auth_sessions` (later) for current state and operational revocation controls.
+
+## Future schema concept (Part C, not implemented)
+
+Proposed table: `public.auth_sessions` (or `public.user_sessions`)
+
+Concept fields:
+
+- `id uuid primary key`
+- `profile_id uuid not null`
+- `role text not null`
+- `started_at timestamptz not null`
+- `last_seen_at timestamptz null`
+- `signed_out_at timestamptz null`
+- `timed_out_at timestamptz null`
+- `revoked_at timestamptz null`
+- `revoked_by_profile_id uuid null`
+- `revoke_reason text null`
+- `remember_me_enabled boolean not null default false`
+- `session_status text not null` (`active`, `signed_out`, `timed_out`, `revoked`)
+- `safe_device_label text null`
+- `user_agent_hash text null` (future-only, legal-reviewed)
+- `ip_hash text null` (future-only, legal-reviewed)
+- `created_at timestamptz not null`
+- `updated_at timestamptz not null`
+
+V1 privacy boundary:
+
+- no raw IP
+- no exact location
+- no full user-agent
+- no GPS/device fingerprinting
+
+## Future action taxonomy (Part D)
+
+Planned lifecycle/audit actions:
+
+- `user.session_revoked`
+- `user.logout_all_devices`
+- `user.account_disabled`
+- `user.role_changed`
+- `user.parent_child_link_removed`
+
+Role/action intent:
+
+- **Parent self**: view/revoke own sessions, logout-all-devices for own account.
+- **Teacher**: own-session logout/revoke only.
+- **Branch supervisor**: potential later phase branch-scoped staff session visibility/revoke (strictly scoped).
+- **HQ**: revoke staff sessions and disable staff accounts.
+- **System**: automatic timeout and policy-driven revocation on account inactive/role/link changes.
+
+## Recommended implementation sequence (Part E)
+
+1. Add SQL/RLS foundation for `auth_sessions` (append-safe status transitions, strict role scopes).
+2. Write session row on successful login.
+3. Update `last_seen_at` with throttling to avoid write amplification.
+4. Mark `signed_out_at` / `timed_out_at` on existing logout/timeout paths.
+5. Add staff/HQ read-only session review surfaces (or API helpers) with strict scope.
+6. Add self-service revoke for own sessions.
+7. Add HQ revoke controls for staff sessions.
+8. Implement logout-all-devices flow.
+9. Only after legal/compliance review, evaluate hashed IP/device metadata additions.
+
+## Legal/compliance boundaries
+
+- Legal/compliance review required before production rollout of cross-device revocation controls.
+- Malaysia PDPA/privacy wording must be updated before any IP/device telemetry fields are enabled.
+- Data minimization and retention windows must be defined before launch.
+
+---
+
+Phase 1E planning checkpoint complete. No runtime behavior, SQL, RLS, or auth settings were changed.

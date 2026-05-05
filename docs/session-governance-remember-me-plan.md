@@ -3,6 +3,31 @@
 Date: 2026-05-05  
 Type: planning + diagnosis checkpoint only (no code/SQL/RLS/auth-config changes)
 
+## 2026-05-05 planning checkpoint addendum (Phase 1E session revocation + multi-device governance)
+
+- Current baseline remains stable through Phase 1D:
+  - Supabase-primary sign-out
+  - remember-me UI preference
+  - app-level timeout/browser marker enforcement
+  - auth lifecycle audit events with write-only mode where appropriate
+- Missing capabilities for true multi-device governance:
+  - no server-backed session inventory
+  - no cross-device revoke orchestration
+  - no sign-out-all-devices flow
+  - no admin/HQ session revoke workflow
+- Key planning decision:
+  - client-only markers cannot revoke other devices; future Phase 1E requires server-backed `auth_sessions`/`user_sessions` model.
+- Future policy direction:
+  - parent self: own-session revoke + logout-all-devices
+  - teacher: own-session revoke only
+  - HQ: staff session revoke + account disable handling
+  - system: automatic revoke on policy triggers (account disabled, role/link changes)
+- Privacy posture:
+  - v1 metadata should remain timestamp/status/reason/role based only.
+  - no raw IP, exact location, full user-agent, GPS, or fingerprinting until legal/privacy wording is approved.
+- New detailed planning artifact:
+  - `docs/session-revocation-multidevice-governance-plan.md`
+
 ## 2026-05-05 stability checkpoint addendum (logout audit warning)
 
 - Root cause of warning `recordAuthLifecycleAudit.user.logout`:

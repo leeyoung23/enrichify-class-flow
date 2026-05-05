@@ -1,5 +1,17 @@
 # Project Master Context Handoff
 
+## Checkpoint update (session governance Phase 1E planning: revocation + multi-device — 2026-05-05)
+
+- **Planning-only checkpoint:** no code, SQL, RLS, or Supabase dashboard auth-setting changes.
+- **Current state acknowledged:** Phase 1D baseline stable (Supabase-primary sign-out, remember-me UI, app-level timeout enforcement, auth lifecycle audits, insert-only audit writes where needed).
+- **Gap identified:** client-only markers cannot revoke sessions across devices; server-backed session state is required for true multi-device governance.
+- **Future model direction:** keep `audit_events` for immutable lifecycle trail, and add dedicated `auth_sessions`/`user_sessions` table later for active status/revocation control.
+- **Planned action taxonomy:** `user.session_revoked`, `user.logout_all_devices`, `user.account_disabled`, `user.role_changed`, `user.parent_child_link_removed`.
+- **Role policy direction:** parent self own-session/logout-all; teacher own-session only; HQ staff revoke/disable; system policy-based revoke on account/role/link changes.
+- **Privacy boundaries:** no raw IP, exact location, full user-agent, GPS, or fingerprinting metadata in v1; defer hashed telemetry fields until legal/compliance + privacy notice review.
+- **New planning doc:** `docs/session-revocation-multidevice-governance-plan.md`.
+- **Next recommended implementation milestone:** Phase 1E implementation step 1 — SQL/RLS foundation for `auth_sessions`, followed by login/write-last-seen/signout-status plumbing and scoped revoke flows.
+
 ## Checkpoint update (logout audit warning stabilization — 2026-05-05)
 
 - **Diagnosis result:** warning `recordAuthLifecycleAudit.user.logout` came from audit write path using `insert(...).select(...)` under RLS contexts where write is allowed but row-return select is intentionally restricted (notably parent role).

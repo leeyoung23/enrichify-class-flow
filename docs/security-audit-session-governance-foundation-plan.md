@@ -3,6 +3,27 @@
 Date: 2026-05-04  
 Type: planning-only checkpoint (no code/SQL/auth/UI changes in this milestone)
 
+## 2026-05-05 planning checkpoint addendum: Phase 1E session revocation + multi-device governance
+
+- Objective for next lane: plan server-backed session revocation and multi-device control without changing current runtime behavior.
+- Diagnosis outcome:
+  - current governance is app-local (browser markers + timeout) and cannot revoke sessions across devices.
+  - immutable `audit_events` is suitable for event trail, but insufficient as the sole source of current session state.
+- Recommended architecture (future implementation):
+  - keep `audit_events` for event history
+  - add dedicated `auth_sessions`/`user_sessions` table for active session state + revoke workflows
+- Planned future actions:
+  - `user.session_revoked`
+  - `user.logout_all_devices`
+  - `user.account_disabled`
+  - `user.role_changed`
+  - `user.parent_child_link_removed`
+- Privacy boundaries:
+  - v1 session metadata should be minimal and non-sensitive.
+  - defer `ip_hash` / `user_agent_hash` activation and any device telemetry until legal/compliance + privacy wording review.
+- Detailed Phase 1E plan doc added:
+  - `docs/session-revocation-multidevice-governance-plan.md`
+
 ## 2026-05-05 stability checkpoint addendum: logout audit warning diagnosis
 
 - Diagnosed warning source: `recordAuthLifecycleAudit.user.logout` in runtime sign-out flow.
