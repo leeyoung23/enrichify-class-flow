@@ -1094,6 +1094,35 @@ export async function markAuthSessionTimedOut({ sessionId } = {}) {
   }
 }
 
+export async function endOwnAuthSession({ sessionId, source = "active_sessions_card" } = {}) {
+  if (!isSupabaseConfigured() || !supabase) {
+    return { data: null, error: { message: "Supabase is not configured" } };
+  }
+  if (!isUuidLike(sessionId)) {
+    return { data: null, error: { message: "sessionId must be a UUID" } };
+  }
+  const safeSource = trimString(source) || "active_sessions_card";
+
+  const updateResult = await markAuthSessionSignedOut({ sessionId });
+  if (updateResult.error || !updateResult.data?.id) {
+    return updateResult;
+  }
+
+  // Non-blocking audit write for self-ended sessions.
+  void recordAuditEvent({
+    actionType: "user.session_revoked",
+    entityType: "auth_session",
+    entityId: trimString(sessionId),
+    includeResultRow: false,
+    metadata: {
+      reason: "self_ended",
+      source: safeSource,
+    },
+  });
+
+  return updateResult;
+}
+
 export async function revokeAuthSession({ sessionId, reason = null } = {}) {
   if (!isSupabaseConfigured() || !supabase) {
     return { data: null, error: { message: "Supabase is not configured" } };

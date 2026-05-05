@@ -1,11 +1,13 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
 import { Loader2, Shield } from 'lucide-react';
 import { listMyAuthSessions } from '@/services/supabaseReadService';
 import { getCurrentAuthSessionId } from '@/services/sessionGovernanceService';
 import { isSupabaseConfigured } from '@/services/supabaseClient';
 import { isDebugModeEnabled } from '@/services/authService';
+import { endOwnAuthSession } from '@/services/supabaseWriteService';
 
 const STATUS_LABELS = {
   active: 'Active',
@@ -38,29 +40,56 @@ export default function ActiveSessionsCard({ className = '' }) {
   const [rows, setRows] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [actionMessage, setActionMessage] = useState('');
+  const [endingSessionId, setEndingSessionId] = useState('');
   const debugMode = isDebugModeEnabled();
   const currentSessionId = useMemo(() => getCurrentAuthSessionId(), []);
 
-  useEffect(() => {
+  const loadSessions = async () => {
     if (!isSupabaseConfigured()) return;
-    let cancelled = false;
     setLoading(true);
     setError('');
+    const result = await listMyAuthSessions({ limit: 20 });
+    if (result.error) {
+      setError(result.error.message || 'Unable to load sessions right now.');
+      setRows([]);
+    } else {
+      setRows(Array.isArray(result.data) ? result.data : []);
+    }
+    setLoading(false);
+  };
+
+  useEffect(() => {
+    let cancelled = false;
     void (async () => {
-      const result = await listMyAuthSessions({ limit: 20 });
+      await loadSessions();
       if (cancelled) return;
-      if (result.error) {
-        setError(result.error.message || 'Unable to load sessions right now.');
-        setRows([]);
-      } else {
-        setRows(Array.isArray(result.data) ? result.data : []);
-      }
-      setLoading(false);
     })();
     return () => {
       cancelled = true;
     };
   }, []);
+
+  const handleEndSession = async (row) => {
+    const sessionId = typeof row?.id === 'string' ? row.id.trim() : '';
+    if (!sessionId) return;
+    if (sessionId === currentSessionId) {
+      setActionMessage('This browser session cannot be ended from here.');
+      return;
+    }
+    const confirmed = window.confirm('End this session? This will require that browser to sign in again.');
+    if (!confirmed) return;
+    setEndingSessionId(sessionId);
+    setActionMessage('');
+    const result = await endOwnAuthSession({ sessionId, source: 'active_sessions_card' });
+    if (result.error) {
+      setActionMessage(result.error.message || 'Could not end this session right now. Please try again.');
+    } else {
+      setActionMessage('Session ended.');
+      await loadSessions();
+    }
+    setEndingSessionId('');
+  };
 
   return (
     <Card id="parent-account-security" className={className} role="region" aria-label="Account security">
@@ -72,7 +101,7 @@ export default function ActiveSessionsCard({ className = '' }) {
       </CardHeader>
       <CardContent className="space-y-4">
         <p className="text-sm text-muted-foreground">
-          Active Sessions shows your recent sign-ins for this account. Revoke controls are intentionally not enabled in this phase.
+          Active Sessions shows your recent sign-ins for this account. You can end older active sessions from here.
         </p>
         {!isSupabaseConfigured() ? (
           <p className="text-sm text-muted-foreground">Sign in with your parent account to view session activity.</p>
@@ -86,6 +115,9 @@ export default function ActiveSessionsCard({ className = '' }) {
         {!loading && error ? (
           <p className="text-sm text-destructive">{error}</p>
         ) : null}
+        {!loading && !error && actionMessage ? (
+          <p className="text-sm text-muted-foreground">{actionMessage}</p>
+        ) : null}
         {!loading && !error && rows.length === 0 ? (
           <p className="text-sm text-muted-foreground">No session activity found yet.</p>
         ) : null}
@@ -94,6 +126,7 @@ export default function ActiveSessionsCard({ className = '' }) {
             {rows.map((row) => {
               const statusLabel = STATUS_LABELS[row?.session_status] || 'Unknown';
               const isCurrentSession = Boolean(currentSessionId && row?.id === currentSessionId);
+              const canEndSession = !isCurrentSession && row?.session_status === 'active';
               return (
                 <div key={row?.id || `${row?.started_at || 'row'}-${row?.created_at || 'session'}`} className="rounded-lg border p-3 space-y-2">
                   <div className="flex flex-wrap items-center gap-2">
@@ -111,6 +144,19 @@ export default function ActiveSessionsCard({ className = '' }) {
                   </div>
                   {debugMode ? (
                     <p className="text-[11px] text-muted-foreground">Session ref: {formatInternalRef(row?.id)}</p>
+                  ) : null}
+                  {canEndSession ? (
+                    <div className="pt-1">
+                      <Button
+                        type="button"
+                        size="sm"
+                        variant="outline"
+                        onClick={() => handleEndSession(row)}
+                        disabled={endingSessionId === row?.id}
+                      >
+                        {endingSessionId === row?.id ? 'Ending…' : 'End session'}
+                      </Button>
+                    </div>
                   ) : null}
                 </div>
               );

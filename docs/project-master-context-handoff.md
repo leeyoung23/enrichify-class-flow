@@ -1,5 +1,38 @@
 # Project Master Context Handoff
 
+## Checkpoint update (self end-session action v1, Phase 1E Step 3B — 2026-05-05)
+
+- **Parent Active Sessions action added:**
+  - `src/components/account/ActiveSessionsCard.jsx` now shows `End session` for own non-current rows with `active` status only.
+  - current browser row keeps `Current browser` badge and has no action button in v1.
+- **Helper added:**
+  - `endOwnAuthSession({ sessionId, source })` in `src/services/supabaseWriteService.js`.
+  - Uses existing self-safe `signed_out` update path (no self `revoked` mutation in this step).
+- **Why signed_out in Step 3B:**
+  - `043` trigger currently blocks self setting `session_status=revoked` and revoke fields.
+  - chose smallest safe implementation without SQL/RLS mutation.
+- **Audit behavior:**
+  - non-blocking `recordAuditEvent` call on end-session:
+    - `action_type=user.session_revoked`
+    - `entity_type=auth_session`
+    - `entity_id=sessionId`
+    - metadata `{ reason: "self_ended", source: "active_sessions_card" }`
+  - revoke/end-session still succeeds if audit write fails.
+- **Smoke coverage updated:**
+  - `scripts/supabase-auth-sessions-smoke-test.mjs` now checks:
+    - parent can end own non-current session
+    - parent cannot end another profile session
+    - HQ revoke path still works
+    - delete still blocked
+    - telemetry columns still absent
+- **Safety boundaries preserved:**
+  - no logout-all-devices
+  - no HQ revoke UI/staff dashboard UI
+  - no cross-user self-end path
+  - no SQL/RLS weakening
+  - no raw IP/location/fingerprint/full user-agent/token display
+- **Next recommended milestone:** Phase 1E Step 3C HQ read-only session review surface, then Step 3D HQ revoke staff sessions.
+
 ## Checkpoint update (active sessions visibility v1, Phase 1E Step 3A — 2026-05-05)
 
 - **Parent UI added (read-only):**

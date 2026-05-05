@@ -43,6 +43,7 @@ async function run() {
       updateAuthSessionHeartbeat,
       markAuthSessionSignedOut,
       markAuthSessionTimedOut,
+      endOwnAuthSession,
       revokeAuthSession,
     },
     { supabase },
@@ -83,6 +84,7 @@ async function run() {
   let warningCount = 0;
   let parentSessionId = null;
   let parentProfileId = null;
+  let studentSessionId = null;
 
   const parentSignIn = await signInRole(parentUser, { signInWithEmailPassword, signOut });
   if (!parentSignIn.ok) process.exit(1);
@@ -162,6 +164,32 @@ async function run() {
         printResult("PASS", "Parent: can mark own auth session timed_out");
       }
     }
+
+    const parentEndSession = await createAuthSession({
+      rememberMeEnabled: true,
+      safeDeviceLabel: "parent-self-end-smoke",
+    });
+    if (parentEndSession.error || !parentEndSession.data?.id) {
+      printResult(
+        "WARNING",
+        `Parent: self-end fixture session create failed (${parentEndSession.error?.message || "unknown"})`
+      );
+      failureCount += 1;
+    } else {
+      const parentEnded = await endOwnAuthSession({
+        sessionId: parentEndSession.data.id,
+        source: "auth_sessions_smoke",
+      });
+      if (parentEnded.error || !parentEnded.data?.id || parentEnded.data.session_status !== "signed_out") {
+        printResult(
+          "WARNING",
+          `Parent: self-end own session failed (${parentEnded.error?.message || "unknown"})`
+        );
+        failureCount += 1;
+      } else {
+        printResult("PASS", "Parent: can end own non-current auth session");
+      }
+    }
   }
 
   const parentForbiddenInsert = await supabase
@@ -193,6 +221,17 @@ async function run() {
     warningCount += 1;
     printResult("CHECK", "Student: skipped parent-session read check (missing parent session id)");
   } else {
+    const studentCreate = await createAuthSession({
+      rememberMeEnabled: false,
+      safeDeviceLabel: "student-smoke-browser",
+    });
+    if (studentCreate.error || !studentCreate.data?.id) {
+      printResult("WARNING", `Student: fixture session create failed (${studentCreate.error?.message || "unknown"})`);
+      failureCount += 1;
+    } else {
+      studentSessionId = studentCreate.data.id;
+    }
+
     const studentReadParent = await supabase
       .from("auth_sessions")
       .select("id")
@@ -224,6 +263,27 @@ async function run() {
       printResult("PASS", "Teacher: cannot read parent auth session");
     } else {
       printResult("WARNING", "Teacher: unexpectedly read parent auth session");
+      failureCount += 1;
+    }
+  }
+  await signOut();
+
+  const parentReSignIn = await signInRole(parentUser, { signInWithEmailPassword, signOut });
+  if (!parentReSignIn.ok) {
+    failureCount += 1;
+    printResult("WARNING", "Parent: unable to re-sign-in for cross-user self-end check");
+  } else if (!studentSessionId) {
+    warningCount += 1;
+    printResult("CHECK", "Parent: skipped cross-user self-end check (missing student session id)");
+  } else {
+    const parentCrossEndAttempt = await endOwnAuthSession({
+      sessionId: studentSessionId,
+      source: "auth_sessions_smoke_cross_user",
+    });
+    if (parentCrossEndAttempt.error || !parentCrossEndAttempt.data?.id) {
+      printResult("PASS", "Parent: cannot end another profile auth session");
+    } else {
+      printResult("WARNING", "Parent: unexpectedly ended another profile auth session");
       failureCount += 1;
     }
   }

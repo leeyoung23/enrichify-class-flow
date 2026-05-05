@@ -26,6 +26,33 @@ Type: planning-only checkpoint (no code/SQL/RLS/auth-config changes)
   - no HQ/staff revoke controls in this step
   - no SQL/RLS change
 
+## 2026-05-05 implementation checkpoint addendum (Phase 1E Step 3B self end-session action v1)
+
+- Added **self end-session** action for own non-current active sessions in `ActiveSessionsCard`.
+- Current browser behavior:
+  - still highlighted as `Current browser`
+  - intentionally has no end-session button in v1
+- End-session behavior (v1 semantics):
+  - active + non-current rows show `End session`
+  - confirmation copy: `End this session? This will require that browser to sign in again.`
+  - on success, row is updated to `signed_out` status and list is refreshed
+  - old rows remain visible for transparency/audit context
+- Why `signed_out` (not `revoked`) in Step 3B:
+  - existing `043` trigger explicitly blocks self setting revocation fields/status
+  - this step avoids SQL/RLS mutation and uses existing safe self-update path
+- Audit write:
+  - non-blocking `recordAuditEvent` with:
+    - `action_type = user.session_revoked`
+    - `entity_type = auth_session`
+    - `entity_id = sessionId`
+    - metadata `{ reason: "self_ended", source: "active_sessions_card" }`
+  - audit failure does not block end-session action
+- Safety boundaries preserved:
+  - no cross-user revoke path in helper/UI
+  - no logout-all-devices
+  - no HQ revoke UI
+  - no raw IP/full user-agent/fingerprint/GPS fields
+
 ## 2026-05-05 implementation checkpoint addendum (Phase 1E Step 2 tiny runtime wiring)
 
 Runtime wiring added (small, conservative integration):

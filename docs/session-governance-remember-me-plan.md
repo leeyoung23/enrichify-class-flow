@@ -21,6 +21,20 @@ Type: planning + diagnosis checkpoint only (no code/SQL/RLS/auth-config changes)
   - no logout-all-devices
   - no SQL/RLS changes
 
+## 2026-05-05 implementation checkpoint addendum (Phase 1E Step 3B self end-session action v1)
+
+- `ActiveSessionsCard` now supports parent self end-session for **non-current active** rows only.
+- Current browser remains protected in-card:
+  - no end-session button rendered for current row in v1
+- End-session implementation uses existing self-safe status transition:
+  - helper `endOwnAuthSession({ sessionId })` updates session to `signed_out`
+  - list refreshes after success so status is visible immediately
+- Audit capture added (non-blocking):
+  - `user.session_revoked` event on `auth_session` entity
+  - metadata: `reason=self_ended`, `source=active_sessions_card`
+- No change to remember-me storage behavior or timeout policy.
+- No logout-all-devices, no HQ/staff dashboard UI, no SQL/RLS change in this step.
+
 ## 2026-05-05 implementation checkpoint addendum (Phase 1E Step 2 tiny runtime wiring)
 
 - Login runtime now creates `auth_sessions` row after successful profile resolution in real mode.

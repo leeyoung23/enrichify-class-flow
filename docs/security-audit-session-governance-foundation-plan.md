@@ -21,6 +21,27 @@ Type: planning-only checkpoint (no code/SQL/auth/UI changes in this milestone)
   - internal ids are hidden by default
   - only truncated internal reference shown when debug query mode is enabled (`?debug=1`)
 
+## 2026-05-05 implementation checkpoint addendum: Phase 1E Step 3B self end-session action v1
+
+- Added own-account session termination control in parent-facing Active Sessions UI.
+- Scope in v1:
+  - only non-current sessions with `active` status can be ended
+  - current browser row has no action button
+  - non-active rows remain read-only
+- Data/behavior safety:
+  - end-session uses existing self-safe `signed_out` update path
+  - no cross-user revocation path exposed
+  - no SQL/RLS change required
+- Audit posture:
+  - non-blocking audit event written on self end-session action:
+    - `action_type=user.session_revoked`
+    - `entity_type=auth_session`
+    - metadata includes safe reason/source only
+  - audit write failure does not block auth session update
+- Privacy boundaries unchanged:
+  - no IP/location/full user-agent/fingerprint/token exposure
+  - no timeout behavior changes
+
 ## 2026-05-05 implementation checkpoint addendum: Phase 1E Step 2 runtime session-state wiring
 
 - Runtime session-state wiring is now active (small scope, no SQL/RLS changes):
