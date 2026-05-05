@@ -1,5 +1,14 @@
 # Project Master Context Handoff
 
+## Checkpoint update (session governance Phase 1A sign-out alignment — 2026-05-05)
+
+- **Runtime auth fix:** sidebar sign-out now uses Supabase-primary helper path (`signOutSupabasePrimary`) instead of Base44-as-primary.
+- **Authority model:** Supabase sign-out first (source of truth); Base44 logout retained as best-effort cleanup only.
+- **Safe local cleanup:** only transient session UI popup keys are cleared (`companyNewsPopupSessionShownIds`, `companyNewsPopupSessionHiddenIds`).
+- **Demo behavior:** `demoRole` preview remains URL-based; exiting sign-out from demo mode routes to `/welcome` without mutating real Supabase session.
+- **Not included in this phase:** no remember-me checkbox, no inactivity timeout, no SQL/RLS/session-table changes, no Supabase auth settings changes.
+- **Governance status:** legal/compliance review still required before wider persistent-session rollout and production hardening milestones.
+
 ## Checkpoint update (session governance + remember me planning — 2026-05-05)
 
 - **Planning-only docs checkpoint:** no app code, auth behavior, Supabase settings, SQL, or RLS changes.

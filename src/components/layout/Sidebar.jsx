@@ -1,15 +1,15 @@
-import React from 'react';
-import { Link, useLocation } from 'react-router-dom';
+import React, { useState } from 'react';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import {
   LayoutDashboard, Building2, BookOpen, Users, GraduationCap,
   ClipboardCheck, MessageSquarePlus, LogOut, ChevronLeft, ChevronRight,
   PenLine, UserPlus, PlayCircle, ClipboardPen, ChartNoAxesColumn, Bot, FolderGit2, BarChart3, CalendarRange, BellRing, FileText, Wallet, Briefcase, Timer, Megaphone
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { base44 } from '@/api/base44Client';
 import { cn } from '@/lib/utils';
 import { getSelectedDemoRole, normalizeRole } from '@/services/authService';
 import { getRoleNavigation } from '@/services/permissionService';
+import { signOutSupabasePrimary } from '@/services/supabaseAuthService';
 
 const ROLE_TITLES = {
   hq_admin: 'HQ Admin',
@@ -84,9 +84,27 @@ function isParentViewNavItemActive(itemPath, location) {
 
 export default function Sidebar({ user, collapsed, onToggle }) {
   const location = useLocation();
+  const navigate = useNavigate();
   const selectedDemoRole = getSelectedDemoRole();
+  const [signingOut, setSigningOut] = useState(false);
   const role = selectedDemoRole || normalizeRole(user?.role) || null;
   const items = role ? getRoleNavigation(role) : [];
+
+  const handleSignOut = async () => {
+    if (signingOut) return;
+    setSigningOut(true);
+    try {
+      if (selectedDemoRole) {
+        // Demo preview is URL-driven. Exiting demo should not mutate real auth state.
+        navigate('/welcome', { replace: true });
+        return;
+      }
+      await signOutSupabasePrimary();
+      navigate('/login', { replace: true });
+    } finally {
+      setSigningOut(false);
+    }
+  };
 
   return (
     <aside className={cn(
@@ -150,11 +168,12 @@ export default function Sidebar({ user, collapsed, onToggle }) {
         <Button
           variant="ghost"
           size="sm"
-          onClick={() => base44.auth.logout()}
+          onClick={handleSignOut}
+          disabled={signingOut}
           className={cn("w-full text-muted-foreground hover:text-destructive", collapsed ? "justify-center" : "justify-start gap-3")}
         >
           <LogOut className="h-4 w-4 flex-shrink-0" />
-          {!collapsed && <span>Sign Out</span>}
+          {!collapsed && <span>{signingOut ? 'Signing out…' : 'Sign Out'}</span>}
         </Button>
       </div>
     </aside>

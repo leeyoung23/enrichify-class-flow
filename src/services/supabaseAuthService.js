@@ -1,5 +1,6 @@
 import { supabase, isSupabaseConfigured } from "./supabaseClient.js";
 import { getRole } from "./permissionService.js";
+import { base44 } from "../api/base44Client.js";
 
 /**
  * Phase 1: Supabase Auth helpers only. Does not replace demoRole or authService (Base44).
@@ -86,15 +87,65 @@ export async function signInWithEmailPassword(email, password) {
 }
 
 export async function signOut() {
-  if (!isSupabaseConfigured() || !supabase) {
-    return { error: null };
+  const { supabaseError } = await signOutSupabasePrimary();
+  return { error: supabaseError ?? null };
+}
+
+const SESSION_UI_KEYS_TO_CLEAR_ON_SIGN_OUT = [
+  "companyNewsPopupSessionShownIds",
+  "companyNewsPopupSessionHiddenIds",
+];
+
+function clearSessionUiStateBestEffort() {
+  try {
+    if (typeof window === "undefined" || !window.sessionStorage) return;
+    for (const key of SESSION_UI_KEYS_TO_CLEAR_ON_SIGN_OUT) {
+      window.sessionStorage.removeItem(key);
+    }
+  } catch (_error) {
+    // Ignore storage cleanup errors to keep sign-out non-blocking.
   }
+}
+
+/**
+ * Supabase-primary sign-out for real app mode.
+ * - Source of truth: Supabase session invalidation.
+ * - Legacy Base44 cleanup is best-effort and non-blocking.
+ * - Clears only safe session UI keys used by current app shell.
+ */
+export async function signOutSupabasePrimary() {
+  let supabaseError = null;
+  let legacyCleanupError = null;
+
+  if (!isSupabaseConfigured() || !supabase) {
+    clearSessionUiStateBestEffort();
+    return { success: true, error: null, supabaseError: null, legacyCleanupError: null };
+  }
+
   try {
     const { error } = await supabase.auth.signOut();
-    return { error: error ?? null };
+    supabaseError = error ?? null;
   } catch (e) {
-    return { error: { message: e?.message || String(e) } };
+    supabaseError = { message: e?.message || String(e) };
   }
+
+  try {
+    if (base44?.auth?.logout && typeof base44.auth.logout === "function") {
+      // Best-effort cleanup only; never the source of truth for sign-out.
+      base44.auth.logout();
+    }
+  } catch (e) {
+    legacyCleanupError = { message: e?.message || String(e) };
+  }
+
+  clearSessionUiStateBestEffort();
+
+  return {
+    success: !supabaseError,
+    error: supabaseError ?? null,
+    supabaseError: supabaseError ?? null,
+    legacyCleanupError: legacyCleanupError ?? null,
+  };
 }
 
 /**

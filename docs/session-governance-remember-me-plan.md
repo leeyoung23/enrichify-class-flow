@@ -3,6 +3,25 @@
 Date: 2026-05-05  
 Type: planning + diagnosis checkpoint only (no code/SQL/RLS/auth-config changes)
 
+## 2026-05-05 implementation checkpoint addendum (Phase 1A)
+
+- Implemented runtime auth authority/sign-out alignment (small safe fix).
+- `Sidebar` sign-out now uses Supabase-primary helper path, not Base44 as primary authority.
+- New helper in `src/services/supabaseAuthService.js`: `signOutSupabasePrimary()`
+  - Supabase sign-out runs first (source of truth).
+  - Legacy Base44 logout is best-effort cleanup only.
+  - Clears only safe session UI keys used for popup session state:
+    - `companyNewsPopupSessionShownIds`
+    - `companyNewsPopupSessionHiddenIds`
+- `demoRole` preview safety:
+  - sidebar sign-out in demo mode exits to `/welcome` without mutating real Supabase session.
+  - demo preview remains URL-based and available.
+- Still not implemented in this phase:
+  - remember-me checkbox
+  - inactivity timeout
+  - session tracking table / SQL
+  - Supabase auth settings changes
+
 ## Scope and hard constraints
 
 - This checkpoint is planning-only.

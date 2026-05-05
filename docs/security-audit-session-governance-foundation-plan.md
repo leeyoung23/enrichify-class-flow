@@ -42,6 +42,19 @@ Risk notes:
 - Mixed logout paths can lead to incomplete sign-out semantics.
 - Session/device metadata collection requires legal/privacy wording review (including Malaysia PDPA attention) before rollout.
 
+## 2026-05-05 Phase 1A implementation note: sign-out authority alignment
+
+- Runtime fix shipped to reduce split sign-out risk:
+  - Supabase is now primary sign-out authority in sidebar flow.
+  - Base44 logout remains best-effort cleanup only (non-authoritative).
+- Scope intentionally limited:
+  - no remember-me UI
+  - no inactivity timeout enforcement
+  - no SQL/RLS/session-table changes
+  - no Supabase auth setting changes
+- Demo preview safety preserved:
+  - URL `demoRole` flows remain preview-only and do not force real-session mutation when exiting demo via sidebar sign-out.
+
 ## Scope and constraints
 
 This document defines the next production-hardening foundation after internal prototype validation for:
