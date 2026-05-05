@@ -790,6 +790,89 @@ export async function listHomeworkTaskAssignees({
   }
 }
 
+/**
+ * Released homework feedback rows for AI parent report source aggregation (staff-only path).
+ * Only status=released_to_parent. Never selects internal_note or file paths.
+ * Optionally filters by released_to_parent_at within [periodStart, periodEnd] when both provided as ISO date strings.
+ */
+export async function listReleasedHomeworkFeedbackForAiEvidence({
+  studentId,
+  periodStart,
+  periodEnd,
+} = {}) {
+  if (!isSupabaseConfigured() || !supabase) {
+    return { data: [], error: { message: "Supabase is not configured" } };
+  }
+  if (!isUuidLike(studentId)) {
+    return { data: [], error: { message: "studentId must be a UUID" } };
+  }
+
+  const sid = trimString(studentId);
+  const ps = typeof periodStart === "string" ? periodStart.trim() : "";
+  const pe = typeof periodEnd === "string" ? periodEnd.trim() : "";
+
+  try {
+    const subRead = await supabase
+      .from("homework_submissions")
+      .select("id,homework_task_id,submitted_at")
+      .eq("student_id", sid)
+      .order("submitted_at", { ascending: false })
+      .limit(120);
+
+    if (subRead.error) return { data: [], error: subRead.error };
+    const subs = Array.isArray(subRead.data) ? subRead.data : [];
+    if (subs.length === 0) return { data: [], error: null };
+
+    const subIds = subs.map((row) => row.id).filter(Boolean);
+    if (subIds.length === 0) return { data: [], error: null };
+
+    let fbQuery = supabase
+      .from("homework_feedback")
+      .select("id,feedback_text,next_step,released_to_parent_at,homework_submission_id,status")
+      .in("homework_submission_id", subIds)
+      .eq("status", "released_to_parent")
+      .not("released_to_parent_at", "is", null)
+      .order("released_to_parent_at", { ascending: false })
+      .limit(25);
+
+    if (ps) fbQuery = fbQuery.gte("released_to_parent_at", ps);
+    if (pe) {
+      const endInclusive = pe.length === 10 ? `${pe}T23:59:59.999Z` : pe;
+      fbQuery = fbQuery.lte("released_to_parent_at", endInclusive);
+    }
+
+    const fbRead = await fbQuery;
+    if (fbRead.error) return { data: [], error: fbRead.error };
+
+    const feedbackRows = Array.isArray(fbRead.data) ? fbRead.data : [];
+    const subById = new Map(subs.map((row) => [row.id, row]));
+    const taskIds = [...new Set(subs.map((row) => row.homework_task_id).filter(Boolean))];
+
+    let taskById = new Map();
+    if (taskIds.length > 0) {
+      const taskRead = await supabase.from("homework_tasks").select("id,title,due_date").in("id", taskIds);
+      if (!taskRead.error && Array.isArray(taskRead.data)) {
+        taskById = new Map(taskRead.data.map((t) => [t.id, t]));
+      }
+    }
+
+    const enriched = feedbackRows.map((fb) => {
+      const sub = subById.get(fb.homework_submission_id);
+      const task = sub?.homework_task_id ? taskById.get(sub.homework_task_id) : null;
+      return {
+        ...fb,
+        task_title: task?.title ?? null,
+        task_due_date: task?.due_date ?? null,
+        submission_submitted_at: sub?.submitted_at ?? null,
+      };
+    });
+
+    return { data: enriched, error: null };
+  } catch (error) {
+    return { data: [], error };
+  }
+}
+
 export async function listAssignedHomeworkForStudent({
   studentId,
   classId,

@@ -95,7 +95,7 @@ Spot-check quickly before sign-off:
 - [ ] Open AI Parent Reports shell/page.
 - [ ] Status badges read as **Draft / Teacher review / Supervisor review / Approved / Released / Archived** (not raw snake_case).
 - [ ] Lifecycle copy matches behaviour: guardians may receive **in-app** notice **after Release** only; email/SMS/PDF deferred.
-- [ ] **Source evidence card** matches expectations: RLS-backed rows where data exists; Observations + OCR explicitly **not** claiming automation (see `docs/ai-evidence-pipeline-readiness-plan.md`).
+- [ ] **Source evidence card** matches expectations: RLS-backed rows where data exists; **Released homework feedback** shows only teacher-released rows (warm empty if none); Observations + OCR explicitly **not** claiming automation (see `docs/ai-evidence-pipeline-readiness-plan.md`).
 - [ ] Generate **mock** draft (deterministic). Generate **real** AI draft only when staff session + environment allows (optional).
 - [ ] Submit / approve / release report flow works.
 - [ ] Confirm parent sees only released/current report.

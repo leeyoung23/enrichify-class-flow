@@ -1917,6 +1917,18 @@ export default function AiParentReports() {
                 <p>{sourceEvidencePreview.homeworkSummary}</p>
               </div>
               <div className="rounded-lg border bg-muted/20 p-3 space-y-1">
+                <p className="text-xs font-medium text-muted-foreground">Released homework feedback</p>
+                <p className="text-xs text-muted-foreground mb-1">
+                  Teacher-released feedback only (status released_to_parent). Unreleased drafts and internal notes are
+                  never included.
+                </p>
+                <p>
+                  {sourceEvidencePreview.releasedHomeworkFeedbackSummary?.trim()
+                    ? sourceEvidencePreview.releasedHomeworkFeedbackSummary
+                    : 'No released homework feedback found for this period yet.'}
+                </p>
+              </div>
+              <div className="rounded-lg border bg-muted/20 p-3 space-y-1">
                 <p className="text-xs font-medium text-muted-foreground">Worksheet evidence</p>
                 <p>{sourceEvidencePreview.worksheetEvidenceSummary}</p>
               </div>

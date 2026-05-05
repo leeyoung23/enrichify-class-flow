@@ -30,6 +30,8 @@ The script is **parent-centric** (uses the parent’s linked student). **Branch 
 
 **Parent UI:** `ParentView.jsx` → homework card — uploads, statuses, released feedback text, released marked-work list via signed URLs when allowed.
 
+**AI Parent Reports (staff evidence lane):** `collectAiParentReportSourceEvidence` (RLS) includes **released** homework feedback excerpts (`feedback_text` / `next_step` only) in staff-only source preview and mock-draft input — **not** `internal_note`, unreleased drafts, storage paths, or file URLs. **OCR** and live marking providers remain **out of** this aggregation path.
+
 ---
 
 ## Proposed safe AI marking / OCR flow (future)
@@ -61,6 +63,7 @@ Optional AI is **support for drafting**, not a replacement for professional judg
 - Submission + file ingestion to private bucket.  
 - Feedback lifecycle + marked file release flags.  
 - **Mock** feedback draft generator from **metadata/context** (`generateMockHomeworkFeedbackDraft`).  
+- **AI Parent Reports staff evidence:** released homework feedback text (`feedback_text` / `next_step`) can feed **`collectAiParentReportSourceEvidence`** — **not** OCR of binaries; **`internal_note`** never selected.  
 - Edge-related **stub/adapter tests** under `scripts/ai-homework-*.mjs` and Supabase functions (disabled/mock modes typical).
 
 **Missing for real scan→feedback:**

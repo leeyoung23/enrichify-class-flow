@@ -10,7 +10,7 @@ Type: internal prototype / SaaS readiness notes (documentation + UX copy alignme
 ## Current capability (internal prototype)
 
 - **Staff shells:** HQ / supervisor / teacher can create and list AI parent report rows (Supabase + RLS) when authenticated.
-- **Evidence preview:** Staff see a **Source Evidence Preview** built from aggregates (fake mode in demo URL; RLS-backed reads when configured). Text is sanitized to avoid leaking storage URLs or secrets into provider-bound payloads where enforced.
+- **Evidence preview:** Staff see a **Source Evidence Preview** built from aggregates (fake mode in demo URL; RLS-backed reads when configured). Includes a **Released homework feedback** card: teacher-released rows only (`released_to_parent`); **internal notes and unreleased feedback are excluded.** Text is sanitized to avoid leaking storage URLs or secrets into provider-bound payloads where enforced.
 - **Drafts:**
   - **Mock / test draft:** deterministic staff-only draft for UI and persistence tests.
   - **Real AI draft:** Edge function `generate-ai-parent-report-draft` with user JWT — gated by Supabase/session and server flags (`provider_disabled`, `provider_not_configured`, etc.). No keys in browser.
@@ -27,7 +27,8 @@ Type: internal prototype / SaaS readiness notes (documentation + UX copy alignme
 Handled in `collectAiParentReportSourceEvidence` / related reads (availability depends on RLS and seeded data):
 
 - Attendance-oriented summary (aggregate text, not raw PII dumps)
-- Homework assignments / submissions summary
+- Homework assignments / submissions summary (assignee snapshot)
+- **Released homework feedback** excerpts (staff preview + mock-draft bridge only — **not** parent-facing until report content is approved and **released**)
 - Lesson / curriculum assignments context where linked
 - Class memories list (summaries — not raw asset URLs into provider payloads)
 - Parent communication / weekly-style sources where present
@@ -43,7 +44,7 @@ Synthetic **fake** items still appear in demo/offline previews for pipeline test
 Not a commitment to automate all of these in one sprint — **teacher review remains mandatory**:
 
 - Full **attendance summary** roll-ups by period/class policy
-- **Homework feedback** lines after teacher release semantics
+- **Homework feedback** lines — **partially done:** released rows feed staff evidence / draft context; **teacher approval + parent report release** gates unchanged
 - **Observations / learning notes** — only when explicitly flagged safe and staff-approved for inclusion
 - **Class memories** — captions/themes only unless media policy expands
 - **Parent communication history** — released-thread summaries only  

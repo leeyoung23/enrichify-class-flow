@@ -36,7 +36,7 @@ Implementation is centralized in **`collectAiParentReportSourceEvidence`** (mode
 |----------|-------------------------------|--------|
 | **Attendance** | **Yes** | Query `attendance_records` by `student_id`, optional period filters → **summary text** (`summarizeAttendanceRows`). |
 | **Homework** | **Yes (assignee / completion snapshot)** | `listAssignedHomeworkForStudent` → summary string — **not** full OCR of attachments. |
-| **Released homework feedback text** | **Partial / indirect** | Feedback lives in homework subsystem; aggregation uses assignee snapshot — **does not claim full released-feedback narrative** in one blob unless represented in assignee data. |
+| **Released homework feedback text** | **Yes (staff source evidence + mock draft path)** | `listReleasedHomeworkFeedbackForAiEvidence` → `feedback_text` + `next_step` only, `status = released_to_parent`, period filter on `released_to_parent_at`. **`internal_note` is never selected.** No file paths, storage URLs, or raw attachment analysis. Unreleased / draft feedback remains out of this roll-up. |
 | **Teacher observations** | **No** | **Placeholder only:** “Structured observations feed not implemented”. |
 | **Class memories** | **Yes (captions/metadata only)** | `listClassMemories` → **captions/titles**; **no media URLs** passed through sanitised summaries. |
 | **Parent communication** | **Yes** | `parent_comments` + `weekly_progress_reports` → combined summary text. |
@@ -70,7 +70,7 @@ In **`ParentView`**, parents load **released** AI parent reports only; sections 
 ## Monthly “full product” gaps
 
 - **Observations → aggregation:** Need approved, sensitivity-flagged excerpt pipeline.
-- **Homework feedback lines:** Stronger link from **released feedback** rows into aggregation text (today: assignee-focused snapshot).
+- **Homework feedback lines:** ~~Stronger link from **released feedback** rows~~ **Done (2026-05-06):** released rows feed staff Source Evidence Preview + `buildMockDraftInputFromSourceEvidence` (`homeworkPerformance`) — still **no OCR** of uploads.
 - **Period-native rollups:** Monthly calendar boundaries, branch reporting policy, absence reasons.
 - **Single “monthly report” template:** Section ordering and centre branding — partly in PDF HTML template; production PDF deferred.
 - **Quality bar:** Centre-defined minimum evidence thresholds before draft generation allowed.

@@ -10,6 +10,7 @@ import {
   listAiParentReportEvidenceLinks,
   listAssignedHomeworkForStudent,
   listClassCurriculumAssignments,
+  listReleasedHomeworkFeedbackForAiEvidence,
   listStudentSchoolProfiles,
 } from "./supabaseReadService.js";
 import { listClassMemories } from "./supabaseUploadService.js";
@@ -81,6 +82,16 @@ function buildFakeEvidenceItems({ periodStart, periodEnd, digest }) {
       sourceType: "homework_completion_summary",
       label: "Homework completion (fake)",
       summary: `Demo homework completion snapshot ${digest % 97}: assignments viewed; submission mix simulated for pipeline test only.`,
+      confidence: "medium",
+      visibility: "draft_candidate",
+      requiresTeacherConfirmation: false,
+      includedInDraftByDefault: true,
+      classification: EVIDENCE_CLASSIFICATION.SAFE_FOR_AI_SUMMARY,
+    },
+    {
+      sourceType: "released_homework_feedback",
+      label: "Released homework feedback",
+      summary: `Demo teacher-released homework feedback ${digest % 91}: synthetic excerpt only — internal notes and drafts excluded.`,
       confidence: "medium",
       visibility: "draft_candidate",
       requiresTeacherConfirmation: false,
@@ -193,6 +204,7 @@ function buildFakeAggregationOutput(params) {
   return {
     attendanceSummary: pick("attendance_summary"),
     homeworkSummary: pick("homework_completion_summary"),
+    releasedHomeworkFeedbackSummary: pick("released_homework_feedback"),
     worksheetEvidenceSummary: pick("worksheet_upload_placeholder"),
     lessonProgressionSummary: pick("lesson_progression_summary"),
     observationSummary: pick("observation_placeholder"),
@@ -235,6 +247,41 @@ function summarizeHomeworkAssignees(rows) {
   return sanitizeAggregationText(
     `Homework assignee snapshot: ${rows.length} row(s). Status mix: ${statusPart}.${titlePart}`
   );
+}
+
+/** Teacher-released feedback only (feedback_text / next_step). Never internal_note or file paths. */
+function summarizeReleasedHomeworkFeedbackRows(rows) {
+  if (!Array.isArray(rows) || rows.length === 0) return "";
+  const lines = [];
+  for (const row of rows.slice(0, 10)) {
+    const title =
+      typeof row?.task_title === "string" && row.task_title.trim()
+        ? row.task_title.trim()
+        : "Homework task";
+    const due =
+      row?.task_due_date != null && String(row.task_due_date).trim()
+        ? ` (due ${String(row.task_due_date).trim().slice(0, 10)})`
+        : "";
+    const released =
+      row?.released_to_parent_at != null && String(row.released_to_parent_at).trim()
+        ? ` released ${String(row.released_to_parent_at).trim().slice(0, 10)}`
+        : "";
+    const fb =
+      typeof row?.feedback_text === "string" && row.feedback_text.trim()
+        ? sanitizeAggregationText(row.feedback_text.trim().slice(0, 220))
+        : "";
+    const ns =
+      typeof row?.next_step === "string" && row.next_step.trim()
+        ? sanitizeAggregationText(row.next_step.trim().slice(0, 160))
+        : "";
+    const body = [fb, ns ? `Next: ${ns}` : ""].filter(Boolean).join(" · ");
+    if (!body) continue;
+    lines.push(
+      sanitizeAggregationText(`Released homework feedback: ${title}${due}${released} — ${body}`)
+    );
+  }
+  if (lines.length === 0) return "";
+  return sanitizeAggregationText(lines.join(" | "));
 }
 
 function summarizeParentCommunicationRows(comments, weeklies) {
@@ -322,6 +369,7 @@ function summarizeEvidenceLinks(rows) {
 function buildRlsEvidenceItems({
   attendanceSummary,
   homeworkSummary,
+  releasedHomeworkFeedbackSummary,
   worksheetEvidenceSummary,
   lessonProgressionSummary,
   observationSummary,
@@ -330,6 +378,9 @@ function buildRlsEvidenceItems({
   curriculumContext,
   evidenceLinkSummary,
 }) {
+  const releasedFb = releasedHomeworkFeedbackSummary || "";
+  const releasedWarmEmpty =
+    "No released homework feedback found for this period yet. Uses teacher-released feedback only; internal notes are never included.";
   const items = [
     {
       sourceType: "attendance_summary",
@@ -352,6 +403,18 @@ function buildRlsEvidenceItems({
       requiresTeacherConfirmation: false,
       includedInDraftByDefault: Boolean(homeworkSummary),
       classification: homeworkSummary
+        ? EVIDENCE_CLASSIFICATION.SAFE_FOR_AI_SUMMARY
+        : EVIDENCE_CLASSIFICATION.STAFF_ONLY_REQUIRES_SELECTION,
+    },
+    {
+      sourceType: "released_homework_feedback",
+      label: "Released homework feedback",
+      summary: releasedFb || releasedWarmEmpty,
+      confidence: releasedFb ? "medium" : "low",
+      visibility: "draft_candidate",
+      requiresTeacherConfirmation: false,
+      includedInDraftByDefault: Boolean(releasedFb),
+      classification: releasedFb
         ? EVIDENCE_CLASSIFICATION.SAFE_FOR_AI_SUMMARY
         : EVIDENCE_CLASSIFICATION.STAFF_ONLY_REQUIRES_SELECTION,
     },
@@ -462,6 +525,7 @@ async function collectRlsSourceEvidence(params) {
 
   let attendanceSummary = "";
   let homeworkSummary = "";
+  let releasedHomeworkFeedbackSummary = "";
   const worksheetEvidenceSummary = sanitizeAggregationText(
     "Worksheet OCR / upload pipeline not connected — CHECK deferred per plan."
   );
@@ -519,6 +583,28 @@ async function collectRlsSourceEvidence(params) {
     } catch {
       warnings.push("homework_read_check");
       missingEvidence.push("homework_exception");
+    }
+
+    try {
+      const ps = trimIso(periodStart);
+      const pe = trimIso(periodEnd);
+      const fb = await listReleasedHomeworkFeedbackForAiEvidence({
+        studentId: sid,
+        ...(ps ? { periodStart: ps } : {}),
+        ...(pe ? { periodEnd: pe } : {}),
+      });
+      if (fb.error) {
+        warnings.push("released_homework_feedback_read_check");
+        missingEvidence.push("released_homework_feedback_read_failed");
+      } else {
+        releasedHomeworkFeedbackSummary = summarizeReleasedHomeworkFeedbackRows(fb.data || []);
+        if (!releasedHomeworkFeedbackSummary) {
+          missingEvidence.push("released_homework_feedback_empty_in_period");
+        }
+      }
+    } catch {
+      warnings.push("released_homework_feedback_read_check");
+      missingEvidence.push("released_homework_feedback_exception");
     }
 
     try {
@@ -624,6 +710,7 @@ async function collectRlsSourceEvidence(params) {
   const evidenceItems = buildRlsEvidenceItems({
     attendanceSummary,
     homeworkSummary,
+    releasedHomeworkFeedbackSummary,
     worksheetEvidenceSummary,
     lessonProgressionSummary,
     observationSummary,
@@ -636,6 +723,7 @@ async function collectRlsSourceEvidence(params) {
   return {
     attendanceSummary: attendanceSummary || "",
     homeworkSummary: homeworkSummary || "",
+    releasedHomeworkFeedbackSummary: releasedHomeworkFeedbackSummary || "",
     worksheetEvidenceSummary,
     lessonProgressionSummary: lessonProgressionSummary || "",
     observationSummary,
@@ -653,6 +741,7 @@ function mergeHybridOutputs(rlsOut, fakeOut) {
   return {
     attendanceSummary: pick("attendanceSummary"),
     homeworkSummary: pick("homeworkSummary"),
+    releasedHomeworkFeedbackSummary: pick("releasedHomeworkFeedbackSummary"),
     worksheetEvidenceSummary: pick("worksheetEvidenceSummary"),
     lessonProgressionSummary: pick("lessonProgressionSummary"),
     observationSummary: pick("observationSummary"),
@@ -766,14 +855,20 @@ export function buildMockDraftInputFromSourceEvidence(sourceEvidence) {
     .filter(Boolean)
     .join(" ");
 
+  const releasedFb = safe(sourceEvidence.releasedHomeworkFeedbackSummary);
+  const hwComp = safe(sourceEvidence.homeworkSummary);
+  const perfParts = [];
+  if (releasedFb) perfParts.push(`Released feedback (staff preview): ${releasedFb.slice(0, 500)}`);
+  if (hwComp) perfParts.push(`Completion snapshot: ${hwComp.slice(0, 400)}`);
+  const homeworkPerformanceMerged =
+    perfParts.length > 0 ? perfParts.join(" | ") : undefined;
+
   return {
     studentSummary: studentBits || undefined,
     attendanceSummary: safe(sourceEvidence.attendanceSummary) || undefined,
     lessonProgression: safe(sourceEvidence.lessonProgressionSummary) || undefined,
     homeworkCompletion: safe(sourceEvidence.homeworkSummary) || undefined,
-    homeworkPerformance: safe(sourceEvidence.homeworkSummary)
-      ? `Related completion context: ${safe(sourceEvidence.homeworkSummary).slice(0, 400)}`
-      : undefined,
+    homeworkPerformance: homeworkPerformanceMerged,
     strengths: safe(sourceEvidence.lessonProgressionSummary) || undefined,
     improvementAreas: safe(sourceEvidence.observationSummary) || undefined,
     learningGaps: undefined,

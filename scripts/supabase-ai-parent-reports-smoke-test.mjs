@@ -574,6 +574,38 @@ async function run() {
 
   const teacherSignIn = await signInRole(teacherUser, deps);
   if (teacherSignIn.ok) {
+    try {
+      const aggModule = await import("../src/services/aiParentReportSourceAggregationService.js");
+      const agg = await aggModule.collectAiParentReportSourceEvidence({
+        studentId: fixtureStudentId,
+        classId: fixtureClassId,
+        branchId: fixtureBranchId,
+        periodStart: "2026-04-01",
+        periodEnd: "2026-04-07",
+        reportId: draftReportId || "",
+        mode: aggModule.SOURCE_AGGREGATION_MODES.RLS,
+      });
+      const items = Array.isArray(agg.evidenceItems) ? agg.evidenceItems : [];
+      const releasedItem = items.find((i) => i?.sourceType === "released_homework_feedback");
+      if (releasedItem?.label) {
+        printResult("PASS", "Source evidence aggregation exposes Released homework feedback row (staff preview)");
+      } else {
+        printResult("CHECK", "Source evidence aggregation: released homework feedback item missing (unexpected shape)");
+      }
+      const rf =
+        typeof agg.releasedHomeworkFeedbackSummary === "string" ? agg.releasedHomeworkFeedbackSummary.trim() : "";
+      if (rf) {
+        printResult("PASS", "Released homework feedback excerpt present in aggregation output");
+      } else {
+        printResult(
+          "CHECK",
+          "No released homework feedback text in period for fixture (ok if DB has no released rows in window)"
+        );
+      }
+    } catch (err) {
+      printResult("CHECK", `Source evidence aggregation CHECK (${err?.message || err})`);
+    }
+
     if (!draftReportId || !releasedVersionId) {
       printResult("CHECK", "[downstream_lifecycle] Teacher lifecycle checks skipped (draft/version fixture unavailable)");
     } else {
