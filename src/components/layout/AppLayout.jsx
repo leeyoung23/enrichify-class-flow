@@ -10,10 +10,16 @@ import { getCurrentUser, getSelectedDemoRole, getDemoUser, normalizeRole, isDebu
 import { useSupabaseAuthState } from '@/hooks/useSupabaseAuthState';
 import { isSupabaseConfigured } from '@/services/supabaseClient';
 import { listEligibleCompanyNewsPopups } from '@/services/supabaseReadService';
-import { dismissCompanyNewsPopup, markCompanyNewsPopupSeen, recordAuthLifecycleAudit } from '@/services/supabaseWriteService';
+import {
+  dismissCompanyNewsPopup,
+  markCompanyNewsPopupSeen,
+  recordAuthLifecycleAudit,
+  updateAuthSessionHeartbeat,
+} from '@/services/supabaseWriteService';
 import { signOutSupabasePrimary } from '@/services/supabaseAuthService';
 import {
   getInactivityTimeoutMsForRole,
+  getCurrentAuthSessionId,
   getKeepSignedInPreference,
   hasActiveBrowserSessionMarker,
   markLastActiveNow,
@@ -34,6 +40,7 @@ const DEMO_STAFF_POPUP = {
   actionUrl: '/announcements',
   source: 'demo',
 };
+const AUTH_SESSION_HEARTBEAT_MIN_INTERVAL_MS = 5 * 60 * 1000;
 
 function readSessionIds(key) {
   try {
@@ -74,6 +81,8 @@ export default function AppLayout() {
   const popupFetchAttemptedRef = useRef(false);
   const popupSeenMarkedRef = useRef(new Set());
   const enforcementSignOutInFlightRef = useRef(false);
+  const authSessionHeartbeatInFlightRef = useRef(false);
+  const lastAuthSessionHeartbeatAtRef = useRef(0);
 
   const isDemoActive = Boolean(selectedDemoRole);
   const showDemoTools = Boolean(isDemoActive || isDebugMode);
@@ -152,6 +161,42 @@ export default function AppLayout() {
     setActiveBrowserSessionMarker();
     markLastActiveNow();
   }, [isDemoActive, isSupabaseAuthAvailable, supabaseAuthLoading, session?.user, navigate]);
+
+  useEffect(() => {
+    if (isDemoActive) return undefined;
+    if (!isSupabaseAuthAvailable || supabaseAuthLoading) return undefined;
+    if (!session?.user) return undefined;
+    if (enforcementSignOutInFlightRef.current) return undefined;
+
+    let cancelled = false;
+
+    const sendHeartbeatIfDue = () => {
+      if (cancelled || authSessionHeartbeatInFlightRef.current) return;
+      const sessionId = getCurrentAuthSessionId();
+      if (!sessionId) return;
+      const now = Date.now();
+      if (now - lastAuthSessionHeartbeatAtRef.current < AUTH_SESSION_HEARTBEAT_MIN_INTERVAL_MS) return;
+
+      authSessionHeartbeatInFlightRef.current = true;
+      void (async () => {
+        try {
+          const result = await updateAuthSessionHeartbeat({ sessionId });
+          if (result.error) return;
+          lastAuthSessionHeartbeatAtRef.current = Date.now();
+        } finally {
+          authSessionHeartbeatInFlightRef.current = false;
+        }
+      })();
+    };
+
+    sendHeartbeatIfDue();
+    const intervalId = window.setInterval(sendHeartbeatIfDue, 60000);
+
+    return () => {
+      cancelled = true;
+      window.clearInterval(intervalId);
+    };
+  }, [isDemoActive, isSupabaseAuthAvailable, supabaseAuthLoading, session?.user]);
 
   useEffect(() => {
     if (isDemoActive) return undefined;

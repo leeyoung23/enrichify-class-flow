@@ -1,5 +1,23 @@
 # Project Master Context Handoff
 
+## Checkpoint update (session governance Phase 1E Step 2 runtime wiring — 2026-05-05)
+
+- **Runtime integration added (tiny scope):**
+  - create `auth_sessions` row after successful real login
+  - store current auth session id marker by remember-me mode
+  - heartbeat updates from app shell with minimum 5-minute write interval
+  - mark `signed_out` on manual sign-out path
+  - mark `timed_out` on inactivity timeout path
+- **Session id marker storage:**
+  - key: `enrichify_current_auth_session_id`
+  - remember-me checked: localStorage
+  - remember-me unchecked: sessionStorage
+- **Conflict handling:** reason-based sign-out status mutation prevents timeout rows being overwritten as signed_out.
+- **Failure posture:** auth_sessions create/heartbeat/status writes are non-blocking; auth UX still proceeds on errors.
+- **Safety boundaries preserved:** no SQL/RLS changes, no revoke UI, no logout-all-devices flow, no raw IP/full user-agent/fingerprint/password/token storage.
+- **Demo posture:** demoRole preview remains excluded from this runtime auth_sessions wiring.
+- **Next recommended milestone:** Phase 1E Step 3 self-session visibility/revoke UX and scoped HQ operational review path (no telemetry expansion yet).
+
 ## Checkpoint update (auth_sessions 043 applied + verified — 2026-05-05)
 
 - **Migration applied:** `supabase/sql/043_auth_sessions_foundation.sql`.

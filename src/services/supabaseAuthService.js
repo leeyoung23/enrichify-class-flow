@@ -1,8 +1,16 @@
 import { supabase, isSupabaseConfigured } from "./supabaseClient.js";
 import { getRole } from "./permissionService.js";
 import { base44 } from "../api/base44Client.js";
-import { clearSessionGovernanceMarkers } from "./sessionGovernanceService.js";
-import { recordAuthLifecycleAudit } from "./supabaseWriteService.js";
+import {
+  clearCurrentAuthSessionId,
+  clearSessionGovernanceMarkers,
+  getCurrentAuthSessionId,
+} from "./sessionGovernanceService.js";
+import {
+  markAuthSessionSignedOut,
+  markAuthSessionTimedOut,
+  recordAuthLifecycleAudit,
+} from "./supabaseWriteService.js";
 
 /**
  * Phase 1: Supabase Auth helpers only. Does not replace demoRole or authService (Base44).
@@ -118,6 +126,7 @@ function clearSessionUiStateBestEffort() {
 export async function signOutSupabasePrimary({ reason = "manual_sign_out" } = {}) {
   let supabaseError = null;
   let legacyCleanupError = null;
+  const currentAuthSessionId = getCurrentAuthSessionId();
 
   if (reason === "manual_sign_out") {
     // Best-effort audit only; logout must never depend on audit writes.
@@ -131,6 +140,7 @@ export async function signOutSupabasePrimary({ reason = "manual_sign_out" } = {}
 
   if (!isSupabaseConfigured() || !supabase) {
     clearSessionUiStateBestEffort();
+    clearCurrentAuthSessionId();
     clearSessionGovernanceMarkers({ clearKeepSignedInPreference: false });
     return {
       success: true,
@@ -139,6 +149,14 @@ export async function signOutSupabasePrimary({ reason = "manual_sign_out" } = {}
       legacyCleanupError: null,
       reason,
     };
+  }
+
+  if (currentAuthSessionId) {
+    if (reason === "session_timeout") {
+      await markAuthSessionTimedOut({ sessionId: currentAuthSessionId });
+    } else {
+      await markAuthSessionSignedOut({ sessionId: currentAuthSessionId });
+    }
   }
 
   try {
@@ -158,6 +176,7 @@ export async function signOutSupabasePrimary({ reason = "manual_sign_out" } = {}
   }
 
   clearSessionUiStateBestEffort();
+  clearCurrentAuthSessionId();
   clearSessionGovernanceMarkers({ clearKeepSignedInPreference: false });
 
   return {

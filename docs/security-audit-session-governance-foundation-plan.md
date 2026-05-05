@@ -3,6 +3,25 @@
 Date: 2026-05-04  
 Type: planning-only checkpoint (no code/SQL/auth/UI changes in this milestone)
 
+## 2026-05-05 implementation checkpoint addendum: Phase 1E Step 2 runtime session-state wiring
+
+- Runtime session-state wiring is now active (small scope, no SQL/RLS changes):
+  - create auth session row on successful real login
+  - maintain current session id marker on client using remember-me-aware storage
+  - send throttled heartbeat updates from app shell
+  - mark session status as `signed_out` on manual sign-out
+  - mark session status as `timed_out` on inactivity timeout
+- Double-status conflict prevention:
+  - sign-out helper now selects status mutation by reason (`session_timeout` => `timed_out`, otherwise `signed_out`).
+- Failure posture:
+  - auth_sessions runtime writes are non-blocking and do not break auth/session UX.
+- Data minimization unchanged:
+  - no raw IP/location/full user-agent/fingerprint/password/token fields added.
+- Scope still deferred:
+  - revoke UI
+  - logout-all-devices
+  - HQ review/revoke dashboard workflows
+
 ## 2026-05-05 checkpoint addendum: 043 auth_sessions applied verification
 
 - Applied migration: `supabase/sql/043_auth_sessions_foundation.sql`.

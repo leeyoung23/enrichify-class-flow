@@ -2,6 +2,7 @@ const KEEP_SIGNED_IN_PREFERENCE_KEY = "enrichify_keep_signed_in";
 const SESSION_STARTED_AT_KEY = "enrichify_session_started_at";
 const LAST_ACTIVE_AT_KEY = "enrichify_last_active_at";
 const ACTIVE_BROWSER_SESSION_KEY = "enrichify_active_browser_session";
+const AUTH_SESSION_ID_KEY = "enrichify_current_auth_session_id";
 
 const ONE_HOUR_MS = 60 * 60 * 1000;
 
@@ -10,6 +11,7 @@ export const SESSION_GOVERNANCE_STORAGE_KEYS = {
   SESSION_STARTED_AT_KEY,
   LAST_ACTIVE_AT_KEY,
   ACTIVE_BROWSER_SESSION_KEY,
+  AUTH_SESSION_ID_KEY,
 };
 
 function safeLocalStorageGet(key) {
@@ -96,6 +98,33 @@ export function initializeSessionGovernanceOnSignIn() {
   setActiveBrowserSessionMarker();
   markSessionStartedNow();
   markLastActiveNow();
+}
+
+export function getCurrentAuthSessionId() {
+  const keepSignedIn = getKeepSignedInPreference();
+  const key = AUTH_SESSION_ID_KEY;
+  const preferred = keepSignedIn ? safeLocalStorageGet(key) : safeSessionStorageGet(key);
+  if (preferred) return preferred;
+  // Fallback supports prior preference changes without losing existing marker.
+  return keepSignedIn ? safeSessionStorageGet(key) : safeLocalStorageGet(key);
+}
+
+export function setCurrentAuthSessionId(sessionId) {
+  const normalized = typeof sessionId === "string" ? sessionId.trim() : "";
+  if (!normalized) return;
+  const keepSignedIn = getKeepSignedInPreference();
+  if (keepSignedIn) {
+    safeLocalStorageSet(AUTH_SESSION_ID_KEY, normalized);
+    safeSessionStorageRemove(AUTH_SESSION_ID_KEY);
+    return;
+  }
+  safeSessionStorageSet(AUTH_SESSION_ID_KEY, normalized);
+  safeLocalStorageRemove(AUTH_SESSION_ID_KEY);
+}
+
+export function clearCurrentAuthSessionId() {
+  safeLocalStorageRemove(AUTH_SESSION_ID_KEY);
+  safeSessionStorageRemove(AUTH_SESSION_ID_KEY);
 }
 
 export function clearSessionGovernanceMarkers({ clearKeepSignedInPreference = false } = {}) {

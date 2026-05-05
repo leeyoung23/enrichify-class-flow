@@ -3,6 +3,27 @@
 Date: 2026-05-05  
 Type: planning + diagnosis checkpoint only (no code/SQL/RLS/auth-config changes)
 
+## 2026-05-05 implementation checkpoint addendum (Phase 1E Step 2 tiny runtime wiring)
+
+- Login runtime now creates `auth_sessions` row after successful profile resolution in real mode.
+- Current auth session id marker is now stored by remember-me posture:
+  - checked: `localStorage.enrichify_current_auth_session_id`
+  - unchecked: `sessionStorage.enrichify_current_auth_session_id`
+- AppLayout adds throttled heartbeat updates:
+  - uses `updateAuthSessionHeartbeat`
+  - minimum write interval: 5 minutes
+  - periodic check loop every 60 seconds (due-check guarded)
+- Manual sign-out now marks current auth session as `signed_out` before Supabase sign-out.
+- Inactivity timeout sign-out path now marks current auth session as `timed_out` (not `signed_out`) to avoid double-state overwrite.
+- Current auth session id marker is cleared during sign-out cleanup.
+- Non-blocking safety preserved:
+  - auth_sessions create/heartbeat/status failures do not block login/sign-out/timeout flows.
+- Demo safety preserved:
+  - demoRole preview does not create or heartbeat auth_sessions runtime rows.
+- Privacy/scope unchanged:
+  - no raw IP/full user-agent/fingerprint/password/token storage.
+  - no revoke UI or logout-all-devices in this phase.
+
 ## 2026-05-05 checkpoint addendum (043 applied + verified)
 
 - Recorded manual apply of `supabase/sql/043_auth_sessions_foundation.sql` via Supabase SQL Editor.

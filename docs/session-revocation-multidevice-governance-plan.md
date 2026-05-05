@@ -3,6 +3,49 @@
 Date: 2026-05-05  
 Type: planning-only checkpoint (no code/SQL/RLS/auth-config changes)
 
+## 2026-05-05 implementation checkpoint addendum (Phase 1E Step 2 tiny runtime wiring)
+
+Runtime wiring added (small, conservative integration):
+
+- On successful real login, app now creates an `auth_sessions` row via `createAuthSession`.
+- Current auth session id is stored client-side as non-sensitive marker:
+  - `localStorage` when `keep signed in` is enabled
+  - `sessionStorage` when `keep signed in` is disabled
+- Storage key:
+  - `enrichify_current_auth_session_id`
+- No password/token/raw telemetry is stored in this marker.
+
+Heartbeat behavior:
+
+- `AppLayout` now sends heartbeat updates via `updateAuthSessionHeartbeat`.
+- Heartbeat throttle:
+  - minimum 5 minutes between writes
+  - periodic check loop every 60s with due-check guard
+- Demo mode remains excluded.
+
+Sign-out/timeout status behavior:
+
+- `signOutSupabasePrimary` now reads the current auth session marker before sign-out.
+- For manual/normal sign-out reasons:
+  - marks current row as `signed_out`.
+- For inactivity timeout reason:
+  - marks current row as `timed_out`.
+- Current auth session marker is cleared during sign-out cleanup.
+- This avoids double status conflict (`timed_out` then `signed_out`) by reason-based single update path.
+
+Failure posture:
+
+- auth_sessions create/heartbeat/status updates are non-blocking.
+- Login/sign-out/timeout continue even if auth_sessions mutation fails.
+- Dev warning only for login session-create failure.
+
+Still intentionally out of scope:
+
+- revoke UI
+- logout-all-devices
+- HQ dashboard flows
+- any raw IP/full user-agent/fingerprint telemetry
+
 ## 2026-05-05 checkpoint addendum (043 applied + verified)
 
 - Migration applied: `supabase/sql/043_auth_sessions_foundation.sql`

@@ -11,13 +11,14 @@ import {
   signInWithEmailPassword,
   signOut,
 } from "@/services/supabaseAuthService.js";
-import { recordAuthLifecycleAudit } from "@/services/supabaseWriteService.js";
+import { createAuthSession, recordAuthLifecycleAudit } from "@/services/supabaseWriteService.js";
 import { parseReturnUrlQueryParam } from "@/lib/supabaseAuthReturnUrl.js";
 import { getDefaultLandingPathForRole } from "@/lib/roleLanding.js";
 import { useSupabaseAuthState } from "@/hooks/useSupabaseAuthState";
 import {
   getKeepSignedInPreference,
   initializeSessionGovernanceOnSignIn,
+  setCurrentAuthSessionId,
   setKeepSignedInPreference,
 } from "@/services/sessionGovernanceService";
 
@@ -70,6 +71,20 @@ export default function Login() {
       const mappedAppUser = mapProfileToAppUser(profile);
 
       if (!isDemoPreview) {
+        const authSessionResult = await createAuthSession({
+          rememberMeEnabled: keepSignedIn,
+          safeDeviceLabel: "Current browser",
+        });
+        if (authSessionResult.data?.id) {
+          setCurrentAuthSessionId(authSessionResult.data.id);
+        } else if (import.meta.env.DEV) {
+          // eslint-disable-next-line no-console
+          console.warn(
+            "[auth_sessions] createAuthSession failed during login:",
+            authSessionResult.error?.message || "unknown"
+          );
+        }
+
         await recordAuthLifecycleAudit({
           actionType: "user.login",
           role: mappedAppUser?.role || "unknown",

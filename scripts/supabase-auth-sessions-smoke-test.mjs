@@ -42,6 +42,7 @@ async function run() {
       createAuthSession,
       updateAuthSessionHeartbeat,
       markAuthSessionSignedOut,
+      markAuthSessionTimedOut,
       revokeAuthSession,
     },
     { supabase },
@@ -136,6 +137,29 @@ async function run() {
         failureCount += 1;
       } else {
         printResult("PASS", "Parent: can update own auth session status/heartbeat");
+      }
+    }
+
+    const parentTimeoutSession = await createAuthSession({
+      rememberMeEnabled: false,
+      safeDeviceLabel: "parent-timeout-smoke",
+    });
+    if (parentTimeoutSession.error || !parentTimeoutSession.data?.id) {
+      printResult(
+        "WARNING",
+        `Parent: timed_out fixture session create failed (${parentTimeoutSession.error?.message || "unknown"})`
+      );
+      failureCount += 1;
+    } else {
+      const parentTimedOut = await markAuthSessionTimedOut({ sessionId: parentTimeoutSession.data.id });
+      if (parentTimedOut.error || !parentTimedOut.data?.id || parentTimedOut.data.session_status !== "timed_out") {
+        printResult(
+          "WARNING",
+          `Parent: timed_out update failed (${parentTimedOut.error?.message || "unknown"})`
+        );
+        failureCount += 1;
+      } else {
+        printResult("PASS", "Parent: can mark own auth session timed_out");
       }
     }
   }
