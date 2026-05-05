@@ -3,6 +3,20 @@
 Date: 2026-05-05  
 Type: Planning checkpoint only (no SQL/RLS/app code changes in this document).
 
+## Phase 3 implementation update (ParentView first-login gate UI v1) — 2026-05-05
+
+- Implemented in `src/pages/ParentView.jsx` for **real parent role** sessions only.
+- Gate checks acknowledgement using:
+  - `policyKey = 'parent_portal_terms_privacy'`
+  - `policyVersion = 'v1'`
+  - `hasMyPolicyAcknowledgement(...)`
+- If not acknowledged, gate shows one required checkbox and saves via:
+  - `createMyPolicyAcknowledgement({ acknowledgementSource: 'parent_portal_first_login', metadata: { ui_version: 'v1' } })`
+- Optional marketing/media/email/SMS/push controls are not shown in the gate and remain in Communication & Notification Settings.
+- Demo parent mode bypasses the gate (no Supabase acknowledgement writes in demo mode).
+- Staff/HQ/teacher/student/demo-student paths remain unaffected.
+- No SQL/RLS/policy changes in this phase; no trigger behavior changes; no email/SMS/push sending.
+
 ## Phase 2 foundation update (SQL/RLS only, no UI) — 2026-05-05
 
 - Added migration: `supabase/sql/041_parent_policy_acknowledgements_foundation.sql`.

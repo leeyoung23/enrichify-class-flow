@@ -55,6 +55,17 @@ Applied + verified (linked project):
   - HQ read pass
   - branch supervisor read-only behavior recorded (fixture-dependent pass/check)
 
+## ParentView first-login acknowledgement gate UI v1 (2026-05-05)
+
+- Implemented in `src/pages/ParentView.jsx` for real parent sessions only.
+- Gate uses one required checkbox model (no multiple required consent boxes).
+- Required acknowledgement path:
+  - check: `hasMyPolicyAcknowledgement({ policyKey: 'parent_portal_terms_privacy', policyVersion: 'v1' })`
+  - save: `createMyPolicyAcknowledgement({ policyKey: 'parent_portal_terms_privacy', policyVersion: 'v1', acknowledgementSource: 'parent_portal_first_login', metadata: { ui_version: 'v1' } })`
+- Optional preferences remain in Communication & Notification Settings.
+- Demo parent mode bypasses the acknowledgement gate and does not write Supabase acknowledgement records.
+- Safety boundary unchanged: no email/Gmail/SMS/push sending and no provider integration.
+
 ## Scope and product direction
 
 Current production-safe behavior remains **in-app notification first** via `notification_events` + `notifications` and HQ-governed template copy.  

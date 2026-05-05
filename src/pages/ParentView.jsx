@@ -25,6 +25,7 @@ import {
   getAiParentReportCurrentVersion,
   listMyInAppNotifications,
   listMyNotificationPreferences,
+  hasMyPolicyAcknowledgement,
 } from '@/services/supabaseReadService';
 import {
   uploadFeeReceipt,
@@ -45,6 +46,7 @@ import {
   markParentAnnouncementRead,
   markNotificationRead,
   upsertMyNotificationPreference,
+  createMyPolicyAcknowledgement,
 } from '@/services/supabaseWriteService';
 import { useSupabaseAuthState } from '@/hooks/useSupabaseAuthState';
 import { isSupabaseConfigured } from '@/services/supabaseClient';
@@ -103,6 +105,8 @@ const PARENT_NOTIFICATION_PREFERENCE_ROWS = [
   { category: 'media_photo', label: 'Class memories and photo-related updates' },
   { category: 'marketing_events', label: 'Events and promotional updates' },
 ];
+const PARENT_FIRST_LOGIN_POLICY_KEY = 'parent_portal_terms_privacy';
+const PARENT_FIRST_LOGIN_POLICY_VERSION = 'v1';
 
 function buildDefaultParentNotificationPreferences() {
   return {
@@ -1591,6 +1595,118 @@ function ParentNotificationSettingsSection({
   );
 }
 
+function ParentPortalAcknowledgementGate({
+  checking,
+  checkError,
+  saveError,
+  saving,
+  checked,
+  onCheckedChange,
+  onContinue,
+  sessionReady,
+}) {
+  return (
+    <div className="min-h-screen bg-background">
+      <div className="border-b border-border bg-card">
+        <div className="max-w-2xl mx-auto px-4 py-4 flex items-center gap-3">
+          <div className="h-9 w-9 rounded-xl bg-primary flex items-center justify-center flex-shrink-0">
+            <GraduationCap className="h-5 w-5 text-primary-foreground" />
+          </div>
+          <div>
+            <h1 className="font-bold text-base">EduCentre</h1>
+            <p className="text-xs text-muted-foreground">Parent Dashboard</p>
+          </div>
+        </div>
+      </div>
+      <div className="max-w-2xl mx-auto px-4 py-8">
+        <Card className="mb-4">
+          <CardHeader className="pb-3">
+            <CardTitle className="text-lg">Welcome to your Parent Portal</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <p className="text-sm text-muted-foreground">
+              Before continuing, please confirm that you have read the portal terms and privacy notice.
+              Essential class and learning updates will be shared through this portal.
+            </p>
+
+            <div className="flex flex-wrap gap-3 text-sm">
+              <a
+                href="#"
+                onClick={(event) => event.preventDefault()}
+                className="underline text-foreground"
+                aria-label="Terms of Use (placeholder link)"
+              >
+                Terms of Use
+              </a>
+              <a
+                href="#"
+                onClick={(event) => event.preventDefault()}
+                className="underline text-foreground"
+                aria-label="Privacy Notice (placeholder link)"
+              >
+                Privacy Notice
+              </a>
+            </div>
+
+            {checking ? (
+              <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                <Loader2 className="h-4 w-4 animate-spin" aria-hidden />
+                <span>Checking your portal acknowledgement…</span>
+              </div>
+            ) : (
+              <>
+                <label className="flex items-start gap-3 rounded-lg border p-3">
+                  <input
+                    type="checkbox"
+                    checked={checked}
+                    onChange={(event) => onCheckedChange(event.target.checked)}
+                    className="mt-0.5 h-4 w-4"
+                    aria-label="I have read and agree to the Parent Portal Terms of Use and Privacy Notice"
+                    disabled={saving || !sessionReady}
+                  />
+                  <span className="text-sm text-foreground">
+                    I have read and agree to the Parent Portal Terms of Use and Privacy Notice. I understand the
+                    centre may use the portal to share essential service updates related to my child&apos;s learning,
+                    attendance, homework, reports, billing, safety, and class operations.
+                  </span>
+                </label>
+
+                <p className="text-xs text-muted-foreground">
+                  Your notification preferences can be managed later in Communication &amp; Notification Settings.
+                </p>
+
+                {!sessionReady ? (
+                  <p className="text-sm text-destructive">
+                    Sign in with your parent account to continue.
+                  </p>
+                ) : null}
+                {checkError ? <p className="text-sm text-destructive">{checkError}</p> : null}
+                {saveError ? <p className="text-sm text-destructive">{saveError}</p> : null}
+
+                <Button
+                  type="button"
+                  onClick={onContinue}
+                  disabled={!checked || saving || !sessionReady}
+                  className="w-full sm:w-auto"
+                >
+                  {saving ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      Saving...
+                    </>
+                  ) : (
+                    'Continue to parent portal'
+                  )}
+                </Button>
+              </>
+            )}
+          </CardContent>
+        </Card>
+      </div>
+    </div>
+  );
+}
+
 function TeacherFeedback({ updates, isStudentPreview }) {
   const latest = updates[0];
 
@@ -1990,8 +2106,15 @@ export default function ParentView() {
   const [parentNotificationPreferencesSaving, setParentNotificationPreferencesSaving] = useState(false);
   const [parentNotificationPreferencesSaveMessage, setParentNotificationPreferencesSaveMessage] = useState('');
   const [parentNotificationPreferencesSaveError, setParentNotificationPreferencesSaveError] = useState('');
+  const [parentAckGateChecking, setParentAckGateChecking] = useState(false);
+  const [parentAckGateRequired, setParentAckGateRequired] = useState(false);
+  const [parentAckGateCheckError, setParentAckGateCheckError] = useState('');
+  const [parentAckGateSaveError, setParentAckGateSaveError] = useState('');
+  const [parentAckGateSaving, setParentAckGateSaving] = useState(false);
+  const [parentAckGateChecked, setParentAckGateChecked] = useState(false);
 
   const isParentViewerRole = normalizeRole(viewer?.role) === ROLES.PARENT;
+  const shouldRunParentAckGate = !isDemoMode && !isDemoStudentPreview && isParentViewerRole;
   const parentInAppNotificationsForChild = useMemo(() => {
     if (!student?.id) {
       return parentInAppNotificationRows;
@@ -2426,6 +2549,77 @@ export default function ParentView() {
   useEffect(() => {
     void loadParentNotificationPreferences();
   }, [loadParentNotificationPreferences]);
+
+  useEffect(() => {
+    let cancelled = false;
+    const runParentAcknowledgementCheck = async () => {
+      if (!shouldRunParentAckGate) {
+        setParentAckGateChecking(false);
+        setParentAckGateRequired(false);
+        setParentAckGateCheckError('');
+        setParentAckGateSaveError('');
+        setParentAckGateChecked(false);
+        return;
+      }
+      if (!hasSupabaseSession || !isSupabaseConfigured()) {
+        setParentAckGateChecking(false);
+        setParentAckGateRequired(true);
+        setParentAckGateCheckError('We could not confirm your portal acknowledgement. Please refresh or try again.');
+        setParentAckGateSaveError('');
+        setParentAckGateChecked(false);
+        return;
+      }
+      setParentAckGateChecking(true);
+      setParentAckGateCheckError('');
+      setParentAckGateSaveError('');
+      try {
+        const result = await hasMyPolicyAcknowledgement({
+          policyKey: PARENT_FIRST_LOGIN_POLICY_KEY,
+          policyVersion: PARENT_FIRST_LOGIN_POLICY_VERSION,
+        });
+        if (cancelled) return;
+        if (result.error) {
+          setParentAckGateRequired(true);
+          setParentAckGateCheckError('We could not confirm your portal acknowledgement. Please refresh or try again.');
+          return;
+        }
+        setParentAckGateRequired(!Boolean(result.data?.hasAcknowledged));
+      } catch (_error) {
+        if (cancelled) return;
+        setParentAckGateRequired(true);
+        setParentAckGateCheckError('We could not confirm your portal acknowledgement. Please refresh or try again.');
+      } finally {
+        if (!cancelled) setParentAckGateChecking(false);
+      }
+    };
+    void runParentAcknowledgementCheck();
+    return () => {
+      cancelled = true;
+    };
+  }, [shouldRunParentAckGate, hasSupabaseSession]);
+
+  const handleContinueParentAcknowledgementGate = useCallback(async () => {
+    if (!shouldRunParentAckGate || !parentAckGateChecked || !hasSupabaseSession || !isSupabaseConfigured()) return;
+    setParentAckGateSaving(true);
+    setParentAckGateSaveError('');
+    try {
+      const result = await createMyPolicyAcknowledgement({
+        policyKey: PARENT_FIRST_LOGIN_POLICY_KEY,
+        policyVersion: PARENT_FIRST_LOGIN_POLICY_VERSION,
+        acknowledgementSource: 'parent_portal_first_login',
+        metadata: { ui_version: 'v1' },
+      });
+      if (result.error) {
+        throw new Error(result.error.message || 'Unable to save acknowledgement');
+      }
+      setParentAckGateRequired(false);
+      setParentAckGateChecked(false);
+    } catch (_error) {
+      setParentAckGateSaveError('We could not save your acknowledgement. Please try again.');
+    } finally {
+      setParentAckGateSaving(false);
+    }
+  }, [shouldRunParentAckGate, parentAckGateChecked, hasSupabaseSession]);
 
   const handleMarkParentNotificationRead = useCallback(async (notificationId) => {
     if (!isUuidLike(notificationId)) {
@@ -3287,6 +3481,21 @@ export default function ParentView() {
           </p>
         </div>
       </div>
+    );
+  }
+
+  if (shouldRunParentAckGate && (parentAckGateRequired || parentAckGateChecking)) {
+    return (
+      <ParentPortalAcknowledgementGate
+        checking={parentAckGateChecking}
+        checkError={parentAckGateCheckError}
+        saveError={parentAckGateSaveError}
+        saving={parentAckGateSaving}
+        checked={parentAckGateChecked}
+        onCheckedChange={setParentAckGateChecked}
+        onContinue={handleContinueParentAcknowledgementGate}
+        sessionReady={hasSupabaseSession && isSupabaseConfigured()}
+      />
     );
   }
 

@@ -1,5 +1,15 @@
 # Project Master Context Handoff
 
+## Checkpoint update (ParentView first-login acknowledgement gate UI v1 — 2026-05-05)
+
+- **UI implemented:** `src/pages/ParentView.jsx` now checks parent acknowledgement before full parent portal content in real parent mode.
+- **Acknowledgement constants:** `policyKey = parent_portal_terms_privacy`, `policyVersion = v1`.
+- **Helper path:** `hasMyPolicyAcknowledgement` (load/check) + `createMyPolicyAcknowledgement` (save on continue) with `acknowledgementSource = parent_portal_first_login`, `metadata.ui_version = v1`.
+- **UX model:** one required checkbox only; optional communication preferences remain in Communication & Notification Settings.
+- **Demo behavior:** demo parent mode bypasses the gate and does not call acknowledgement write helpers.
+- **Safety boundaries unchanged:** no SQL/RLS changes, no email/Gmail/SMS/push sending, no provider integration, no trigger behavior changes, no student access expansion.
+- **Governance:** legal/compliance review remains required before real parent rollout and production email/media launch.
+
 ## Checkpoint update (parent policy acknowledgement foundation — 2026-05-05)
 
 - **SQL migration:** `supabase/sql/041_parent_policy_acknowledgements_foundation.sql`.
