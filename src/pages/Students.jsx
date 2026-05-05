@@ -1,7 +1,16 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { useNavigate, useOutletContext } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { listStudents, listClasses, createStudent, invokeParentReport, getStudentFeeStatus, listHomeworkAttachments, getReadDataSource } from '@/services/dataService';
+import {
+  listStudents,
+  listClasses,
+  createStudent,
+  invokeParentReport,
+  getStudentFeeStatus,
+  listHomeworkAttachments,
+  getReadDataSource,
+  getStaffGuardianLinkSummaries,
+} from '@/services/dataService';
 import { isDebugModeEnabled } from '@/services/authService';
 import { listAttendanceRecords } from '@/services/dataService';
 import { getStudentLearningContext, listCurriculumProfiles } from '@/services/supabaseReadService';
@@ -30,6 +39,61 @@ const trimToNull = (value) => {
   const trimmed = value.trim();
   return trimmed || null;
 };
+
+function GuardianLinkStatusBlock({ summary, canSeeGuardianDetails, isTeacher, loading }) {
+  if (loading) {
+    return <p className="text-xs text-muted-foreground">Loading parent link status…</p>;
+  }
+  if (!summary || summary.status === 'unavailable') {
+    return (
+      <div className="rounded-md border border-dashed border-muted bg-muted/20 p-2 text-xs text-muted-foreground space-y-1">
+        <p>
+          <span className="font-medium text-foreground">Parent link status:</span> Unavailable
+        </p>
+        <p>
+          {isTeacher
+            ? 'Guardian link records are not readable on this teacher session under current access rules. HQ or Branch Supervisor can confirm linkage in centre records.'
+            : 'Could not read guardian link rows (access or configuration). HQ or Branch Supervisor remains the source of truth.'}
+        </p>
+      </div>
+    );
+  }
+  if (summary.status === 'not_linked') {
+    return (
+      <p className="text-xs text-muted-foreground">
+        <span className="font-medium text-foreground">Parent link status:</span> No parent account linked yet
+      </p>
+    );
+  }
+  if (!canSeeGuardianDetails) {
+    return (
+      <p className="text-xs text-muted-foreground">
+        <span className="font-medium text-foreground">Parent link status:</span> Parent account linked
+      </p>
+    );
+  }
+  return (
+    <div className="rounded-md border border-dashed border-muted bg-muted/20 p-2 text-xs space-y-1.5">
+      <p className="text-muted-foreground">
+        <span className="font-medium text-foreground">Parent link status:</span> Parent account linked
+        {summary.linkedCount != null ? ` (${summary.linkedCount})` : ''}
+      </p>
+      {Array.isArray(summary.guardians) && summary.guardians.length > 0 ? (
+        <ul className="list-disc pl-4 space-y-0.5 text-muted-foreground">
+          {summary.guardians.map((g, idx) => (
+            <li key={`${g.displayName || 'g'}-${idx}`}>
+              {g.displayName}
+              {g.email ? <span className="break-all"> — {g.email}</span> : null}
+            </li>
+          ))}
+        </ul>
+      ) : null}
+      <p className="text-[11px] text-muted-foreground border-t border-border/60 pt-1">
+        Managed by HQ or Branch Supervisors (no parent self-link in this build).
+      </p>
+    </div>
+  );
+}
 
 async function sendReport(student) {
   if (!student.parent_email) {
@@ -127,6 +191,7 @@ function StudentsPage() {
     mutationFn: (data) => createStudent(data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['students'] });
+      queryClient.invalidateQueries({ queryKey: ['staff-guardian-link-summary'] });
       setDialogOpen(false);
       setForm(initialForm);
     },
@@ -175,6 +240,10 @@ function StudentsPage() {
     () => classStudents.map((student) => student?.id).filter(isUuid),
     [classStudents]
   );
+  const studentIdsForGuardianSummary = useMemo(
+    () => classStudents.map((student) => student?.id).filter((id) => id != null && String(id).trim() !== ''),
+    [classStudents]
+  );
   const isDemoRole = String(user?.role || '').trim().toLowerCase() === 'demorole';
   const shouldReadSupabaseLearningContext = Boolean(user) && isSupabaseStudentSource && !isDemoRole && validStudentIds.length > 0;
 
@@ -215,6 +284,19 @@ function StudentsPage() {
     const goals = Array.isArray(context?.learning_goals) ? context.learning_goals : [];
     return { schoolProfile, goals };
   }, [selectedStudent?.id, studentContextById]);
+
+  const shouldLoadGuardianLinkSummary = Boolean(user) && studentIdsForGuardianSummary.length > 0 && !isDemoRole;
+  const { data: guardianSummaryById = {}, isLoading: guardianSummaryLoading } = useQuery({
+    queryKey: ['staff-guardian-link-summary', studentIdsForGuardianSummary.join('|'), user?.role, isSupabaseStudentSource],
+    enabled: shouldLoadGuardianLinkSummary,
+    queryFn: async () => {
+      const { data, error } = await getStaffGuardianLinkSummaries(user, studentIdsForGuardianSummary);
+      if (error) {
+        console.warn('getStaffGuardianLinkSummaries', error);
+      }
+      return data && typeof data === 'object' ? data : {};
+    },
+  });
 
   const startEditSchoolProfile = (studentId, schoolProfile) => {
     if (!studentId) return;
@@ -425,6 +507,17 @@ function StudentsPage() {
                   {selectedStudentId === student.id ? 'Hide profile' : 'Open profile'}
                 </Button>
               </div>
+              {shouldLoadGuardianLinkSummary ? (
+                <div className="mt-3 border-t pt-3 space-y-2">
+                  <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Guardian link</p>
+                  <GuardianLinkStatusBlock
+                    summary={guardianSummaryById[student.id]}
+                    canSeeGuardianDetails={canManageStudents(user)}
+                    isTeacher={isTeacher}
+                    loading={guardianSummaryLoading}
+                  />
+                </div>
+              ) : null}
               <div className="mt-3 border-t pt-3 space-y-2">
                 <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">School / Learning Context</p>
                 {!isSupabaseStudentSource ? (
@@ -641,6 +734,18 @@ function StudentsPage() {
                 <p className="font-medium">{selectedStudentHomeworkUploads.length}</p>
               </div>
             </div>
+
+            {shouldLoadGuardianLinkSummary ? (
+              <div className="mt-4 rounded-md border border-dashed p-3 space-y-2">
+                <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Guardian link</p>
+                <GuardianLinkStatusBlock
+                  summary={guardianSummaryById[selectedStudent.id]}
+                  canSeeGuardianDetails={canManageStudents(user)}
+                  isTeacher={isTeacher}
+                  loading={guardianSummaryLoading}
+                />
+              </div>
+            ) : null}
 
             <div className="mt-4 rounded-md border border-dashed p-3 space-y-1.5">
               <p className="text-sm font-medium">Learning notes</p>

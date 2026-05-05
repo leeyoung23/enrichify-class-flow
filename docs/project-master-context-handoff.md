@@ -1,5 +1,13 @@
 # Project Master Context Handoff
 
+## Checkpoint update (Staff guardian link visibility on `/students` — 2026-05-06)
+
+- **Regression guards (static):** `Students.jsx`, `ParentUpdates.jsx`, `ParentView.jsx`, `Sidebar.jsx`, `sessionGovernanceService.js`, `supabaseAuthService.js`, `permissionService.js` — no conflicts with the known UAT guard list from this change set.
+- **`/students`:** Read-only **Guardian link** section on each student card and in the expanded profile panel — **HQ / Branch Supervisor:** Supabase-backed counts + `profiles` display name/email when RLS allows; **Teachers:** linked/not/unavailable — on live Supabase, **Unavailable** for guardian row reads under draft `guardian_links_select` (teachers not in policy); demo fixtures still show linked/not linked for coaching.
+- **Services:** `getStaffGuardianLinkSummaries` (`dataService.js`), `getGuardianLinkSummaryByStudentIds` (`supabaseReadService.js`). **No SQL/RLS changes**, **no service-role frontend**, **no invite-code**, **no parent PII beyond existing profile columns**.
+- **Docs:** `docs/parent-onboarding-student-linking-readiness-plan.md`, `docs/student-profile-learning-notes-foundation-plan.md`, `docs/validation-uat-readiness-checklist.md`, `docs/manual-walkthrough-execution-guide.md`.
+- **Validation (this checkpoint):** `npm run build`, `lint`, `typecheck`; `test:supabase:notifications`, `test:supabase:audit-events`. **No** guardian-specific npm smoke in `package.json`.
+
 ## Checkpoint update (Parent onboarding / student linking readiness — 2026-05-06)
 
 - **Regression guard sweep (static):** `Students.jsx`, `ParentUpdates.jsx`, `ParentView.jsx`, `Sidebar.jsx`, `sessionGovernanceService.js`, `supabaseAuthService.js`, `permissionService.js` — **no new UAT regressions** vs the known guard list; no code changes required in those files for this pass.

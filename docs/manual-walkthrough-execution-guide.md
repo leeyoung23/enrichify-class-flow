@@ -67,10 +67,11 @@ Credential note:
 
 1. Sign in as HQ admin.
 2. Confirm sidebar shows correct role context.
-3. Open **Session Review**.
-4. Open **Message Templates** (Announcements > template section).
-5. Open **AI Parent Reports** page.
-6. Capture screenshots for:
+3. Open **`/students`** and confirm each student card shows **Guardian link** read-only status (linked / not linked / unavailable per role and environment); confirm **no** parent self-link or edit controls.
+4. Open **Session Review**.
+5. Open **Message Templates** (Announcements > template section).
+6. Open **AI Parent Reports** page.
+7. Capture screenshots for:
    - HQ dashboard/sidebar role context
    - Session Review page
    - Message Templates section

@@ -1,4 +1,5 @@
 import { supabase, isSupabaseConfigured } from "./supabaseClient.js";
+import { ROLES } from "./permissionService.js";
 
 const SALES_KIT_FIELDS =
   "id,title,resource_type,description,file_path,external_url,status,is_global,branch_scope,created_at,updated_at";
@@ -408,6 +409,137 @@ export async function getStudents() {
     return { data: Array.isArray(data) ? data : [], error: null };
   } catch (error) {
     return { data: [], error };
+  }
+}
+
+/**
+ * Read-only guardian ↔ student link summaries for staff routes.
+ * Teachers: returns `unavailable` on Supabase — draft RLS does not grant `guardian_student_links` select
+ * to class teachers (avoid false “not linked” when rows exist).
+ * HQ / Branch Supervisor: counts + optional parent profile display fields allowed by existing `profiles` RLS.
+ */
+export async function getGuardianLinkSummaryByStudentIds({ studentIds, viewerRole } = {}) {
+  const ids = Array.isArray(studentIds)
+    ? [...new Set(studentIds.map((id) => (typeof id === "string" ? id.trim() : "")).filter(isUuidLike))]
+    : [];
+
+  const unavailable = () =>
+    Object.fromEntries(
+      ids.map((id) => [
+        id,
+        {
+          status: "unavailable",
+          linkedCount: null,
+          guardians: [],
+        },
+      ]),
+    );
+
+  if (!isSupabaseConfigured() || !supabase || ids.length === 0) {
+    return { data: unavailable(), error: null };
+  }
+
+  if (viewerRole === ROLES.TEACHER) {
+    return { data: unavailable(), error: null };
+  }
+
+  if (viewerRole !== ROLES.HQ_ADMIN && viewerRole !== ROLES.BRANCH_SUPERVISOR) {
+    return { data: unavailable(), error: null };
+  }
+
+  try {
+    const { data: linkRows, error: linksError } = await supabase
+      .from("guardian_student_links")
+      .select("id,guardian_id,student_id")
+      .in("student_id", ids);
+
+    if (linksError) {
+      return { data: unavailable(), error: linksError };
+    }
+
+    const rows = Array.isArray(linkRows) ? linkRows : [];
+    const byStudent = new Map();
+    for (const id of ids) {
+      byStudent.set(id, []);
+    }
+    for (const row of rows) {
+      const sid = row?.student_id;
+      if (!sid || !byStudent.has(sid)) continue;
+      byStudent.get(sid).push(row);
+    }
+
+    const guardianIds = [...new Set(rows.map((r) => r?.guardian_id).filter((g) => isUuidLike(g)))];
+    const guardianToProfile = new Map();
+
+    if (guardianIds.length > 0) {
+      const { data: guardiansRows, error: guardiansError } = await supabase
+        .from("guardians")
+        .select("id,profile_id")
+        .in("id", guardianIds);
+
+      if (guardiansError) {
+        return { data: unavailable(), error: guardiansError };
+      }
+
+      const profileIds = [
+        ...new Set(
+          (Array.isArray(guardiansRows) ? guardiansRows : [])
+            .map((g) => g?.profile_id)
+            .filter((p) => isUuidLike(p)),
+        ),
+      ];
+
+      let profileById = new Map();
+      if (profileIds.length > 0) {
+        const { data: profilesRows, error: profilesError } = await supabase
+          .from("profiles")
+          .select("id,full_name,email")
+          .in("id", profileIds);
+
+        if (profilesError) {
+          return { data: unavailable(), error: profilesError };
+        }
+        profileById = new Map((Array.isArray(profilesRows) ? profilesRows : []).map((p) => [p.id, p]));
+      }
+
+      for (const g of Array.isArray(guardiansRows) ? guardiansRows : []) {
+        if (!isUuidLike(g?.id)) continue;
+        guardianToProfile.set(g.id, profileById.get(g.profile_id) || null);
+      }
+    }
+
+    const result = {};
+    for (const sid of ids) {
+      const linkList = byStudent.get(sid) || [];
+      const count = linkList.length;
+      if (count === 0) {
+        result[sid] = {
+          status: "not_linked",
+          linkedCount: 0,
+          guardians: [],
+        };
+        continue;
+      }
+
+      const guardians = [];
+      for (const lr of linkList) {
+        const prof = guardianToProfile.get(lr.guardian_id);
+        guardians.push({
+          displayName: (prof?.full_name && String(prof.full_name).trim()) || "Linked parent account",
+          email: prof?.email ?? null,
+        });
+      }
+
+      result[sid] = {
+        status: "linked",
+        linkedCount: count,
+        guardians: guardians.slice(0, 8),
+      };
+    }
+
+    return { data: result, error: null };
+  } catch (error) {
+    return { data: unavailable(), error };
   }
 }
 

@@ -1,7 +1,13 @@
 import { base44 } from '@/api/base44Client';
 import { getSelectedDemoRole } from './authService';
-import { ROLES } from './permissionService';
-import { getApprovedSalesKitResources, getBranches, getClasses, getStudents } from './supabaseReadService';
+import { getRole, ROLES } from './permissionService';
+import {
+  getApprovedSalesKitResources,
+  getBranches,
+  getClasses,
+  getGuardianLinkSummaryByStudentIds,
+  getStudents,
+} from './supabaseReadService';
 import { isSupabaseConfigured, supabase } from './supabaseClient';
 
 const demoEnabled = () => Boolean(getSelectedDemoRole());
@@ -319,6 +325,46 @@ export async function listStudents(user) {
   }
   readSources.students = 'demo';
   return filterByRole(demoData.students, user, 'students');
+}
+
+function demoGuardianSummariesByStudentIds(studentIds, viewerRole) {
+  const links = demoData.guardianStudentLinks || [];
+  const result = {};
+  for (const sid of studentIds) {
+    const rows = links.filter((l) => l.student_id === sid);
+    const count = rows.length;
+    const status = count > 0 ? 'linked' : 'not_linked';
+    if (viewerRole === ROLES.TEACHER) {
+      result[sid] = { status, linkedCount: count, guardians: [] };
+      continue;
+    }
+    if (viewerRole === ROLES.HQ_ADMIN || viewerRole === ROLES.BRANCH_SUPERVISOR) {
+      result[sid] = {
+        status,
+        linkedCount: count,
+        guardians:
+          count > 0 ? [{ displayName: 'Linked parent account (demo fixture)', email: null }] : [],
+      };
+      continue;
+    }
+    result[sid] = { status: 'unavailable', linkedCount: null, guardians: [] };
+  }
+  return result;
+}
+
+/** Staff `/students` guardian visibility — demo fixtures or Supabase RLS-scoped reads (see supabaseReadService). */
+export async function getStaffGuardianLinkSummaries(user, studentIds) {
+  const ids = Array.isArray(studentIds)
+    ? [...new Set(studentIds.map((id) => (typeof id === 'string' ? id.trim() : '')).filter(Boolean))]
+    : [];
+  const role = getRole(user);
+  if (ids.length === 0) {
+    return { data: {}, error: null };
+  }
+  if (demoEnabled() || getReadDataSource('students') !== 'supabase') {
+    return { data: demoGuardianSummariesByStudentIds(ids, role), error: null };
+  }
+  return getGuardianLinkSummaryByStudentIds({ studentIds: ids, viewerRole: role });
 }
 
 export async function getDashboardReadSummary(user) {

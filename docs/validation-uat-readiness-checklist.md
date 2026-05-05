@@ -74,6 +74,11 @@ Spot-check quickly before sign-off:
 - [ ] Remember-me checked/unchecked behavior is observable.
 - [ ] Timeout awareness is confirmed (including expiry redirect messaging).
 
+### Students directory / guardian link visibility
+
+- [ ] `/students` loads (no error boundary regression).
+- [ ] **Guardian link** strip on student cards / expanded profile shows read-only status; HQ / Branch Supervisor see counts and allowed parent profile hints when RLS permits — **no** edit, **no** parent self-link, **no** invite/email controls.
+
 ### HQ governance checks
 
 - [ ] HQ can open Session Review page.
@@ -123,6 +128,7 @@ Spot-check quickly before sign-off:
 ## 4) Teacher walkthrough
 
 - [ ] `/students` renders for authenticated teacher/HQ — list, expanded profile shell, homework inbox strip — without hitting the Students error boundary in normal fixture conditions (students **without** a `student_school_profile` row must not crash the School / Learning Context card).
+- [ ] **`/students` Guardian link** strip: teacher sees **linked / not linked** on demo/local fixtures; on live Supabase sessions teachers typically see **Unavailable** for guardian link reads under current RLS (expected until scoped policy/RPC). HQ/Branch Supervisor see counts + allowed profile hints when RLS permits — **no** edit / **no** invite controls.
 - [ ] Parent communication release flow works.
 - [ ] Homework feedback release flow works.
 - [ ] **`/homework`** PageHeader + feedback panel clarify **mock AI drafting** only (metadata/context)—no OCR/vision path in-app today; marked files remain staff-only until explicitly shared.

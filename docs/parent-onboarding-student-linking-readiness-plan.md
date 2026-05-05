@@ -98,10 +98,24 @@ Prepare SaaS production rollout where **HQ / Branch Supervisor remain the source
 
 ---
 
+## Staff guardian link visibility (`/students`)
+
+Read-only UI for **HQ Admin** and **Branch Supervisor**: shows whether **`guardian_student_links`** exist for each student card / expanded profile, with **minimal parent profile fields** (`profiles.full_name`, `profiles.email`) only when RLS allows the session to read those rows — **no editing**, **no invite**, **no email sending**.
+
+**Teachers:** Under current draft `guardian_links_select` (`003_rls_policies_draft.sql`), **class teachers are not granted `guardian_student_links` SELECT**. The app therefore shows **Parent link status: Unavailable** on Supabase-backed sessions (avoids a false “not linked”). **Demo/local fixture** mode still shows **linked / not linked** from `demoData.guardianStudentLinks` so internal previews stay coherent.
+
+Implementation: `getStaffGuardianLinkSummaries` in `src/services/dataService.js`, `getGuardianLinkSummaryByStudentIds` in `src/services/supabaseReadService.js`, UI in `src/pages/Students.jsx` (`GuardianLinkStatusBlock`).
+
+**Deferred:** Scoped teacher read policy or RPC for accurate linked/not-linked on live DB without exposing unrelated families; invite-code linking; staff “create link” UI.
+
+---
+
 ## Related files
 
 - `src/pages/ParentView.jsx` — target student resolution + no-linked / denied UX.
+- `src/pages/Students.jsx` — guardian link status strip (staff).
 - `src/services/permissionService.js` — `canAccessStudentRecord`.
 - `supabase/sql/001_mvp_schema.sql` — `guardians`, `guardian_student_links`, `students`.
 - `supabase/sql/002_rls_helper_functions.sql` — `is_guardian_for_student`.
 - `docs/project-master-context-handoff.md` — checkpoint summary.
+- `src/services/supabaseReadService.js` — `getGuardianLinkSummaryByStudentIds`.
