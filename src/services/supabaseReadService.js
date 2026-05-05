@@ -78,6 +78,14 @@ const AI_PARENT_REPORT_TYPE_VALUES = new Set([
 const NOTIFICATION_STATUS_VALUES = new Set(["pending", "delivered", "read", "archived", "suppressed", "failed"]);
 const NOTIFICATION_FIELDS =
   "id,event_id,recipient_profile_id,recipient_role,branch_id,class_id,student_id,channel,title,body,status,read_at,created_by_profile_id,created_at";
+const NOTIFICATION_TEMPLATE_FIELDS =
+  "id,template_key,event_type,channel,title_template,body_template,allowed_variables,branch_id,is_active,created_by_profile_id,updated_by_profile_id,created_at,updated_at";
+
+const NOTIFICATION_TEMPLATE_PLACEHOLDER_RE =
+  /\{\{\s*([a-zA-Z][a-zA-Z0-9_]{0,48})\s*\}\}/g;
+const NOTIFICATION_TEMPLATE_OUTPUT_TITLE_MAX = 240;
+const NOTIFICATION_TEMPLATE_OUTPUT_BODY_MAX = 4000;
+const NOTIFICATION_TEMPLATE_PLACEHOLDER_VALUE_MAX = 280;
 
 function isUuidLike(value) {
   if (typeof value !== "string") return false;
@@ -2103,5 +2111,114 @@ export async function getMyUnreadInAppNotificationCount() {
     return { data: { count: Number.isInteger(count) ? count : 0 }, error: null };
   } catch (error) {
     return { data: { count: 0 }, error };
+  }
+}
+
+function normalizeAllowedVariablesForTemplate(raw) {
+  const out = new Set();
+  if (!Array.isArray(raw)) return out;
+  for (const item of raw) {
+    const name = trimString(typeof item === "string" ? item : "");
+    if (/^[a-zA-Z][a-zA-Z0-9_]{0,48}$/.test(name)) out.add(name);
+  }
+  return out;
+}
+
+function normalizeVariablesObject(variables, allowedSet) {
+  const normalized = {};
+  if (!allowedSet?.size || !variables || typeof variables !== "object" || Array.isArray(variables)) {
+    return normalized;
+  }
+  for (const key of allowedSet) {
+    if (!Object.prototype.hasOwnProperty.call(variables, key)) continue;
+    const v = variables[key];
+    if (typeof v !== "string") continue;
+    const t = trimString(v).replace(/\s+/g, " ");
+    if (!t) continue;
+    normalized[key] = t.slice(0, NOTIFICATION_TEMPLATE_PLACEHOLDER_VALUE_MAX);
+  }
+  return normalized;
+}
+
+export function renderNotificationTemplate({
+  template,
+  variables = {},
+  fallbackTitle,
+  fallbackBody,
+} = {}) {
+  const safeFallbackTitle = trimString(fallbackTitle);
+  const safeFallbackBody = fallbackBody != null ? String(fallbackBody) : "";
+
+  const rowTitle = trimString(template?.title_template ?? "");
+  const rowBodyRaw = template?.body_template != null ? String(template.body_template) : "";
+  if (!rowTitle && !trimString(rowBodyRaw)) {
+    return { title: safeFallbackTitle, body: safeFallbackBody, usedFallback: true };
+  }
+
+  const allowedSet = normalizeAllowedVariablesForTemplate(template?.allowed_variables);
+  const normalizedVars = normalizeVariablesObject(variables, allowedSet);
+
+  const applySubstitutions = (segment) => {
+    if (typeof segment !== "string" || !segment) return "";
+    return segment.replace(NOTIFICATION_TEMPLATE_PLACEHOLDER_RE, (_, name) => {
+      const key = trimString(name);
+      if (!allowedSet.has(key)) return "";
+      return normalizedVars[key] ?? "";
+    });
+  };
+
+  let titleOut = trimString(applySubstitutions(rowTitle)).slice(0, NOTIFICATION_TEMPLATE_OUTPUT_TITLE_MAX);
+  let bodyOut = applySubstitutions(rowBodyRaw).slice(0, NOTIFICATION_TEMPLATE_OUTPUT_BODY_MAX);
+
+  if (!titleOut) {
+    return { title: safeFallbackTitle, body: trimString(bodyOut) || safeFallbackBody, usedFallback: true };
+  }
+  bodyOut = bodyOut.trimEnd();
+  return {
+    title: titleOut,
+    body: bodyOut || safeFallbackBody,
+    usedFallback: false,
+  };
+}
+
+export async function getActiveNotificationTemplate({ eventType, channel = "in_app", branchId = null } = {}) {
+  if (!isSupabaseConfigured() || !supabase) {
+    return { data: null, error: null };
+  }
+  const safeEventType = trimString(eventType);
+  const safeChannel = trimString(channel) || "in_app";
+  if (!safeEventType) {
+    return { data: null, error: { message: "eventType is required" } };
+  }
+
+  const branchUuid = branchId != null && isUuidLike(branchId) ? trimString(branchId) : null;
+
+  try {
+    let query = supabase
+      .from("notification_templates")
+      .select(NOTIFICATION_TEMPLATE_FIELDS)
+      .eq("event_type", safeEventType)
+      .eq("channel", safeChannel)
+      .eq("is_active", true);
+
+    query = branchUuid
+      ? query.or(`branch_id.eq.${branchUuid},branch_id.is.null`)
+      : query.is("branch_id", null);
+
+    const { data, error } = await query;
+    if (error) return { data: null, error };
+    const rows = Array.isArray(data) ? data : [];
+    if (rows.length === 0) return { data: null, error: null };
+
+    if (branchUuid) {
+      const branchRow = rows.find((r) => r?.branch_id && trimString(String(r.branch_id)) === branchUuid);
+      const globalRow = rows.find((r) => r?.branch_id == null);
+      const picked = branchRow || globalRow || rows[0];
+      return { data: picked, error: null };
+    }
+
+    return { data: rows[0], error: null };
+  } catch (err) {
+    return { data: null, error: { message: err?.message || String(err) } };
   }
 }

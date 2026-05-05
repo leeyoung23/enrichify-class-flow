@@ -17,6 +17,17 @@ Date: 2026-05-05
 - **`supabase/sql/037_notifications_teacher_branch_fallback.sql`**
   - **Teacher branch fallback:** when `current_user_branch_id() ≠` row `branch_id`, still allow insert if the teacher **teaches the class** (`is_teacher_for_class(class_id)`) and the **student** row exists for `student_id` + `branch_id`. Aligns with homework RLS (class-scoped teacher) so homework parent notifications can be recorded after release.
 
+## Notification templates foundation (manual apply — 038)
+
+- **Migration:** `supabase/sql/038_notification_templates_foundation.sql`
+- **`notification_templates`:** HQ-managed default wording for automated paths; **`branch_id` null** = global HQ default; **`is_active`** + `allowed_variables` constrain placeholder substitution.
+- **RLS:** HQ CRUD all rows; branch supervisors select **active** globals + supervised-branch rows; teachers select **active `in_app`** globals + **own-branch** overrides (needed when teacher JWT loads template before insert); parents/students/anon denied.
+- **Seed:** Six global templates for existing event types (`ai_parent_report.released`, homework feedback/file, attendance arrived, parent comment / weekly progress report releases). Channel column allows **`email`** values for future HQ copy planning only — **still no outbound email sender**.
+- **App helpers:** `getActiveNotificationTemplate` / `renderNotificationTemplate` in `supabaseReadService.js` — never derive variables from arbitrary metadata blobs; placeholders only substitute when listed in **`allowed_variables`** and passed explicitly by code.
+- **Wired trigger (minimal):** **`notifyLinkedParentsAfterParentCommunicationStaffRelease`** uses DB template when present (per `event_type`, optional branch preference), else falls back to legacy constants. AI report, homework, attendance remain **hardcoded constants** until a separate wiring pass.
+- **Smoke:** `npm run test:supabase:notification-templates` (requires migration applied on the target project).
+- **Checkpoint doc:** `docs/notification-templates-foundation-checkpoint.md`
+
 ### Post-apply smoke tests (linked project)
 
 | Command | Result |
@@ -42,7 +53,7 @@ Date: 2026-05-05
 
 - **Attendance arrival:** On `updateAttendanceRecord`, after a successful row update, when status **transitions into** `present` or `late` from a status that was **not** already present/late (matches Attendance UI: arrived-type statuses). **`leave`** and **`absent`** do not trigger. **`present` ↔ `late`** does not re-notify (both count as already “arrived”). **Event type:** `student_attendance.arrived`, **entity** `attendance_record`. **Metadata:** `sessionDate` (calendar day), `arrivalKind` `present|late` — no notes. **Idempotency (best-effort):** same **actor** + same **attendance row** + same **`sessionDate`** in metadata prevents duplicate inbox rows for repeated transitions that day; correcting absent→present→absent→present same day may still be suppressed — documented limitation. Another staff actor could add a second event.
 
-- **Parent Communication (teacher comment + weekly progress report):** After a successful `releaseParentComment` or `releaseWeeklyProgressReport` (row updated to **`released`** — parent-visible), `notifyLinkedParentsAfterParentCommunicationStaffRelease` runs (non-blocking on failure; dev-only safe warnings). Recipients come only from `list_parent_profile_ids_for_student_staff_scope_035`. **Title/body** are fixed generic strings (no comment text, week labels, or internal notes). **Event types:** `parent_comment.released` (**entity** `parent_comment`), `weekly_progress_report.released` (**entity** `weekly_progress_report`). **Idempotency (best-effort):** same **actor** + **entity_id** + **entity_type** + **event_type** in `notification_events` as for homework — no DB unique constraint; another staff user releasing again could still insert a second event; repeated “release” by the same actor is skipped.
+- **Parent Communication (teacher comment + weekly progress report):** After a successful `releaseParentComment` or `releaseWeeklyProgressReport` (row updated to **`released`** — parent-visible), `notifyLinkedParentsAfterParentCommunicationStaffRelease` runs (non-blocking on failure; dev-only safe warnings). Recipients come only from `list_parent_profile_ids_for_student_staff_scope_035`. **Title/body** load from **`notification_templates`** when migration **038** is applied and an active row exists for the matching `event_type`, else **legacy hardcoded** generic strings (no comment text, week labels, or internal notes). **Event types:** `parent_comment.released` (**entity** `parent_comment`), `weekly_progress_report.released` (**entity** `weekly_progress_report`). **Idempotency (best-effort):** same **actor** + **entity_id** + **entity_type** + **event_type** in `notification_events` as for homework — no DB unique constraint; another staff user releasing again could still insert a second event; repeated “release” by the same actor is skipped.
 
 ### Parent inbox UI (read-only surface)
 

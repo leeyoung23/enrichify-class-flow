@@ -1,4 +1,5 @@
 import { supabase, isSupabaseConfigured } from "./supabaseClient.js";
+import { getActiveNotificationTemplate, renderNotificationTemplate } from "./supabaseReadService.js";
 import {
   MOCK_AI_PARENT_REPORT_INSUFFICIENT_DATA_COPY,
   buildMockAiParentReportStructuredSections,
@@ -3195,11 +3196,32 @@ async function notifyLinkedParentsAfterParentCommunicationStaffRelease({
   branchId,
   classId,
   metadata,
+  variables,
 } = {}) {
   const { profileId: actorProfileId, error: authError } = await getAuthenticatedProfileId();
   if (authError || !actorProfileId) {
     return { error: null, skipped: true };
   }
+
+  const templateLookup = await getActiveNotificationTemplate({
+    eventType,
+    channel: "in_app",
+    branchId: isUuidLike(branchId) ? trimString(branchId) : null,
+  });
+  if (templateLookup.error) {
+    warnNotificationFailureInDev(
+      templateLookup.error,
+      "notifyLinkedParentsAfterParentCommunicationStaffRelease.templateLookup",
+    );
+  }
+  const rendered = renderNotificationTemplate({
+    template: templateLookup.data || null,
+    variables:
+      variables != null && typeof variables === "object" && !Array.isArray(variables) ? variables : {},
+    fallbackTitle: PARENT_COMMUNICATION_CLASS_UPDATE_TITLE,
+    fallbackBody: PARENT_COMMUNICATION_CLASS_UPDATE_BODY,
+  });
+
   return notifyLinkedParentsHomeworkParentReleaseCore({
     actorProfileId,
     entityType,
@@ -3209,8 +3231,8 @@ async function notifyLinkedParentsAfterParentCommunicationStaffRelease({
     branchId,
     classId,
     metadata,
-    title: PARENT_COMMUNICATION_CLASS_UPDATE_TITLE,
-    body: PARENT_COMMUNICATION_CLASS_UPDATE_BODY,
+    title: rendered.title,
+    body: rendered.body,
   });
 }
 

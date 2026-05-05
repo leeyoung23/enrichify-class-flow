@@ -1,5 +1,14 @@
 # Project Master Context Handoff
 
+## Checkpoint update (notification templates foundation — 2026-05-05)
+
+- **SQL:** `supabase/sql/038_notification_templates_foundation.sql` — `notification_templates` + RLS + seeds (apply via **Supabase SQL Editor** or `supabase db query --linked --file ...` when credentials allow).
+- **Read helpers:** `getActiveNotificationTemplate`, `renderNotificationTemplate` in `src/services/supabaseReadService.js` — safe placeholder substitution from explicit `allowed_variables` + caller `variables` map only; fall back to hardcoded copy on miss/error.
+- **Minimal wiring:** `notifyLinkedParentsAfterParentCommunicationStaffRelease` in `src/services/supabaseWriteService.js` resolves title/body from templates for **parent comment** + **weekly progress report** releases; AI report, homework, attendance copy remain **hardcoded** for this phase.
+- **Smoke:** `npm run test:supabase:notification-templates` (fails until **038** applied on the target DB).
+- **Docs:** `docs/notification-templates-foundation-checkpoint.md`, `docs/notifications-foundation-checkpoint.md` (038 section).
+- **Boundaries:** no email sending; no teacher/parent template UI; templates do not change when notifications fire.
+
 ## Checkpoint update (parent in-app notification inbox in ParentView — 2026-05-05)
 
 - **`src/pages/ParentView.jsx`** — **Notifications** card for real parent sessions: `listMyInAppNotifications` + `markNotificationRead` (RLS recipient scope); title/body/time/unread + mark-as-read; empty state and demo sign-in hint; no metadata/ids in UI.
