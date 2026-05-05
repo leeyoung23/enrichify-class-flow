@@ -2,6 +2,30 @@
 
 Date: 2026-05-05
 
+## Notification preference enforcement v1 (in_app only)
+
+- Implemented in `src/services/supabaseWriteService.js` before parent in-app row creation in parent-facing trigger helpers.
+- Event-to-category mapping now enforced:
+  - `ai_parent_report.released` -> `learning_report_homework`
+  - `homework_feedback.released_to_parent` -> `learning_report_homework`
+  - `homework_file.released_to_parent` -> `learning_report_homework`
+  - `student_attendance.arrived` -> `attendance_safety`
+  - `parent_comment.released` -> `parent_communication`
+  - `weekly_progress_report.released` -> `parent_communication`
+  - `fee_payment.proof_requested` / `fee_payment.proof_verified` / `fee_payment.proof_rejected` -> `billing_invoice`
+- Decision rules:
+  - child-specific `parent_notification_preferences` row overrides parent-level (`student_id is null`)
+  - explicit `enabled = false` or `consent_status = withdrawn` blocks notification
+  - explicit `enabled = true` with `consent_status in (consented, required_service, not_set)` allows
+  - missing row defaults: allow for `operational_service`, `attendance_safety`, `learning_report_homework`, `parent_communication`, `billing_invoice`; block for `marketing_events`, `media_photo`
+- Behavior safety:
+  - main business action remains non-blocking; notification suppression does not roll back release/update flow
+  - if preference check cannot be completed in a trigger path, the notification is suppressed (fail-closed) and only safe dev warning is logged
+  - no raw preference metadata is exposed to parent UI
+- Scope limits:
+  - enforcement is for `in_app` only in this phase
+  - no email/SMS/push sending, no provider integration, no template-admin changes
+
 ## Linked project: migration applied and verified (2026-05-05)
 
 - **Migration file applied:** `supabase/sql/034_notifications_foundation.sql`

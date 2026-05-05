@@ -1,5 +1,15 @@
 # Project Master Context Handoff
 
+## Checkpoint update (notification preference enforcement v1 — 2026-05-05)
+
+- **Implementation:** `src/services/supabaseWriteService.js` now applies parent notification preference gating for parent-facing in-app trigger paths before inserting notification rows.
+- **Category mapping:** enforced for `ai_parent_report.released`, homework feedback/file release, attendance arrival, parent communication releases, and fee proof requested/verified/rejected.
+- **Rules:** child-specific preference row overrides parent-level; explicit `enabled=false` or `consent_status=withdrawn` blocks; explicit allow states (`consented`, `required_service`, `not_set` with enabled) permit.
+- **Default policy:** service-adjacent categories default allow when no row exists; `marketing_events` and `media_photo` default block unless future explicit consent-driven trigger usage.
+- **Failure posture:** business action remains non-blocking; when preference check is unavailable, notification send is suppressed (fail-closed) with safe dev-only warning.
+- **Smoke added:** `scripts/supabase-notification-preference-enforcement-smoke-test.mjs` + npm script `test:supabase:notification-preference-enforcement`.
+- **Boundaries unchanged:** no SQL/RLS changes, no email/Gmail/SMS/push sending, no provider integration, no parent metadata exposure.
+
 ## Checkpoint update (ParentView first-login acknowledgement gate UI v1 — 2026-05-05)
 
 - **UI implemented:** `src/pages/ParentView.jsx` now checks parent acknowledgement before full parent portal content in real parent mode.

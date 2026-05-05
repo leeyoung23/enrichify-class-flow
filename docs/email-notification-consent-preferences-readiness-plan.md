@@ -66,6 +66,18 @@ Applied + verified (linked project):
 - Demo parent mode bypasses the acknowledgement gate and does not write Supabase acknowledgement records.
 - Safety boundary unchanged: no email/Gmail/SMS/push sending and no provider integration.
 
+## Notification preference enforcement v1 (in_app only, 2026-05-05)
+
+- Implemented server/RLS-respecting preference checks in parent in-app trigger helper paths.
+- Current wired parent in-app event categories now enforce preference decisions:
+  - learning/report/homework, attendance/safety, parent communication, billing/invoice
+- Default behavior remains conservative by category:
+  - service-adjacent categories default allow when no preference row exists
+  - marketing/events and media/photo categories default block unless consented in future trigger paths
+- Explicit disabled/withdrawn rows suppress notification delivery.
+- Suppressed notifications do not roll back the underlying business release/update action.
+- Scope unchanged: no external email/SMS/push delivery and no provider integration.
+
 ## Scope and product direction
 
 Current production-safe behavior remains **in-app notification first** via `notification_events` + `notifications` and HQ-governed template copy.  

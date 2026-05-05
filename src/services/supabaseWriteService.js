@@ -164,6 +164,26 @@ const FEE_PAYMENT_PROOF_REJECTED_NOTIFY_TITLE = "Payment proof needs review";
 const FEE_PAYMENT_PROOF_REJECTED_NOTIFY_BODY =
   "Please check the payment proof request in the parent portal.";
 const NOTIFICATION_TEMPLATE_CHANNEL_VALUES = new Set(["in_app", "email"]);
+const PARENT_NOTIFICATION_EVENT_CATEGORY_BY_TYPE = {
+  "ai_parent_report.released": "learning_report_homework",
+  "homework_feedback.released_to_parent": "learning_report_homework",
+  "homework_file.released_to_parent": "learning_report_homework",
+  "student_attendance.arrived": "attendance_safety",
+  "parent_comment.released": "parent_communication",
+  "weekly_progress_report.released": "parent_communication",
+  "fee_payment.proof_requested": "billing_invoice",
+  "fee_payment.proof_verified": "billing_invoice",
+  "fee_payment.proof_rejected": "billing_invoice",
+};
+const PARENT_NOTIFICATION_DEFAULT_ALLOW_BY_CATEGORY = {
+  operational_service: true,
+  attendance_safety: true,
+  learning_report_homework: true,
+  parent_communication: true,
+  billing_invoice: true,
+  media_photo: false,
+  marketing_events: false,
+};
 
 function isUuidLike(value) {
   if (typeof value !== "string") return false;
@@ -414,6 +434,16 @@ function sanitizeAuditMetadata(metadata) {
   return output;
 }
 
+function resolveParentNotificationCategoryForEvent(eventType) {
+  const key = trimString(eventType);
+  return PARENT_NOTIFICATION_EVENT_CATEGORY_BY_TYPE[key] || null;
+}
+
+function defaultAllowForParentNotificationCategory(category) {
+  const safeCategory = trimString(category);
+  return Boolean(PARENT_NOTIFICATION_DEFAULT_ALLOW_BY_CATEGORY[safeCategory]);
+}
+
 async function getCurrentProfileRole() {
   const authRead = await supabase.auth.getUser();
   const profileId = authRead?.data?.user?.id || null;
@@ -437,6 +467,63 @@ async function getCurrentProfileRole() {
     role: trimString(roleRead.data.role) || null,
     error: null,
   };
+}
+
+export async function shouldSendParentInAppNotification({
+  parentProfileId,
+  studentId,
+  category,
+} = {}) {
+  if (!isSupabaseConfigured() || !supabase) {
+    return { allowed: false, reason: "supabase_not_configured" };
+  }
+  if (!isUuidLike(parentProfileId)) {
+    return { allowed: false, reason: "invalid_parent_profile_id" };
+  }
+  if (!isUuidLike(studentId)) {
+    return { allowed: false, reason: "invalid_student_id" };
+  }
+  const safeCategory = trimString(category);
+  if (!PARENT_NOTIFICATION_PREFERENCE_CATEGORY_VALUES.has(safeCategory)) {
+    return { allowed: false, reason: "invalid_category" };
+  }
+
+  try {
+    const preferenceRead = await supabase
+      .from("parent_notification_preferences")
+      .select("id,student_id,enabled,consent_status")
+      .eq("parent_profile_id", trimString(parentProfileId))
+      .eq("channel", "in_app")
+      .eq("category", safeCategory)
+      .or(`student_id.eq.${trimString(studentId)},student_id.is.null`);
+    if (preferenceRead.error) {
+      return { allowed: false, reason: "preference_read_error" };
+    }
+
+    const rows = Array.isArray(preferenceRead.data) ? preferenceRead.data : [];
+    const childRow = rows.find((row) => trimString(row?.student_id) === trimString(studentId));
+    const parentLevelRow = rows.find((row) => row?.student_id == null);
+    const resolvedRow = childRow || parentLevelRow || null;
+    if (!resolvedRow) {
+      return {
+        allowed: defaultAllowForParentNotificationCategory(safeCategory),
+        reason: "default_no_row",
+      };
+    }
+
+    const consentStatus = trimString(resolvedRow?.consent_status) || "not_set";
+    if (resolvedRow?.enabled === false) return { allowed: false, reason: "explicit_disabled" };
+    if (consentStatus === "withdrawn") return { allowed: false, reason: "explicit_withdrawn" };
+    if (consentStatus === "consented" || consentStatus === "required_service" || consentStatus === "not_set") {
+      return { allowed: true, reason: "explicit_allowed" };
+    }
+    return {
+      allowed: defaultAllowForParentNotificationCategory(safeCategory),
+      reason: "fallback_unknown_status",
+    };
+  } catch (_error) {
+    return { allowed: false, reason: "preference_read_exception" };
+  }
 }
 
 export async function recordAuditEvent({
@@ -1129,6 +1216,25 @@ async function notifyLinkedParentsAfterAttendanceArrivalTransition({ attendanceR
   if (recipientIds.length === 0) {
     return { error: null, skipped: true };
   }
+  const allowedRecipientIds = [];
+  for (const recipientProfileId of recipientIds) {
+    const preferenceCheck = await shouldSendParentInAppNotification({
+      parentProfileId: recipientProfileId,
+      studentId: trimString(attendanceRow.student_id),
+      category: "attendance_safety",
+    });
+    if (preferenceCheck.allowed) {
+      allowedRecipientIds.push(recipientProfileId);
+      continue;
+    }
+    warnNotificationFailureInDev(
+      { message: `suppressed by parent preference (${preferenceCheck.reason})` },
+      "notifyLinkedParentsAfterAttendanceArrivalTransition.preference",
+    );
+  }
+  if (allowedRecipientIds.length === 0) {
+    return { error: null, skipped: true };
+  }
 
   const body =
     newStatusRaw === "present" ? ATTENDANCE_ARRIVAL_BODY_PRESENT : ATTENDANCE_ARRIVAL_BODY_LATE;
@@ -1151,7 +1257,7 @@ async function notifyLinkedParentsAfterAttendanceArrivalTransition({ attendanceR
   }
 
   const notificationEventId = eventResult.data.id;
-  for (const recipientProfileId of recipientIds) {
+  for (const recipientProfileId of allowedRecipientIds) {
     const rowResult = await createInAppNotification({
       eventId: notificationEventId,
       recipientProfileId,
@@ -3473,6 +3579,25 @@ async function notifyLinkedParentsAfterAiParentReportRelease({ actorProfileId, r
   if (recipientIds.length === 0) {
     return { error: null, skipped: true };
   }
+  const allowedRecipientIds = [];
+  for (const recipientProfileId of recipientIds) {
+    const preferenceCheck = await shouldSendParentInAppNotification({
+      parentProfileId: recipientProfileId,
+      studentId: trimString(studentId),
+      category: "learning_report_homework",
+    });
+    if (preferenceCheck.allowed) {
+      allowedRecipientIds.push(recipientProfileId);
+      continue;
+    }
+    warnNotificationFailureInDev(
+      { message: `suppressed by parent preference (${preferenceCheck.reason})` },
+      "notifyLinkedParentsAfterAiParentReportRelease.preference",
+    );
+  }
+  if (allowedRecipientIds.length === 0) {
+    return { error: null, skipped: true };
+  }
 
   const eventResult = await createNotificationEvent({
     eventType: AI_PARENT_REPORT_NOTIFICATION_EVENT_TYPE,
@@ -3493,7 +3618,7 @@ async function notifyLinkedParentsAfterAiParentReportRelease({ actorProfileId, r
   }
 
   const notificationEventId = eventResult.data.id;
-  for (const recipientProfileId of recipientIds) {
+  for (const recipientProfileId of allowedRecipientIds) {
     const rowResult = await createInAppNotification({
       eventId: notificationEventId,
       recipientProfileId,
@@ -3697,6 +3822,29 @@ async function notifyLinkedParentsHomeworkParentReleaseCore({
   if (recipientIds.length === 0) {
     return { error: null, skipped: true };
   }
+  const preferenceCategory = resolveParentNotificationCategoryForEvent(eventType);
+  if (!preferenceCategory) {
+    return { error: null, skipped: true };
+  }
+  const allowedRecipientIds = [];
+  for (const recipientProfileId of recipientIds) {
+    const preferenceCheck = await shouldSendParentInAppNotification({
+      parentProfileId: recipientProfileId,
+      studentId: trimString(studentId),
+      category: preferenceCategory,
+    });
+    if (preferenceCheck.allowed) {
+      allowedRecipientIds.push(recipientProfileId);
+      continue;
+    }
+    warnNotificationFailureInDev(
+      { message: `suppressed by parent preference (${preferenceCheck.reason})` },
+      "notifyLinkedParentsHomeworkParentReleaseCore.preference",
+    );
+  }
+  if (allowedRecipientIds.length === 0) {
+    return { error: null, skipped: true };
+  }
 
   const eventResult = await createNotificationEvent({
     eventType,
@@ -3713,7 +3861,7 @@ async function notifyLinkedParentsHomeworkParentReleaseCore({
   }
 
   const notificationEventId = eventResult.data.id;
-  for (const recipientProfileId of recipientIds) {
+  for (const recipientProfileId of allowedRecipientIds) {
     const rowResult = await createInAppNotification({
       eventId: notificationEventId,
       recipientProfileId,
