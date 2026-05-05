@@ -1,5 +1,14 @@
 # Project Master Context Handoff
 
+## Checkpoint update (parent notification action routing v1 — 2026-05-05)
+
+- **ParentView UX:** `src/pages/ParentView.jsx` notification inbox now includes per-row **View** action buttons that scroll to existing sections (same page only; keeps `?student=` query).
+- **Mapping targets:** report -> `parent-progress-reports`; homework -> `parent-homework-status`; attendance -> `attendance-summary`; parent updates -> `parent-communication-updates`; payment proof -> `parent-payment-proof`; unknown -> `parent-in-app-notifications`.
+- **Section anchors:** added/reused safe section ids (`parent-communication-updates`, `parent-payment-proof`, existing inbox/homework/report/attendance ids).
+- **Read/mark behavior:** action click marks unread notification as read via existing `markNotificationRead`, then smooth-scrolls to target section.
+- **Security boundary:** no SQL/RLS changes, no `action_url`, no metadata/event/entity identifiers shown in UI, no external routing, no email/PDF/attachment behavior.
+- **Limitation:** parent notification rows currently expose `event_id` but not direct `event_type`; v1 routing uses safe title/body heuristics until a future reviewed field-expansion path.
+
 ## Checkpoint update (payment proof request notification v1 — 2026-05-05)
 
 - **UI:** `src/pages/FeeTracking.jsx` adds staff action button **Request payment proof** in the per-row action area (HQ/branch supervisor page scope only; no parent/student surface).

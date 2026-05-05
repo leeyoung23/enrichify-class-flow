@@ -90,6 +90,38 @@ const PARENT_VIEW_HASH_ALIASES = {
   'latest-report': 'parent-progress-reports',
 };
 
+function normalizeNotificationText(value) {
+  return typeof value === 'string' ? value.trim().toLowerCase() : '';
+}
+
+function resolveParentNotificationAction(notification) {
+  const haystack = `${normalizeNotificationText(notification?.title)} ${normalizeNotificationText(notification?.body)}`;
+
+  if (haystack.includes('payment proof requested')) {
+    return { label: 'Upload proof', targetId: 'parent-payment-proof' };
+  }
+  if (
+    haystack.includes('payment proof verified')
+    || haystack.includes('payment proof needs review')
+    || haystack.includes('payment update')
+  ) {
+    return { label: 'View payment', targetId: 'parent-payment-proof' };
+  }
+  if (haystack.includes('attendance') || haystack.includes('arrived')) {
+    return { label: 'View attendance', targetId: 'attendance-summary' };
+  }
+  if (haystack.includes('homework') || haystack.includes('marked file') || haystack.includes('feedback')) {
+    return { label: 'View homework', targetId: 'parent-homework-status' };
+  }
+  if (haystack.includes('weekly progress') || haystack.includes('class update') || haystack.includes('parent comment')) {
+    return { label: 'View update', targetId: 'parent-communication-updates' };
+  }
+  if (haystack.includes('report') || haystack.includes('progress report')) {
+    return { label: 'View report', targetId: 'parent-progress-reports' };
+  }
+  return { label: 'View details', targetId: 'parent-in-app-notifications' };
+}
+
 function formatReleasedDateLabel(value) {
   if (!value) return '';
   const date = new Date(value);
@@ -1251,6 +1283,8 @@ function ParentInAppNotificationsSection({
   unreadCount,
   markingId,
   onMarkRead,
+  onOpenTarget,
+  actionNotice,
 }) {
   const unreadBadge =
     unreadCount > 0 ? (
@@ -1279,9 +1313,14 @@ function ParentInAppNotificationsSection({
     bodyContent = <p className="text-sm text-muted-foreground">No new notifications yet.</p>;
   } else {
     bodyContent = (
-      <ul className="space-y-3">
-        {notifications.map((n) => {
+      <div className="space-y-3">
+        {actionNotice ? (
+          <p className="text-xs text-muted-foreground">{actionNotice}</p>
+        ) : null}
+        <ul className="space-y-3">
+          {notifications.map((n) => {
           const unread = !n.read_at;
+          const action = resolveParentNotificationAction(n);
           return (
             <li
               key={n.id}
@@ -1302,27 +1341,42 @@ function ParentInAppNotificationsSection({
                   ) : null}
                   <p className="mt-2 text-xs text-muted-foreground">{formatParentNotificationDateTime(n.created_at)}</p>
                 </div>
-                {unread ? (
+                <div className="flex shrink-0 flex-wrap gap-2 self-start">
+                  {unread ? (
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      disabled={markingId === n.id}
+                      onClick={() => onMarkRead(n.id)}
+                    >
+                      {markingId === n.id ? (
+                        <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                      ) : (
+                        'Mark as read'
+                      )}
+                    </Button>
+                  ) : null}
                   <Button
                     type="button"
-                    variant="outline"
+                    variant={unread ? 'default' : 'outline'}
                     size="sm"
-                    className="shrink-0 self-start"
                     disabled={markingId === n.id}
-                    onClick={() => onMarkRead(n.id)}
+                    onClick={() => onOpenTarget(n)}
                   >
                     {markingId === n.id ? (
                       <Loader2 className="h-3.5 w-3.5 animate-spin" />
                     ) : (
-                      'Mark as read'
+                      action.label
                     )}
                   </Button>
-                ) : null}
+                </div>
               </div>
             </li>
           );
-        })}
-      </ul>
+          })}
+        </ul>
+      </div>
     );
   }
 
@@ -1728,6 +1782,7 @@ export default function ParentView() {
   const [parentInAppNotificationsLoading, setParentInAppNotificationsLoading] = useState(false);
   const [parentInAppNotificationsError, setParentInAppNotificationsError] = useState('');
   const [parentInAppMarkingId, setParentInAppMarkingId] = useState(null);
+  const [parentInAppActionNotice, setParentInAppActionNotice] = useState('');
 
   const isParentViewerRole = normalizeRole(viewer?.role) === ROLES.PARENT;
   const parentInAppNotificationsForChild = useMemo(() => {
@@ -2133,6 +2188,38 @@ export default function ParentView() {
       setParentInAppMarkingId(null);
     }
   }, []);
+
+  const scrollToParentSection = useCallback((targetId) => {
+    const safeTarget = typeof targetId === 'string' ? targetId.trim() : '';
+    if (!safeTarget) return false;
+    const el = document.getElementById(safeTarget);
+    if (!el) return false;
+    const reduceMotion = typeof window !== 'undefined'
+      && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    el.scrollIntoView({ behavior: reduceMotion ? 'auto' : 'smooth', block: 'start' });
+    if (typeof window !== 'undefined') {
+      const nextUrl = `${window.location.pathname}${window.location.search}#${safeTarget}`;
+      window.history.replaceState(null, '', nextUrl);
+    }
+    return true;
+  }, []);
+
+  const handleOpenParentNotificationTarget = useCallback(async (notificationRow) => {
+    if (!notificationRow?.id) return;
+    setParentInAppActionNotice('');
+
+    if (!notificationRow.read_at) {
+      await handleMarkParentNotificationRead(notificationRow.id);
+    }
+
+    const action = resolveParentNotificationAction(notificationRow);
+    const directOk = scrollToParentSection(action.targetId);
+    if (directOk) return;
+
+    const fallbackOk = scrollToParentSection('parent-in-app-notifications');
+    if (!fallbackOk) return;
+    setParentInAppActionNotice('That section is not available in this view yet. You can still review the notification details here.');
+  }, [handleMarkParentNotificationRead, scrollToParentSection]);
 
   useEffect(() => {
     let cancelled = false;
@@ -2901,6 +2988,8 @@ export default function ParentView() {
             unreadCount={parentInAppUnreadForChild}
             markingId={parentInAppMarkingId}
             onMarkRead={handleMarkParentNotificationRead}
+            onOpenTarget={handleOpenParentNotificationTarget}
+            actionNotice={parentInAppActionNotice}
           />
         ) : null}
 
@@ -3033,10 +3122,12 @@ export default function ParentView() {
                 onSubmitTaskUpload={handleSubmitHomeworkForTask}
                 onViewMarkedWork={handleViewMarkedWork}
               />
-              <LatestParentComment updates={updates} />
-              <LatestWeeklyProgressReport updates={updates} />
+              <div id="parent-communication-updates" className="space-y-4">
+                <LatestParentComment updates={updates} />
+                <LatestWeeklyProgressReport updates={updates} />
+              </div>
               {feeStatus && (
-                <Card>
+                <Card id="parent-payment-proof">
                   <CardHeader className="pb-3">
                     <CardTitle className="text-base">Fee Status</CardTitle>
                   </CardHeader>

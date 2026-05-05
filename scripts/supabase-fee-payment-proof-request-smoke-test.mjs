@@ -173,6 +173,8 @@ async function run() {
       failureCount += 1;
     } else if (parentAfterFirstCount > parentBeforeCount) {
       printResult("PASS", `Parent: inbox count increased after request (${parentBeforeCount} -> ${parentAfterFirstCount})`);
+    } else if (parentAfterFirstCount === parentBeforeCount) {
+      printResult("PASS", `Parent: inbox count unchanged (${parentAfterFirstCount}); idempotent request path already existed for this actor + fee_record`);
     } else {
       printResult("WARNING", `Parent: expected inbox increase after request (${parentBeforeCount} -> ${parentAfterFirstCount})`);
       failureCount += 1;

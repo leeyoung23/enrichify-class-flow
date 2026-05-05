@@ -78,6 +78,14 @@ Date: 2026-05-05
 
 - **`src/pages/ParentView.jsx`** — authenticated **parent** role: **Notifications** card loads `listMyInAppNotifications` / `markNotificationRead` (recipient-scoped RLS only). UI shows **title, body, time, read/unread**; no raw metadata, ids, or internal refs. Optional **child filter**: rows with `student_id` are shown when it matches the dashboard child or when `student_id` is null (RLS still gates rows to the signed-in parent).
 - **Unread badge (parent header):** compact bell + count when there are unread rows **for the selected child** (derived from the same list as the inbox — not `getMyUnreadInAppNotificationCount`, which would count all unread across linked children and could disagree with the filtered inbox).
+- **Notification Action Routing v1:** each inbox row now includes a safe **View / Go to section** action that scrolls within ParentView only:
+  - `ai_parent_report.released` (heuristic from copy) -> `#parent-progress-reports` (**View report**)
+  - `homework_feedback.released_to_parent` / `homework_file.released_to_parent` (heuristic) -> `#parent-homework-status` (**View homework**)
+  - `student_attendance.arrived` (heuristic) -> `#attendance-summary` (**View attendance**)
+  - `parent_comment.released` / `weekly_progress_report.released` (heuristic) -> `#parent-communication-updates` (**View update**)
+  - `fee_payment.proof_requested` / `fee_payment.proof_verified` / `fee_payment.proof_rejected` (heuristic) -> `#parent-payment-proof` (**Upload proof** / **View payment**)
+  - unknown -> `#parent-in-app-notifications` (**View details**)
+- **Routing safety limits:** parent `notifications` rows do not expose `event_type` directly under current RLS/read helper shape, so v1 mapping is based on safe title/body text patterns; no `action_url`, no external navigation, no metadata/entity ids shown. Action click marks unread rows as read before scrolling.
 
 ### Safety boundaries (unchanged after apply)
 
