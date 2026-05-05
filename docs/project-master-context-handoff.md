@@ -16,6 +16,14 @@
 - **Demo safety:** `demoRole` preview bypasses enforcement/timers.
 - **Still deferred:** SQL-backed session audit/revocation model, cross-device governance, and Supabase dashboard auth policy changes.
 
+## Checkpoint update (session governance Phase 1C QA + Phase 1D plan — 2026-05-05)
+
+- **QA checkpoint recorded:** active browser marker set/clear paths, inactivity timeout enforcement path, and demo bypass behavior were inspected and documented.
+- **Manual QA checklist added:** parent/teacher/demo flows plus sign-out protection and timeout practicality notes.
+- **Known limitation documented:** unchecked remember-me uses per-tab `sessionStorage` marker; new-tab restored sessions can be signed out conservatively.
+- **Test hygiene note:** `test:supabase:auth` remains blocked by pre-existing Base44 alias/import resolution issue (`@/lib`) and is tracked as separate hygiene work.
+- **Next implementation milestone (Phase 1D):** auth lifecycle audit foundation (`user.login`, `user.logout`, `user.session_timeout`, remember-me toggle events, future revoke) with privacy-safe metadata only; defer IP/fingerprint/device telemetry until legal/compliance + privacy notice review.
+
 ## Checkpoint update (session governance Phase 1B remember-me UX — 2026-05-05)
 
 - **Login UX:** `src/pages/Login.jsx` now shows remember-me checkbox + helper copy:

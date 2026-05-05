@@ -79,6 +79,80 @@ Limitations (still deferred):
 - No cross-device revocation controls yet.
 - No role-specific remember-me eligibility toggles yet.
 
+## 2026-05-05 QA checkpoint (Phase 1C)
+
+Inspection-confirmed behavior:
+
+- Active browser-session marker is set:
+  - on successful login via `initializeSessionGovernanceOnSignIn()`
+  - on allowed real-mode app load in `AppLayout` (`setActiveBrowserSessionMarker()` path)
+- Marker/session timestamps are cleared in `signOutSupabasePrimary()` via `clearSessionGovernanceMarkers()`.
+- Inactivity timeout is enforced in `AppLayout` with role-aware durations from `getInactivityTimeoutMsForRole()`.
+
+Manual browser QA checklist:
+
+Parent:
+
+- Sign in with **Keep me signed in** checked.
+- Sign in with **Keep me signed in** unchecked.
+- Refresh current tab.
+- Open a new tab and verify unchecked behavior (new-tab marker limitation acknowledged).
+- Sign out from sidebar.
+- Confirm `ParentView` is not accessible without re-sign-in.
+
+Teacher:
+
+- Sign in and confirm staff pages load.
+- Sign out from sidebar.
+- Confirm staff pages are not accessible without re-sign-in.
+
+Demo:
+
+- Open parent/student demo URLs with `?demoRole=...`.
+- Confirm demo preview remains functional.
+- Confirm demo sign-out exits demo without corrupting real Supabase session.
+
+Timeout:
+
+- Real timeout windows are long by design (1h/2h/12h), so full wait-time manual QA is often impractical in routine checks.
+- No temporary debug timeout override was added in this phase to avoid introducing extra runtime risk.
+
+Known limitations captured in QA:
+
+- Unchecked remember-me uses per-tab `sessionStorage` marker, so opening a new tab may sign out a restored session (conservative behavior).
+- `test:supabase:auth` remains blocked by pre-existing Base44 alias/import hygiene issue (`@/lib` resolution in smoke runtime), unrelated to Phase 1C logic.
+
+## Phase 1D implementation plan (next)
+
+Goal: add auth lifecycle audit foundation while preserving privacy boundaries and current auth authority model.
+
+Recommended direction:
+
+- Prefer existing `audit_events` if event taxonomy expansion is sufficient and operationally clean.
+- If needed, add minimal dedicated auth lifecycle table in a later migration (`auth_session_events` / `user_session_events`) with strict scope and no sensitive payloads.
+
+Target events to capture:
+
+- `user.login`
+- `user.logout`
+- `user.session_timeout`
+- `user.remember_me_enabled`
+- `user.remember_me_disabled`
+- `user.session_revoked` (future)
+
+Privacy-safe metadata only (v1):
+
+- role
+- remember_me_enabled boolean
+- reason
+- safe timestamp context
+- no passwords, no tokens, no raw IP, no exact location, no full user-agent string
+
+Deferred pending legal/compliance + privacy notice review:
+
+- IP handling/fingerprinting/device fingerprinting
+- expanded device telemetry and retention policy
+
 ## Scope and hard constraints
 
 - This checkpoint is planning-only.

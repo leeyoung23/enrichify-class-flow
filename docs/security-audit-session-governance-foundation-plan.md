@@ -90,6 +90,39 @@ Risk notes:
 - Manual sign-out continues to clear active session markers while retaining remember-me preference.
 - Demo preview mode remains bypassed to avoid mutating real auth state from URL preview flows.
 
+## 2026-05-05 Phase 1C QA checkpoint + Phase 1D prep
+
+QA checkpoint summary:
+
+- Core Phase 1C controls are present in runtime:
+  - active browser-session marker set on sign-in and allowed real-mode load
+  - marker/timestamps cleared on Supabase-primary sign-out
+  - inactivity timeout sign-out path active and role-aware
+- No SQL/RLS/auth-dashboard changes introduced in this phase.
+- No password/token persistence introduced.
+
+Known runtime limitation (documented, expected in v1):
+
+- Unchecked remember-me relies on per-tab `sessionStorage`; new-tab behavior can sign out restored sessions conservatively.
+
+Test hygiene note:
+
+- `test:supabase:auth` is still blocked by pre-existing alias/import issue in smoke runtime (`@/lib` resolution from Base44 client path), not a Phase 1C regression.
+
+Phase 1D recommended implementation direction:
+
+- Build auth lifecycle audit foundation next.
+- Prefer extending existing audit pipeline if feasible; otherwise add minimal dedicated session-event table in a later reviewed migration.
+- Target events:
+  - `user.login`
+  - `user.logout`
+  - `user.session_timeout`
+  - `user.remember_me_enabled`
+  - `user.remember_me_disabled`
+  - `user.session_revoked` (future)
+- Metadata scope must remain privacy-safe (role + remember_me + reason + timestamps only).
+- Any IP/fingerprint/device telemetry remains deferred until legal/compliance review and privacy notice wording are approved.
+
 ## Scope and constraints
 
 This document defines the next production-hardening foundation after internal prototype validation for:
