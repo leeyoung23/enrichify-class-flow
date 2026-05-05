@@ -98,6 +98,7 @@ Teacher access:
 - `guardian_student_links` remains the relationship boundary.
 - Expanded rollout posture (staff-mediated onboarding, invite-code deferrals, ParentView no-linked UX): `docs/parent-onboarding-student-linking-readiness-plan.md`.
 - **`/students` guardian link strip:** HQ / Branch Supervisor see read-only link presence (+ minimal profile hints when RLS allows). Teachers see linked/not/unavailable per policy — Supabase teachers currently get **unavailable** for guardian rows until a scoped read policy or RPC exists (documented in parent onboarding plan).
+- **Future staff link/unlink:** Policy, audit requirements, and implementation sequencing — `docs/guardian-link-management-readiness-plan.md` (planning-only; confirm deployed RLS before any write work).
 
 ## Deferred items
 

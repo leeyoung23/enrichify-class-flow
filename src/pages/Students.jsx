@@ -40,6 +40,14 @@ const trimToNull = (value) => {
   return trimmed || null;
 };
 
+function GuardianLinkPolicyFooter() {
+  return (
+    <p className="text-[11px] text-muted-foreground mt-1 pt-1 border-t border-border/40">
+      Linking parents to students is managed by HQ or Branch Supervisors. Parent self-link is not available in this build.
+    </p>
+  );
+}
+
 function GuardianLinkStatusBlock({ summary, canSeeGuardianDetails, isTeacher, loading }) {
   if (loading) {
     return <p className="text-xs text-muted-foreground">Loading parent link status…</p>;
@@ -55,21 +63,28 @@ function GuardianLinkStatusBlock({ summary, canSeeGuardianDetails, isTeacher, lo
             ? 'Guardian link records are not readable on this teacher session under current access rules. HQ or Branch Supervisor can confirm linkage in centre records.'
             : 'Could not read guardian link rows (access or configuration). HQ or Branch Supervisor remains the source of truth.'}
         </p>
+        <GuardianLinkPolicyFooter />
       </div>
     );
   }
   if (summary.status === 'not_linked') {
     return (
-      <p className="text-xs text-muted-foreground">
-        <span className="font-medium text-foreground">Parent link status:</span> No parent account linked yet
-      </p>
+      <div className="space-y-1">
+        <p className="text-xs text-muted-foreground">
+          <span className="font-medium text-foreground">Parent link status:</span> No parent account linked yet
+        </p>
+        <GuardianLinkPolicyFooter />
+      </div>
     );
   }
   if (!canSeeGuardianDetails) {
     return (
-      <p className="text-xs text-muted-foreground">
-        <span className="font-medium text-foreground">Parent link status:</span> Parent account linked
-      </p>
+      <div className="space-y-1">
+        <p className="text-xs text-muted-foreground">
+          <span className="font-medium text-foreground">Parent link status:</span> Parent account linked
+        </p>
+        <GuardianLinkPolicyFooter />
+      </div>
     );
   }
   return (
@@ -88,9 +103,7 @@ function GuardianLinkStatusBlock({ summary, canSeeGuardianDetails, isTeacher, lo
           ))}
         </ul>
       ) : null}
-      <p className="text-[11px] text-muted-foreground border-t border-border/60 pt-1">
-        Managed by HQ or Branch Supervisors (no parent self-link in this build).
-      </p>
+      <GuardianLinkPolicyFooter />
     </div>
   );
 }

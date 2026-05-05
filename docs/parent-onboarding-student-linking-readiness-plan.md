@@ -110,6 +110,12 @@ Implementation: `getStaffGuardianLinkSummaries` in `src/services/dataService.js`
 
 ---
 
+## Guardian link management — write path (planning only)
+
+Staff **link/unlink** workflows, RLS prerequisites, audit event naming, and phased implementation order are documented in **`docs/guardian-link-management-readiness-plan.md`**. No write UI or Supabase mutations were added in the planning-only pass.
+
+---
+
 ## Related files
 
 - `src/pages/ParentView.jsx` — target student resolution + no-linked / denied UX.
@@ -119,3 +125,4 @@ Implementation: `getStaffGuardianLinkSummaries` in `src/services/dataService.js`
 - `supabase/sql/002_rls_helper_functions.sql` — `is_guardian_for_student`.
 - `docs/project-master-context-handoff.md` — checkpoint summary.
 - `src/services/supabaseReadService.js` — `getGuardianLinkSummaryByStudentIds`.
+- `docs/guardian-link-management-readiness-plan.md` — staff write-path readiness (policy + sequence; no implementation in planning pass).

@@ -78,6 +78,8 @@ Spot-check quickly before sign-off:
 
 - [ ] `/students` loads (no error boundary regression).
 - [ ] **Guardian link** strip on student cards / expanded profile shows read-only status; HQ / Branch Supervisor see counts and allowed parent profile hints when RLS permits — **no** edit, **no** parent self-link, **no** invite/email controls.
+- [ ] Copy reflects centre-managed linking (**Linking parents to students is managed by HQ or Branch Supervisors.**).
+- [ ] Future **write** link/unlink flows remain gated on deployed RLS/RPC + audit design — see `docs/guardian-link-management-readiness-plan.md`.
 
 ### HQ governance checks
 

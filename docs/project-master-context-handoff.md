@@ -1,5 +1,14 @@
 # Project Master Context Handoff
 
+## Checkpoint update (Guardian link management planning — 2026-05-06)
+
+- **Regression guards (static):** `Students.jsx`, `ParentUpdates.jsx`, `ParentView.jsx`, `Sidebar.jsx`, `sessionGovernanceService.js`, `supabaseAuthService.js`, `permissionService.js` — **no material conflicts** with UAT guards from this docs + copy-only UI tweak.
+- **Planning doc:** `docs/guardian-link-management-readiness-plan.md` — HQ vs Branch Supervisor vs teacher vs parent roles; **no write helpers** in app today; repo **`003_rls_policies_draft.sql`** has **SELECT-only** for `guardians` / `guardian_student_links` (deployed write policies **must be confirmed** before implementation); recommended sequence: confirm RLS → scoped profile lookup → link RPC → unlink → audit (`guardian_link.*`) → smokes → invite-code later.
+- **`/students` copy:** Guardian strip footer — **“Linking parents to students is managed by HQ or Branch Supervisors.”** (plus existing self-link clarification). **No** link/unlink buttons.
+- **Cross-docs:** `docs/parent-onboarding-student-linking-readiness-plan.md`, `docs/student-profile-learning-notes-foundation-plan.md`, `docs/validation-uat-readiness-checklist.md`, `docs/manual-walkthrough-execution-guide.md`.
+- **SQL/RLS:** **Unchanged** this checkpoint.
+- **Validation:** `npm run build`, `npm run lint`, `npm run typecheck`.
+
 ## Checkpoint update (Staff guardian link visibility on `/students` — 2026-05-06)
 
 - **Regression guards (static):** `Students.jsx`, `ParentUpdates.jsx`, `ParentView.jsx`, `Sidebar.jsx`, `sessionGovernanceService.js`, `supabaseAuthService.js`, `permissionService.js` — no conflicts with the known UAT guard list from this change set.

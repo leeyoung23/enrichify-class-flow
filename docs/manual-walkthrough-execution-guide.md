@@ -67,7 +67,7 @@ Credential note:
 
 1. Sign in as HQ admin.
 2. Confirm sidebar shows correct role context.
-3. Open **`/students`** and confirm each student card shows **Guardian link** read-only status (linked / not linked / unavailable per role and environment); confirm **no** parent self-link or edit controls.
+3. Open **`/students`** and confirm each student card shows **Guardian link** read-only status (linked / not linked / unavailable per role and environment); confirm **no** parent self-link or edit controls; confirm policy footnote (**Linking parents to students is managed by HQ or Branch Supervisors.**). Planning reference for future staff writes: `docs/guardian-link-management-readiness-plan.md`.
 4. Open **Session Review**.
 5. Open **Message Templates** (Announcements > template section).
 6. Open **AI Parent Reports** page.
