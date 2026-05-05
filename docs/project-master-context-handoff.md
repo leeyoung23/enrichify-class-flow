@@ -1,5 +1,19 @@
 # Project Master Context Handoff
 
+## Checkpoint update (session governance + remember me planning — 2026-05-05)
+
+- **Planning-only docs checkpoint:** no app code, auth behavior, Supabase settings, SQL, or RLS changes.
+- **New doc:** `docs/session-governance-remember-me-plan.md`.
+- **Diagnosis summary:** current auth/session posture is mixed (Supabase login and auth-state provider in active flow, with legacy Base44 fallback/logout paths still present in parts of shell/navigation).
+- **Remember-me UX recommendation:** checkbox text `Keep me signed in on this device`; helper copy `Use this only on a private device. You can sign out anytime.`
+- **Role policy direction:**
+  - parent/student: convenience allowed with bounded persistence
+  - teacher: shorter inactivity + cautious/short remember-me
+  - branch supervisor/HQ admin: strictest timeout, remember-me disabled in v1 or tightly limited, future re-auth for sensitive actions
+- **Future session tracking concept (planning):** `auth_sessions`/`user_sessions` model + auth lifecycle audit events (`user.login`, `user.logout`, `user.session_timeout`, `user.session_revoked`, `user.remember_me_enabled`).
+- **Primary risks documented:** mixed logout consistency risk, unattended shared-device exposure without timeout/revoke controls, and legal/privacy notice requirements before session/device telemetry rollout.
+- **Next recommended implementation milestone:** Session governance implementation phase 1 (auth authority alignment + role timeout policy + remember-me UX wiring + session/audit foundation design gate).
+
 ## Checkpoint update (notification preference enforcement RPC hardening — 2026-05-05)
 
 - **SQL migration added:** `supabase/sql/042_notification_preference_enforcement_rpc.sql`.

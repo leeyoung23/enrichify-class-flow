@@ -3,6 +3,45 @@
 Date: 2026-05-04  
 Type: planning-only checkpoint (no code/SQL/auth/UI changes in this milestone)
 
+## 2026-05-05 checkpoint addendum: Remember me / keep me signed in planning
+
+This addendum records diagnosis and policy direction for trusted-device session persistence.
+
+Scope remains planning-only:
+
+- No auth runtime behavior changes in this step
+- No Supabase Auth settings change
+- No SQL/RLS changes
+- No password storage changes
+
+Current diagnosis highlights:
+
+- Auth/session implementation is mixed:
+  - primary login UX uses Supabase Auth (`src/pages/Login.jsx`, `src/services/supabaseAuthService.js`)
+  - legacy Base44 paths remain (`src/services/authService.js`, `src/components/layout/Sidebar.jsx`, `src/lib/AuthContext.jsx`)
+- Supabase client currently uses default createClient options (`src/services/supabaseClient.js`), so default session persistence behavior applies.
+- No explicit inactivity timeout or session revoke governance found in app runtime paths.
+- No dedicated auth session/device tracking model is implemented yet.
+
+Remember-me UX recommendation (future implementation):
+
+- Checkbox: `Keep me signed in on this device`
+- Helper copy: `Use this only on a private device. You can sign out anytime.`
+- Keep this separate from legal consent and policy acknowledgement checkboxes.
+
+Role policy direction (future implementation):
+
+- Parent: remember-me supported on private devices with longer trusted persistence than default session.
+- Student: allowed with shorter duration.
+- Teacher: shorter inactivity timeout; remember-me only with caution and shorter persistence.
+- Branch supervisor/HQ admin: strictest timeout; remember-me disabled in v1 or very short duration only; future step-up re-auth for sensitive actions.
+
+Risk notes:
+
+- Adding remember-me before timeout/revoke/audit governance increases unattended/shared-device exposure.
+- Mixed logout paths can lead to incomplete sign-out semantics.
+- Session/device metadata collection requires legal/privacy wording review (including Malaysia PDPA attention) before rollout.
+
 ## Scope and constraints
 
 This document defines the next production-hardening foundation after internal prototype validation for:
