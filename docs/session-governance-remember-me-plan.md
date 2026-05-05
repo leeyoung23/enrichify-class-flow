@@ -3,6 +3,32 @@
 Date: 2026-05-05  
 Type: planning + diagnosis checkpoint only (no code/SQL/RLS/auth-config changes)
 
+## 2026-05-05 implementation checkpoint addendum (Phase 1E Step 1 auth_sessions foundation)
+
+- Added conservative server-backed session foundation migration:
+  - `supabase/sql/043_auth_sessions_foundation.sql`
+- `auth_sessions` table now defined for future inventory/revocation state (not wired into login/runtime flow yet).
+- Included v1 fields:
+  - session identity/status/timestamps/revocation fields
+  - `safe_device_label`
+  - no raw IP/full user-agent/fingerprint/token fields
+- RLS v1:
+  - self insert/select/update
+  - HQ select/update (revocation context)
+  - branch supervisor session read/update deferred for safer initial scope
+  - no delete policy
+- Added minimal helper foundation (not yet runtime-wired):
+  - read: `listMyAuthSessions`, `listAuthSessionsForAdmin`
+  - write: `createAuthSession`, `updateAuthSessionHeartbeat`, `markAuthSessionSignedOut`, `markAuthSessionTimedOut`, `revokeAuthSession`
+- Added smoke + script:
+  - `scripts/supabase-auth-sessions-smoke-test.mjs`
+  - `test:supabase:auth-sessions`
+- Migration apply note:
+  - CLI apply failed due linked DB credential/login role requirement.
+  - manual SQL Editor apply required before auth-sessions smoke can fully pass.
+- Current behavior unchanged:
+  - Login/AppLayout/session timeout/sign-out runtime behavior is unchanged in this step.
+
 ## 2026-05-05 planning checkpoint addendum (Phase 1E session revocation + multi-device governance)
 
 - Current baseline remains stable through Phase 1D:

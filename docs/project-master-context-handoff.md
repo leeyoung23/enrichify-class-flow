@@ -1,5 +1,24 @@
 # Project Master Context Handoff
 
+## Checkpoint update (session governance Phase 1E Step 1 auth_sessions foundation — 2026-05-05)
+
+- **SQL migration added:** `supabase/sql/043_auth_sessions_foundation.sql`.
+- **Table added:** `public.auth_sessions` (conservative session inventory/revocation foundation).
+- **Field posture:** session identity/status/timestamps + revocation fields + `safe_device_label`; no raw IP/full user-agent/fingerprint/token data.
+- **RLS posture:**
+  - self insert/select/update
+  - HQ select/update (revocation context)
+  - no delete policy
+  - branch supervisor session read/update deferred in v1 for conservative scope
+- **Runtime behavior:** Login/AppLayout/sign-out/timeout behavior intentionally unchanged in this checkpoint.
+- **Helpers added (foundation only):**
+  - read: `listMyAuthSessions`, `listAuthSessionsForAdmin`
+  - write: `createAuthSession`, `updateAuthSessionHeartbeat`, `markAuthSessionSignedOut`, `markAuthSessionTimedOut`, `revokeAuthSession`
+- **Smoke added:** `scripts/supabase-auth-sessions-smoke-test.mjs` + npm script `test:supabase:auth-sessions`.
+- **Apply status:** linked CLI migration apply failed due DB credential/login-role restriction; manual Supabase SQL Editor apply required.
+- **Architecture note:** `audit_events` remains immutable history; `auth_sessions` is the future mutable current-state/revocation table.
+- **Safety boundaries preserved:** no service-role frontend, no RLS weakening, no timeout policy changes, no logout-all-devices or HQ revoke UI in this milestone.
+
 ## Checkpoint update (session governance Phase 1E planning: revocation + multi-device — 2026-05-05)
 
 - **Planning-only checkpoint:** no code, SQL, RLS, or Supabase dashboard auth-setting changes.

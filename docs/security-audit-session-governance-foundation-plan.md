@@ -3,6 +3,43 @@
 Date: 2026-05-04  
 Type: planning-only checkpoint (no code/SQL/auth/UI changes in this milestone)
 
+## 2026-05-05 implementation checkpoint addendum: Phase 1E Step 1 auth_sessions SQL/RLS foundation
+
+- Added migration: `supabase/sql/043_auth_sessions_foundation.sql`.
+- Added table: `public.auth_sessions` as current-state session inventory foundation for future multi-device governance.
+- Relationship to audit:
+  - `audit_events` remains immutable event history.
+  - `auth_sessions` is intended for mutable current session state and revocation control.
+
+RLS posture (conservative v1):
+
+- Insert: self only (`profile_id = auth.uid()`) with role/branch alignment guards.
+- Select: self + HQ all sessions.
+- Update: self heartbeat/sign-out/timeout; HQ revocation update path.
+- Delete: none.
+- Branch supervisor read/update: deferred in this step.
+
+Data-minimization posture:
+
+- Included only privacy-safe metadata/timestamps/revocation fields.
+- Explicitly excluded:
+  - raw IP
+  - exact location/GPS
+  - full user-agent
+  - fingerprinting fields
+  - password/token/session token values
+
+Helper/test foundation (not runtime-wired yet):
+
+- Added read/write helpers for auth session rows.
+- Added smoke script `test:supabase:auth-sessions`.
+- Login/AppLayout timeout/sign-out runtime behavior intentionally unchanged.
+
+Apply/validation note:
+
+- Linked CLI apply failed due DB credential/login-role restriction.
+- Manual Supabase SQL Editor apply is required before auth-session smoke can fully pass.
+
 ## 2026-05-05 planning checkpoint addendum: Phase 1E session revocation + multi-device governance
 
 - Objective for next lane: plan server-backed session revocation and multi-device control without changing current runtime behavior.

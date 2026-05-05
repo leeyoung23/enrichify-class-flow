@@ -113,6 +113,9 @@ const PARENT_POLICY_ACKNOWLEDGEMENT_SOURCE_VALUES = new Set([
 ]);
 const PARENT_POLICY_ACKNOWLEDGEMENT_FIELDS =
   "id,parent_profile_id,policy_key,policy_version,acknowledgement_source,acknowledged_at,created_at,metadata";
+const AUTH_SESSION_STATUS_VALUES = new Set(["active", "signed_out", "timed_out", "revoked"]);
+const AUTH_SESSION_FIELDS =
+  "id,profile_id,role,branch_id,remember_me_enabled,session_status,started_at,last_seen_at,signed_out_at,timed_out_at,revoked_at,revoked_by_profile_id,revoke_reason,safe_device_label,created_at,updated_at";
 const NOTIFICATION_TEMPLATE_FIELDS =
   "id,template_key,event_type,channel,title_template,body_template,allowed_variables,branch_id,is_active,created_by_profile_id,updated_by_profile_id,created_at,updated_at";
 
@@ -236,6 +239,22 @@ async function getAuthenticatedProfileId() {
     return { profileId: null, error: { message: error?.message || "Authenticated user is required" } };
   }
   return { profileId: data.user.id, error: null };
+}
+
+async function getCurrentProfileRole() {
+  const { profileId, error } = await getAuthenticatedProfileId();
+  if (error || !profileId) {
+    return { profileId: null, role: null, error: error || { message: "Authenticated user is required" } };
+  }
+  const roleRead = await supabase
+    .from("profiles")
+    .select("id,role")
+    .eq("id", profileId)
+    .maybeSingle();
+  if (roleRead.error || !roleRead.data?.id) {
+    return { profileId, role: null, error: roleRead.error || { message: "Profile role is unavailable" } };
+  }
+  return { profileId, role: trimString(roleRead.data.role) || null, error: null };
 }
 
 function mapSubmissionStatusToTrackerStatus(submissionStatus = "") {
@@ -2370,6 +2389,66 @@ export async function listParentPolicyAcknowledgementsForStudent({
       .limit(safeLimit);
     if (policyKey != null && policyKey !== "") query = query.eq("policy_key", trimString(policyKey));
     if (policyVersion != null && policyVersion !== "") query = query.eq("policy_version", trimString(policyVersion));
+
+    const { data, error } = await query;
+    if (error) return { data: [], error };
+    return { data: Array.isArray(data) ? data : [], error: null };
+  } catch (error) {
+    return { data: [], error };
+  }
+}
+
+export async function listMyAuthSessions({ status, limit = 100 } = {}) {
+  if (!isSupabaseConfigured() || !supabase) {
+    return { data: [], error: { message: "Supabase is not configured" } };
+  }
+  if (status != null && status !== "" && !AUTH_SESSION_STATUS_VALUES.has(trimString(status))) {
+    return { data: [], error: { message: "status is invalid" } };
+  }
+  const safeLimit = Number.isInteger(limit) && limit > 0 ? Math.min(limit, 500) : 100;
+
+  try {
+    let query = supabase
+      .from("auth_sessions")
+      .select(AUTH_SESSION_FIELDS)
+      .order("started_at", { ascending: false })
+      .limit(safeLimit);
+    if (status != null && status !== "") query = query.eq("session_status", trimString(status));
+
+    const { data, error } = await query;
+    if (error) return { data: [], error };
+    return { data: Array.isArray(data) ? data : [], error: null };
+  } catch (error) {
+    return { data: [], error };
+  }
+}
+
+export async function listAuthSessionsForAdmin({ profileId, status, limit = 100 } = {}) {
+  if (!isSupabaseConfigured() || !supabase) {
+    return { data: [], error: { message: "Supabase is not configured" } };
+  }
+  if (profileId != null && profileId !== "" && !isUuidLike(profileId)) {
+    return { data: [], error: { message: "profileId must be a UUID when provided" } };
+  }
+  if (status != null && status !== "" && !AUTH_SESSION_STATUS_VALUES.has(trimString(status))) {
+    return { data: [], error: { message: "status is invalid" } };
+  }
+  const safeLimit = Number.isInteger(limit) && limit > 0 ? Math.min(limit, 500) : 100;
+
+  try {
+    const { role, error: roleError } = await getCurrentProfileRole();
+    if (roleError) return { data: [], error: roleError };
+    if (role !== "hq_admin") {
+      return { data: [], error: { message: "Only HQ admin can list auth sessions for admin view" } };
+    }
+
+    let query = supabase
+      .from("auth_sessions")
+      .select(AUTH_SESSION_FIELDS)
+      .order("started_at", { ascending: false })
+      .limit(safeLimit);
+    if (profileId != null && profileId !== "") query = query.eq("profile_id", trimString(profileId));
+    if (status != null && status !== "") query = query.eq("session_status", trimString(status));
 
     const { data, error } = await query;
     if (error) return { data: [], error };

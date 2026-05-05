@@ -54,6 +54,7 @@
     "test:supabase:staff-time-clock:review": "node scripts/supabase-staff-time-clock-review-smoke-test.mjs",
     "test:supabase:audit-events": "node scripts/supabase-audit-events-smoke-test.mjs",
     "test:supabase:auth-lifecycle-audit": "node scripts/supabase-auth-lifecycle-audit-smoke-test.mjs",
+    "test:supabase:auth-sessions": "node scripts/supabase-auth-sessions-smoke-test.mjs",
     "test:supabase:notifications": "node scripts/supabase-notifications-foundation-smoke-test.mjs",
     "test:supabase:notification-preference-enforcement": "node scripts/supabase-notification-preference-enforcement-smoke-test.mjs",
     "test:supabase:notification-templates": "node scripts/supabase-notification-templates-smoke-test.mjs",

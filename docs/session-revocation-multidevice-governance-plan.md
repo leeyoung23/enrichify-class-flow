@@ -137,3 +137,69 @@ Role/action intent:
 ---
 
 Phase 1E planning checkpoint complete. No runtime behavior, SQL, RLS, or auth settings were changed.
+
+## 2026-05-05 implementation checkpoint addendum (Phase 1E Step 1 auth_sessions foundation)
+
+Implemented conservative SQL/RLS foundation for server-backed auth session inventory:
+
+- Added migration: `supabase/sql/043_auth_sessions_foundation.sql`
+- Added table: `public.auth_sessions`
+- Included fields (v1):
+  - `id`, `profile_id`, `role`, `branch_id`
+  - `remember_me_enabled`, `session_status`
+  - `started_at`, `last_seen_at`, `signed_out_at`, `timed_out_at`
+  - `revoked_at`, `revoked_by_profile_id`, `revoke_reason`
+  - `safe_device_label`
+  - `created_at`, `updated_at`
+- Excluded by design:
+  - raw IP
+  - exact location/GPS
+  - full user-agent
+  - fingerprint/device fingerprint
+  - password/token/session token data
+
+RLS posture in v1:
+
+- Insert: authenticated users can insert only own session rows (`profile_id = auth.uid()`), role aligned with `current_user_role()`, branch constrained to own branch/null/HQ.
+- Select: own sessions + HQ all sessions.
+- Update:
+  - self session updates for heartbeat/sign-out/timeout state.
+  - HQ revocation updates for `revoked` status and revocation fields.
+- Delete: no delete policy (append/history-safe posture).
+- Branch supervisor read/update is deferred in this step for conservative scoping.
+
+Service helper foundation added (not wired into Login/AppLayout yet):
+
+- Write helpers:
+  - `createAuthSession`
+  - `updateAuthSessionHeartbeat`
+  - `markAuthSessionSignedOut`
+  - `markAuthSessionTimedOut`
+  - `revokeAuthSession` (HQ-only helper guard)
+- Read helpers:
+  - `listMyAuthSessions`
+  - `listAuthSessionsForAdmin` (HQ-only helper guard)
+
+Smoke foundation:
+
+- Added `scripts/supabase-auth-sessions-smoke-test.mjs`
+- Added npm script: `test:supabase:auth-sessions`
+- Coverage goals:
+  - parent self create/read/update
+  - cross-profile create blocked
+  - student/teacher cannot read parent session
+  - HQ read + revoke
+  - delete blocked
+  - telemetry columns absent
+
+Migration apply status:
+
+- CLI apply attempt failed due linked DB credential/login role restriction (`SUPABASE_DB_PASSWORD` / forbidden login-role init).
+- Expected next step: manually apply `supabase/sql/043_auth_sessions_foundation.sql` in Supabase SQL Editor.
+- Until applied, `test:supabase:auth-sessions` will fail with missing table as expected.
+
+Safety posture unchanged:
+
+- `audit_events` remains immutable event history.
+- `auth_sessions` is the future current-state/revocation table.
+- No RLS weakening, no service-role frontend, no timeout behavior changes, and no session revocation UI in this milestone.

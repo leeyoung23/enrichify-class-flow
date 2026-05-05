@@ -130,6 +130,7 @@ const PARENT_POLICY_ACKNOWLEDGEMENT_SOURCE_VALUES = new Set([
   "migration_seed",
   "parent_portal",
 ]);
+const AUTH_SESSION_ROLE_VALUES = new Set(["hq_admin", "branch_supervisor", "teacher", "parent", "student"]);
 const AI_PARENT_REPORT_NOTIFICATION_EVENT_TYPE = "ai_parent_report.released";
 const AI_PARENT_REPORT_RELEASE_NOTIFY_TITLE = "New progress report available";
 const AI_PARENT_REPORT_RELEASE_NOTIFY_BODY =
@@ -952,6 +953,181 @@ export async function createMyPolicyAcknowledgement({
       .select("id,parent_profile_id,policy_key,policy_version,acknowledgement_source,acknowledged_at,created_at,metadata")
       .maybeSingle();
     return { data: insertResult.data ?? null, error: insertResult.error ?? null };
+  } catch (err) {
+    return { data: null, error: { message: err?.message || String(err) } };
+  }
+}
+
+export async function createAuthSession({
+  rememberMeEnabled = false,
+  safeDeviceLabel = null,
+} = {}) {
+  if (!isSupabaseConfigured() || !supabase) {
+    return { data: null, error: { message: "Supabase is not configured" } };
+  }
+  if (typeof rememberMeEnabled !== "boolean") {
+    return { data: null, error: { message: "rememberMeEnabled must be a boolean" } };
+  }
+  const normalizedLabel = normalizeNullableText(safeDeviceLabel, { maxLength: 80 });
+
+  try {
+    const { profileId, role, error: roleError } = await getCurrentProfileRole();
+    if (roleError || !profileId) {
+      return { data: null, error: roleError || { message: "Authenticated user is required" } };
+    }
+    if (!AUTH_SESSION_ROLE_VALUES.has(role)) {
+      return { data: null, error: { message: "Current role is invalid for auth session" } };
+    }
+
+    const profileRead = await supabase
+      .from("profiles")
+      .select("id,branch_id")
+      .eq("id", profileId)
+      .maybeSingle();
+    if (profileRead.error || !profileRead.data?.id) {
+      return { data: null, error: profileRead.error || { message: "Profile not found" } };
+    }
+    const branchId = isUuidLike(profileRead.data.branch_id) ? trimString(profileRead.data.branch_id) : null;
+    const nowIso = new Date().toISOString();
+
+    const insertResult = await supabase
+      .from("auth_sessions")
+      .insert({
+        profile_id: profileId,
+        role,
+        branch_id: branchId,
+        remember_me_enabled: rememberMeEnabled,
+        session_status: "active",
+        started_at: nowIso,
+        last_seen_at: nowIso,
+        created_at: nowIso,
+        updated_at: nowIso,
+        safe_device_label: normalizedLabel,
+      })
+      .select(
+        "id,profile_id,role,branch_id,remember_me_enabled,session_status,started_at,last_seen_at,signed_out_at,timed_out_at,revoked_at,revoked_by_profile_id,revoke_reason,safe_device_label,created_at,updated_at"
+      )
+      .maybeSingle();
+    return { data: insertResult.data ?? null, error: insertResult.error ?? null };
+  } catch (err) {
+    return { data: null, error: { message: err?.message || String(err) } };
+  }
+}
+
+export async function updateAuthSessionHeartbeat({ sessionId } = {}) {
+  if (!isSupabaseConfigured() || !supabase) {
+    return { data: null, error: { message: "Supabase is not configured" } };
+  }
+  if (!isUuidLike(sessionId)) {
+    return { data: null, error: { message: "sessionId must be a UUID" } };
+  }
+  const nowIso = new Date().toISOString();
+  try {
+    const updateResult = await supabase
+      .from("auth_sessions")
+      .update({
+        last_seen_at: nowIso,
+        updated_at: nowIso,
+      })
+      .eq("id", trimString(sessionId))
+      .select(
+        "id,profile_id,role,branch_id,remember_me_enabled,session_status,started_at,last_seen_at,signed_out_at,timed_out_at,revoked_at,revoked_by_profile_id,revoke_reason,safe_device_label,created_at,updated_at"
+      )
+      .maybeSingle();
+    return { data: updateResult.data ?? null, error: updateResult.error ?? null };
+  } catch (err) {
+    return { data: null, error: { message: err?.message || String(err) } };
+  }
+}
+
+export async function markAuthSessionSignedOut({ sessionId } = {}) {
+  if (!isSupabaseConfigured() || !supabase) {
+    return { data: null, error: { message: "Supabase is not configured" } };
+  }
+  if (!isUuidLike(sessionId)) {
+    return { data: null, error: { message: "sessionId must be a UUID" } };
+  }
+  const nowIso = new Date().toISOString();
+  try {
+    const updateResult = await supabase
+      .from("auth_sessions")
+      .update({
+        session_status: "signed_out",
+        signed_out_at: nowIso,
+        updated_at: nowIso,
+      })
+      .eq("id", trimString(sessionId))
+      .select(
+        "id,profile_id,role,branch_id,remember_me_enabled,session_status,started_at,last_seen_at,signed_out_at,timed_out_at,revoked_at,revoked_by_profile_id,revoke_reason,safe_device_label,created_at,updated_at"
+      )
+      .maybeSingle();
+    return { data: updateResult.data ?? null, error: updateResult.error ?? null };
+  } catch (err) {
+    return { data: null, error: { message: err?.message || String(err) } };
+  }
+}
+
+export async function markAuthSessionTimedOut({ sessionId } = {}) {
+  if (!isSupabaseConfigured() || !supabase) {
+    return { data: null, error: { message: "Supabase is not configured" } };
+  }
+  if (!isUuidLike(sessionId)) {
+    return { data: null, error: { message: "sessionId must be a UUID" } };
+  }
+  const nowIso = new Date().toISOString();
+  try {
+    const updateResult = await supabase
+      .from("auth_sessions")
+      .update({
+        session_status: "timed_out",
+        timed_out_at: nowIso,
+        updated_at: nowIso,
+      })
+      .eq("id", trimString(sessionId))
+      .select(
+        "id,profile_id,role,branch_id,remember_me_enabled,session_status,started_at,last_seen_at,signed_out_at,timed_out_at,revoked_at,revoked_by_profile_id,revoke_reason,safe_device_label,created_at,updated_at"
+      )
+      .maybeSingle();
+    return { data: updateResult.data ?? null, error: updateResult.error ?? null };
+  } catch (err) {
+    return { data: null, error: { message: err?.message || String(err) } };
+  }
+}
+
+export async function revokeAuthSession({ sessionId, reason = null } = {}) {
+  if (!isSupabaseConfigured() || !supabase) {
+    return { data: null, error: { message: "Supabase is not configured" } };
+  }
+  if (!isUuidLike(sessionId)) {
+    return { data: null, error: { message: "sessionId must be a UUID" } };
+  }
+  const normalizedReason = normalizeNullableText(reason, { maxLength: 180 }) || "revoked_by_admin";
+  const nowIso = new Date().toISOString();
+
+  try {
+    const { profileId, role, error: roleError } = await getCurrentProfileRole();
+    if (roleError || !profileId) {
+      return { data: null, error: roleError || { message: "Authenticated user is required" } };
+    }
+    if (role !== "hq_admin") {
+      return { data: null, error: { message: "Only HQ admin can revoke auth sessions" } };
+    }
+
+    const updateResult = await supabase
+      .from("auth_sessions")
+      .update({
+        session_status: "revoked",
+        revoked_at: nowIso,
+        revoked_by_profile_id: profileId,
+        revoke_reason: normalizedReason,
+        updated_at: nowIso,
+      })
+      .eq("id", trimString(sessionId))
+      .select(
+        "id,profile_id,role,branch_id,remember_me_enabled,session_status,started_at,last_seen_at,signed_out_at,timed_out_at,revoked_at,revoked_by_profile_id,revoke_reason,safe_device_label,created_at,updated_at"
+      )
+      .maybeSingle();
+    return { data: updateResult.data ?? null, error: updateResult.error ?? null };
   } catch (err) {
     return { data: null, error: { message: err?.message || String(err) } };
   }
