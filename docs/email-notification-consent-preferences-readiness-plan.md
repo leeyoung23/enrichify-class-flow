@@ -24,9 +24,11 @@ No Gmail/provider integration, no real email sending, and no email trigger wirin
 ## Planning checkpoint: Parent Portal first-login acknowledgement gate (2026-05-05)
 
 - New planning doc: `docs/parent-portal-first-login-consent-gate-plan.md`.
-- Scope: planning-only gate before full parent portal access (required policy acknowledgements + optional consent controls).
-- Required acknowledgement set defined: Privacy Notice, Parent Portal Terms of Use, Parent Communication Policy, and essential service communication notice.
-- Optional consent set defined for future channels and categories (email/SMS/push, marketing/events, media/photo, optional e-invoice/email delivery where applicable).
+- Scope: planning-only gate before full parent portal access using one required acknowledgement checkbox.
+- Required first-login copy defined as one acknowledgement covering Terms + Privacy + essential portal service updates.
+- Optional consent controls are deferred to ParentView Communication & Notification Settings.
+- Marketing/events, media/photo, and future external email/SMS/push remain separate preference categories.
+- Legal/compliance review is required before real parent rollout and any production launch path involving email/media consent flows.
 - No SQL, no RLS, no ParentView behavior changes, and no email/Gmail/provider implementation in this checkpoint.
 
 ## Scope and product direction

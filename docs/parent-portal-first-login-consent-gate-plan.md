@@ -11,6 +11,7 @@ This plan defines a **first-login parent acknowledgement and consent gate** befo
 - Parent Portal remains the source of truth for student-related updates.
 - External channels (email/SMS/push) remain future-phase and are not enabled by this plan.
 - This document does not introduce implementation, migrations, RLS edits, provider setup, or sending behavior.
+- Legal/compliance review is required before real parent rollout and any production launch involving first-login gate, media consent expansion, or external channels.
 
 ---
 
@@ -18,33 +19,33 @@ This plan defines a **first-login parent acknowledgement and consent gate** befo
 
 The gate should ensure that each parent account:
 
-1. Acknowledges core policy/legal notices for portal use.
+1. Confirms one clear required acknowledgement before entering full Parent Portal.
 2. Understands communication boundaries (portal-first, message safety).
-3. Can optionally set channel/marketing/media preferences with clear consent semantics.
+3. Defers optional consent controls to ParentView Communication & Notification Settings.
 4. Produces auditable acknowledgement metadata (policy version + timestamp + source).
 
 This protects rollout quality and reduces ambiguity before email/Gmail or broader external delivery phases.
 
 ---
 
-## 2) Required acknowledgement categories
+## 2) Required acknowledgement (single checkbox)
 
-Required categories to continue into full Parent Portal:
+First-login gate should use **one required checkbox** only.
 
-1. **Privacy Notice**
-2. **Parent Portal Terms of Use**
-3. **Parent Communication Policy**
-4. **Essential service communication notice** (required operational updates are distinct from marketing)
+Preferred required checkbox copy:
+
+“I have read and agree to the Parent Portal Terms of Use and Privacy Notice. I understand the centre may use the portal to share essential service updates related to my child’s learning, attendance, homework, reports, billing, safety, and class operations.”
 
 Guidance:
-- Required acknowledgements should be explicit and separated (not merged into one broad consent line).
-- Parent should see summary copy plus links to the full policy pages (or document routes).
+- Keep first-login acknowledgement simple and non-intimidating.
+- Essential service communication is part of Parent Portal usage.
+- Parent should still be able to open policy links (Terms/Privacy/Communication Policy) from the same screen.
 
 ---
 
 ## 3) Optional consent categories
 
-Optional categories (not required for portal access) should be shown separately from required acknowledgements:
+Optional categories (not required for portal access) should be managed after first login in ParentView **Communication & Notification Settings**:
 
 1. **Email notifications** (future activation)
 2. **SMS/push future notifications** (future activation)
@@ -54,7 +55,7 @@ Optional categories (not required for portal access) should be shown separately 
 
 Guidance:
 - Optional categories should default conservatively according to product/legal policy.
-- Optional consents should be editable later from ParentView Notification Settings.
+- Optional consents should remain editable later from ParentView Communication & Notification Settings.
 
 ---
 
@@ -63,20 +64,21 @@ Guidance:
 Recommended first-login parent experience:
 
 1. Trigger gate on first parent login after account creation or first portal access.
-2. Present short summary cards for each required policy area.
-3. Include links to full policies from each card.
-4. Render a required checkbox group (all required items must be checked) before enabling **Continue**.
-5. Render optional channel/marketing/media toggles underneath required items.
+2. Present short summary text and links to full Terms/Privacy/Communication Policy.
+3. Render one required acknowledgement checkbox before enabling **Continue**.
+4. Do not overload login with multiple required consent boxes.
+5. Do not require optional channel/marketing/media choices at this step.
 6. Persist acknowledgement/consent metadata with:
    - `acknowledged_at` / consent timestamp
    - `policy_version`
    - `consent_source = parent_portal_first_login`
 7. After completion, route parent to normal ParentView.
-8. Allow later edits to optional communication preferences in existing ParentView Notification Settings.
+8. Allow later edits to optional communication preferences in existing ParentView Communication & Notification Settings.
 
 UX safety notes:
 - Avoid long legal text walls in the gate; provide readable summaries and deep links.
-- Avoid dark-pattern bundling; required and optional choices must be visually and semantically distinct.
+- Avoid dark-pattern bundling; required acknowledgement and optional preferences must remain semantically distinct.
+- Keep media/photo consent clearly separated from general terms when used beyond normal class evidence flow.
 
 ---
 
@@ -120,8 +122,9 @@ Important constraints:
 3. Media/photo consent must remain separate from broad marketing consent.
 4. Email content should stay generic and link back to the portal.
 5. Do not attach child reports/homework/photos/payment files directly to email in v1.
-6. Do not use one broad “I agree to everything” checkbox.
+6. Required first-login acknowledgement should not silently absorb optional marketing/media choices.
 7. Keep portal as source of truth for detailed and sensitive content.
+8. Legal/compliance review is required before real parent rollout and before enabling production email/media policies.
 
 ---
 
@@ -143,3 +146,4 @@ Important constraints:
 - Gmail/email provider integration or sender jobs
 - SMS/push provider integration
 - Trigger enforcement implementation details
+- Any production rollout decision (pending legal/compliance sign-off)
