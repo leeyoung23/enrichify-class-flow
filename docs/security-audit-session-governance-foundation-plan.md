@@ -3,6 +3,27 @@
 Date: 2026-05-04  
 Type: planning-only checkpoint (no code/SQL/auth/UI changes in this milestone)
 
+## 2026-05-05 docs checkpoint addendum: Security Governance Milestone
+
+- Session governance/security lane now has a docs-only milestone checkpoint for Phase 1A-1E.
+- Confirmed implemented foundation set:
+  - Supabase-primary sign-out
+  - remember-me + timeout governance
+  - auth lifecycle audit writes
+  - `auth_sessions` SQL/RLS + runtime session lifecycle wiring
+  - parent self session controls
+  - HQ read/revoke staff session controls
+- Confirmed boundaries remain intact:
+  - no service-role frontend
+  - no raw IP/full user-agent/fingerprint/GPS data fields
+  - no logout-all-devices
+  - no RLS weakening
+  - no email/SMS/push expansion
+- Consolidated milestone artifact:
+  - `docs/session-governance-security-milestone-checkpoint.md`
+- Recommendation:
+  - move next into UAT/production-readiness/legal-policy lanes before additional session feature expansion.
+
 ## 2026-05-05 implementation checkpoint addendum: Phase 1E Step 3A active sessions visibility v1
 
 - Added privacy-safe read-only active session visibility for parent self account:

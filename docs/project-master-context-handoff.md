@@ -1,5 +1,38 @@
 # Project Master Context Handoff
 
+## Checkpoint update (session governance security milestone docs-only — 2026-05-05)
+
+- **Docs-only milestone checkpoint added:**
+  - `docs/session-governance-security-milestone-checkpoint.md`
+- **Milestone scope captured as implemented (Phase 1A-1E):**
+  - Supabase-primary sign-out
+  - remember-me login option
+  - app-level timeout governance
+  - auth lifecycle audit events
+  - `auth_sessions` SQL/RLS foundation
+  - runtime session row create/heartbeat/status tracking
+  - parent own session visibility + self end-session
+  - HQ session review + HQ revoke staff sessions
+- **Current role capability summary included in checkpoint doc:**
+  - parent/teacher/branch-supervisor/hq/student current session-governance boundaries
+- **Known limitations recorded:**
+  - conservative unchecked remember-me new-tab behavior
+  - no server-forced all-device token invalidation
+  - no logout-all-devices
+  - no branch supervisor session review
+  - no telemetry expansion pending legal/privacy review
+  - no legal/compliance signoff yet for real parent rollout
+- **Recommended next lanes captured:**
+  - Option A: UAT readiness checklist
+  - Option B: production readiness audit
+  - Option C: product polish lane
+  - Option D: legal/compliance policy pack preparation
+- **No implementation changes in this checkpoint:**
+  - no code/SQL/RLS changes
+  - no new session features
+  - no timeout behavior changes
+  - no notification/email channel expansion
+
 ## Checkpoint update (HQ revoke staff sessions, Phase 1E Step 3D — 2026-05-05)
 
 - **HQ revoke control added on Session Review:**

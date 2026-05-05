@@ -3,6 +3,22 @@
 Date: 2026-05-05  
 Type: planning + diagnosis checkpoint only (no code/SQL/RLS/auth-config changes)
 
+## 2026-05-05 docs checkpoint addendum (Security Governance Milestone)
+
+- Remember-me/session governance lane is now documented as milestone-complete for Phase 1A-1E scope.
+- Current remember-me/session posture:
+  - remember-me preference and runtime behavior are active
+  - app-level timeout governance is active
+  - parent self session visibility/end-session controls are active
+  - HQ read/revoke staff session controls are active (staff scope only)
+- Safety boundaries retained:
+  - no logout-all-devices
+  - no parent/student HQ revoke in current v1 UI
+  - no timeout-policy changes in this docs checkpoint
+  - no telemetry expansion fields
+- Consolidated milestone reference:
+  - `docs/session-governance-security-milestone-checkpoint.md`
+
 ## 2026-05-05 implementation checkpoint addendum (Phase 1E Step 3A active sessions visibility v1)
 
 - Parent self-service visibility is now available as read-only **Active Sessions** in `ParentView`.

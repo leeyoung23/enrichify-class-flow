@@ -3,6 +3,28 @@
 Date: 2026-05-05  
 Type: planning-only checkpoint (no code/SQL/RLS/auth-config changes)
 
+## 2026-05-05 docs checkpoint addendum (Security Governance Milestone)
+
+- Session Governance Phase 1A-1E implementation is now checkpointed as complete for current approved scope.
+- Implemented stack includes:
+  - Supabase-primary sign-out
+  - remember-me option
+  - app-level timeout enforcement
+  - auth lifecycle audit events
+  - `auth_sessions` SQL/RLS foundation
+  - runtime create/heartbeat/status wiring
+  - parent own session visibility + self end-session
+  - HQ read-only session review + HQ staff revoke controls
+- Current guardrails remain unchanged:
+  - no logout-all-devices
+  - no parent/student revoke by HQ in current UI scope
+  - no telemetry expansion (IP/full user-agent/fingerprint/GPS)
+  - no SQL/RLS weakening
+- Formal milestone summary lives in:
+  - `docs/session-governance-security-milestone-checkpoint.md`
+- Next planning recommendation:
+  - pause further session control expansion until policy/UAT/production-readiness decisions are selected.
+
 ## 2026-05-05 implementation checkpoint addendum (Phase 1E Step 3A active sessions visibility v1)
 
 - Added a minimal read-only **Active Sessions** surface for parent self-visibility:
