@@ -3,6 +3,17 @@
 Date: 2026-05-05  
 Type: Planning checkpoint only (no SQL/RLS/app code changes in this document).
 
+## Phase 2 foundation update (SQL/RLS only, no UI) — 2026-05-05
+
+- Added migration: `supabase/sql/041_parent_policy_acknowledgements_foundation.sql`.
+- Added table: `public.parent_policy_acknowledgements`.
+- Purpose: record parent acknowledgement events by `policy_key` + `policy_version` in an append-only model.
+- Required first-login strategy remains one required acknowledgement using `policy_key = 'parent_portal_terms_privacy'`.
+- Optional consent controls remain in ParentView Communication & Notification Settings and are not required at first login.
+- No first-login UI implementation in this phase.
+- No email/SMS/push provider integration or sending behavior in this phase.
+- Legal/compliance review remains required before real parent rollout or production launch with media/external channels.
+
 ## Scope and intent
 
 This plan defines a **first-login parent acknowledgement and consent gate** before full Parent Portal use in real parent rollout.
@@ -84,7 +95,8 @@ UX safety notes:
 
 ## 5) Future schema concept (planning only)
 
-No SQL in this milestone. Candidate approaches:
+`041` now establishes the first acknowledgement foundation table for parent policy acceptance records.
+Future phases may still evolve schema details, but v1 design remains append-only by policy version.
 
 ### Option A: Dedicated acknowledgement table
 

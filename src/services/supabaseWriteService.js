@@ -116,6 +116,20 @@ const PARENT_NOTIFICATION_PREFERENCE_STATUS_VALUES = new Set([
   "withdrawn",
   "required_service",
 ]);
+const PARENT_POLICY_ACKNOWLEDGEMENT_KEY_VALUES = new Set([
+  "parent_portal_terms_privacy",
+  "parent_communication_policy",
+  "media_photo_policy",
+  "email_sms_policy",
+  "marketing_events_policy",
+]);
+const PARENT_POLICY_ACKNOWLEDGEMENT_SOURCE_VALUES = new Set([
+  "parent_portal_first_login",
+  "parent_portal_settings",
+  "hq_admin_recorded",
+  "migration_seed",
+  "parent_portal",
+]);
 const AI_PARENT_REPORT_NOTIFICATION_EVENT_TYPE = "ai_parent_report.released";
 const AI_PARENT_REPORT_RELEASE_NOTIFY_TITLE = "New progress report available";
 const AI_PARENT_REPORT_RELEASE_NOTIFY_BODY =
@@ -701,6 +715,76 @@ export async function upsertMyNotificationPreference({
       .select(
         "id,parent_profile_id,student_id,channel,category,enabled,consent_status,consent_source,policy_version,consented_at,withdrawn_at,updated_by_profile_id,created_at,updated_at"
       )
+      .maybeSingle();
+    return { data: insertResult.data ?? null, error: insertResult.error ?? null };
+  } catch (err) {
+    return { data: null, error: { message: err?.message || String(err) } };
+  }
+}
+
+export async function createMyPolicyAcknowledgement({
+  policyKey,
+  policyVersion,
+  acknowledgementSource = "parent_portal_first_login",
+  metadata = {},
+} = {}) {
+  if (!isSupabaseConfigured() || !supabase) {
+    return { data: null, error: { message: "Supabase is not configured" } };
+  }
+  const safePolicyKey = trimString(policyKey);
+  const safePolicyVersion = trimString(policyVersion);
+  const safeSource = trimString(acknowledgementSource) || "parent_portal_first_login";
+  if (!PARENT_POLICY_ACKNOWLEDGEMENT_KEY_VALUES.has(safePolicyKey)) {
+    return { data: null, error: { message: "policyKey is invalid" } };
+  }
+  if (!safePolicyVersion) {
+    return { data: null, error: { message: "policyVersion is required" } };
+  }
+  if (!PARENT_POLICY_ACKNOWLEDGEMENT_SOURCE_VALUES.has(safeSource)) {
+    return { data: null, error: { message: "acknowledgementSource is invalid" } };
+  }
+  if (metadata != null && (typeof metadata !== "object" || Array.isArray(metadata))) {
+    return { data: null, error: { message: "metadata must be an object when provided" } };
+  }
+
+  try {
+    const { profileId, role, error: roleError } = await getCurrentProfileRole();
+    if (roleError || !profileId) {
+      return { data: null, error: roleError || { message: "Authenticated user is required" } };
+    }
+    if (role !== "parent") {
+      return { data: null, error: { message: "Only parent profiles can create self policy acknowledgement records" } };
+    }
+
+    const existingRead = await supabase
+      .from("parent_policy_acknowledgements")
+      .select("id,parent_profile_id,policy_key,policy_version,acknowledgement_source,acknowledged_at,created_at,metadata")
+      .eq("parent_profile_id", profileId)
+      .eq("policy_key", safePolicyKey)
+      .eq("policy_version", safePolicyVersion)
+      .limit(1)
+      .maybeSingle();
+    if (existingRead.error) {
+      return { data: null, error: existingRead.error };
+    }
+    if (existingRead.data?.id) {
+      return { data: existingRead.data, error: null };
+    }
+
+    const safeMetadata = sanitizeAuditMetadata(metadata);
+    const nowIso = new Date().toISOString();
+    const insertResult = await supabase
+      .from("parent_policy_acknowledgements")
+      .insert({
+        parent_profile_id: profileId,
+        policy_key: safePolicyKey,
+        policy_version: safePolicyVersion.slice(0, 80),
+        acknowledgement_source: safeSource,
+        acknowledged_at: nowIso,
+        created_at: nowIso,
+        metadata: safeMetadata,
+      })
+      .select("id,parent_profile_id,policy_key,policy_version,acknowledgement_source,acknowledged_at,created_at,metadata")
       .maybeSingle();
     return { data: insertResult.data ?? null, error: insertResult.error ?? null };
   } catch (err) {

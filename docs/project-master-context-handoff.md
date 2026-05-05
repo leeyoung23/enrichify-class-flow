@@ -1,5 +1,17 @@
 # Project Master Context Handoff
 
+## Checkpoint update (parent policy acknowledgement foundation — 2026-05-05)
+
+- **SQL migration:** `supabase/sql/041_parent_policy_acknowledgements_foundation.sql`.
+- **Table:** `public.parent_policy_acknowledgements` with `parent_profile_id`, `policy_key`, `policy_version`, `acknowledgement_source`, `acknowledged_at`, `metadata`.
+- **RLS posture:** parent self read/insert only; HQ read/insert; branch supervisor read-only for branch-linked parent records; teacher/student denied; no update/delete policies.
+- **Design:** append-only per policy version via unique `(parent_profile_id, policy_key, policy_version)`; new version/correction = new insert.
+- **Required first-login strategy:** one required acknowledgement record for `policy_key = parent_portal_terms_privacy`; optional communication controls remain in ParentView Communication & Notification Settings.
+- **App helpers added:** read (`listMyPolicyAcknowledgements`, `hasMyPolicyAcknowledgement`, `listParentPolicyAcknowledgementsForStudent`) and write (`createMyPolicyAcknowledgement`) using anon+JWT+RLS only.
+- **Smoke added:** `scripts/supabase-parent-policy-acknowledgements-smoke-test.mjs` + npm script `test:supabase:parent-policy-acknowledgements`.
+- **Boundary unchanged:** no first-login UI implementation yet, no email/Gmail sending, no SMS/push provider integration, no notification-trigger behavior changes.
+- **Release governance:** legal/compliance review required before real parent rollout and before production launch involving email/media policies.
+
 ## Checkpoint update (Parent Portal first-login consent gate plan — 2026-05-05)
 
 - **Planning doc added:** `docs/parent-portal-first-login-consent-gate-plan.md`.

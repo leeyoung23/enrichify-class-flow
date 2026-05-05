@@ -97,6 +97,22 @@ const PARENT_NOTIFICATION_PREFERENCE_STATUS_VALUES = new Set([
 ]);
 const PARENT_NOTIFICATION_PREFERENCE_FIELDS =
   "id,parent_profile_id,student_id,channel,category,enabled,consent_status,consent_source,policy_version,consented_at,withdrawn_at,updated_by_profile_id,created_at,updated_at";
+const PARENT_POLICY_ACKNOWLEDGEMENT_KEY_VALUES = new Set([
+  "parent_portal_terms_privacy",
+  "parent_communication_policy",
+  "media_photo_policy",
+  "email_sms_policy",
+  "marketing_events_policy",
+]);
+const PARENT_POLICY_ACKNOWLEDGEMENT_SOURCE_VALUES = new Set([
+  "parent_portal_first_login",
+  "parent_portal_settings",
+  "hq_admin_recorded",
+  "migration_seed",
+  "parent_portal",
+]);
+const PARENT_POLICY_ACKNOWLEDGEMENT_FIELDS =
+  "id,parent_profile_id,policy_key,policy_version,acknowledgement_source,acknowledged_at,created_at,metadata";
 const NOTIFICATION_TEMPLATE_FIELDS =
   "id,template_key,event_type,channel,title_template,body_template,allowed_variables,branch_id,is_active,created_by_profile_id,updated_by_profile_id,created_at,updated_at";
 
@@ -2214,6 +2230,150 @@ export async function listNotificationPreferencesForStudent({
       && PARENT_NOTIFICATION_PREFERENCE_STATUS_VALUES.has(trimString(row?.consent_status))
     );
     return { data: normalized, error: null };
+  } catch (error) {
+    return { data: [], error };
+  }
+}
+
+export async function listMyPolicyAcknowledgements({ policyKey, policyVersion, limit = 200 } = {}) {
+  if (!isSupabaseConfigured() || !supabase) {
+    return { data: [], error: { message: "Supabase is not configured" } };
+  }
+  if (
+    policyKey != null
+    && policyKey !== ""
+    && !PARENT_POLICY_ACKNOWLEDGEMENT_KEY_VALUES.has(trimString(policyKey))
+  ) {
+    return { data: [], error: { message: "policyKey is invalid" } };
+  }
+  if (policyVersion != null && policyVersion !== "" && !trimString(policyVersion)) {
+    return { data: [], error: { message: "policyVersion is invalid" } };
+  }
+  const safeLimit = Number.isInteger(limit) && limit > 0 ? Math.min(limit, 500) : 200;
+
+  try {
+    let query = supabase
+      .from("parent_policy_acknowledgements")
+      .select(PARENT_POLICY_ACKNOWLEDGEMENT_FIELDS)
+      .order("acknowledged_at", { ascending: false })
+      .limit(safeLimit);
+    if (policyKey != null && policyKey !== "") query = query.eq("policy_key", trimString(policyKey));
+    if (policyVersion != null && policyVersion !== "") query = query.eq("policy_version", trimString(policyVersion));
+
+    const { data, error } = await query;
+    if (error) return { data: [], error };
+
+    const normalized = (Array.isArray(data) ? data : []).filter((row) =>
+      PARENT_POLICY_ACKNOWLEDGEMENT_KEY_VALUES.has(trimString(row?.policy_key))
+      && PARENT_POLICY_ACKNOWLEDGEMENT_SOURCE_VALUES.has(trimString(row?.acknowledgement_source))
+      && trimString(row?.policy_version)
+    );
+    return { data: normalized, error: null };
+  } catch (error) {
+    return { data: [], error };
+  }
+}
+
+export async function hasMyPolicyAcknowledgement({ policyKey, policyVersion } = {}) {
+  if (!isSupabaseConfigured() || !supabase) {
+    return { data: { hasAcknowledged: false, acknowledgement: null }, error: { message: "Supabase is not configured" } };
+  }
+  const safePolicyKey = trimString(policyKey);
+  const safePolicyVersion = trimString(policyVersion);
+  if (!PARENT_POLICY_ACKNOWLEDGEMENT_KEY_VALUES.has(safePolicyKey)) {
+    return { data: { hasAcknowledged: false, acknowledgement: null }, error: { message: "policyKey is invalid" } };
+  }
+  if (!safePolicyVersion) {
+    return { data: { hasAcknowledged: false, acknowledgement: null }, error: { message: "policyVersion is required" } };
+  }
+
+  try {
+    const { data, error } = await supabase
+      .from("parent_policy_acknowledgements")
+      .select(PARENT_POLICY_ACKNOWLEDGEMENT_FIELDS)
+      .eq("policy_key", safePolicyKey)
+      .eq("policy_version", safePolicyVersion)
+      .order("acknowledged_at", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+    if (error) {
+      return { data: { hasAcknowledged: false, acknowledgement: null }, error };
+    }
+    return {
+      data: {
+        hasAcknowledged: Boolean(data?.id),
+        acknowledgement: data || null,
+      },
+      error: null,
+    };
+  } catch (error) {
+    return { data: { hasAcknowledged: false, acknowledgement: null }, error };
+  }
+}
+
+export async function listParentPolicyAcknowledgementsForStudent({
+  studentId,
+  policyKey,
+  policyVersion,
+  limit = 200,
+} = {}) {
+  if (!isSupabaseConfigured() || !supabase) {
+    return { data: [], error: { message: "Supabase is not configured" } };
+  }
+  if (!isUuidLike(studentId)) {
+    return { data: [], error: { message: "studentId must be a UUID" } };
+  }
+  if (
+    policyKey != null
+    && policyKey !== ""
+    && !PARENT_POLICY_ACKNOWLEDGEMENT_KEY_VALUES.has(trimString(policyKey))
+  ) {
+    return { data: [], error: { message: "policyKey is invalid" } };
+  }
+  if (policyVersion != null && policyVersion !== "" && !trimString(policyVersion)) {
+    return { data: [], error: { message: "policyVersion is invalid" } };
+  }
+  const safeLimit = Number.isInteger(limit) && limit > 0 ? Math.min(limit, 500) : 200;
+
+  try {
+    const guardianRead = await supabase
+      .from("guardian_student_links")
+      .select("guardian_id")
+      .eq("student_id", trimString(studentId))
+      .limit(500);
+    if (guardianRead.error) return { data: [], error: guardianRead.error };
+    const guardianIds = [...new Set(
+      (Array.isArray(guardianRead.data) ? guardianRead.data : [])
+        .map((row) => row?.guardian_id)
+        .filter(Boolean)
+    )];
+    if (guardianIds.length === 0) return { data: [], error: null };
+
+    const parentRead = await supabase
+      .from("guardians")
+      .select("profile_id")
+      .in("id", guardianIds)
+      .limit(500);
+    if (parentRead.error) return { data: [], error: parentRead.error };
+    const parentProfileIds = [...new Set(
+      (Array.isArray(parentRead.data) ? parentRead.data : [])
+        .map((row) => row?.profile_id)
+        .filter((id) => isUuidLike(id))
+    )];
+    if (parentProfileIds.length === 0) return { data: [], error: null };
+
+    let query = supabase
+      .from("parent_policy_acknowledgements")
+      .select(PARENT_POLICY_ACKNOWLEDGEMENT_FIELDS)
+      .in("parent_profile_id", parentProfileIds)
+      .order("acknowledged_at", { ascending: false })
+      .limit(safeLimit);
+    if (policyKey != null && policyKey !== "") query = query.eq("policy_key", trimString(policyKey));
+    if (policyVersion != null && policyVersion !== "") query = query.eq("policy_version", trimString(policyVersion));
+
+    const { data, error } = await query;
+    if (error) return { data: [], error };
+    return { data: Array.isArray(data) ? data : [], error: null };
   } catch (error) {
     return { data: [], error };
   }

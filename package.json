@@ -56,6 +56,7 @@
     "test:supabase:notifications": "node scripts/supabase-notifications-foundation-smoke-test.mjs",
     "test:supabase:notification-templates": "node scripts/supabase-notification-templates-smoke-test.mjs",
     "test:supabase:parent-notification-preferences": "node scripts/supabase-parent-notification-preferences-smoke-test.mjs",
+    "test:supabase:parent-policy-acknowledgements": "node scripts/supabase-parent-policy-acknowledgements-smoke-test.mjs",
     "test:staff-time-clock:helpers": "node scripts/staff-time-clock-browser-helper-smoke-test.mjs",
     "test:ai:edge:mock": "node scripts/ai-edge-function-mock-invocation-test.mjs",
     "test:ai:parent-comment:curriculum-mock": "node scripts/ai-parent-comment-curriculum-context-mock-test.mjs",

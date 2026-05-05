@@ -31,6 +31,15 @@ No Gmail/provider integration, no real email sending, and no email trigger wirin
 - Legal/compliance review is required before real parent rollout and any production launch path involving email/media consent flows.
 - No SQL, no RLS, no ParentView behavior changes, and no email/Gmail/provider implementation in this checkpoint.
 
+## Foundation update: parent policy acknowledgement SQL/RLS (2026-05-05)
+
+- Added migration: `supabase/sql/041_parent_policy_acknowledgements_foundation.sql`.
+- Added table: `parent_policy_acknowledgements` with policy key/version acknowledgement records.
+- RLS posture (conservative): parent self read/insert, HQ read/insert, branch supervisor read-only (branch-linked parent records), no teacher/student access.
+- Append-only design in v1: no update/delete policies; corrections and new versions are handled by inserting a new acknowledgement row.
+- First-login required acknowledgement remains one checkbox (`parent_portal_terms_privacy`), while optional communication categories stay in ParentView Communication & Notification Settings.
+- No first-login UI implementation yet; this phase is data foundation only.
+
 ## Scope and product direction
 
 Current production-safe behavior remains **in-app notification first** via `notification_events` + `notifications` and HQ-governed template copy.  
