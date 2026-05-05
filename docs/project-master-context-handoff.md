@@ -2507,3 +2507,18 @@ Handoff status: complete for continuity. Use this file as the primary context an
   - no SQL/RLS change,
   - no parent access widening to drafts/internal refs/evidence,
   - no provider/email/SMS/push/chat/OCR/AI lane changes.
+
+### UAT second-pass note (2026-05-06) — students stability, parent scope, nav order
+
+- `/students` resilient loading:
+  - TanStack Query sometimes supplies `data: null`; default `= []` does not apply when `data` is explicitly `null`, which can throw on `.map`/`.filter` and white-screen the subtree. All list reads on this page are normalized to arrays.
+  - `StudentsErrorBoundary` wraps page content so an unexpected fault shows a fallback card instead of an empty canvas.
+  - HQ Session Review `/session-review` unchanged.
+- Parent portal session UI scope (v1):
+  - `ActiveSessionsCard` removed from parent `ParentView` settings; parent self-session list/revoke remains deferred. Backend `auth_sessions` + HQ Session Review are unchanged.
+- ParentView scroll order + sidebar:
+  - Main sections reordered so document flow matches nav: overview → updates → attendance → homework → progress reports → (secondary blocks) → settings last.
+  - Sidebar active section uses ordered scroll logic (section tops vs a fixed offset), not IntersectionObserver ratio tie-breaks.
+- Class Memory class dropdown (teacher):
+  - When `listClasses` returns empty for a real teacher but `listStudents` still returns rows (RLS mismatch / missing class read), class options are merged from distinct `student.class_id` values with a readable placeholder label; empty state copy when nothing is inferable.
+- No SQL/RLS widening; class memories remain class-scoped, not branch-wide.

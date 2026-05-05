@@ -55,7 +55,6 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
 import { Textarea } from '@/components/ui/textarea';
-import ActiveSessionsCard from '@/components/account/ActiveSessionsCard';
 import {
   GraduationCap, CheckCircle2, XCircle, Clock, Umbrella,
   BookOpen, BookX, Minus, ExternalLink, FileText, Loader2, Sparkles, Bell,
@@ -572,7 +571,7 @@ function ChildProfileSummary({ student, cls }) {
       <CardContent className="space-y-2 text-sm">
         <div className="flex items-center justify-between gap-4">
           <span className="text-muted-foreground">Student</span>
-          <span className="font-medium">{student.name}</span>
+          <span className="font-medium">{student.name || student.full_name || 'Student'}</span>
         </div>
         <div className="flex items-center justify-between gap-4">
           <span className="text-muted-foreground">Class</span>
@@ -3704,10 +3703,10 @@ export default function ParentView() {
         <div id="parent-portal-overview">
           <div className="flex items-center gap-4 mb-6">
             <div className="h-14 w-14 rounded-full bg-accent flex items-center justify-center text-accent-foreground text-xl font-bold flex-shrink-0">
-              {student.name[0].toUpperCase()}
+              {String(student.name || student.full_name || '?').charAt(0).toUpperCase() || '?'}
             </div>
             <div>
-              <h2 className="text-xl font-bold">{student.name}</h2>
+              <h2 className="text-xl font-bold">{student.name || student.full_name || 'Student'}</h2>
               <div className="flex items-center gap-2 mt-1 text-sm text-muted-foreground">
                 {cls && <Badge variant="outline">{cls.name}</Badge>}
                 {cls?.subject && <span>{cls.subject}</span>}
@@ -3821,30 +3820,47 @@ export default function ParentView() {
           </Card>
         )}
 
-        {!isDemoStudentPreview && isParentViewerRole ? (
-          <section id="parent-settings" className="mb-6 space-y-4 rounded-xl border border-border/70 bg-card/85 p-4" aria-label="Settings">
-            <div className="space-y-1">
-              <h2 className="text-lg font-semibold tracking-tight">Settings</h2>
-              <p className="text-sm text-muted-foreground">
-                Manage communication preferences and account security for your parent portal.
-              </p>
-            </div>
-            <ParentNotificationSettingsSection
-              demoMode={isDemoMode}
-              hasSupabaseSession={hasSupabaseSession}
-              supabaseReady={isSupabaseConfigured()}
-              loading={parentNotificationPreferencesLoading}
-              error={parentNotificationPreferencesError}
-              saving={parentNotificationPreferencesSaving}
-              saveMessage={parentNotificationPreferencesSaveMessage}
-              saveError={parentNotificationPreferencesSaveError}
-              preferences={parentNotificationPreferences}
-              onToggleCategory={handleToggleParentNotificationCategory}
-              onConfirmOperationalService={handleConfirmOperationalServicePreference}
-              onSave={handleSaveParentNotificationSettings}
+        {!isDemoStudentPreview ? (
+          <>
+            <AttendanceSummary records={attendance} />
+            <ChildProfileSummary student={student} cls={cls} />
+            <LearningFocusSummary
+              isDemoMode={isDemoMode}
+              learningFocus={learningFocus}
+              loading={learningFocusLoading}
             />
-            <ActiveSessionsCard />
-          </section>
+            <ParentHomeworkStatusSection
+              isDemoMode={isDemoMode}
+              loading={parentHomeworkLoading}
+              error={parentHomeworkError}
+              tasks={parentHomeworkTasksWithStatus}
+              feedbackBySubmissionId={parentHomeworkFeedbackBySubmissionId}
+              markedWorkBySubmissionId={parentHomeworkMarkedWorkBySubmissionId}
+              uploadDraftByTaskId={homeworkUploadDraftByTaskId}
+              submitLoadingByTaskId={homeworkSubmitLoadingByTaskId}
+              onUploadFileChange={handleHomeworkUploadFileChange}
+              onUploadNoteChange={handleHomeworkUploadNoteChange}
+              onSubmitTaskUpload={handleSubmitHomeworkForTask}
+              onViewMarkedWork={handleViewMarkedWork}
+            />
+            <ParentProgressReportsSection
+              isDemoMode={isDemoMode}
+              showInternalPreview={showInternalDebugPanels}
+              loading={parentProgressReportsLoading}
+              error={parentProgressReportsError}
+              reports={parentProgressReports}
+              selectedReportId={selectedParentProgressReportId}
+              onSelectReport={setSelectedParentProgressReportId}
+              detail={parentProgressReportDetail}
+              currentVersion={parentProgressReportCurrentVersion}
+              detailLoading={parentProgressReportDetailLoading}
+              detailError={parentProgressReportDetailError}
+              studentName={student?.name || student?.full_name}
+              className={cls?.name}
+              classSubject={cls?.subject}
+              branchDisplayName={pdfBranchLabel}
+            />
+          </>
         ) : null}
 
         <Separator className="mb-6" />
@@ -3868,43 +3884,6 @@ export default function ParentView() {
             </>
           ) : (
             <>
-              <ChildProfileSummary student={student} cls={cls} />
-              <LearningFocusSummary
-                isDemoMode={isDemoMode}
-                learningFocus={learningFocus}
-                loading={learningFocusLoading}
-              />
-              <ParentProgressReportsSection
-                isDemoMode={isDemoMode}
-                showInternalPreview={showInternalDebugPanels}
-                loading={parentProgressReportsLoading}
-                error={parentProgressReportsError}
-                reports={parentProgressReports}
-                selectedReportId={selectedParentProgressReportId}
-                onSelectReport={setSelectedParentProgressReportId}
-                detail={parentProgressReportDetail}
-                currentVersion={parentProgressReportCurrentVersion}
-                detailLoading={parentProgressReportDetailLoading}
-                detailError={parentProgressReportDetailError}
-                studentName={student?.name}
-                className={cls?.name}
-                classSubject={cls?.subject}
-                branchDisplayName={pdfBranchLabel}
-              />
-              <ParentHomeworkStatusSection
-                isDemoMode={isDemoMode}
-                loading={parentHomeworkLoading}
-                error={parentHomeworkError}
-                tasks={parentHomeworkTasksWithStatus}
-                feedbackBySubmissionId={parentHomeworkFeedbackBySubmissionId}
-                markedWorkBySubmissionId={parentHomeworkMarkedWorkBySubmissionId}
-                uploadDraftByTaskId={homeworkUploadDraftByTaskId}
-                submitLoadingByTaskId={homeworkSubmitLoadingByTaskId}
-                onUploadFileChange={handleHomeworkUploadFileChange}
-                onUploadNoteChange={handleHomeworkUploadNoteChange}
-                onSubmitTaskUpload={handleSubmitHomeworkForTask}
-                onViewMarkedWork={handleViewMarkedWork}
-              />
               <div id="parent-communication-updates" className="space-y-4">
                 <LatestParentComment updates={updates} />
                 <LatestWeeklyProgressReport updates={updates} />
@@ -3966,7 +3945,6 @@ export default function ParentView() {
                   </CardContent>
                 </Card>
               )}
-              <AttendanceSummary records={attendance} />
               <HomeworkSummary records={attendance} />
               <TeacherFeedback updates={updates} />
 
@@ -3988,10 +3966,38 @@ export default function ParentView() {
           )}
         </div>
 
+        {!isDemoStudentPreview && isParentViewerRole ? (
+          <section id="parent-settings" className="mb-6 space-y-4 rounded-xl border border-border/70 bg-card/85 p-4" aria-label="Settings">
+            <div className="space-y-1">
+              <h2 className="text-lg font-semibold tracking-tight">Settings</h2>
+              <p className="text-sm text-muted-foreground">
+                Manage communication preferences for your parent portal. Technical session history is not shown here in this version.
+              </p>
+            </div>
+            <ParentNotificationSettingsSection
+              demoMode={isDemoMode}
+              hasSupabaseSession={hasSupabaseSession}
+              supabaseReady={isSupabaseConfigured()}
+              loading={parentNotificationPreferencesLoading}
+              error={parentNotificationPreferencesError}
+              saving={parentNotificationPreferencesSaving}
+              saveMessage={parentNotificationPreferencesSaveMessage}
+              saveError={parentNotificationPreferencesSaveError}
+              preferences={parentNotificationPreferences}
+              onToggleCategory={handleToggleParentNotificationCategory}
+              onConfirmOperationalService={handleConfirmOperationalServicePreference}
+              onSave={handleSaveParentNotificationSettings}
+            />
+          </section>
+        ) : null}
+
         <p className="text-center text-xs text-muted-foreground mt-8">
-          {isDemoMode
-            ? `This is a private demo view for ${isDemoStudentPreview ? student.name : (student.parent_name || 'the parent/guardian')} linked to ${student.name}. Internal teacher, branch, HQ, KPI, observation, lead, trial, migration, and roadmap pages are restricted.`
-            : `This is a private parent/student portal for ${student.name}. Internal teacher, branch, HQ, KPI, observation, lead, trial, migration, and roadmap pages remain restricted.`}
+          {(() => {
+            const displayName = student.name || student.full_name || 'your child';
+            return isDemoMode
+              ? `This is a private demo view for ${isDemoStudentPreview ? displayName : (student.parent_name || 'the parent/guardian')} linked to ${displayName}. Internal teacher, branch, HQ, KPI, observation, lead, trial, migration, and roadmap pages are restricted.`
+              : `This is a private parent/student portal for ${displayName}. Internal teacher, branch, HQ, KPI, observation, lead, trial, migration, and roadmap pages remain restricted.`;
+          })()}
         </p>
       </div>
     </div>

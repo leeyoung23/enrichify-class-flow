@@ -97,3 +97,10 @@ Policy note:
 
 - Additional controls such as logout-all-devices or broader HQ revoke scope should be policy-reviewed before implementation.
 
+---
+
+## Addendum (2026-05-06) — Parent portal v1 UI scope
+
+- Parent-facing `ParentView` **no longer surfaces** the `ActiveSessionsCard` (technical session history / self-revoke UX is **deferred** in the parent portal until a later product decision).
+- **`auth_sessions`** table, RLS, remember-me, timeouts, heartbeats, audit events, and **HQ Session Review** (`/session-review`) remain as implemented; this is a **parent UI visibility** change only, not a backend rollback.
+

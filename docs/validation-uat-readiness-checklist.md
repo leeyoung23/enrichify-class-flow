@@ -66,8 +66,7 @@ Use this checklist for manual walkthrough validation by internal reviewers, staf
 - [ ] Notification inbox renders with unread indicator behavior.
 - [ ] Notification action routing opens/scrolls to expected target sections.
 - [ ] Communication & notification settings load/save correctly.
-- [ ] Active Sessions card renders own sessions only.
-- [ ] Parent can end own non-current active session.
+- [ ] Parent portal v1: no Active Sessions / technical session history UI (deferred); HQ Session Review unchanged for staff.
 - [ ] Released progress reports are visible after release only.
 - [ ] Homework feedback is visible after release only.
 - [ ] Attendance arrival notification appears when triggered.
@@ -123,8 +122,7 @@ Use this checklist for manual walkthrough validation by internal reviewers, staf
 - [ ] `auth_sessions` row is created on login.
 - [ ] Heartbeat updates `last_seen_at` over time.
 - [ ] `signed_out` / `timed_out` status transitions behave as expected.
-- [ ] Parent Active Sessions visibility works.
-- [ ] Parent self-end old session works.
+- [ ] Parent self-service session list / revoke UI is deferred in parent portal v1 (no regression to `auth_sessions` or HQ Session Review).
 - [ ] HQ read-only session review works.
 - [ ] HQ revoke teacher/branch-supervisor active session works.
 
@@ -190,7 +188,7 @@ Decision note:
 - [ ] Sidebar sign-out in real mode redirects to `/login` (no `/api/apps/auth/logout` 404).
 - [ ] Demo sign-out returns to `/welcome`.
 - [ ] Parent sidebar contains `Settings` entry linked to `#parent-settings`.
-- [ ] Parent Settings section groups communication preferences and account security.
+- [ ] Parent Settings groups communication preferences only in v1 portal (no Active Sessions card).
 - [ ] Parent landing order is content-first (updates/memories/notifications/quick access before settings-heavy content).
 - [ ] Parent sidebar flow stays simple: Home, Updates, Attendance, Homework, Reports, Settings.
 - [ ] Real-mode Class Memories with no released rows shows warm empty state (no demo wording).
@@ -199,6 +197,7 @@ Decision note:
 - [ ] Parent announcements empty state uses centre-updates placeholder wording.
 - [ ] Parent homework section supports status filtering and cleaner open-detail viewing.
 - [ ] `/students` route has non-blank loading, error, and empty render paths.
+- [ ] `/students` normalises query list data (`null`/`non-array` safe) and has a local error boundary for unexpected render faults.
 - [ ] `/students` no longer route-crashes when opening student profile details.
 - [ ] Parent notifications default to limited recent rows with View more / View less controls.
 - [ ] Smoke-test notification copy is hidden in normal mode and visible in debug mode.
@@ -209,9 +208,11 @@ Decision note:
 - [ ] Teacher learning-notes copy says notes are internal staff evidence and parent visibility only occurs through approved report/released communication.
 - [ ] Student detail quick links route to attendance/homework/observations/parent communication.
 - [ ] Parent Communication Class Memory card requires class selection before submit and clearly states class-linked parent targeting after approval.
+- [ ] Class Memory class options include classes inferred from teacher-visible students when `listClasses` is empty but student rows expose `class_id` (no branch-wide memories).
 - [ ] Parent homework section applies filter before default limit and supports View more / View less.
-- [ ] Parent Settings is grouped into service updates, optional updates, and account security without hiding required controls.
-- [ ] Parent sidebar active item updates on parent-view section scroll/hash changes.
+- [ ] Parent Settings is grouped into service updates and optional updates without hiding required controls (no parent Active Sessions).
+- [ ] Parent sidebar active item follows deterministic section order while scrolling (overview → updates → attendance → homework → reports → settings).
+- [ ] ParentView main section scroll order matches sidebar intent (settings last).
 - [ ] Parent linking rule remains existing-student-link only (no parent class self-assignment).
 - [ ] Confirm no RLS/SQL widening and no email/SMS/push or chat features were introduced.
 

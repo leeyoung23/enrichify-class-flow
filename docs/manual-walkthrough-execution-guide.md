@@ -223,7 +223,8 @@ Use this quick pass during ParentView checks:
    - no draft/internal/evidence exposure.
 9. Confirm parent information architecture:
    - landing feels content-first (updates, memories, notifications, quick access),
-   - Settings remains a dedicated destination for communication + account security.
+   - Settings is communication preferences only in v1 parent portal (no Active Sessions / account security card for parents),
+   - HQ Session Review page remains available for operational session governance.
 10. Confirm class-memory targeting guardrail text:
    - parent sees only released memories for linked child/class,
    - no branch-wide memory feed is exposed by default.
@@ -233,7 +234,9 @@ Use this quick pass during ParentView checks:
 12. Confirm `/students` route behavior:
    - page renders with loading/error/empty states (never blank white page),
    - teacher/HQ student cards still render when data is available,
-   - route no longer hard-crashes on profile open due to pre-initialization learning-context access.
+   - TanStack Query arrays are normalised (avoid `null` data breaking `.map` / `.filter`),
+   - a local error boundary catches unexpected render failures instead of a full white screen,
+   - parent-facing `ParentView` avatar does not assume `student.name[0]` exists (use `full_name` fallback).
 13. Confirm notifications list behavior:
    - default shows limited recent items,
    - View more / View less toggle works,
@@ -251,17 +254,22 @@ Use this quick pass during ParentView checks:
    - learning-notes copy states internal staff evidence and parent visibility only through approved report/released communication.
 18. Confirm class memory targeting UX:
    - class is selected in the Class Memory card before submit,
+   - if `listClasses` is empty for the signed-in teacher but RLS still returns students, inferred class options appear from visible students’ `class_id`,
+   - if no classes can be inferred, the empty-state message explains asking HQ/supervisor,
    - helper copy states memory is shared only with parents linked to that class after approval.
 19. Confirm parent homework list control:
    - filter applies first, then list shows only recent default rows,
    - View more / View less toggles the filtered result set.
 20. Confirm parent settings sectioning:
-   - settings shows grouped headings (service updates, optional updates, account security),
-   - optional categories can be expanded without hiding required communication controls.
+   - settings shows grouped headings (service updates, optional updates),
+   - optional categories can be expanded without hiding required communication controls,
+   - no parent “Active Sessions” / technical session history UI in v1 (deferred; HQ Session Review unchanged).
 21. Confirm parent sidebar highlight behavior:
-   - active parent nav item updates while scrolling through major sections,
-   - hash-based direct links still highlight the matching sidebar item.
-22. Confirm parent linking boundary:
+   - active item follows DOM order: Dashboard → Updates → Attendance → Homework → Reports → Settings (scroll intersection by section top offset; no random ratio tie-break),
+   - hash-based anchors (including `latest-report` → reports) still behave.
+22. Confirm ParentView vertical order matches sidebar intent:
+   - main scrollable sections follow: overview, updates, attendance, homework, progress reports, then secondary blocks, then settings last.
+23. Confirm parent linking boundary:
    - parent links to existing student record only,
    - class assignment remains staff-owned (no parent self-assignment).
 

@@ -1,7 +1,7 @@
 import React, { useMemo, useState } from 'react';
 import { useOutletContext } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { listClasses, listStudentsByClass, listParentUpdates, createParentUpdate, listAttendanceRecords, listHomeworkAttachments } from '@/services/dataService';
+import { listClasses, listStudents, listStudentsByClass, listParentUpdates, createParentUpdate, listAttendanceRecords, listHomeworkAttachments } from '@/services/dataService';
 import { getSelectedDemoRole, isDebugModeEnabled } from '@/services/authService';
 import { ROLES, getRole, isTeacherRole } from '@/services/permissionService';
 import { isSupabaseConfigured } from '@/services/supabaseClient';
@@ -64,6 +64,26 @@ function cardActionLabel(update, role) {
   return 'Edit';
 }
 
+function mergeTeacherClassesFromVisibleStudents(classes, teacherScopeStudents) {
+  const base = Array.isArray(classes) ? classes : [];
+  if (!Array.isArray(teacherScopeStudents) || teacherScopeStudents.length === 0) return base;
+  const map = new Map(base.map((c) => [c.id, { ...c }]));
+  for (const s of teacherScopeStudents) {
+    const cid = s.class_id;
+    if (!cid || map.has(cid)) continue;
+    const short = typeof cid === 'string' && cid.length > 12
+      ? `${cid.slice(0, 8)}…${cid.slice(-4)}`
+      : String(cid);
+    map.set(cid, {
+      id: cid,
+      name: `Your class (${short})`,
+      branch_id: s.branch_id || null,
+      schedule: '',
+    });
+  }
+  return [...map.values()];
+}
+
 function buildWeeklyReportText({ weeklyReport, sourceSnapshot }) {
   return [
     `Week ${weeklyReport.weekRange}`,
@@ -118,11 +138,24 @@ export default function ParentUpdates() {
   const hasSupabaseSession = Boolean(supabaseAppUser?.id);
   const canUseSupabaseMemoryReview = isMemoryReviewer && !isDemoMode && isSupabaseConfigured() && hasSupabaseSession;
 
-  const { data: classes = [] } = useQuery({
+  const { data: classesRaw } = useQuery({
     queryKey: ['classes-updates', user?.role, user?.email],
     queryFn: () => listClasses(user),
     enabled: !!user,
   });
+
+  const { data: teacherScopeStudentsRaw } = useQuery({
+    queryKey: ['parent-updates-teacher-scope-students', user?.role, user?.email],
+    queryFn: () => listStudents(user),
+    enabled: !!user && isTeacher,
+  });
+
+  const classes = Array.isArray(classesRaw) ? classesRaw : [];
+  const teacherScopeStudents = Array.isArray(teacherScopeStudentsRaw) ? teacherScopeStudentsRaw : [];
+
+  const effectiveClasses = useMemo(() => (
+    isTeacher ? mergeTeacherClassesFromVisibleStudents(classes, teacherScopeStudents) : classes
+  ), [isTeacher, classes, teacherScopeStudents]);
 
   const { data: students = [] } = useQuery({
     queryKey: ['students-updates', selectedClassId, user?.role],
@@ -164,7 +197,7 @@ export default function ParentUpdates() {
   });
 
   const selectedStudent = students.find((s) => s.id === selectedStudentId);
-  const selectedClass = classes.find((c) => c.id === selectedClassId);
+  const selectedClass = effectiveClasses.find((c) => c.id === selectedClassId);
   const canUseSupabaseMemoryUpload = !isDemoMode && Boolean(supabaseAppUser?.id) && isSupabaseConfigured();
 
   const isUuidLike = (value) => (
@@ -680,7 +713,7 @@ export default function ParentUpdates() {
     reviewRejectMutation.mutate({ memoryId, reason: reason.trim() });
   };
 
-  const showNoClassesState = classes.length === 0 && !isMemoryReviewer;
+  const showNoClassesState = effectiveClasses.length === 0 && !isMemoryReviewer;
 
   return (
     <div>
@@ -804,12 +837,18 @@ export default function ParentUpdates() {
                       <Select value={selectedClassId} onValueChange={(v) => { setSelectedClassId(v); setSelectedStudentId(''); }}>
                         <SelectTrigger className="w-full min-h-11"><SelectValue placeholder="Choose class" /></SelectTrigger>
                         <SelectContent>
-                          {classes.map((c) => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}
+                          {effectiveClasses.map((c) => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}
                         </SelectContent>
                       </Select>
+                      {!effectiveClasses.length ? (
+                        <p className="text-xs text-amber-800 dark:text-amber-200 rounded-md border border-amber-200 bg-amber-50/90 px-3 py-2">
+                          No classes are available for your account yet. Please ask HQ or your supervisor to assign a class before uploading a memory.
+                        </p>
+                      ) : (
                       <p className="text-xs text-muted-foreground">
                         This memory will be shared with parents linked to this class after approval.
                       </p>
+                      )}
                     </div>
                     <Input
                       value={memoryTitle}
@@ -899,7 +938,7 @@ export default function ParentUpdates() {
                     <Select value={selectedClassId} onValueChange={(v) => { setSelectedClassId(v); setSelectedStudentId(''); }}>
                       <SelectTrigger className="w-full min-h-11"><SelectValue placeholder="Choose class" /></SelectTrigger>
                       <SelectContent>
-                        {classes.map((c) => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}
+                        {effectiveClasses.map((c) => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}
                       </SelectContent>
                     </Select>
                     <Select value={selectedStudentId} onValueChange={setSelectedStudentId} disabled={!selectedClassId}>
@@ -1176,7 +1215,7 @@ export default function ParentUpdates() {
                         <div className="space-y-1 min-w-0 flex-1">
                           <p className="font-medium truncate">{update.student_name || 'Student'}</p>
                           <p className="text-xs text-muted-foreground break-words">
-                            {classDisplayName(update.class_id, classes)}
+                            {classDisplayName(update.class_id, effectiveClasses)}
                             {' · '}
                             {update.teacher_name || update.teacher_email || 'Teacher'}
                           </p>
@@ -1194,7 +1233,7 @@ export default function ParentUpdates() {
                         </div>
                         <div>
                           <p className="text-xs text-muted-foreground">Class</p>
-                          <p className="break-words">{classDisplayName(update.class_id, classes)}</p>
+                          <p className="break-words">{classDisplayName(update.class_id, effectiveClasses)}</p>
                         </div>
                         <div>
                           <p className="text-xs text-muted-foreground">Teacher</p>

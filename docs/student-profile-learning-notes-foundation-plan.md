@@ -84,6 +84,11 @@ Teacher access:
 - A route crash risk was removed by ensuring student learning-context state is declared before dependent memo access.
 - This keeps teacher/HQ ownership/read-only boundaries unchanged while preventing white-screen failure.
 
+## Additional resilience (2026-05-06)
+
+- Normalize list query results (`null` / non-array safe) before any array operations on `/students`.
+- Local `StudentsErrorBoundary` prevents a single subtree fault from blanking the whole staff view.
+
 ## Parent linking and class assignment boundary
 
 - Parent links to an existing student record.

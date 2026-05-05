@@ -83,7 +83,8 @@ function isParentViewNavItemActive(itemPath, location) {
   return locHash === itemHash;
 }
 
-const PARENT_VIEW_SECTION_IDS = [
+/** Match IDs on ParentView layout order (deterministic sidebar highlight). */
+const PARENT_VIEW_SECTION_SCROLL_ORDER = [
   'parent-portal-overview',
   'parent-updates-feed',
   'attendance-summary',
@@ -91,6 +92,11 @@ const PARENT_VIEW_SECTION_IDS = [
   'parent-progress-reports',
   'parent-settings',
 ];
+
+/** Legacy anchors from deep links → canonical section ids */
+const PARENT_VIEW_HASH_CANONICAL = {
+  'latest-report': 'parent-progress-reports',
+};
 
 export default function Sidebar({ user, collapsed, onToggle }) {
   const location = useLocation();
@@ -103,35 +109,45 @@ export default function Sidebar({ user, collapsed, onToggle }) {
 
   useEffect(() => {
     if (location.pathname !== '/parent-view') return undefined;
-    const hashFromLocation = (location.hash || '').replace(/^#/, '');
-    if (hashFromLocation) {
-      setObservedParentViewHash(hashFromLocation);
+
+    const rawHash = (location.hash || '').replace(/^#/, '');
+    const canonicalFromUrl = PARENT_VIEW_HASH_CANONICAL[rawHash] || rawHash;
+    if (canonicalFromUrl && PARENT_VIEW_SECTION_SCROLL_ORDER.includes(canonicalFromUrl)) {
+      setObservedParentViewHash(canonicalFromUrl);
     }
-    const observerSupported = typeof window !== 'undefined' && 'IntersectionObserver' in window;
-    if (!observerSupported) return undefined;
 
-    const idToEntryRatio = new Map();
-    const observer = new IntersectionObserver(
-      (entries) => {
-        entries.forEach((entry) => {
-          idToEntryRatio.set(entry.target.id, entry.isIntersecting ? entry.intersectionRatio : 0);
-        });
-        const best = [...idToEntryRatio.entries()]
-          .sort((a, b) => b[1] - a[1])
-          .find((entry) => entry[1] > 0.15);
-        if (!best?.[0]) return;
-        setObservedParentViewHash((prev) => (prev === best[0] ? prev : best[0]));
-      },
-      { threshold: [0.15, 0.35, 0.55, 0.75], rootMargin: '-20% 0px -55% 0px' }
-    );
+    const TOP_LINE_PX = 140;
+    let raf = 0;
 
-    PARENT_VIEW_SECTION_IDS.forEach((id) => {
-      const el = document.getElementById(id);
-      if (el) observer.observe(el);
+    const computeSectionFromScrollOrder = () => {
+      let activeId = PARENT_VIEW_SECTION_SCROLL_ORDER[0];
+      for (const id of PARENT_VIEW_SECTION_SCROLL_ORDER) {
+        const el = document.getElementById(id);
+        if (!el) continue;
+        const { top } = el.getBoundingClientRect();
+        if (top <= TOP_LINE_PX) {
+          activeId = id;
+        }
+      }
+      setObservedParentViewHash((prev) => (prev === activeId ? prev : activeId));
+    };
+
+    const onScrollOrResize = () => {
+      if (raf) cancelAnimationFrame(raf);
+      raf = requestAnimationFrame(computeSectionFromScrollOrder);
+    };
+
+    requestAnimationFrame(() => {
+      computeSectionFromScrollOrder();
+      requestAnimationFrame(computeSectionFromScrollOrder);
     });
 
+    window.addEventListener('scroll', onScrollOrResize, { passive: true });
+    window.addEventListener('resize', onScrollOrResize, { passive: true });
     return () => {
-      observer.disconnect();
+      window.removeEventListener('scroll', onScrollOrResize);
+      window.removeEventListener('resize', onScrollOrResize);
+      if (raf) cancelAnimationFrame(raf);
     };
   }, [location.pathname, location.hash]);
 

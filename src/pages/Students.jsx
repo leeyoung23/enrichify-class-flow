@@ -44,7 +44,34 @@ async function sendReport(student) {
   }
 }
 
-export default function Students() {
+class StudentsErrorBoundary extends React.Component {
+  constructor(props) {
+    super(props);
+    this.state = { error: null };
+  }
+
+  static getDerivedStateFromError(error) {
+    return { error };
+  }
+
+  render() {
+    if (this.state.error) {
+      return (
+        <div className="p-6">
+          <Card className="border-destructive/30 p-6">
+            <p className="text-sm font-medium text-destructive">Something went wrong on this page.</p>
+            <p className="mt-2 text-xs text-muted-foreground">
+              Please refresh <code className="rounded bg-muted px-1">/students</code>. If it continues, contact support and mention this route.
+            </p>
+          </Card>
+        </div>
+      );
+    }
+    return this.props.children;
+  }
+}
+
+function StudentsPage() {
   const { user } = useOutletContext();
   const navigate = useNavigate();
   const [dialogOpen, setDialogOpen] = useState(false);
@@ -56,28 +83,33 @@ export default function Students() {
   const queryClient = useQueryClient();
   const isTeacher = isTeacherRole(user);
 
-  const { data: students = [], isLoading, error: studentsError } = useQuery({
+  const { data: studentsRaw, isLoading, error: studentsError } = useQuery({
     queryKey: ['students', user?.role, user?.email],
     queryFn: () => listStudents(user),
     enabled: !!user,
   });
 
-  const { data: classes = [], error: classesError } = useQuery({
+  const { data: classesRaw, error: classesError } = useQuery({
     queryKey: ['all-classes', user?.role, user?.email],
     queryFn: () => listClasses(user),
     enabled: !!user,
   });
 
-  const { data: homeworkInboxItems = [], error: homeworkInboxError } = useQuery({
+  const { data: homeworkInboxRaw, error: homeworkInboxError } = useQuery({
     queryKey: ['homework-attachments', user?.role, user?.email],
     queryFn: () => listHomeworkAttachments(user),
     enabled: !!user,
   });
-  const { data: attendanceRecords = [] } = useQuery({
+  const { data: attendanceRecordsRaw } = useQuery({
     queryKey: ['students-attendance-summary', user?.role, user?.email],
     queryFn: () => listAttendanceRecords(user),
     enabled: !!user,
   });
+
+  const students = Array.isArray(studentsRaw) ? studentsRaw : [];
+  const classes = Array.isArray(classesRaw) ? classesRaw : [];
+  const homeworkInboxItems = Array.isArray(homeworkInboxRaw) ? homeworkInboxRaw : [];
+  const attendanceRecords = Array.isArray(attendanceRecordsRaw) ? attendanceRecordsRaw : [];
 
   const createMutation = useMutation({
     mutationFn: (data) => createStudent(data),
@@ -90,7 +122,7 @@ export default function Students() {
 
   const classStudents = useMemo(() => {
     if (!isTeacher) return students;
-    if (!Array.isArray(students) || students.length === 0) return [];
+    if (!students.length) return [];
     if (!Array.isArray(classes) || classes.length === 0) {
       // Fallback: if class metadata is temporarily unavailable, keep teacher-scoped student rows visible.
       return students;
@@ -693,5 +725,13 @@ export default function Students() {
         </DialogContent>
       </Dialog>
     </div>
+  );
+}
+
+export default function Students() {
+  return (
+    <StudentsErrorBoundary>
+      <StudentsPage />
+    </StudentsErrorBoundary>
   );
 }
