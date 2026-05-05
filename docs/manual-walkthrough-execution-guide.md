@@ -83,16 +83,23 @@ Credential note:
 
 ## 4) Walkthrough Flow B: AI Parent Report
 
+**Evidence pipeline reference:** `docs/ai-evidence-pipeline-readiness-plan.md` (what aggregates today vs placeholders).
+
 1. Create/open a report shell in AI Parent Reports.
-2. Generate mock or real AI draft as appropriate (mock always available; **real** Edge draft only when signed-in staff + environment allows provider).
-3. Confirm draft appears only in staff flow (status labels readable: Draft → review → Approved → Released).
-4. Run submit/approve/release flow according to current product path.
-5. Confirm staff Lifecycle copy aligns with behaviour: **Release** controls parent visibility and may enqueue **in-app** guardian notice — **email/SMS and PDF binary are deferred** in v1.
-6. Capture staff screenshots for draft and release steps.
-7. Sign in as parent and confirm:
-   - released/current report is visible
-   - draft/internal content is not visible
-   - optional **Open printable layout** works for released report (browser layout preview — not a downloadable PDF).
+2. Open **Source Evidence Preview** — confirm attendance/homework/parent-comms/curriculum/memories behave as expected for your tenant; confirm **Observations** and **worksheet OCR** show as **not wired** (placeholder), not as hidden automation.
+3. Generate **mock** draft (always available). Optionally generate **real** Edge draft only when signed-in staff + environment allows provider — skip if quota or policy unclear.
+4. Confirm draft appears only in staff flow (status labels readable: Draft → review → Approved → Released).
+5. Run submit/approve/release flow according to current product path.
+6. Confirm staff Lifecycle copy aligns with behaviour: **Release** controls parent visibility and may enqueue **in-app** guardian notice — **email/SMS and PDF binary are deferred** in v1.
+7. Capture staff screenshots for source evidence, draft, and release steps.
+8. Sign in as parent and confirm:
+   - **Progress Reports** empty state (if none released) explains reports appear only after staff release.
+   - released/current report is visible when a release exists.
+   - draft/internal content is not visible.
+   - **Open printable layout** works for released report (browser layout preview — not a downloadable PDF).
+9. Archive **one** screenshot set for UAT evidence (`docs/uat-evidence-log-template.md` naming convention).
+
+**Planning reference:** `docs/ai-evidence-pipeline-readiness-plan.md`
 
 ---
 

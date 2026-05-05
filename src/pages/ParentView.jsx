@@ -1023,7 +1023,9 @@ function ParentProgressReportsSection({
           <CardTitle className="text-base">Progress Reports</CardTitle>
         </CardHeader>
         <CardContent className="space-y-2 text-sm text-muted-foreground">
-          <p>When your centre shares a progress report, it will appear here after release.</p>
+          <p>
+            Progress reports show here only after teachers or staff review and <span className="font-medium text-foreground">release</span> them to parents — nothing appears while a report is still in draft or internal review.
+          </p>
           <p className="text-xs">Drafts or in-review reports stay with staff only — you will not see them here.</p>
         </CardContent>
       </Card>

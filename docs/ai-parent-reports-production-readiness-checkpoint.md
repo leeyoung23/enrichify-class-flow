@@ -3,6 +3,8 @@
 Date: 2026-05-06  
 Type: internal prototype / SaaS readiness notes (documentation + UX copy alignment)
 
+**Evidence pipeline detail:** `docs/ai-evidence-pipeline-readiness-plan.md` — which sources feed `collectAiParentReportSourceEvidence`, placeholders, and monthly-report gaps.
+
 ---
 
 ## Current capability (internal prototype)

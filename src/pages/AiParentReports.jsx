@@ -1115,6 +1115,21 @@ export default function AiParentReports() {
         overrides → Submit / approve / release manually.
       </p>
 
+      <Card className="p-3 mb-4 border-dashed border-muted bg-muted/15 space-y-2">
+        <p className="text-xs font-medium text-foreground">Source evidence — implemented vs placeholder</p>
+        <ul className="text-xs text-muted-foreground list-disc pl-4 space-y-1">
+          <li>
+            <span className="font-medium text-foreground">Aggregated today (RLS mode, when data exists):</span> attendance roll-up for the student/period; homework assignee snapshot; parent_comments + weekly_progress_reports text; curriculum / learning-context lines; class memory captions only (no media URLs passed through); optional ai_parent_report_evidence_links snapshots for staff.
+          </li>
+          <li>
+            <span className="font-medium text-foreground">Placeholder (not wired):</span> structured Observations module feed; worksheet OCR or scan analysis — scans are not read by vision in this build.
+          </li>
+          <li>
+            <span className="font-medium text-foreground">Demo / ?demoRole URL:</span> fake evidence rows for UI pipeline testing only — not live centre data.
+          </li>
+        </ul>
+      </Card>
+
       {showDebugPanels ? (
         <Card className="p-3 border-dashed border-primary/25 bg-muted/10 space-y-2">
           <p className="text-xs text-muted-foreground">

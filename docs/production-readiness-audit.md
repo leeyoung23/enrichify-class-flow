@@ -77,6 +77,8 @@ The following files were reviewed against the **known UAT regression guard list*
 | Printable preview | Browser layout; not PDF binary download |
 | Deferrals | PDF storage, email delivery — documented |
 
+**Evidence pipeline:** **Partially implemented.** `collectAiParentReportSourceEvidence` (RLS mode) aggregates attendance, homework assignee snapshot, parent_comments + weekly_progress_reports, curriculum/learning context, class memory **captions**, staff evidence-link snapshots; **Observations** and **worksheet OCR** remain placeholders — see **`docs/ai-evidence-pipeline-readiness-plan.md`**.
+
 **Status category:** **UAT ready** (internal tenant); **Needs legal/compliance before parent pilot** (AI disclosures, retention); **Not production ready** for automated PDF/email distribution.
 
 ---
@@ -282,6 +284,7 @@ Adjusted for current audit: **evidence and governance before risky channels.**
 - `docs/validation-uat-readiness-checklist.md`
 - `docs/manual-walkthrough-execution-guide.md`
 - `docs/ai-parent-reports-production-readiness-checkpoint.md`
+- `docs/ai-evidence-pipeline-readiness-plan.md`
 - `docs/homework-ai-marking-readiness-plan.md`
 - `docs/parent-onboarding-student-linking-readiness-plan.md`
 - `docs/guardian-link-management-readiness-plan.md`

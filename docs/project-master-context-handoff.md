@@ -1,5 +1,13 @@
 # Project Master Context Handoff
 
+## Checkpoint update (AI evidence pipeline readiness — 2026-05-06)
+
+- **Artifact:** `docs/ai-evidence-pipeline-readiness-plan.md` — maps **`collectAiParentReportSourceEvidence`** (fake / RLS / hybrid): **implemented** aggregates (attendance, homework assignee snapshot, parent_comments + weekly_progress_reports, curriculum/learning context, class memory **captions**, evidence-link snapshots); **explicit placeholders** (structured Observations feed, worksheet OCR/vision); gates (teacher review, explicit release, sanitisation); monthly-report section checklist; UAT path for released sample without RLS change (staff release → parent Progress Reports + printable HTML).
+- **UI copy (safe):** `AiParentReports.jsx` — dashed card **Source evidence — implemented vs placeholder**; `ParentView.jsx` — empty Progress Reports state stresses **staff release** before visibility.
+- **Regression guards (static):** No edits to `ParentUpdates`, `Sidebar`, session/auth services this milestone — spot-check remains aligned with known list.
+- **Docs:** `docs/ai-parent-reports-production-readiness-checkpoint.md`, `docs/production-readiness-audit.md`, `docs/validation-uat-readiness-checklist.md`, `docs/manual-walkthrough-execution-guide.md` — monthly report proof checklist + pipeline pointer.
+- **Explicit non-goals:** No OCR, no email/SMS/PDF storage, no invite-code, no RLS weakening, no provider quota burn — edge-real-provider smokes **not** required for this milestone.
+
 ## Checkpoint update (UAT evidence log template — 2026-05-06)
 
 - **Artifact:** `docs/uat-evidence-log-template.md` — reusable **environment header**, **roles matrix**, **flow evidence table** (Flow IDs, Pass/Blocker/Major/Minor/Polish, screenshots), **required-flow checklist**, **severity definitions**, **critical stop conditions**, **batch-fix-after-full-walkthrough rule** (blockers → majors → minor/polish deferrals) to avoid tiny retest loops.

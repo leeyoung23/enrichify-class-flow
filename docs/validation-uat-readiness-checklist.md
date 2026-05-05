@@ -95,10 +95,21 @@ Spot-check quickly before sign-off:
 - [ ] Open AI Parent Reports shell/page.
 - [ ] Status badges read as **Draft / Teacher review / Supervisor review / Approved / Released / Archived** (not raw snake_case).
 - [ ] Lifecycle copy matches behaviour: guardians may receive **in-app** notice **after Release** only; email/SMS/PDF deferred.
-- [ ] Generate real AI draft.
+- [ ] **Source evidence card** matches expectations: RLS-backed rows where data exists; Observations + OCR explicitly **not** claiming automation (see `docs/ai-evidence-pipeline-readiness-plan.md`).
+- [ ] Generate **mock** draft (deterministic). Generate **real** AI draft only when staff session + environment allows (optional).
 - [ ] Submit / approve / release report flow works.
 - [ ] Confirm parent sees only released/current report.
 - [ ] Confirm parent does not see draft/internal references/evidence links.
+
+### AI evidence pipeline / monthly report proof (staff + parent)
+
+- [ ] Create or select report shell; set period + student/class context.
+- [ ] Review **Source Evidence Preview** — note which lines are live aggregates vs placeholders.
+- [ ] Generate mock draft → review sections → approve/release per org path.
+- [ ] Parent: released report visible in **Progress Reports**; **printable layout** preview works (browser HTML, not PDF file).
+- [ ] Parent empty state explains reports appear only after staff **release** (not while draft/review).
+- [ ] Screenshot **one** released monthly-style sample for evidence pack (filename in `docs/uat-evidence-log-template.md` convention).
+- [ ] Optional smokes: `npm run test:supabase:ai-parent-reports`, `test:supabase:ai-parent-report:mock-draft`, `test:supabase:ai-parent-report:source-aggregation` / `test:supabase:ai-parent-report:rls-source-aggregation` as environment allows.
 
 ### Notification admin and governance
 
