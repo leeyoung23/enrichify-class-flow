@@ -42,6 +42,8 @@ Date: 2026-05-05
 
 - **Attendance arrival:** On `updateAttendanceRecord`, after a successful row update, when status **transitions into** `present` or `late` from a status that was **not** already present/late (matches Attendance UI: arrived-type statuses). **`leave`** and **`absent`** do not trigger. **`present` ↔ `late`** does not re-notify (both count as already “arrived”). **Event type:** `student_attendance.arrived`, **entity** `attendance_record`. **Metadata:** `sessionDate` (calendar day), `arrivalKind` `present|late` — no notes. **Idempotency (best-effort):** same **actor** + same **attendance row** + same **`sessionDate`** in metadata prevents duplicate inbox rows for repeated transitions that day; correcting absent→present→absent→present same day may still be suppressed — documented limitation. Another staff actor could add a second event.
 
+- **Parent Communication (teacher comment + weekly progress report):** After a successful `releaseParentComment` or `releaseWeeklyProgressReport` (row updated to **`released`** — parent-visible), `notifyLinkedParentsAfterParentCommunicationStaffRelease` runs (non-blocking on failure; dev-only safe warnings). Recipients come only from `list_parent_profile_ids_for_student_staff_scope_035`. **Title/body** are fixed generic strings (no comment text, week labels, or internal notes). **Event types:** `parent_comment.released` (**entity** `parent_comment`), `weekly_progress_report.released` (**entity** `weekly_progress_report`). **Idempotency (best-effort):** same **actor** + **entity_id** + **entity_type** + **event_type** in `notification_events` as for homework — no DB unique constraint; another staff user releasing again could still insert a second event; repeated “release” by the same actor is skipped.
+
 ### Parent inbox UI (read-only surface)
 
 - **`src/pages/ParentView.jsx`** — authenticated **parent** role: **Notifications** card loads `listMyInAppNotifications` / `markNotificationRead` (recipient-scoped RLS only). UI shows **title, body, time, read/unread**; no raw metadata, ids, or internal refs. Optional **child filter**: rows with `student_id` are shown when it matches the dashboard child or when `student_id` is null (RLS still gates rows to the signed-in parent).
@@ -50,7 +52,7 @@ Date: 2026-05-05
 ### Safety boundaries (unchanged after apply)
 
 - No live sending, no email/SMS/push provider, no webhooks, no Edge sender
-- In-app **notification records** only; product triggers: **AI parent report released**, **homework feedback / marked file released to parent**, **attendance marked present/late (arrival)** (see above)
+- In-app **notification records** only; product triggers: **AI parent report released**, **homework feedback / marked file released to parent**, **attendance marked present/late (arrival)**, **parent comment / weekly progress report released to family** (see above)
 - No service-role key in frontend; anon + JWT only
 - No parent cross-family visibility; RLS remains recipient-scoped for inbox rows
 - No changes to Edge, PDF, OCR, or provider integrations in this verification milestone

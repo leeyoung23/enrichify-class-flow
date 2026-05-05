@@ -115,6 +115,11 @@ const ARRIVAL_ATTENDANCE_STATUS_VALUES = new Set(["present", "late"]);
 const ATTENDANCE_ARRIVAL_NOTIFY_TITLE = "Your child has arrived";
 const ATTENDANCE_ARRIVAL_BODY_PRESENT = "Your child has been marked present for class.";
 const ATTENDANCE_ARRIVAL_BODY_LATE = "Your child has been marked as arrived for class.";
+const PARENT_COMMENT_RELEASED_NOTIFICATION_EVENT_TYPE = "parent_comment.released";
+const WEEKLY_PROGRESS_REPORT_RELEASED_NOTIFICATION_EVENT_TYPE = "weekly_progress_report.released";
+const PARENT_COMMUNICATION_CLASS_UPDATE_TITLE = "New update from your child's class";
+const PARENT_COMMUNICATION_CLASS_UPDATE_BODY =
+  "Your child's teacher has shared a new class update.";
 
 function isUuidLike(value) {
   if (typeof value !== "string") return false;
@@ -1053,6 +1058,19 @@ export async function releaseParentComment({ commentId, message } = {}) {
       if (auditResult.error) {
         warnAuditFailureInDev(auditResult.error, "releaseParentComment");
       }
+
+      const notifyResult = await notifyLinkedParentsAfterParentCommunicationStaffRelease({
+        entityType: "parent_comment",
+        entityId: data.id,
+        eventType: PARENT_COMMENT_RELEASED_NOTIFICATION_EVENT_TYPE,
+        studentId: data.student_id,
+        branchId: data.branch_id,
+        classId: data.class_id,
+        metadata: { communicationKind: "parent_comment" },
+      });
+      if (notifyResult?.error) {
+        warnNotificationFailureInDev(notifyResult.error, "releaseParentComment");
+      }
     }
     return { data: data ?? null, error: error ?? null };
   } catch (err) {
@@ -1131,6 +1149,21 @@ export async function releaseWeeklyProgressReport({ reportId, reportText } = {})
       .eq("id", reportId)
       .select("id,branch_id,class_id,student_id,teacher_id,week_start_date,report_text,status,updated_at")
       .maybeSingle();
+
+    if (!error && data?.id) {
+      const notifyResult = await notifyLinkedParentsAfterParentCommunicationStaffRelease({
+        entityType: "weekly_progress_report",
+        entityId: data.id,
+        eventType: WEEKLY_PROGRESS_REPORT_RELEASED_NOTIFICATION_EVENT_TYPE,
+        studentId: data.student_id,
+        branchId: data.branch_id,
+        classId: data.class_id,
+        metadata: { communicationKind: "weekly_progress_report" },
+      });
+      if (notifyResult?.error) {
+        warnNotificationFailureInDev(notifyResult.error, "releaseWeeklyProgressReport");
+      }
+    }
 
     return { data: data ?? null, error: error ?? null };
   } catch (err) {
@@ -3154,9 +3187,37 @@ async function hasExistingHomeworkParentReleaseNotificationEvent({
   return read.data.length > 0;
 }
 
+async function notifyLinkedParentsAfterParentCommunicationStaffRelease({
+  entityType,
+  entityId,
+  eventType,
+  studentId,
+  branchId,
+  classId,
+  metadata,
+} = {}) {
+  const { profileId: actorProfileId, error: authError } = await getAuthenticatedProfileId();
+  if (authError || !actorProfileId) {
+    return { error: null, skipped: true };
+  }
+  return notifyLinkedParentsHomeworkParentReleaseCore({
+    actorProfileId,
+    entityType,
+    entityId,
+    eventType,
+    studentId,
+    branchId,
+    classId,
+    metadata,
+    title: PARENT_COMMUNICATION_CLASS_UPDATE_TITLE,
+    body: PARENT_COMMUNICATION_CLASS_UPDATE_BODY,
+  });
+}
+
 /**
- * Best-effort idempotency: same actor + homework_feedback or homework_file entity + event type.
- * Another staff member releasing the same row could still duplicate rows if no matching event — see docs.
+ * Best-effort idempotency: same actor + entity_id + entity_type + event_type (homework, parent
+ * communication, etc.). Another staff member releasing the same row could still duplicate rows if no
+ * matching event — see docs.
  */
 async function notifyLinkedParentsHomeworkParentReleaseCore({
   actorProfileId,
@@ -3167,6 +3228,8 @@ async function notifyLinkedParentsHomeworkParentReleaseCore({
   branchId,
   classId,
   metadata,
+  title = HOMEWORK_PARENT_NOTIFY_TITLE,
+  body = HOMEWORK_PARENT_NOTIFY_BODY,
 } = {}) {
   if (!isSupabaseConfigured() || !supabase) {
     return { error: null, skipped: true };
@@ -3212,8 +3275,8 @@ async function notifyLinkedParentsHomeworkParentReleaseCore({
       branchId: isUuidLike(branchId) ? trimString(branchId) : null,
       classId: isUuidLike(classId) ? trimString(classId) : null,
       studentId: trimString(studentId),
-      title: HOMEWORK_PARENT_NOTIFY_TITLE,
-      body: HOMEWORK_PARENT_NOTIFY_BODY,
+      title,
+      body,
       status: "pending",
     });
     if (rowResult.error) {
