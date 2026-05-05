@@ -72,3 +72,7 @@ Exercises HQ read/seeds (when migration applied), branch supervisor active-globa
 ## Next milestones (ideas)
 
 Optional partial unique index hardening duplicates; richer allowed variables for attendance/arrival wording; guarded HQ UI; branch override inserts with supervisor policy updates; eventual email channel copying only behind a reviewed sender milestone.
+
+## Future: attachments & e-invoice (planning only)
+
+Automated notifications may later reference **secure attachments** (e-invoices, released PDFs, marked homework files, HQ static assets). **Phase 1 templates remain text-only.** See **`docs/notification-template-attachments-einvoice-readiness-plan.md`** for attachment types, rules, conceptual schema splits (template defaults vs per-notification instances), payment/e-invoice flow, and prerequisites before email or PDF storage — **no implementation in that doc**.

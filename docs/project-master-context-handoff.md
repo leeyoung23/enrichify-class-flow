@@ -1,5 +1,10 @@
 # Project Master Context Handoff
 
+## Checkpoint update (notification template attachments & e-invoice readiness — planning only, 2026-05-05)
+
+- **Doc:** `docs/notification-template-attachments-einvoice-readiness-plan.md` — attachment taxonomy, rules, **non-implemented** schema options (`notification_template_attachments`, `notification_attachments`), future payment → invoice PDF → notification → secure download flow, **message-only payment prototype** guidance, email/attachment prerequisites, security checklist.
+- **No code/SQL/trigger changes** in this milestone; aligns with `038` templates, `034` notification tables, fee-receipt/readiness docs, PDF contract docs, storage foundation plan.
+
 ## Checkpoint update (notification templates foundation — 2026-05-05)
 
 - **SQL:** `supabase/sql/038_notification_templates_foundation.sql` — `notification_templates` + RLS + seeds (apply via **Supabase SQL Editor** or `supabase db query --linked --file ...` when credentials allow).
