@@ -1,5 +1,11 @@
 # Project Master Context Handoff
 
+## Checkpoint update (billing payment message-only notifications — 2026-05-05)
+
+- **SQL:** `supabase/sql/039_billing_payment_notification_templates.sql` — seeds four billing-related `notification_templates` rows (proof requested / verified / rejected, invoice message-only). Apply via **SQL Editor** or `supabase db query --linked --file supabase/sql/039_billing_payment_notification_templates.sql`.
+- **Triggers:** `verifyFeeReceipt` → **`fee_payment.proof_verified`**; `rejectFeeReceipt` → **`fee_payment.proof_rejected`** — `notifyLinkedParentsAfterFeeProofStaffDecision`; recipients via **`list_parent_profile_ids_for_student_staff_scope_035`**; **`entity_type`** `fee_record`. **Deferred:** staff “proof requested” helper and **`invoice.available_message_only`** event (templates only until invoice intent path exists).
+- **Smoke:** `npm run test:supabase:fee-receipt:verify` (notification count bump); **`npm run test:supabase:notification-templates`** expects **≥10** global template rows (**038 + 039**).
+
 ## Checkpoint update (notification template attachments & e-invoice readiness — planning only, 2026-05-05)
 
 - **Doc:** `docs/notification-template-attachments-einvoice-readiness-plan.md` — attachment taxonomy, rules, **non-implemented** schema options (`notification_template_attachments`, `notification_attachments`), future payment → invoice PDF → notification → secure download flow, **message-only payment prototype** guidance, email/attachment prerequisites, security checklist.

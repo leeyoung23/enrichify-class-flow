@@ -76,3 +76,7 @@ Optional partial unique index hardening duplicates; richer allowed variables for
 ## Future: attachments & e-invoice (planning only)
 
 Automated notifications may later reference **secure attachments** (e-invoices, released PDFs, marked homework files, HQ static assets). **Phase 1 templates remain text-only.** See **`docs/notification-template-attachments-einvoice-readiness-plan.md`** for attachment types, rules, conceptual schema splits (template defaults vs per-notification instances), payment/e-invoice flow, and prerequisites before email or PDF storage — **no implementation in that doc**.
+
+## Billing / payment message-only seeds (039)
+
+Migration **`supabase/sql/039_billing_payment_notification_templates.sql`** adds template rows for `fee_payment.proof_requested`, `fee_payment.proof_verified`, `fee_payment.proof_rejected`, and `invoice.available_message_only`. **Runtime wiring** (today): **`verifyFeeReceipt`** / **`rejectFeeReceipt`** in `supabaseWriteService.js` notify linked parents for verified/rejected only; **requested** / **invoice** rows are placeholders for staff request flows and invoice intent (see **`docs/notifications-foundation-checkpoint.md`** §039).

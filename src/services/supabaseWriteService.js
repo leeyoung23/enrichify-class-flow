@@ -121,6 +121,14 @@ const WEEKLY_PROGRESS_REPORT_RELEASED_NOTIFICATION_EVENT_TYPE = "weekly_progress
 const PARENT_COMMUNICATION_CLASS_UPDATE_TITLE = "New update from your child's class";
 const PARENT_COMMUNICATION_CLASS_UPDATE_BODY =
   "Your child's teacher has shared a new class update.";
+const FEE_PAYMENT_PROOF_VERIFIED_EVENT_TYPE = "fee_payment.proof_verified";
+const FEE_PAYMENT_PROOF_REJECTED_EVENT_TYPE = "fee_payment.proof_rejected";
+const FEE_PAYMENT_PROOF_VERIFIED_NOTIFY_TITLE = "Payment proof verified";
+const FEE_PAYMENT_PROOF_VERIFIED_NOTIFY_BODY =
+  "Your uploaded payment proof has been reviewed.";
+const FEE_PAYMENT_PROOF_REJECTED_NOTIFY_TITLE = "Payment proof needs review";
+const FEE_PAYMENT_PROOF_REJECTED_NOTIFY_BODY =
+  "Please check the payment proof request in the parent portal.";
 
 function isUuidLike(value) {
   if (typeof value !== "string") return false;
@@ -1677,7 +1685,9 @@ export async function verifyFeeReceipt({ feeRecordId, internalNote } = {}) {
       .from("fee_records")
       .update(payload)
       .eq("id", feeRecordId)
-      .select("id,branch_id,verification_status,verified_by_profile_id,verified_at,internal_note,updated_at")
+      .select(
+        "id,branch_id,class_id,student_id,verification_status,verified_by_profile_id,verified_at,internal_note,updated_at"
+      )
       .maybeSingle();
     if (!error && data?.id) {
       const auditResult = await recordAuditEvent({
@@ -1693,6 +1703,13 @@ export async function verifyFeeReceipt({ feeRecordId, internalNote } = {}) {
       });
       if (auditResult.error) {
         warnAuditFailureInDev(auditResult.error, "verifyFeeReceipt");
+      }
+      const notifyResult = await notifyLinkedParentsAfterFeeProofStaffDecision({
+        feeRecordRow: data,
+        eventType: FEE_PAYMENT_PROOF_VERIFIED_EVENT_TYPE,
+      });
+      if (notifyResult?.error) {
+        warnNotificationFailureInDev(notifyResult.error, "verifyFeeReceipt");
       }
     }
     return { data: data ?? null, error: error ?? null };
@@ -1737,7 +1754,9 @@ export async function rejectFeeReceipt({ feeRecordId, internalNote } = {}) {
       .from("fee_records")
       .update(payload)
       .eq("id", feeRecordId)
-      .select("id,branch_id,verification_status,verified_by_profile_id,verified_at,internal_note,updated_at")
+      .select(
+        "id,branch_id,class_id,student_id,verification_status,verified_by_profile_id,verified_at,internal_note,updated_at"
+      )
       .maybeSingle();
     if (!error && data?.id) {
       const auditResult = await recordAuditEvent({
@@ -1753,6 +1772,13 @@ export async function rejectFeeReceipt({ feeRecordId, internalNote } = {}) {
       });
       if (auditResult.error) {
         warnAuditFailureInDev(auditResult.error, "rejectFeeReceipt");
+      }
+      const notifyResult = await notifyLinkedParentsAfterFeeProofStaffDecision({
+        feeRecordRow: data,
+        eventType: FEE_PAYMENT_PROOF_REJECTED_EVENT_TYPE,
+      });
+      if (notifyResult?.error) {
+        warnNotificationFailureInDev(notifyResult.error, "rejectFeeReceipt");
       }
     }
     return { data: data ?? null, error: error ?? null };
@@ -3231,6 +3257,67 @@ async function notifyLinkedParentsAfterParentCommunicationStaffRelease({
     branchId,
     classId,
     metadata,
+    title: rendered.title,
+    body: rendered.body,
+  });
+}
+
+/**
+ * After supervisor/HQ verifies or rejects uploaded fee payment proof — message-only in-app notify.
+ * Recipients: guardian-linked parents (RPC). Non-blocking on failure. Best-effort idempotency: same
+ * actor + fee_record + event_type. Another staff user may still create a second event — see docs.
+ */
+async function notifyLinkedParentsAfterFeeProofStaffDecision({ feeRecordRow, eventType } = {}) {
+  const { profileId: actorProfileId, error: authError } = await getAuthenticatedProfileId();
+  if (authError || !actorProfileId) {
+    return { error: null, skipped: true };
+  }
+  if (!feeRecordRow?.id || !isUuidLike(feeRecordRow.student_id)) {
+    return { error: null, skipped: true };
+  }
+
+  let fallbackTitle;
+  let fallbackBody;
+  if (trimString(eventType) === FEE_PAYMENT_PROOF_VERIFIED_EVENT_TYPE) {
+    fallbackTitle = FEE_PAYMENT_PROOF_VERIFIED_NOTIFY_TITLE;
+    fallbackBody = FEE_PAYMENT_PROOF_VERIFIED_NOTIFY_BODY;
+  } else if (trimString(eventType) === FEE_PAYMENT_PROOF_REJECTED_EVENT_TYPE) {
+    fallbackTitle = FEE_PAYMENT_PROOF_REJECTED_NOTIFY_TITLE;
+    fallbackBody = FEE_PAYMENT_PROOF_REJECTED_NOTIFY_BODY;
+  } else {
+    return { error: null, skipped: true };
+  }
+
+  const templateLookup = await getActiveNotificationTemplate({
+    eventType,
+    channel: "in_app",
+    branchId: isUuidLike(feeRecordRow.branch_id) ? trimString(feeRecordRow.branch_id) : null,
+  });
+  if (templateLookup.error) {
+    warnNotificationFailureInDev(
+      templateLookup.error,
+      "notifyLinkedParentsAfterFeeProofStaffDecision.templateLookup",
+    );
+  }
+  const rendered = renderNotificationTemplate({
+    template: templateLookup.data || null,
+    variables: {},
+    fallbackTitle,
+    fallbackBody,
+  });
+
+  const proofDecision =
+    trimString(eventType) === FEE_PAYMENT_PROOF_VERIFIED_EVENT_TYPE ? "verified" : "rejected";
+
+  return notifyLinkedParentsHomeworkParentReleaseCore({
+    actorProfileId,
+    entityType: "fee_record",
+    entityId: feeRecordRow.id,
+    eventType,
+    studentId: feeRecordRow.student_id,
+    branchId: feeRecordRow.branch_id,
+    classId: feeRecordRow.class_id,
+    metadata: { proofDecision },
     title: rendered.title,
     body: rendered.body,
   });

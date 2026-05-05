@@ -78,6 +78,7 @@ async function run() {
   let targetFeeRecord = null;
   let uploadedPath = null;
   let originalMeta = null;
+  let parentPreVerifyNotificationCount = null;
 
   const parentSignIn = await signInRole(parentUser, { signInWithEmailPassword, signOut });
   if (!parentSignIn.ok) {
@@ -118,6 +119,25 @@ async function run() {
     } else {
       uploadedPath = uploadResult.data.storage_path;
       printResult("PASS", `Parent: uploaded fake receipt object ${uploadedPath}`);
+    }
+
+    const authSnap = await supabase.auth.getUser();
+    const parentPid = authSnap?.data?.user?.id || null;
+    if (parentPid) {
+      const inboxCountRead = await supabase
+        .from("notifications")
+        .select("id", { count: "exact", head: true })
+        .eq("recipient_profile_id", parentPid)
+        .eq("channel", "in_app");
+      parentPreVerifyNotificationCount =
+        typeof inboxCountRead.count === "number" ? inboxCountRead.count : null;
+      if (inboxCountRead.error) {
+        warningCount += 1;
+        printResult(
+          "WARNING",
+          `Parent: inbox count baseline unreadable (${inboxCountRead.error.message || "unknown"})`,
+        );
+      }
     }
   }
 
@@ -185,6 +205,40 @@ async function run() {
     } else {
       printResult("WARNING", `Parent: visible row status was ${parentView.data.verification_status || "unknown"}`);
       warningCount += 1;
+    }
+
+    const authMid = await supabase.auth.getUser();
+    const parentPidMid = authMid?.data?.user?.id || null;
+    if (parentPidMid && typeof parentPreVerifyNotificationCount === "number") {
+      const inboxPost = await supabase
+        .from("notifications")
+        .select("id", { count: "exact", head: true })
+        .eq("recipient_profile_id", parentPidMid)
+        .eq("channel", "in_app");
+      const postCount = typeof inboxPost.count === "number" ? inboxPost.count : null;
+      if (inboxPost.error || postCount == null) {
+        printResult(
+          "WARNING",
+          `Parent: inbox count after verify failed (${inboxPost.error?.message || "unknown"})`,
+        );
+        warningCount += 1;
+      } else if (postCount > parentPreVerifyNotificationCount) {
+        printResult(
+          "PASS",
+          `Parent: in-app notification row count increased (${parentPreVerifyNotificationCount} → ${postCount}) after proof verified`,
+        );
+      } else {
+        printResult(
+          "CHECK",
+          `Parent: expected new in-app notification after verify; count ${parentPreVerifyNotificationCount} → ${postCount}. Apply supabase/sql/039_billing_payment_notification_templates.sql and ensure fee_payment.proof_verified template + notify path are active.`,
+        );
+        failureCount += 1;
+      }
+    } else if (parentPreVerifyNotificationCount == null) {
+      printResult(
+        "CHECK",
+        "Parent: skipped post-verify notification increment check (baseline count unavailable)",
+      );
     }
   }
 

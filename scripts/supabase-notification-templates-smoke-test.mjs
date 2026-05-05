@@ -170,10 +170,10 @@ async function run() {
       warningCount += 1;
       failureCount += 1;
     }
-  } else if (!Array.isArray(hqList.data) || hqList.data.length < 6) {
+  } else if (!Array.isArray(hqList.data) || hqList.data.length < 10) {
     printResult(
       "CHECK",
-      `HQ Admin: expected seeded global templates (>=6); found ${Array.isArray(hqList.data) ? hqList.data.length : 0}. Verify migration applied.`,
+      `HQ Admin: expected seeded global templates (>=10, includes 038+039 billing rows); found ${Array.isArray(hqList.data) ? hqList.data.length : 0}. Verify migrations 038 and 039 applied.`,
     );
     failureCount += 1;
   } else {

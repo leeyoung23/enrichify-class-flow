@@ -28,6 +28,13 @@ Date: 2026-05-05
 - **Smoke:** `npm run test:supabase:notification-templates` (requires migration applied on the target project).
 - **Checkpoint doc:** `docs/notification-templates-foundation-checkpoint.md`
 
+## Billing / payment proof templates (manual apply — 039)
+
+- **Migration:** `supabase/sql/039_billing_payment_notification_templates.sql` — adds four HQ global **message-only** templates: `fee_payment.proof_requested`, `fee_payment.proof_verified`, `fee_payment.proof_rejected`, `invoice.available_message_only` (`on conflict do nothing`).
+- **Wired triggers:** After successful **`verifyFeeReceipt`** → `fee_payment.proof_verified`; after **`rejectFeeReceipt`** → `fee_payment.proof_rejected`. **Entity:** `fee_record`. Recipients: **`list_parent_profile_ids_for_student_staff_scope_035`**. **Not wired:** `fee_payment.proof_requested` and **`invoice.available_message_only`** — no stable staff/HQ **request-in-app** helper yet (parent upload is initiated from ParentView; no dedicated “staff requests proof” write service yet).
+- **Idempotency (best-effort):** same **actor** + **`fee_record`** + **`event_type`** as other flows; another supervisor could still insert a duplicate event row.
+- **Smoke:** **`npm run test:supabase:fee-receipt:verify`** asserts parent inbox count increases after supervisor verify.
+
 ### Post-apply smoke tests (linked project)
 
 | Command | Result |
@@ -55,6 +62,8 @@ Date: 2026-05-05
 
 - **Parent Communication (teacher comment + weekly progress report):** After a successful `releaseParentComment` or `releaseWeeklyProgressReport` (row updated to **`released`** — parent-visible), `notifyLinkedParentsAfterParentCommunicationStaffRelease` runs (non-blocking on failure; dev-only safe warnings). Recipients come only from `list_parent_profile_ids_for_student_staff_scope_035`. **Title/body** load from **`notification_templates`** when migration **038** is applied and an active row exists for the matching `event_type`, else **legacy hardcoded** generic strings (no comment text, week labels, or internal notes). **Event types:** `parent_comment.released` (**entity** `parent_comment`), `weekly_progress_report.released` (**entity** `weekly_progress_report`). **Idempotency (best-effort):** same **actor** + **entity_id** + **entity_type** + **event_type** in `notification_events` as for homework — no DB unique constraint; another staff user releasing again could still insert a second event; repeated “release” by the same actor is skipped.
 
+- **Fee payment proof (supervisor/HQ):** After successful **`verifyFeeReceipt`** or **`rejectFeeReceipt`** (`src/services/supabaseWriteService.js`), **`notifyLinkedParentsAfterFeeProofStaffDecision`** runs (non-blocking; dev-only warnings). **Event types:** `fee_payment.proof_verified` / `fee_payment.proof_rejected`. **Entity:** `fee_record`. **Templates:** migration **039**; generic copy only — no amounts, paths, receipt URLs, or internal notes in title/body. **`notification_events.metadata`** may include `{ proofDecision: "verified" | "rejected" }` only; audit events for fee proof already avoid logging note text. **Idempotency:** same actor + `fee_record` id + `event_type`.
+
 ### Parent inbox UI (read-only surface)
 
 - **`src/pages/ParentView.jsx`** — authenticated **parent** role: **Notifications** card loads `listMyInAppNotifications` / `markNotificationRead` (recipient-scoped RLS only). UI shows **title, body, time, read/unread**; no raw metadata, ids, or internal refs. Optional **child filter**: rows with `student_id` are shown when it matches the dashboard child or when `student_id` is null (RLS still gates rows to the signed-in parent).
@@ -63,7 +72,7 @@ Date: 2026-05-05
 ### Safety boundaries (unchanged after apply)
 
 - No live sending, no email/SMS/push provider, no webhooks, no Edge sender
-- In-app **notification records** only; product triggers: **AI parent report released**, **homework feedback / marked file released to parent**, **attendance marked present/late (arrival)**, **parent comment / weekly progress report released to family** (see above)
+- In-app **notification records** only; product triggers: **AI parent report released**, **homework feedback / marked file released to parent**, **attendance marked present/late (arrival)**, **parent comment / weekly progress report released to family**, **fee payment proof verified/rejected** (see above) — all **message-only** for fees in this phase
 - No service-role key in frontend; anon + JWT only
 - No parent cross-family visibility; RLS remains recipient-scoped for inbox rows
 - No changes to Edge, PDF, OCR, or provider integrations in this verification milestone
