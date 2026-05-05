@@ -109,6 +109,12 @@ const HOMEWORK_PARENT_NOTIFY_TITLE = "Homework feedback is ready";
 const HOMEWORK_PARENT_NOTIFY_BODY =
   "Your child's teacher has shared new homework feedback.";
 const HOMEWORK_FILE_PARENT_NOTIFY_ROLES = new Set(["teacher_marked_homework", "feedback_attachment"]);
+const STUDENT_ATTENDANCE_ARRIVED_EVENT_TYPE = "student_attendance.arrived";
+/** Status values treated as "arrived at class" for parent messaging (see Attendance.jsx copy). */
+const ARRIVAL_ATTENDANCE_STATUS_VALUES = new Set(["present", "late"]);
+const ATTENDANCE_ARRIVAL_NOTIFY_TITLE = "Your child has arrived";
+const ATTENDANCE_ARRIVAL_BODY_PRESENT = "Your child has been marked present for class.";
+const ATTENDANCE_ARRIVAL_BODY_LATE = "Your child has been marked as arrived for class.";
 
 function isUuidLike(value) {
   if (typeof value !== "string") return false;
@@ -125,6 +131,16 @@ function normalizeNullableText(value, { maxLength = 1000 } = {}) {
 
 function trimString(value) {
   return typeof value === "string" ? value.trim() : "";
+}
+
+/** Stable session-day key for attendance notification idempotency (YYYY-MM-DD when parseable). */
+function normalizeAttendanceSessionDateKey(value) {
+  if (value == null || value === "") return "";
+  const s = trimString(String(value));
+  if (s.length >= 10 && /^\d{4}-\d{2}-\d{2}/.test(s)) {
+    return s.slice(0, 10);
+  }
+  return s.slice(0, 32);
 }
 
 function normalizeNullableDate(value) {
@@ -773,6 +789,107 @@ export async function updateTeacherTaskAssignmentStatus({ assignmentId, status, 
   }
 }
 
+async function hasExistingAttendanceArrivalNotificationForSession({
+  actorProfileId,
+  recordId,
+  sessionDateKey,
+} = {}) {
+  if (!isUuidLike(actorProfileId) || !isUuidLike(recordId) || !trimString(sessionDateKey)) {
+    return false;
+  }
+  const read = await supabase
+    .from("notification_events")
+    .select("id,metadata")
+    .eq("created_by_profile_id", trimString(actorProfileId))
+    .eq("entity_type", "attendance_record")
+    .eq("entity_id", trimString(recordId))
+    .eq("event_type", STUDENT_ATTENDANCE_ARRIVED_EVENT_TYPE);
+  if (read.error || !Array.isArray(read.data)) return false;
+  const key = trimString(sessionDateKey);
+  return read.data.some((row) => trimString(row?.metadata?.sessionDate) === key);
+}
+
+/**
+ * Best-effort idempotency: same actor + attendance row + session calendar day (metadata.sessionDate).
+ * Another staff member or deleted events may still duplicate — see docs.
+ */
+async function notifyLinkedParentsAfterAttendanceArrivalTransition({ attendanceRow } = {}) {
+  if (!isSupabaseConfigured() || !supabase) {
+    return { error: null, skipped: true };
+  }
+  if (!attendanceRow?.id || !isUuidLike(attendanceRow.student_id)) {
+    return { error: null, skipped: true };
+  }
+  const newStatusRaw = trimString(String(attendanceRow.status));
+  if (!ARRIVAL_ATTENDANCE_STATUS_VALUES.has(newStatusRaw)) {
+    return { error: null, skipped: true };
+  }
+
+  const { profileId: actorProfileId, error: authError } = await getAuthenticatedProfileId();
+  if (authError || !actorProfileId) {
+    return { error: null, skipped: true };
+  }
+
+  const sessionDateKey = normalizeAttendanceSessionDateKey(attendanceRow.session_date);
+  if (!sessionDateKey) {
+    return { error: null, skipped: true };
+  }
+
+  const duplicate = await hasExistingAttendanceArrivalNotificationForSession({
+    actorProfileId,
+    recordId: attendanceRow.id,
+    sessionDateKey,
+  });
+  if (duplicate) {
+    return { error: null, skipped: true };
+  }
+
+  const recipientIds = await resolveParentProfileIdsForAiReportNotification(attendanceRow.student_id);
+  if (recipientIds.length === 0) {
+    return { error: null, skipped: true };
+  }
+
+  const body =
+    newStatusRaw === "present" ? ATTENDANCE_ARRIVAL_BODY_PRESENT : ATTENDANCE_ARRIVAL_BODY_LATE;
+
+  const eventResult = await createNotificationEvent({
+    eventType: STUDENT_ATTENDANCE_ARRIVED_EVENT_TYPE,
+    entityType: "attendance_record",
+    entityId: attendanceRow.id,
+    branchId: isUuidLike(attendanceRow.branch_id) ? trimString(attendanceRow.branch_id) : null,
+    classId: isUuidLike(attendanceRow.class_id) ? trimString(attendanceRow.class_id) : null,
+    studentId: trimString(attendanceRow.student_id),
+    status: "processed",
+    metadata: {
+      sessionDate: sessionDateKey,
+      arrivalKind: newStatusRaw === "present" ? "present" : "late",
+    },
+  });
+  if (eventResult.error || !eventResult.data?.id) {
+    return { error: eventResult.error || { message: "Unable to record notification event." }, skipped: false };
+  }
+
+  const notificationEventId = eventResult.data.id;
+  for (const recipientProfileId of recipientIds) {
+    const rowResult = await createInAppNotification({
+      eventId: notificationEventId,
+      recipientProfileId,
+      recipientRole: "parent",
+      branchId: isUuidLike(attendanceRow.branch_id) ? trimString(attendanceRow.branch_id) : null,
+      classId: isUuidLike(attendanceRow.class_id) ? trimString(attendanceRow.class_id) : null,
+      studentId: trimString(attendanceRow.student_id),
+      title: ATTENDANCE_ARRIVAL_NOTIFY_TITLE,
+      body,
+      status: "pending",
+    });
+    if (rowResult.error) {
+      warnNotificationFailureInDev(rowResult.error, "notifyLinkedParentsAfterAttendanceArrivalTransition.row");
+    }
+  }
+
+  return { error: null, skipped: false };
+}
+
 /**
  * Update attendance record fields using Supabase anon client + RLS.
  * Only safe attendance fields are writable here.
@@ -797,6 +914,16 @@ export async function updateAttendanceRecord({ recordId, status, note } = {}) {
   };
 
   try {
+    const existingRead = await supabase
+      .from("attendance_records")
+      .select("id,status,student_id,branch_id,class_id,session_date")
+      .eq("id", trimString(recordId))
+      .maybeSingle();
+    const previousStatusRaw =
+      existingRead.data?.status != null ? trimString(String(existingRead.data.status)) : "";
+    const previousWasArrival =
+      Boolean(previousStatusRaw) && ARRIVAL_ATTENDANCE_STATUS_VALUES.has(previousStatusRaw);
+
     const { data, error } = await supabase
       .from("attendance_records")
       .update(payload)
@@ -819,6 +946,18 @@ export async function updateAttendanceRecord({ recordId, status, note } = {}) {
       });
       if (auditResult.error) {
         warnAuditFailureInDev(auditResult.error, "updateAttendanceRecord");
+      }
+
+      const newStatusRaw = trimString(String(data.status));
+      const newIsArrival = ARRIVAL_ATTENDANCE_STATUS_VALUES.has(newStatusRaw);
+      const transitionedIntoArrival = newIsArrival && !previousWasArrival;
+      if (transitionedIntoArrival) {
+        const notifyResult = await notifyLinkedParentsAfterAttendanceArrivalTransition({
+          attendanceRow: data,
+        });
+        if (notifyResult?.error) {
+          warnNotificationFailureInDev(notifyResult.error, "updateAttendanceRecord");
+        }
       }
     }
     return { data: data ?? null, error: error ?? null };

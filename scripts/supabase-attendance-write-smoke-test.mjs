@@ -70,6 +70,8 @@ async function run() {
   let failureCount = 0;
   let warningCount = 0;
   let targetRecord = null;
+  const ATTENDANCE_ARRIVAL_NOTIFY_TITLE = "Your child has arrived";
+  let parentArrivalNotifBaseline = -1;
 
   const teacherSignIn = await signInRole(teacherUser, { signInWithEmailPassword, signOut });
   if (!teacherSignIn.ok) {
@@ -78,7 +80,7 @@ async function run() {
 
   const attendanceQuery = await supabase
     .from("attendance_records")
-    .select("id,status,note,updated_at")
+    .select("id,status,note,branch_id,class_id,student_id,session_date,updated_at")
     .order("updated_at", { ascending: false })
     .limit(1)
     .maybeSingle();
@@ -95,8 +97,48 @@ async function run() {
     printResult("PASS", `Teacher: found attendance record ${targetRecord.id}`);
   }
 
+  await signOut();
+
+  const parentBaselineSignIn = await signInRole(parentUser, { signInWithEmailPassword, signOut });
+  if (parentBaselineSignIn.ok) {
+    const bc = await supabase
+      .from("notifications")
+      .select("id", { count: "exact", head: true })
+      .eq("channel", "in_app")
+      .eq("title", ATTENDANCE_ARRIVAL_NOTIFY_TITLE);
+    parentArrivalNotifBaseline = typeof bc.count === "number" ? bc.count : -1;
+    printResult("PASS", `Parent: pre-transition arrival-notification baseline count=${parentArrivalNotifBaseline}`);
+    await signOut();
+  } else {
+    printResult("CHECK", "Parent: arrival-notification baseline skipped (sign-in failed)");
+  }
+
+  const teacherSignInAgain = await signInRole(teacherUser, { signInWithEmailPassword, signOut });
+  if (!teacherSignInAgain.ok) {
+    process.exit(1);
+  }
+
   if (targetRecord) {
     const testNote = "attendance write smoke test note";
+    const originalStatus = targetRecord.status;
+    const originalNote = targetRecord.note ?? null;
+    const arrivalStatuses = new Set(["present", "late"]);
+    const firstWasArrival = arrivalStatuses.has(originalStatus);
+
+    if (firstWasArrival) {
+      const toAbsent = await updateAttendanceRecord({
+        recordId: targetRecord.id,
+        status: "absent",
+        note: originalNote,
+      });
+      if (toAbsent.error || !toAbsent.data?.id) {
+        printResult("WARNING", `Teacher: could not reset to absent before arrival test (${toAbsent.error?.message || "unknown"})`);
+        warningCount += 1;
+      } else {
+        printResult("PASS", "Teacher: reset row to absent for arrival transition test");
+      }
+    }
+
     const teacherUpdate = await updateAttendanceRecord({
       recordId: targetRecord.id,
       status: "late",
@@ -131,10 +173,21 @@ async function run() {
       printResult("PASS", "Teacher: attendance update verified");
     }
 
+    const dupSameStatus = await updateAttendanceRecord({
+      recordId: targetRecord.id,
+      status: "late",
+      note: testNote,
+    });
+    if (dupSameStatus.error || !dupSameStatus.data?.id) {
+      printResult("CHECK", `Teacher: duplicate late save CHECK (${dupSameStatus.error?.message || "unknown"})`);
+    } else {
+      printResult("PASS", "Teacher: duplicate late save completed (idempotent arrival notify expected)");
+    }
+
     const revertUpdate = await updateAttendanceRecord({
       recordId: targetRecord.id,
-      status: targetRecord.status,
-      note: targetRecord.note ?? null,
+      status: originalStatus,
+      note: originalNote,
     });
 
     if (revertUpdate.error) {
@@ -150,6 +203,31 @@ async function run() {
   if (teacherSignOut.error) {
     printResult("WARNING", `Teacher: sign-out warning (${teacherSignOut.error.message || "unknown"})`);
     warningCount += 1;
+  }
+
+  const parentAfterSignIn = await signInRole(parentUser, { signInWithEmailPassword, signOut });
+  if (parentAfterSignIn.ok && parentArrivalNotifBaseline >= 0 && targetRecord) {
+    const ac = await supabase
+      .from("notifications")
+      .select("id", { count: "exact", head: true })
+      .eq("channel", "in_app")
+      .eq("title", ATTENDANCE_ARRIVAL_NOTIFY_TITLE);
+    const afterN = typeof ac.count === "number" ? ac.count : -1;
+    if (afterN > parentArrivalNotifBaseline) {
+      printResult(
+        "PASS",
+        `Parent: attendance arrival created in-app notification (${parentArrivalNotifBaseline} -> ${afterN})`
+      );
+    } else {
+      printResult(
+        "WARNING",
+        `Parent: expected arrival notification after transition (baseline=${parentArrivalNotifBaseline}, after=${afterN})`
+      );
+      failureCount += 1;
+    }
+    await signOut();
+  } else if (!parentAfterSignIn.ok) {
+    printResult("CHECK", "Parent: post-transition arrival notification check skipped (sign-in failed)");
   }
 
   const denyChecks = [parentUser, studentUser];
