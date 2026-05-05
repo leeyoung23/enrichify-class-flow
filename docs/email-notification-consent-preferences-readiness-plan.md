@@ -40,6 +40,21 @@ No Gmail/provider integration, no real email sending, and no email trigger wirin
 - First-login required acknowledgement remains one checkbox (`parent_portal_terms_privacy`), while optional communication categories stay in ParentView Communication & Notification Settings.
 - No first-login UI implementation yet; this phase is data foundation only.
 
+Applied + verified (linked project):
+- Apply method: Supabase SQL Editor (manual apply of `supabase/sql/041_parent_policy_acknowledgements_foundation.sql`).
+- Post-apply validation:
+  - `test:supabase:parent-policy-acknowledgements`
+  - `test:supabase:parent-notification-preferences`
+  - `test:supabase:notifications`
+  - `test:supabase:audit-events`
+- RLS behaviors recorded by smoke:
+  - parent self create/read pass
+  - duplicate create handled safely
+  - cross-profile parent create blocked
+  - student read/write blocked
+  - HQ read pass
+  - branch supervisor read-only behavior recorded (fixture-dependent pass/check)
+
 ## Scope and product direction
 
 Current production-safe behavior remains **in-app notification first** via `notification_events` + `notifications` and HQ-governed template copy.  

@@ -9,6 +9,9 @@
 - **Required first-login strategy:** one required acknowledgement record for `policy_key = parent_portal_terms_privacy`; optional communication controls remain in ParentView Communication & Notification Settings.
 - **App helpers added:** read (`listMyPolicyAcknowledgements`, `hasMyPolicyAcknowledgement`, `listParentPolicyAcknowledgementsForStudent`) and write (`createMyPolicyAcknowledgement`) using anon+JWT+RLS only.
 - **Smoke added:** `scripts/supabase-parent-policy-acknowledgements-smoke-test.mjs` + npm script `test:supabase:parent-policy-acknowledgements`.
+- **Apply status:** migration manually applied to linked project via Supabase SQL Editor.
+- **Post-apply verification:** `test:supabase:parent-policy-acknowledgements`, `test:supabase:parent-notification-preferences`, `test:supabase:notifications`, `test:supabase:audit-events`.
+- **RLS verification recorded:** parent self create/read pass; duplicate create handled safely; cross-profile parent create blocked; student blocked; HQ read pass; branch supervisor read-only behavior recorded.
 - **Boundary unchanged:** no first-login UI implementation yet, no email/Gmail sending, no SMS/push provider integration, no notification-trigger behavior changes.
 - **Release governance:** legal/compliance review required before real parent rollout and before production launch involving email/media policies.
 

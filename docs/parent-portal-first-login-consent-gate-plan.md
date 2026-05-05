@@ -14,6 +14,27 @@ Type: Planning checkpoint only (no SQL/RLS/app code changes in this document).
 - No email/SMS/push provider integration or sending behavior in this phase.
 - Legal/compliance review remains required before real parent rollout or production launch with media/external channels.
 
+## Applied + verified checkpoint (linked project) — 2026-05-05
+
+- Migration file applied: `supabase/sql/041_parent_policy_acknowledgements_foundation.sql`.
+- Apply method: Supabase SQL Editor (manual apply on linked project).
+- Post-apply validation commands run:
+  - `npm run test:supabase:parent-policy-acknowledgements`
+  - `npm run test:supabase:parent-notification-preferences`
+  - `npm run test:supabase:notifications`
+  - `npm run test:supabase:audit-events`
+- RLS verification recorded:
+  - parent can create/read own acknowledgement
+  - duplicate create handled safely (existing row returned / unique scope respected)
+  - parent cannot create acknowledgement for another profile
+  - student read/write blocked
+  - HQ read works
+  - branch supervisor read-only behavior recorded (fixture-dependent pass/check)
+- Design posture confirmed:
+  - append-only per policy version
+  - first-login acknowledgement target remains `parent_portal_terms_privacy` / `v1`
+  - no update/delete policy in v1
+
 ## Scope and intent
 
 This plan defines a **first-login parent acknowledgement and consent gate** before full Parent Portal use in real parent rollout.
