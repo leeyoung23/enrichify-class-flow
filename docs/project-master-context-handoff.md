@@ -1,5 +1,15 @@
 # Project Master Context Handoff
 
+## Checkpoint update (Read-only AI report UAT sample finder — 2026-05-06)
+
+- **Regression guards (static):** `Students.jsx`, `ParentUpdates.jsx`, `ParentView.jsx`, `Sidebar.jsx`, `sessionGovernanceService.js`, `supabaseAuthService.js`, `permissionService.js` spot-check remains healthy; no blocker fix required.
+- **Read-only helper:** added `scripts/supabase-ai-parent-report-uat-sample-finder.mjs` with package script `uat:ai-parent-report:find-sample`.
+- **Safety boundary:** finder performs read-only JWT+RLS queries only (list reports/versions/detail/evidence checks). It does not create/update/release/archive/delete anything.
+- **Marker strategy:** locates UAT sample using `[UAT_SAMPLE]` text marker in current/any report version sections; lists all matches and recommends latest released/current sample.
+- **Parent checks:** if parent fixture credentials exist, finder verifies released detail visibility and evidence-link blocking.
+- **No-sample guidance:** finder outputs write-gated command `ALLOW_UAT_SAMPLE_WRITE=1 npm run uat:ai-parent-report:sample`.
+- **Docs aligned:** `docs/monthly-report-uat-sample-proof.md`, `docs/manual-walkthrough-execution-guide.md`, `docs/validation-uat-readiness-checklist.md` updated with finder usage and screenshot naming guidance.
+
 ## Checkpoint update (Stable AI report UAT sample workflow — 2026-05-06)
 
 - **Regression guards (static):** `Students.jsx`, `ParentUpdates.jsx`, `ParentView.jsx`, `Sidebar.jsx`, `sessionGovernanceService.js`, `supabaseAuthService.js`, `permissionService.js` spot-check stays healthy; no blocker fix needed.

@@ -84,6 +84,38 @@ If explicit `UAT_SAMPLE_*` vars are not provided, the script falls back to the s
 
 ---
 
+## Read-only finder helper (recommended first step)
+
+Script: `scripts/supabase-ai-parent-report-uat-sample-finder.mjs`  
+Package command: `npm run uat:ai-parent-report:find-sample`
+
+This finder is **read-only** and does not create/update/release/archive/delete reports.
+
+### Finder output
+
+- Lists sample-marked reports (marker: `[UAT_SAMPLE]`), including:
+  - report id
+  - student id
+  - class id
+  - branch id
+  - status
+  - current version id
+  - whether released/current
+- Prints safe ParentView URL:
+  - `/parent-view?student=<studentId>#parent-progress-reports`
+- Prints suggested screenshot filenames.
+
+If parent fixture credentials are available, finder also performs read-only checks:
+
+- parent can see released sample report detail,
+- parent evidence-link rows remain blocked/empty.
+
+If no sample is found, finder prints guidance to run the write-gated creator:
+
+- `ALLOW_UAT_SAMPLE_WRITE=1 npm run uat:ai-parent-report:sample`
+
+---
+
 ## Screenshot checklist
 
 - Staff: report shell created (status Draft).
@@ -95,6 +127,14 @@ If explicit `UAT_SAMPLE_*` vars are not provided, the script falls back to the s
 - Parent: printable layout open (with browser-preview-only copy).
 
 Use the naming convention in `docs/uat-evidence-log-template.md`.
+
+Finder also prints suggested names:
+
+- `uat-ai-report-staff-source-evidence-<student>-<report>.png`
+- `uat-ai-report-staff-lifecycle-released-<student>-<report>.png`
+- `uat-ai-report-parent-progress-list-<student>-<report>.png`
+- `uat-ai-report-parent-report-detail-<student>-<report>.png`
+- `uat-ai-report-parent-printable-layout-<student>-<report>.png`
 
 ---
 

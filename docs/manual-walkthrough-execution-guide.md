@@ -88,6 +88,7 @@ Credential note:
 
 Optional helper for persistent sample setup (manual-only): `ALLOW_UAT_SAMPLE_WRITE=1 npm run uat:ai-parent-report:sample`.  
 Do not run this in CI/normal smoke loops.
+Read-only finder (safe anytime): `npm run uat:ai-parent-report:find-sample` to locate existing `[UAT_SAMPLE]` report rows and print ParentView screenshot URL(s).
 
 1. Create/open a report shell in AI Parent Reports.
 2. Open **Source Evidence Preview** — confirm attendance/homework/parent-comms/curriculum/memories behave as expected for your tenant; confirm **Released homework feedback** reflects released-to-parent rows only (or warm empty state); confirm **Observations** and **worksheet OCR** show as **not wired** (placeholder), not as hidden automation.
