@@ -1,5 +1,13 @@
 # Project Master Context Handoff
 
+## Checkpoint update (Monthly report UAT sample proof — 2026-05-06)
+
+- **Regression guards (static):** `Students.jsx`, `ParentUpdates.jsx`, `ParentView.jsx`, `Sidebar.jsx`, `sessionGovernanceService.js`, `supabaseAuthService.js`, `permissionService.js` spot-check remains healthy; no blocker fix needed for this milestone.
+- **Safe UX copy:** `ParentView.jsx` heading/empty-state wording now explicitly frames **Progress Reports (Monthly Learning Reports)** and release-only visibility; printable preview remains browser-only (no PDF storage/download).
+- **Runbook added:** `docs/monthly-report-uat-sample-proof.md` with step-by-step staff+parent flow, screenshot checklist, hidden-boundary checks, evidence-log instructions, and note that AI parent report smoke archives created rows.
+- **Docs aligned:** `docs/ai-evidence-pipeline-readiness-plan.md`, `docs/production-readiness-audit.md`, `docs/validation-uat-readiness-checklist.md`, `docs/manual-walkthrough-execution-guide.md` updated for monthly sample-proof execution.
+- **Explicit boundaries reaffirmed:** no OCR, no email/SMS, no PDF file storage/download, no auto-release, no parent access to draft/internal evidence.
+
 ## Checkpoint update (AI evidence pipeline readiness — 2026-05-06)
 
 - **Artifact:** `docs/ai-evidence-pipeline-readiness-plan.md` — maps **`collectAiParentReportSourceEvidence`** (fake / RLS / hybrid): **implemented** aggregates (attendance, homework assignee snapshot, **released homework feedback** excerpts for staff evidence/mock-draft input only, parent_comments + weekly_progress_reports, curriculum/learning context, class memory **captions**, evidence-link snapshots); **explicit placeholders** (structured Observations feed, worksheet OCR/vision); gates (teacher review, explicit release, sanitisation); monthly-report section checklist; UAT path for released sample without RLS change (staff release → parent Progress Reports + printable HTML).

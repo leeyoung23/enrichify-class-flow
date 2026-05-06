@@ -65,6 +65,8 @@ Merges string fields preferring RLS when non-empty; evidence items list prefers 
 
 In **`ParentView`**, parents load **released** AI parent reports only; sections rendered from **structured_sections** (or resolved keys) include summary, attendance/punctuality, lesson progression, homework completion, strengths, areas for improvement, recommendations, parent support, teacher final comment — **only after release**. Printable **browser HTML** preview when content builds; **no PDF download** for families.
 
+For a reproducible screenshot pass, use `docs/monthly-report-uat-sample-proof.md` (manual released sample flow + evidence logging + smoke-cleanup caveat).
+
 ---
 
 ## Monthly “full product” gaps

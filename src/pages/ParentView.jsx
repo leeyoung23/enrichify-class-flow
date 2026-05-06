@@ -998,7 +998,7 @@ function ParentProgressReportsSection({
     return (
       <Card id="parent-progress-reports">
         <CardHeader className="pb-3">
-          <CardTitle className="text-base">Progress Reports</CardTitle>
+          <CardTitle className="text-base">Progress Reports (Monthly Learning Reports)</CardTitle>
         </CardHeader>
         <CardContent className="text-sm text-muted-foreground">Loading released progress reports...</CardContent>
       </Card>
@@ -1009,7 +1009,7 @@ function ParentProgressReportsSection({
     return (
       <Card id="parent-progress-reports" className="border-dashed">
         <CardHeader className="pb-3">
-          <CardTitle className="text-base">Progress Reports</CardTitle>
+          <CardTitle className="text-base">Progress Reports (Monthly Learning Reports)</CardTitle>
         </CardHeader>
         <CardContent className="text-sm text-muted-foreground">{error}</CardContent>
       </Card>
@@ -1020,11 +1020,11 @@ function ParentProgressReportsSection({
     return (
       <Card id="parent-progress-reports" className="border-dashed">
         <CardHeader className="pb-3">
-          <CardTitle className="text-base">Progress Reports</CardTitle>
+          <CardTitle className="text-base">Progress Reports (Monthly Learning Reports)</CardTitle>
         </CardHeader>
         <CardContent className="space-y-2 text-sm text-muted-foreground">
           <p>
-            Progress reports show here only after teachers or staff review and <span className="font-medium text-foreground">release</span> them to parents — nothing appears while a report is still in draft or internal review.
+            Monthly/progress reports appear here only after teachers or staff review and <span className="font-medium text-foreground">release</span> them to parents — nothing appears while a report is still in draft or internal review.
           </p>
           <p className="text-xs">Drafts or in-review reports stay with staff only — you will not see them here.</p>
         </CardContent>
@@ -1052,7 +1052,7 @@ function ParentProgressReportsSection({
   return (
     <Card id="parent-progress-reports">
       <CardHeader className="pb-3">
-        <CardTitle className="text-base">Progress Reports</CardTitle>
+        <CardTitle className="text-base">Progress Reports (Monthly Learning Reports)</CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
         <p className="text-sm text-muted-foreground">

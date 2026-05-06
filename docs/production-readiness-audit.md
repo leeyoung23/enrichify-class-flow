@@ -79,6 +79,8 @@ The following files were reviewed against the **known UAT regression guard list*
 
 **Evidence pipeline:** **Partially implemented.** `collectAiParentReportSourceEvidence` (RLS mode) aggregates attendance, homework assignee snapshot, **released homework feedback** text (`feedback_text` / `next_step`, release-gated — **no** `internal_note`, paths, or URLs), parent_comments + weekly_progress_reports, curriculum/learning context, class memory **captions**, staff evidence-link snapshots; **Observations** and **worksheet OCR** remain placeholders — see **`docs/ai-evidence-pipeline-readiness-plan.md`**.
 
+**Monthly sample proof status:** A safe manual proof runbook exists at `docs/monthly-report-uat-sample-proof.md`. Current automated smoke validates lifecycle + parent-release visibility but archives created report rows during cleanup, so it is not a persistent showcase artefact.
+
 **Status category:** **UAT ready** (internal tenant); **Needs legal/compliance before parent pilot** (AI disclosures, retention); **Not production ready** for automated PDF/email distribution.
 
 ---
