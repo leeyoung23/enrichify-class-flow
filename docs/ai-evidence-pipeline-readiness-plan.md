@@ -68,6 +68,8 @@ In **`ParentView`**, parents load **released** AI parent reports only; sections 
 
 For a reproducible screenshot pass, use `docs/monthly-report-uat-sample-proof.md` (manual released sample flow + evidence logging + smoke-cleanup caveat).
 
+**Fixture proof (automated, staff-only):** `npm run test:supabase:ai-parent-report:observation-evidence` — JWT/RLS only; uses a **wide date window** so `013` seed timestamps for `student_school_profiles` + `learning_goals` fall inside the summariser’s period filter. Optional `ALLOW_UAT_OBSERVATION_FIXTURE_WRITE=1` (HQ session) re-upserts the deterministic `013` rows when the dev DB is sparse. **Not** the MVP classroom `observations` table.
+
 ---
 
 ## Monthly “full product” gaps

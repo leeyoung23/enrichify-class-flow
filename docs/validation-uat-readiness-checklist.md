@@ -115,7 +115,7 @@ Spot-check quickly before sign-off:
 - [ ] Run read-only finder first: `npm run uat:ai-parent-report:find-sample` to locate current `[UAT_SAMPLE]` report and ParentView screenshot URL.
 - [ ] If finder returns no sample, run write-gated creator manually, then re-run finder.
 - [ ] Confirm sample helper was run manually (not CI), and no provider/OCR/PDF-storage/email paths were invoked.
-- [ ] Optional smokes: `npm run test:supabase:ai-parent-reports`, `test:supabase:ai-parent-report:mock-draft`, `test:supabase:ai-parent-report:source-aggregation` / `test:supabase:ai-parent-report:rls-source-aggregation` as environment allows (AI Parent Reports smoke **CHECK**s observation lines when fixtures lack profile/goal rows).
+- [ ] Optional smokes: `npm run test:supabase:ai-parent-reports`, `test:supabase:ai-parent-report:mock-draft`, `test:supabase:ai-parent-report:source-aggregation` / `test:supabase:ai-parent-report:rls-source-aggregation` as environment allows; **`npm run test:supabase:ai-parent-report:observation-evidence`** for staff learning-context fixture proof (dev: apply `013` seed or `ALLOW_UAT_OBSERVATION_FIXTURE_WRITE=1`).
 
 ### Notification admin and governance
 

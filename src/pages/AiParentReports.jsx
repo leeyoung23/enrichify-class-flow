@@ -1938,20 +1938,33 @@ export default function AiParentReports() {
               </div>
               <div className="rounded-lg border bg-muted/20 p-3 space-y-2 md:col-span-2 border-amber-200/50 dark:border-amber-900/40">
                 <div className="flex flex-wrap items-center gap-2">
-                  <p className="text-xs font-medium text-muted-foreground">Teacher observations (staff evidence)</p>
+                  <p className="text-xs font-medium text-muted-foreground">
+                    Learning context · teacher notes · goals (staff evidence)
+                  </p>
                   <Badge variant="outline" className="text-[10px]">
                     Staff-only · not auto-sent to parents
                   </Badge>
                 </div>
                 <p className="text-xs text-muted-foreground">
-                  Built from sanitized internal learning notes (student school profile) and scoped learning goals
-                  readable under staff RLS — not classroom-quality observation rows or raw uploads. Parents never see this
-                  list; drafts still require explicit review and release.
+                  Sanitised roll-up from <span className="font-medium text-foreground">student school profile</span> fields
+                  and scoped <span className="font-medium text-foreground">learning goals</span> under staff RLS. This is
+                  not the same as future <span className="font-medium text-foreground">classroom observation rubrics</span>{' '}
+                  (the separate Observations module / quality rounds). No raw files or storage paths appear here; parents
+                  never see this list — only reviewed, released report prose may reflect approved wording.
                 </p>
+                {sourceEvidencePreview.observationSummary?.trim() ? (
+                  <p className="text-xs text-muted-foreground">
+                    Staff cues in preview:{' '}
+                    <span className="font-medium text-foreground">
+                      {(sourceEvidencePreview.observationSummary.match(/Teacher observation:/g) || []).length || 0}
+                    </span>{' '}
+                    line(s) (sanitised excerpts for drafting).
+                  </p>
+                ) : null}
                 <p className="text-sm">
                   {sourceEvidencePreview.observationSummary?.trim()
                     ? sourceEvidencePreview.observationSummary
-                    : 'No teacher observations found for this report period yet.'}
+                    : 'No teacher learning context or goals found for this report period yet.'}
                 </p>
               </div>
               <div className="rounded-lg border bg-muted/20 p-3 space-y-1">

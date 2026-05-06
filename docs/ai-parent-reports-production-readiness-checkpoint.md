@@ -33,7 +33,7 @@ Handled in `collectAiParentReportSourceEvidence` / related reads (availability d
 - Class memories list (summaries — not raw asset URLs into provider payloads)
 - Parent communication / weekly-style sources where present
 - School / curriculum / learning context reads where configured  
-- **Staff-only teacher observation / learning evidence cues** (`observationSummary`): sanitised excerpts from **`student_school_profiles`** narrative fields plus scoped **`learning_goals`** (JWT/RLS). **No** verbatim raw dump to ParentView; **no** MVP `observations` table linkage; lifecycle **approve + release** still required.
+- **Staff-only teacher observation / learning evidence cues** (`observationSummary`): sanitised excerpts from **`student_school_profiles`** narrative fields plus scoped **`learning_goals`** (JWT/RLS). **No** verbatim raw dump to ParentView; **no** MVP `observations` table linkage; lifecycle **approve + release** still required. **Fixture proof:** `npm run test:supabase:ai-parent-report:observation-evidence` (read-only; optional HQ upsert with `ALLOW_UAT_OBSERVATION_FIXTURE_WRITE=1` against deterministic **`013`** IDs — dev/test only).
 - Manual evidence links on the report (`ai_parent_report_evidence_links`) for staff-visible classification
 
 Synthetic **fake** items still appear in demo/offline previews for pipeline testing.

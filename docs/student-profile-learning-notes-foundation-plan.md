@@ -78,6 +78,7 @@ Teacher access:
 - **`collectAiParentReportSourceEvidence` (RLS)** now includes a **`teacher_observations` / `observationSummary`** lane fed from `student_school_profiles` (`teacher_notes`, `subject_notes`, `learning_context_notes`, short `parent_goals` snippets) and student **`learning_goals`** (class + period filters when dates are present), all **sanitised** (no URLs/storage paths).
 - **Parents never see** this staff evidence list; only **teacher-edited, approved, and released** report sections reach ParentView.
 - **No auto-release** of AI output; MVP **`observations`** (classroom quality) table remains **out** of this path until explicitly designed.
+- **Automated fixture proof:** After applying **`supabase/sql/013_school_curriculum_fake_seed_data.sql`** (manual/dev), run **`npm run test:supabase:ai-parent-report:observation-evidence`** — expects sanitised **`Teacher observation:`** lines and mock-draft bridge fields under a wide staff period window (narrow report shells may still show an empty card if timestamps fall outside the selected reporting window — staff can widen the shell period or rely on the smoke’s wide window for proof).
 
 ## Test posture for this polish pass
 

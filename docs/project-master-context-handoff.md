@@ -2630,6 +2630,13 @@ Handoff status: complete for continuity. Use this file as the primary context an
 - **Deferred:** MVP **`observations`** table (classroom teaching-quality; not student-linked) does **not** feed per-student reports until schema/product design.
 - **Unchanged gates:** Teacher review + explicit **release**; **no** auto-release; **no** raw URLs/storage paths through **`sanitizeAggregationText`**.
 
+### Teacher observation fixture proof (2026-05-06)
+
+- **Script:** `scripts/supabase-ai-parent-report-observation-fixture-smoke-test.mjs` · **`npm run test:supabase:ai-parent-report:observation-evidence`**
+- **Behaviour:** Teacher JWT runs **`collectAiParentReportSourceEvidence`** with a **~400-day window** so **`013`** seed rows qualify for the period filter; verifies **`Teacher observation:`** lines, **`teacher_observations`** evidence item, and **`buildMockDraftInputFromSourceEvidence`** (`teacherObservations` / `learningEvidence`). Parent session: evidence-link read stays empty/blocked.
+- **Optional writes:** `ALLOW_UAT_OBSERVATION_FIXTURE_WRITE=1` — HQ session upserts deterministic **`013`** UUIDs (dev/test only).
+- **Main AI report smoke:** Wide-period observation assertion ensures PASS when dev DB has **`013`** applied.
+
 ### UAT blocker polish follow-up note (2026-05-06)
 
 - `/students` blank white-screen root cause:

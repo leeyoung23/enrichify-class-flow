@@ -603,14 +603,42 @@ async function run() {
           "No released homework feedback text in period for fixture (ok if DB has no released rows in window)"
         );
       }
-      const obs =
-        typeof agg.observationSummary === "string" ? agg.observationSummary.trim() : "";
-      if (obs && obs.includes("Teacher observation:")) {
-        printResult("PASS", "Teacher observation summaries present in RLS aggregation (staff-only path)");
+      const wideEnd = new Date();
+      const wideStart = new Date(wideEnd);
+      wideStart.setUTCDate(wideStart.getUTCDate() - 400);
+      const aggObs = await aggModule.collectAiParentReportSourceEvidence({
+        studentId: fixtureStudentId,
+        classId: fixtureClassId,
+        branchId: fixtureBranchId,
+        periodStart: wideStart.toISOString().slice(0, 10),
+        periodEnd: wideEnd.toISOString().slice(0, 10),
+        reportId: draftReportId || "",
+        mode: aggModule.SOURCE_AGGREGATION_MODES.RLS,
+      });
+      const obsWide =
+        typeof aggObs.observationSummary === "string" ? aggObs.observationSummary.trim() : "";
+      if (obsWide && obsWide.includes("Teacher observation:")) {
+        printResult(
+          "PASS",
+          "Teacher learning-context lines present in RLS aggregation (wide period — matches Source Evidence Preview behaviour when goal/profile timestamps fall outside narrow report windows)"
+        );
+        try {
+          const draftBridge = aggModule.buildMockDraftInputFromSourceEvidence(aggObs);
+          const bridged =
+            Boolean(draftBridge?.teacherObservations?.trim?.()) ||
+            Boolean(draftBridge?.learningEvidence?.trim?.());
+          if (bridged) {
+            printResult("PASS", "Mock draft input includes observation-derived teacherObservations / learningEvidence");
+          } else {
+            printResult("CHECK", "Mock draft bridge missing observation strings (unexpected)");
+          }
+        } catch {
+          printResult("CHECK", "buildMockDraftInputFromSourceEvidence threw");
+        }
       } else {
         printResult(
           "CHECK",
-          "No fixture teacher observation / profile-note lines in aggregation window (ok if DB has none)"
+          "No teacher learning-context seed lines under wide period — apply 013 fake seed or npm run test:supabase:ai-parent-report:observation-evidence"
         );
       }
     } catch (err) {
