@@ -67,13 +67,17 @@ export default function Observations() {
         action={canCreate ? <Button onClick={() => setOpen(true)} className="gap-2"><Plus className="h-4 w-4" /> Create Observation</Button> : null}
       />
       <Card className="mb-6 border-dashed border-primary/30 bg-muted/15 p-4 text-sm text-muted-foreground">
-        <p className="font-medium text-foreground mb-1">Monthly learning observations (roadmap)</p>
+        <p className="font-medium text-foreground mb-1">Monthly Learning Observation (roadmap)</p>
         <p>
-          Structured <span className="text-foreground">per-student monthly</span> check-ins — rating (1–5) plus short{' '}
-          <span className="text-foreground">evidence</span> comment and <span className="text-foreground">next action</span>{' '}
-          — are planned as internal staff evidence for AI-assisted monthly reports. Parents will only see approved report language
-          after teacher review and release, not raw observation rows. This page currently focuses on{' '}
-          <span className="text-foreground">classroom teaching-quality</span> observations (demo workflow).
+          Structured <span className="text-foreground">per-student monthly</span> observations — rating (1–5) plus an{' '}
+          <span className="text-foreground">evidence-based observation</span> and a <span className="text-foreground">next action</span> — are planned as internal staff evidence for AI-assisted monthly reports.
+          Teachers complete a <span className="text-foreground">small weekly batch</span> (e.g. ~5 students/week for a class of 20) so monthly reports have meaningful teacher evidence.
+        </p>
+        <p className="mt-2">
+          <span className="text-foreground font-medium">Observation</span> = staff evidence input.{' '}
+          <span className="text-foreground font-medium">Teacher Feedback</span> = parent-facing report wording after staff review and release.
+          Parents will only see approved Teacher Feedback in released reports — not raw staff observations.
+          This page currently focuses on <span className="text-foreground">classroom teaching-quality</span> observations (demo workflow).
         </p>
       </Card>
       {observations.length === 0 ? (

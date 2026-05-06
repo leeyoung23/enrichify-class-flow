@@ -1,4 +1,4 @@
-# Guided teacher observation tasks — planning foundation
+# Monthly Learning Observation (guided teacher observation tasks) — planning foundation
 
 Date: 2026-05-06  
 Scope: **product + technical planning** for structured **per-student monthly learning observations** that can later feed **AI Parent Reports** as **staff-only evidence**.  
@@ -8,11 +8,24 @@ Scope: **product + technical planning** for structured **per-student monthly lea
 
 ## 1. Problem statement
 
-Centres need a **repeatable, evidence-backed** way for teachers to record **monthly learning observations** (not vague “good student” comments) so that:
+Centres need a **repeatable, evidence-backed** way for teachers to record **Monthly Learning Observations** (not vague “good student” labels) so that:
 
 - AI-assisted monthly reports have **structured, observable** inputs.
 - **Raw observation rows** stay **internal** until narrative is **edited, reviewed, and released** in the parent report workflow.
 - Ratings are **evidence-backed** and **tone-safe** for eventual parent-facing wording.
+
+### 1.1 Naming model (critical)
+
+- **Observation** = internal staff evidence input.
+- **Feedback** = polished parent-facing output in the released report.
+
+Use these names consistently:
+
+- **Staff/teacher tab/module:** Observations
+- **Teacher task name:** Monthly Learning Observation
+- **Form title:** Student Learning Observation
+- **AI evidence category:** Teacher observations / learning evidence
+- **Parent-facing report wording:** Teacher Feedback / Monthly Learning Feedback
 
 ---
 
@@ -46,7 +59,7 @@ From `supabase/sql/001_mvp_schema.sql`:
 
 ## 3. Recommended v1 rubric (education-centre)
 
-Design principle: **rating + evidence + next action** per dimension where rated; narrative fields for holistic strength/improvement/next step.
+Design principle: **rating + evidence-based observation + next action** per dimension where rated; narrative fields for holistic strength/improvement/next step.
 
 ### 3.1 Rating scale (1–5)
 
@@ -58,9 +71,9 @@ Design principle: **rating + evidence + next action** per dimension where rated;
 | 4 | Strong progress | Clear, repeated positive behaviours |
 | 5 | Excellent / consistently strong | Sustained, independent demonstration |
 
-**Rules:** Each rating must have a **short evidence comment** referencing **observable behaviour** (e.g. “volunteers answers in group oral practice”) — avoid labels like “good student” without evidence.
+**Rules:** Each rating must have a **short evidence-based observation** referencing **observable behaviour** (e.g. “volunteers answers in group oral practice”) — avoid labels like “good” without evidence.
 
-### 3.2 Dimensions (rated: score + evidence comment + optional next action)
+### 3.2 Dimensions (rated: 1–5 rating + evidence-based observation + optional next action)
 
 1. **Engagement / participation**  
 2. **Understanding / lesson progress**  
@@ -80,6 +93,21 @@ Design principle: **rating + evidence + next action** per dimension where rated;
 
 ---
 
+## 4. Workload model (weekly rotation)
+
+Goal: **1 structured observation per student per month**, spread across weeks to protect teacher workload.
+
+- **Weekly rotation target** (approximate):
+  - class of **20** students → **5** students per week
+  - class of **16** students → **4** students per week
+  - class of **12** students → **3** students per week
+- **Missed observations:** roll forward to the next week or become **overdue** (centre policy).
+- **Visibility:** supervisor/HQ can view completion progress by class/teacher/month.
+
+This model later maps naturally to a weekly “batch” task (see My Tasks behavior).
+
+---
+
 ## 4. Roles and workflow (target)
 
 | Activity | Suggested role |
@@ -89,7 +117,24 @@ Design principle: **rating + evidence + next action** per dimension where rated;
 | **Optional review** before AI/report use | **Branch supervisor** or **HQ** (flag per centre) |
 | **Approve narrative for parents** | **Teacher / supervisor** per existing AI parent report lifecycle |
 
-**AI usage boundary:** Structured observation content feeds **staff-only evidence aggregation** and **mock/draft assist** until **teacher edits** and **release** — **no auto-release**, **no raw dump** to ParentView.
+**AI usage boundary:** Raw structured **Monthly Learning Observation** rows feed **staff-only evidence** and **draft assist**. AI may then produce parent-facing **Teacher Feedback** in the report draft. Teacher/staff must **review/edit/release** — **no auto-release**, and **parents never see raw observation records**.
+
+---
+
+## 5. Future My Tasks UX (concept)
+
+When implemented, teachers should see a single weekly card:
+
+- **Task name:** Monthly Learning Observation
+- **Status:** “5 students due this week” (for a class of 20)
+- Student list per week with statuses:
+  - Not started
+  - Draft
+  - Submitted
+  - Reviewed
+  - Overdue
+- Clicking a student opens the **Student Learning Observation** form.
+- Supervisor/HQ can view completion metrics and follow up.
 
 ---
 

@@ -113,3 +113,4 @@ Teacher access:
 - Dedicated teacher-writeable learning-notes table/workflow with explicit release controls.
 - Additional role-specific guardrails at DB layer for fine-grained teacher note writes.
 - Parent-facing exposure controls for any future learning-notes release mechanism.
+- **Monthly Learning Observation workflow (planned):** structured per-student monthly observations (rating + evidence-based observation + next action) feeding staff-only AI draft evidence and then parent-facing **Teacher Feedback** in released reports — see `docs/guided-teacher-observation-tasks-plan.md`.
