@@ -143,6 +143,8 @@ Per-student **Monthly Learning Observations** (rating + evidence-based observati
 
 The MVP **`observations`** table remains **classroom teaching-quality** (no `student_id`); a **separate** student-linked store is the intended SQL direction.
 
+**Backend foundation (manual apply):** `supabase/sql/045_student_learning_observations_foundation.sql` (RLS enabled; no parent/student policies; teacher draft/submit constrained).
+
 ---
 
 ## Related documents

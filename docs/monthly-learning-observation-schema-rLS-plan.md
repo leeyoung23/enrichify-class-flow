@@ -65,6 +65,14 @@ Keeping them separate makes RLS and privacy boundaries clearer.
 
 ## Part C — Recommended schema (v1) for `student_learning_observations`
 
+## Implementation note (045 foundation)
+
+Backend foundation SQL is now defined in:
+
+- `supabase/sql/045_student_learning_observations_foundation.sql`
+
+Manual apply only (dev/staging first). This milestone does **not** auto-apply migrations.
+
 ### Column model (recommended for v1)
 
 Prefer explicit columns over a large JSONB blob for the first version. Reasons:

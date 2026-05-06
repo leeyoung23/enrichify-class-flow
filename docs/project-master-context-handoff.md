@@ -2641,6 +2641,7 @@ Handoff status: complete for continuity. Use this file as the primary context an
 
 - **Doc:** `docs/guided-teacher-observation-tasks-plan.md` — v1 **rubric** + naming boundary (**Observation** vs **Teacher Feedback**), roles, workload rotation, and sequencing before SQL/UI.
 - **Schema/RLS/task typing plan:** `docs/monthly-learning-observation-schema-rLS-plan.md` — proposed `student_learning_observations` table (columns v1), lifecycle statuses, RLS design, weekly batch task metadata, and audit event list (planning-only).
+- **SQL foundation (manual apply):** `supabase/sql/045_student_learning_observations_foundation.sql` — creates `student_learning_observations`, indexes, updated_at trigger, and conservative RLS (teacher draft/submit; supervisor/HQ review; parent/student: no raw access). **Not** wired into AI aggregation in this milestone.
 - **UI:** `Observations.jsx` — non-interactive **guidance card** clarifying roadmap vs current classroom-observation demo; **no** new persist path.
 - **No** RLS/SQL in this milestone; **no** parent exposure of raw rows.
 

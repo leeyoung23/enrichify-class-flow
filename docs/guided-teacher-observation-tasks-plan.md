@@ -164,7 +164,7 @@ The existing table is **teacher-centric** and **not student-linked**. Extending 
 ## 7. Milestone sequencing (recommended)
 
 1. **Planning + rubric** (this document) + staff UI **guidance** copy.  
-2. **SQL foundation** + RLS + minimal teacher completion UI (single student, one month).  
+2. **SQL foundation** + RLS (045 backend) + minimal teacher completion UI (single student, one month).  
 3. **Task assignment** integration (`teacher_tasks` or typed task metadata).  
 4. **Aggregation hook** into AI Parent Report source evidence (staff preview + mock draft).  
 5. **Review gate** (optional) before inclusion in AI draft context.

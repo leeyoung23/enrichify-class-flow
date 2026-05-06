@@ -117,6 +117,7 @@ Spot-check quickly before sign-off:
 - [ ] Confirm sample helper was run manually (not CI), and no provider/OCR/PDF-storage/email paths were invoked.
 - [ ] Optional smokes: `npm run test:supabase:ai-parent-reports`, `test:supabase:ai-parent-report:mock-draft`, `test:supabase:ai-parent-report:source-aggregation` / `test:supabase:ai-parent-report:rls-source-aggregation` as environment allows; **`npm run test:supabase:ai-parent-report:observation-evidence`** — report-period + **snapshot** background (`learningContextSnapshotSummary`) when narrow windows exclude dated cues.
 - [ ] Review `docs/guided-teacher-observation-tasks-plan.md` and `docs/monthly-learning-observation-schema-rLS-plan.md` for the roadmap on structured **per-student Monthly Learning Observations** (not yet in aggregation).
+- [ ] (After manual SQL apply) Run `npm run test:supabase:student-learning-observations` to verify RLS boundaries for `student_learning_observations`.
 
 ### Notification admin and governance
 
