@@ -58,6 +58,7 @@
     "test:supabase:auth-lifecycle-audit": "node scripts/supabase-auth-lifecycle-audit-smoke-test.mjs",
     "test:supabase:auth-sessions": "node scripts/supabase-auth-sessions-smoke-test.mjs",
     "test:supabase:notifications": "node scripts/supabase-notifications-foundation-smoke-test.mjs",
+    "test:supabase:notification-action-routing": "node scripts/supabase-notification-action-routing-smoke-test.mjs",
     "test:supabase:notification-preference-enforcement": "node scripts/supabase-notification-preference-enforcement-smoke-test.mjs",
     "test:supabase:notification-templates": "node scripts/supabase-notification-templates-smoke-test.mjs",
     "test:supabase:parent-notification-preferences": "node scripts/supabase-parent-notification-preferences-smoke-test.mjs",

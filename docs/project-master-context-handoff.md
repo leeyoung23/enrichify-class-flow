@@ -586,6 +586,7 @@
 - **Fallback preserved:** if migration 044 is not applied, client falls back to existing `listMyInAppNotifications` behavior (section-intent routing).
 - **ParentView deep-link support:** `?report=<reportId>#parent-progress-reports` is now honored for released reports; unavailable target shows a friendly message without exposing draft/internal data.
 - **Linked-child default behavior (safe improvement):** parent can open `/parent-view` without `?student=` when exactly one linked child context is available via profile link; multi-child selector remains deferred.
+- **New regression smoke:** `test:supabase:notification-action-routing` validates exact report action target for `[UAT_SAMPLE]`, URL pattern construction, released detail read, evidence-link blocking, and delivery-log blocking in parent scope.
 
 ## Checkpoint update (payment proof request notification v1 — 2026-05-05)
 

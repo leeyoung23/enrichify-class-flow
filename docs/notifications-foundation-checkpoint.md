@@ -196,6 +196,8 @@ Applied + verified (linked project):
   - Parent UI now prefers exact report routing for `ai_parent_report.released` + `entity_type=ai_parent_report`: mark read, move to target student when needed, scroll to `#parent-progress-reports`, and open the exact released report by `entity_id`.
   - Fallback remains safe: if exact target is unavailable, route by section intent only and show a friendly notice.
   - Post-apply smoke verification now passes exact target checks (`Parent: own notification action-target fields available`; `Parent: notification includes exact released report action target`).
+  - Dedicated checkpoint smoke added: `scripts/supabase-notification-action-routing-smoke-test.mjs` (`npm run test:supabase:notification-action-routing`) to verify exact report action target, deep-link URL construction, released detail visibility, evidence-link blocking, and delivery-log blocking in parent scope.
+  - This repo currently uses service-level smokes (no browser automation harness), so scroll/highlight animation is validated by code-path + query/hash state behavior rather than DOM animation assertions.
 
 ### Safety boundaries (unchanged after apply)
 

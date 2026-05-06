@@ -105,6 +105,9 @@ This finder is **read-only** and does not create/update/release/archive/delete r
   - `/parent-view?student=<studentId>#parent-progress-reports`
   - Optional exact-target format for notification deep-link checks:
     `/parent-view?student=<studentId>&report=<reportId>#parent-progress-reports`
+- Exact action-target smoke can be run with:
+  `npm run test:supabase:notification-action-routing`
+  (reuses `[UAT_SAMPLE]` report where available; prints CHECK guidance if sample is missing).
 - Prints suggested screenshot filenames.
 
 If parent fixture credentials are available, finder also performs read-only checks:
