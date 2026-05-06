@@ -1,0 +1,303 @@
+# Announcements Completion Overview Plan
+
+Date: 2026-05-01  
+Scope: completion overview strategy + read-service checkpoint + **HQ/supervisor read-only UI integration checkpoint** (no SQL/RLS changes in this milestone)
+
+## Checkpoint update (documentation-only, read service checkpoint formalized)
+
+- Canonical narrative for metrics, per-person semantics, smoke coverage, safety boundaries, and next milestone lives in:
+  - `docs/announcements-completion-overview-read-service-checkpoint.md`
+- This doc-only pass does not re-run build/lint/smoke unless runtime files change (`git diff --name-only` only).
+
+## Checkpoint update (read service + smoke added)
+
+- Added `listAnnouncementCompletionOverview({ announcementId, branchId, includeCompleted } = {})` in `src/services/supabaseReadService.js`.
+- Added focused smoke script:
+  - `scripts/supabase-announcements-completion-overview-smoke-test.mjs`
+  - `npm run test:supabase:announcements:completion`
+- Historical note: completion overview started as **service + smoke only**; UI integration is now completed in a later checkpoint section in this doc.
+- No SQL/RLS changes, no notification/email automation, and no parent-facing announcements/events were added.
+- Detailed checkpoint record: `docs/announcements-completion-overview-read-service-checkpoint.md`.
+
+## Checkpoint update (UI integration added)
+
+- `src/pages/Announcements.jsx` now renders a read-only `Completion Overview` section in the detail panel.
+- Visibility is HQ/supervisor only; teacher cannot see manager overview in demo or authenticated paths.
+- Authenticated non-demo reads use `listAnnouncementCompletionOverview({ announcementId })` when selected announcement changes.
+- Demo mode remains local-only with fake overview rows for HQ/supervisor and no Supabase calls.
+- No SQL/RLS/service additions; no reminder/email/notification actions were added.
+- UI checkpoint record: `docs/announcements-completion-overview-ui-checkpoint.md`.
+- Validation note from UI milestone environment:
+  - build/lint/typecheck PASS,
+  - announcement smoke scripts completed with DNS `ENOTFOUND` CHECK skips,
+  - rerun smoke scripts when Supabase DNS/network is stable.
+
+## 1) Current state
+
+- Staff own-task visibility is live in `MyTasks` via read-only `Announcement Requests` cards.
+- Announcement request workflow is live for staff: read/status/reply/upload in `Announcements`.
+- **Manager completion overview read path and UI now exist:** `listAnnouncementCompletionOverview(...)` + read-only HQ/supervisor section in `Announcements`.
+- Notification/email automation does not exist yet.
+
+## 2) Product purpose
+
+HQ and branch supervisors need a reliable way to monitor completion posture for request announcements without chasing updates in ad-hoc channels.
+
+This overview should:
+
+- show who has read, replied, uploaded, marked done, marked undone, or become overdue;
+- reduce manual WhatsApp follow-up loops;
+- improve operational accountability without introducing real-time chat;
+- identify blockers before reminders/emails are introduced.
+
+## 3) Completion overview scope (per announcement)
+
+Planned summary metrics:
+
+- `totalTargetedStaff`
+- `readCount` / `unreadCount`
+- `doneCount` / `pendingCount` / `undoneCount`
+- `responseRequiredCount`
+- `responseProvidedCount`
+- `responseMissingCount`
+- `uploadRequiredCount`
+- `uploadProvidedCount`
+- `uploadMissingCount`
+- `overdueCount`
+- `latestReplyAt`
+- `latestUploadAt`
+
+## 4) Per-person row model
+
+Planned row fields for manager overview:
+
+- `profileId`
+- `staffName`
+- `role`
+- `branch`
+- `targetSource` (`profile` / `role` / `branch` / `class` when present)
+- `readAt`
+- `doneStatus` (`pending` / `done` / `undone`)
+- `undoneReason` (if provided)
+- `replyCount`
+- `responseProvided`
+- `attachmentCount`
+- `uploadProvided`
+- `isOverdue`
+- `lastActivityAt` (latest of read/reply/upload/status timestamps)
+
+## 5) Role behavior
+
+### HQ
+
+- Global overview across internal announcements and branches in allowed internal scope.
+
+### Branch supervisor
+
+- Own-branch overview only.
+- Focused on announcements they manage and/or branch-targeted requests under branch scope.
+
+### Teacher
+
+- No manager completion overview access.
+- Continues to use own task list in `MyTasks`.
+
+### Parent/student
+
+- No access to internal manager overview.
+
+## 6) Data source options
+
+### A) Client/read-service aggregation from existing RLS-visible tables
+
+Sources:
+
+- `announcements`
+- `announcement_targets`
+- `announcement_statuses`
+- `announcement_replies`
+- `announcement_attachments`
+
+Pros:
+
+- no SQL migration needed for first milestone;
+- fastest proof path under existing JWT + RLS boundaries;
+- consistent with current `listMyAnnouncementTasks(...)` derivation style.
+
+Risks:
+
+- service-layer aggregation complexity grows with manager metrics;
+- can become expensive at higher volume if done naively.
+
+### B) SQL view/RPC under RLS
+
+Pros:
+
+- centralizes derivation and metric consistency server-side;
+- simpler frontend/service payload once stabilized.
+
+Risks:
+
+- requires SQL review + RLS verification milestone;
+- larger blast radius than A.
+
+### C) Materialized overview table
+
+Pros:
+
+- better for scheduled reminders/escalations/SLA/history.
+
+Risks:
+
+- extra write/sync complexity;
+- risk of drift from source-of-truth rows.
+
+### Recommendation
+
+Recommend **A first** while volume is still small and current RLS-visible tables are sufficient.  
+Move to **B later** if complexity/performance grows.  
+Keep **C much later** for reminder/escalation/SLA workflows only.
+
+## 7) Read service proposal (future)
+
+Proposed method:
+
+`listAnnouncementCompletionOverview({ announcementId, branchId, includeCompleted } = {})`
+
+Contract:
+
+- returns stable `{ data, error }`;
+- no raw `storage_path` in response;
+- no raw SQL/RLS/env leakage in errors;
+- no service-role frontend usage (anon client + JWT + RLS only).
+
+## 8) UI placement plan (future)
+
+Planned placement (future milestone):
+
+- inside `Announcements` detail panel for HQ/supervisor;
+- likely a dedicated `Completion` section/tab;
+- summary cards + per-person table/list;
+- mobile-friendly stacked rows at narrow widths;
+- row action remains `Open Announcement` only;
+- no direct reminder/email actions in MVP.
+
+## 9) Completion semantics
+
+- `done` remains explicit user lifecycle status.
+- Reply/upload are evidence signals, not auto-done triggers.
+- `responseMissing` and `uploadMissing` stay visible as separate blocker dimensions.
+- `overdue` is derived from `due_date` + unresolved state.
+- `undone` remains visible as an explicit blocker state.
+
+## 10) RLS/privacy boundaries
+
+- Derive only from rows already accessible via RLS (`announcements`, `targets`, `statuses`, `replies`, `attachments`).
+- Branch supervisor visibility stays own-branch only.
+- Teacher cannot view other staff completion rows.
+- Parent/student remain blocked.
+- No `storage_path` in overview payload.
+- No attachment content previews in completion overview.
+- No service-role frontend.
+
+## 11) Testing plan (future)
+
+Planned smoke coverage for the implementation milestone:
+
+- HQ sees global overview for fake targeted announcement.
+- Supervisor sees own-branch overview only.
+- Teacher cannot access manager overview API/read helper.
+- Parent/student blocked.
+- Counts update after read/done/reply/upload transitions.
+- No notification/email side effects.
+
+## 12) Risks and safeguards
+
+### Risks
+
+- Cross-branch leakage in manager views.
+- Exposure of internal notes such as `staff_note`/sensitive context.
+- Incorrectly treating reply/upload as full completion.
+- Over-surveillance/shaming dynamics if metrics are shown without context.
+- Stale derived counts if refresh timing is poor.
+- Premature notification pressure before completion state is reliable.
+
+### Safeguards
+
+- strict branch/role scope checks in derivation;
+- exclude sensitive free-text fields from overview rows by default;
+- keep explicit lifecycle vs evidence dimensions separate;
+- show clear status definitions in UI copy;
+- gate notifications until overview accuracy is validated.
+
+## 13) Recommended next milestone
+
+Choose:
+
+- **A.** Company News warm pop-up planning
+- **B.** Notification/email automation planning
+- **C.** Parent-facing announcements/events planning
+- **D.** Rerun smoke validation only
+- **E.** Reports/PDF/AI OCR plan
+
+**Recommendation: A first.**
+
+Why:
+
+- internal request/document/task/overview loop is now complete at strong prototype level;
+- Company News is the second major Announcements mode from the original product vision;
+- notifications/emails should wait until communication states are mature and less noisy;
+- parent-facing announcements should follow after staff-facing Company News patterns are shaped.
+
+## 14) Next implementation prompt (copy-paste)
+
+```text
+Continue this same project only.
+
+Project folder:
+~/Desktop/enrichify-class-flow
+
+Branch:
+cursor/safe-lint-typecheck-486d
+
+Latest expected commit:
+Document Announcements completion overview UI
+
+Before doing anything, verify:
+- git branch --show-current
+- git log --oneline -12
+- git status --short
+
+Task:
+Company News warm pop-up planning only.
+
+Scope:
+- Docs/planning only.
+- Do not change app UI.
+- Do not change runtime page logic.
+- Do not apply SQL.
+- Do not add services.
+- Do not add notifications/emails/live chat.
+- Do not add parent-facing announcements/events.
+- Do not enable parent_facing_media.
+- No service role key in frontend.
+- No raw env/password exposure.
+- Use fake/dev fixtures only.
+
+Deliverables:
+1) Define Company News warm pop-up product shape (audience, timing, dismiss, non-goals).
+2) Define safety boundaries and phased rollout notes.
+3) Keep notifications/email automation as future and explicitly non-auto-send.
+4) Update relevant docs/checkpoints only.
+
+Validation efficiency rule:
+- Docs-only: run only `git diff --name-only`.
+```
+
+---
+
+Validation efficiency note for this planning milestone:
+
+- Docs/planning only.
+- Run only: `git diff --name-only`.
+- Do not run build/lint/typecheck/smoke unless runtime files change.

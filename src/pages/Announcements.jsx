@@ -1,0 +1,2702 @@
+import React, { useEffect, useMemo, useState } from 'react';
+import { useLocation, useOutletContext } from 'react-router-dom';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Card } from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Textarea } from '@/components/ui/textarea';
+import PageHeader from '@/components/shared/PageHeader';
+import EmptyState from '@/components/shared/EmptyState';
+import NotificationTemplateManager from '@/components/announcements/NotificationTemplateManager';
+import { BellRing, MessageSquare, Megaphone } from 'lucide-react';
+import { toast } from 'sonner';
+import { getSelectedDemoRole } from '@/services/authService';
+import { ROLES, getRole } from '@/services/permissionService';
+import { isSupabaseConfigured } from '@/services/supabaseClient';
+import { useSupabaseAuthState } from '@/hooks/useSupabaseAuthState';
+import {
+  listAnnouncementCompletionOverview,
+  listAnnouncements,
+  listAnnouncementReplies,
+  listAnnouncementStatuses,
+  listAnnouncementTargets,
+  listNotificationTemplates,
+  listParentAnnouncements,
+} from '@/services/supabaseReadService';
+import {
+  getAnnouncementAttachmentSignedUrl,
+  getParentAnnouncementMediaSignedUrl,
+  listAnnouncementAttachments,
+  listParentAnnouncementMedia,
+  releaseParentAnnouncementMedia,
+  deleteParentAnnouncementMedia,
+  uploadAnnouncementAttachment,
+  uploadParentAnnouncementMedia,
+} from '@/services/supabaseUploadService';
+import {
+  archiveParentAnnouncement,
+  createCompanyNews,
+  createParentAnnouncement,
+  createAnnouncementReply,
+  createAnnouncementRequest,
+  markAnnouncementRead,
+  publishParentAnnouncement,
+  publishCompanyNews,
+  updateAnnouncementDoneStatus,
+  updateNotificationTemplate,
+} from '@/services/supabaseWriteService';
+
+const FILTERS = ['Requests', 'Parent Notices', 'Company News', 'Done', 'Pending', 'Message Templates'];
+const PARENT_NOTICE_TYPE_OPTIONS = [
+  { value: 'event', label: 'Event' },
+  { value: 'activity', label: 'Activity' },
+  { value: 'centre_notice', label: 'Centre notice' },
+  { value: 'holiday_closure', label: 'Holiday closure' },
+  { value: 'reminder', label: 'Reminder' },
+  { value: 'celebration', label: 'Celebration' },
+  { value: 'programme_update', label: 'Programme update' },
+  { value: 'parent_workshop', label: 'Parent workshop' },
+  { value: 'graduation_concert', label: 'Graduation concert' },
+];
+const ANNOUNCEMENT_ATTACHMENT_ROLE_OPTIONS = [
+  { value: 'hq_attachment', label: 'HQ Attachment' },
+  { value: 'supervisor_attachment', label: 'Supervisor Attachment' },
+  { value: 'response_upload', label: 'Response Upload' },
+];
+const PARENT_NOTICE_MEDIA_ROLE_OPTIONS = [
+  { value: 'parent_media', label: 'Parent media' },
+  { value: 'cover_image', label: 'Cover image' },
+  { value: 'attachment', label: 'Attachment' },
+];
+const PARENT_NOTICE_MEDIA_ALLOWED_TYPES = ['image/jpeg', 'image/png', 'image/webp', 'application/pdf'];
+const PARENT_NOTICE_MEDIA_MAX_BYTES = 25 * 1024 * 1024;
+
+const DEMO_ANNOUNCEMENTS = [
+  {
+    id: 'demo-ann-1',
+    type: 'request',
+    title: 'Upload weekly reading tracker',
+    subtitle: 'North Branch Year 5',
+    body: 'Please upload this week reading tracker for your assigned students before Friday 5PM.',
+    priority: 'high',
+    dueDate: '2026-05-05',
+    status: 'pending',
+    branchLabel: 'Demo North Branch',
+    requiresResponse: true,
+    requiresUpload: false,
+    targetLabel: 'Teachers · Demo North Branch',
+    visibleTo: [ROLES.HQ_ADMIN, ROLES.BRANCH_SUPERVISOR, ROLES.TEACHER],
+    replies: [
+      { id: 'r-1', author: 'Supervisor Demo User', message: 'Please prioritise students with overdue reading logs.' },
+    ],
+  },
+  {
+    id: 'demo-ann-2',
+    type: 'request',
+    title: 'Parent meeting summary reminder',
+    subtitle: 'Follow-up requested',
+    body: 'Submit short parent meeting summary notes for all scheduled sessions this week.',
+    priority: 'normal',
+    dueDate: '2026-05-08',
+    status: 'read',
+    branchLabel: 'Demo North Branch',
+    requiresResponse: true,
+    requiresUpload: true,
+    targetLabel: 'Teacher profile target',
+    visibleTo: [ROLES.BRANCH_SUPERVISOR, ROLES.TEACHER],
+    replies: [],
+  },
+  {
+    id: 'demo-ann-3',
+    type: 'company_news',
+    title: 'Congratulations: North Branch reading milestone',
+    subtitle: 'Team recognition update',
+    body: 'Congratulations to the North Branch team for reaching this month reading target with excellent consistency.',
+    priority: 'low',
+    dueDate: null,
+    status: 'read',
+    branchLabel: 'Global',
+    requiresResponse: false,
+    requiresUpload: false,
+    targetLabel: 'All staff',
+    templateLabel: 'Congratulations',
+    emoji: '🎉',
+    publishDate: '2026-05-01',
+    popupEnabled: true,
+    toneLabel: 'celebratory',
+    audienceLabel: 'Internal staff',
+    visibleTo: [ROLES.HQ_ADMIN, ROLES.BRANCH_SUPERVISOR, ROLES.TEACHER],
+    replies: [],
+  },
+  {
+    id: 'demo-ann-4',
+    type: 'company_news',
+    title: 'Important update: schedule adjustment this Friday',
+    subtitle: 'Operations notice',
+    body: 'Friday class support rota has been adjusted. Please check the final block assignment in the branch roster.',
+    priority: 'high',
+    dueDate: null,
+    status: 'read',
+    branchLabel: 'Demo North Branch',
+    requiresResponse: false,
+    requiresUpload: false,
+    targetLabel: 'North Branch staff',
+    templateLabel: 'Important update',
+    emoji: '📌',
+    publishDate: '2026-05-02',
+    popupEnabled: true,
+    toneLabel: 'important',
+    audienceLabel: 'Internal staff',
+    visibleTo: [ROLES.HQ_ADMIN, ROLES.BRANCH_SUPERVISOR, ROLES.TEACHER],
+    replies: [],
+  },
+  {
+    id: 'demo-ann-5',
+    type: 'company_news',
+    title: 'Training reminder: phonics workshop Monday',
+    subtitle: 'Staff development',
+    body: 'Reminder: phonics workshop starts Monday 9:00 AM. Bring current class notes for discussion.',
+    priority: 'normal',
+    dueDate: null,
+    status: 'pending',
+    branchLabel: 'Global',
+    requiresResponse: false,
+    requiresUpload: false,
+    targetLabel: 'All teachers',
+    templateLabel: 'Training reminder',
+    emoji: '📚',
+    publishDate: '2026-05-03',
+    popupEnabled: false,
+    toneLabel: 'supportive',
+    audienceLabel: 'Internal staff',
+    visibleTo: [ROLES.HQ_ADMIN, ROLES.BRANCH_SUPERVISOR, ROLES.TEACHER],
+    replies: [],
+  },
+  {
+    id: 'demo-ann-6',
+    type: 'company_news',
+    title: 'Holiday / centre closure notice',
+    subtitle: 'Public holiday schedule',
+    body: 'Centre is closed next Monday for public holiday. Normal operations resume Tuesday morning.',
+    priority: 'normal',
+    dueDate: null,
+    status: 'pending',
+    branchLabel: 'Global',
+    requiresResponse: false,
+    requiresUpload: false,
+    targetLabel: 'All staff',
+    templateLabel: 'Holiday / closure',
+    emoji: '🏫',
+    publishDate: '2026-05-04',
+    popupEnabled: true,
+    toneLabel: 'informative',
+    audienceLabel: 'Internal staff',
+    visibleTo: [ROLES.HQ_ADMIN, ROLES.BRANCH_SUPERVISOR, ROLES.TEACHER],
+    replies: [],
+  },
+  {
+    id: 'demo-ann-7',
+    type: 'company_news',
+    title: 'Event reminder: Family Day booth preparation',
+    subtitle: 'Event reminder',
+    body: 'Family Day booth setup starts 7:30 AM Saturday. Branch teams please review assignment board.',
+    priority: 'high',
+    dueDate: null,
+    status: 'pending',
+    branchLabel: 'Demo North Branch',
+    requiresResponse: false,
+    requiresUpload: false,
+    targetLabel: 'North Branch staff',
+    templateLabel: 'Event reminder',
+    emoji: '📣',
+    publishDate: '2026-05-05',
+    popupEnabled: true,
+    toneLabel: 'warm reminder',
+    audienceLabel: 'Internal staff',
+    visibleTo: [ROLES.HQ_ADMIN, ROLES.BRANCH_SUPERVISOR, ROLES.TEACHER],
+    replies: [],
+  },
+];
+
+const DEMO_PARENT_NOTICES = [
+  {
+    id: 'demo-parent-notice-1',
+    type: 'parent_notice',
+    title: 'North Branch Family Workshop',
+    subtitle: 'Reading confidence support session',
+    body: 'Families are invited to a short reading workshop this Friday. Please arrive 10 minutes early for registration.',
+    status: 'published',
+    branchLabel: 'Demo North Branch',
+    targetLabel: 'Branch parents',
+    priority: 'normal',
+    announcementType: 'parent_workshop',
+    eventStartAt: '2026-05-10T15:00:00.000Z',
+    eventEndAt: '2026-05-10T16:00:00.000Z',
+    location: 'North Branch Hall',
+    publishedAt: '2026-05-02T08:00:00.000Z',
+    createdAt: '2026-05-01T14:00:00.000Z',
+    audienceSummary: 'Branch target',
+    visibleTo: [ROLES.HQ_ADMIN, ROLES.BRANCH_SUPERVISOR, ROLES.TEACHER],
+  },
+  {
+    id: 'demo-parent-notice-2',
+    type: 'parent_notice',
+    title: 'Class 1A Activity Reminder',
+    subtitle: 'Bring hat and water bottle',
+    body: 'Outdoor activity is scheduled for Tuesday morning. Please prepare comfortable shoes, hat, and water bottle.',
+    status: 'draft',
+    branchLabel: 'Demo North Branch',
+    targetLabel: 'Class target',
+    priority: 'normal',
+    announcementType: 'activity',
+    eventStartAt: '2026-05-12T09:00:00.000Z',
+    eventEndAt: '2026-05-12T10:00:00.000Z',
+    location: 'School Garden Area',
+    publishedAt: null,
+    createdAt: '2026-05-01T16:00:00.000Z',
+    audienceSummary: 'Class target',
+    visibleTo: [ROLES.HQ_ADMIN, ROLES.BRANCH_SUPERVISOR, ROLES.TEACHER],
+  },
+];
+
+const DEMO_ANNOUNCEMENT_ATTACHMENTS = {
+  'demo-ann-1': [
+    {
+      id: 'demo-att-1',
+      file_name: 'north-reading-guideline.pdf',
+      file_role: 'hq_attachment',
+      mime_type: 'application/pdf',
+      file_size: 189240,
+      created_at: '2026-05-01T09:00:00.000Z',
+      staff_note: 'Reference checklist only.',
+    },
+  ],
+  'demo-ann-2': [
+    {
+      id: 'demo-att-2',
+      file_name: 'teacher-weekly-response.jpg',
+      file_role: 'response_upload',
+      mime_type: 'image/jpeg',
+      file_size: 245112,
+      created_at: '2026-05-01T09:30:00.000Z',
+      staff_note: 'Draft response evidence.',
+    },
+  ],
+};
+const DEMO_PARENT_NOTICE_MEDIA = {
+  'demo-parent-notice-1': [
+    {
+      id: 'demo-parent-media-1',
+      file_name: 'family-workshop-cover.webp',
+      media_role: 'cover_image',
+      mime_type: 'image/webp',
+      file_size: 194210,
+      released_to_parent: true,
+      created_at: '2026-05-01T14:30:00.000Z',
+    },
+    {
+      id: 'demo-parent-media-2',
+      file_name: 'reading-workshop-guide.pdf',
+      media_role: 'attachment',
+      mime_type: 'application/pdf',
+      file_size: 442100,
+      released_to_parent: false,
+      created_at: '2026-05-01T14:40:00.000Z',
+    },
+  ],
+};
+
+const DEMO_COMPLETION_OVERVIEW = {
+  'demo-ann-1': {
+    totalTargeted: 4,
+    readCount: 3,
+    unreadCount: 1,
+    doneCount: 1,
+    pendingCount: 2,
+    undoneCount: 1,
+    responseProvidedCount: 2,
+    responseMissingCount: 2,
+    uploadProvidedCount: 0,
+    uploadMissingCount: 0,
+    overdueCount: 1,
+    latestReplyAt: '2026-05-01T09:20:00.000Z',
+    latestUploadAt: null,
+    rows: [
+      {
+        profileId: 'demo-profile-1',
+        staffName: 'Teacher Amy',
+        role: 'teacher',
+        branchName: 'Demo North Branch',
+        readAt: '2026-05-01T08:40:00.000Z',
+        doneStatus: 'pending',
+        replyCount: 1,
+        attachmentCount: 0,
+        responseProvided: true,
+        uploadProvided: false,
+        isOverdue: false,
+        lastActivityAt: '2026-05-01T09:20:00.000Z',
+        undoneReason: null,
+      },
+      {
+        profileId: 'demo-profile-2',
+        staffName: 'Teacher Ben',
+        role: 'teacher',
+        branchName: 'Demo North Branch',
+        readAt: '2026-05-01T08:55:00.000Z',
+        doneStatus: 'done',
+        replyCount: 1,
+        attachmentCount: 0,
+        responseProvided: true,
+        uploadProvided: false,
+        isOverdue: false,
+        lastActivityAt: '2026-05-01T09:10:00.000Z',
+        undoneReason: null,
+      },
+      {
+        profileId: 'demo-profile-3',
+        staffName: 'Teacher Cara',
+        role: 'teacher',
+        branchName: 'Demo North Branch',
+        readAt: '2026-05-01T08:15:00.000Z',
+        doneStatus: 'undone',
+        replyCount: 0,
+        attachmentCount: 0,
+        responseProvided: false,
+        uploadProvided: false,
+        isOverdue: true,
+        lastActivityAt: '2026-05-01T08:50:00.000Z',
+        undoneReason: 'Need student files before completing.',
+      },
+      {
+        profileId: 'demo-profile-4',
+        staffName: 'Teacher Dan',
+        role: 'teacher',
+        branchName: 'Demo North Branch',
+        readAt: null,
+        doneStatus: 'pending',
+        replyCount: 0,
+        attachmentCount: 0,
+        responseProvided: false,
+        uploadProvided: false,
+        isOverdue: false,
+        lastActivityAt: null,
+        undoneReason: null,
+      },
+    ],
+  },
+  'demo-ann-2': {
+    totalTargeted: 3,
+    readCount: 2,
+    unreadCount: 1,
+    doneCount: 1,
+    pendingCount: 2,
+    undoneCount: 0,
+    responseProvidedCount: 1,
+    responseMissingCount: 2,
+    uploadProvidedCount: 1,
+    uploadMissingCount: 2,
+    overdueCount: 1,
+    latestReplyAt: '2026-05-01T10:05:00.000Z',
+    latestUploadAt: '2026-05-01T10:08:00.000Z',
+    rows: [
+      {
+        profileId: 'demo-profile-5',
+        staffName: 'Teacher Ella',
+        role: 'teacher',
+        branchName: 'Demo North Branch',
+        readAt: '2026-05-01T09:40:00.000Z',
+        doneStatus: 'done',
+        replyCount: 1,
+        attachmentCount: 1,
+        responseProvided: true,
+        uploadProvided: true,
+        isOverdue: false,
+        lastActivityAt: '2026-05-01T10:08:00.000Z',
+        undoneReason: null,
+      },
+      {
+        profileId: 'demo-profile-6',
+        staffName: 'Teacher Finn',
+        role: 'teacher',
+        branchName: 'Demo North Branch',
+        readAt: '2026-05-01T09:41:00.000Z',
+        doneStatus: 'pending',
+        replyCount: 0,
+        attachmentCount: 0,
+        responseProvided: false,
+        uploadProvided: false,
+        isOverdue: true,
+        lastActivityAt: '2026-05-01T09:41:00.000Z',
+        undoneReason: null,
+      },
+      {
+        profileId: 'demo-profile-7',
+        staffName: 'Teacher Grace',
+        role: 'teacher',
+        branchName: 'Demo North Branch',
+        readAt: null,
+        doneStatus: 'pending',
+        replyCount: 0,
+        attachmentCount: 0,
+        responseProvided: false,
+        uploadProvided: false,
+        isOverdue: false,
+        lastActivityAt: null,
+        undoneReason: null,
+      },
+    ],
+  },
+};
+
+function statusTone(status) {
+  if (status === 'done') return 'bg-emerald-100 text-emerald-700 border-emerald-200';
+  if (status === 'undone') return 'bg-orange-100 text-orange-700 border-orange-200';
+  if (status === 'read') return 'bg-blue-100 text-blue-700 border-blue-200';
+  return 'bg-slate-100 text-slate-700 border-slate-200';
+}
+
+function priorityTone(priority) {
+  if (priority === 'high') return 'bg-red-100 text-red-700 border-red-200';
+  if (priority === 'urgent') return 'bg-rose-100 text-rose-700 border-rose-200';
+  if (priority === 'low') return 'bg-slate-100 text-slate-700 border-slate-200';
+  return 'bg-amber-100 text-amber-700 border-amber-200';
+}
+
+function formatFileSize(bytes) {
+  const value = Number(bytes || 0);
+  if (!Number.isFinite(value) || value <= 0) return 'Unknown size';
+  if (value < 1024) return `${value} B`;
+  if (value < 1024 * 1024) return `${(value / 1024).toFixed(1)} KB`;
+  return `${(value / (1024 * 1024)).toFixed(1)} MB`;
+}
+
+function formatAttachmentDate(value) {
+  if (!value) return 'Unknown date';
+  const parsed = new Date(value);
+  if (Number.isNaN(parsed.getTime())) return 'Unknown date';
+  return parsed.toLocaleDateString();
+}
+
+function formatFileType(mimeType) {
+  const normalized = String(mimeType || '').trim();
+  if (!normalized) return 'Unknown type';
+  return normalized;
+}
+
+function formatDateTime(value) {
+  if (!value) return '—';
+  const parsed = new Date(value);
+  if (Number.isNaN(parsed.getTime())) return '—';
+  return parsed.toLocaleString();
+}
+
+function formatParentNoticeType(type) {
+  const normalized = String(type || '').trim();
+  if (!normalized) return 'Parent notice';
+  return normalized.replace(/_/g, ' ');
+}
+
+function formatParentMediaRole(value) {
+  const normalized = String(value || '').trim();
+  if (!normalized) return 'parent_media';
+  return normalized.replace(/_/g, ' ');
+}
+
+function normalizeDemoMediaMimeType(fileName) {
+  const lower = String(fileName || '').toLowerCase();
+  if (lower.endsWith('.jpg') || lower.endsWith('.jpeg')) return 'image/jpeg';
+  if (lower.endsWith('.png')) return 'image/png';
+  if (lower.endsWith('.webp')) return 'image/webp';
+  if (lower.endsWith('.pdf')) return 'application/pdf';
+  return 'application/pdf';
+}
+
+function roleLabel(value) {
+  if (!value) return 'Staff';
+  if (value === 'hq_admin') return 'HQ Admin';
+  if (value === 'branch_supervisor') return 'Branch Supervisor';
+  if (value === 'teacher') return 'Teacher';
+  return value;
+}
+
+function roleCanUploadAttachment(role) {
+  return role === ROLES.HQ_ADMIN || role === ROLES.BRANCH_SUPERVISOR || role === ROLES.TEACHER;
+}
+
+function getAllowedAttachmentRoles(role) {
+  if (role === ROLES.HQ_ADMIN) return ['hq_attachment', 'supervisor_attachment'];
+  if (role === ROLES.BRANCH_SUPERVISOR) return ['supervisor_attachment'];
+  if (role === ROLES.TEACHER) return ['response_upload'];
+  return [];
+}
+
+export default function Announcements() {
+  const { user } = useOutletContext();
+  const location = useLocation();
+  const { appUser: supabaseAppUser } = useSupabaseAuthState();
+  const queryClient = useQueryClient();
+  const selectedDemoRole = getSelectedDemoRole();
+  const role = selectedDemoRole || getRole(user);
+  const isDemoMode = Boolean(selectedDemoRole);
+  const isStaff = role === ROLES.HQ_ADMIN || role === ROLES.BRANCH_SUPERVISOR || role === ROLES.TEACHER;
+  const canCreateInDemo = role === ROLES.HQ_ADMIN || role === ROLES.BRANCH_SUPERVISOR;
+  const canCreateInAuth = role === ROLES.HQ_ADMIN || role === ROLES.BRANCH_SUPERVISOR;
+  const canCreateCompanyNewsInDemo = role === ROLES.HQ_ADMIN;
+  const canCreateCompanyNewsInAuth = role === ROLES.HQ_ADMIN;
+  const canManageNotificationTemplates = role === ROLES.HQ_ADMIN;
+  const canViewManagerOverview = role === ROLES.HQ_ADMIN || role === ROLES.BRANCH_SUPERVISOR;
+  const canManageParentNoticeMedia = role === ROLES.HQ_ADMIN || role === ROLES.BRANCH_SUPERVISOR;
+  const canUploadAttachments = roleCanUploadAttachment(role);
+  const allowedAttachmentRoles = getAllowedAttachmentRoles(role);
+  const canUseSupabaseAnnouncements = isStaff && !isDemoMode && isSupabaseConfigured() && Boolean(supabaseAppUser?.id);
+
+  const [activeFilter, setActiveFilter] = useState('Requests');
+  const [rows, setRows] = useState(() => DEMO_ANNOUNCEMENTS);
+  const [selectedId, setSelectedId] = useState(DEMO_ANNOUNCEMENTS[0]?.id || '');
+  const [draftReply, setDraftReply] = useState('');
+  const [undoneReason, setUndoneReason] = useState('');
+  const [createOpen, setCreateOpen] = useState(false);
+  const [createForm, setCreateForm] = useState({
+    title: '',
+    subtitle: '',
+    body: '',
+    priority: 'normal',
+    dueDate: '',
+    requiresResponse: true,
+    requiresUpload: false,
+    targetType: 'branch',
+    targetLabel: '',
+    branchId: '',
+    targetBranchId: '',
+    targetRole: '',
+    targetProfileId: '',
+  });
+  const [demoAttachmentsByAnnouncementId, setDemoAttachmentsByAnnouncementId] = useState(DEMO_ANNOUNCEMENT_ATTACHMENTS);
+  const [demoParentMediaByNoticeId, setDemoParentMediaByNoticeId] = useState(DEMO_PARENT_NOTICE_MEDIA);
+  const [uploadRole, setUploadRole] = useState(allowedAttachmentRoles[0] || 'response_upload');
+  const [uploadNote, setUploadNote] = useState('');
+  const [uploadFile, setUploadFile] = useState(null);
+  const [demoUploadName, setDemoUploadName] = useState('');
+  const [parentMediaUploadRole, setParentMediaUploadRole] = useState('parent_media');
+  const [parentMediaUploadFile, setParentMediaUploadFile] = useState(null);
+  const [demoParentMediaName, setDemoParentMediaName] = useState('');
+  const [companyNewsCreateOpen, setCompanyNewsCreateOpen] = useState(false);
+  const [parentNoticeCreateOpen, setParentNoticeCreateOpen] = useState(false);
+  const [parentNoticeRows, setParentNoticeRows] = useState(() => DEMO_PARENT_NOTICES);
+  const [parentNoticeForm, setParentNoticeForm] = useState({
+    title: '',
+    subtitle: '',
+    body: '',
+    announcementType: 'event',
+    branchId: '',
+    classId: '',
+    targetType: 'branch',
+    targetBranchId: '',
+    targetClassId: '',
+    eventStartAt: '',
+    eventEndAt: '',
+    location: '',
+  });
+  const [companyNewsForm, setCompanyNewsForm] = useState({
+    title: '',
+    subtitle: '',
+    body: '',
+    templateLabel: 'General news',
+    emoji: '📣',
+    popupEnabled: true,
+    toneLabel: 'warm',
+    priority: 'normal',
+    audienceLabel: 'Internal staff',
+    targetType: 'branch',
+    targetBranchId: '',
+    targetRole: '',
+    targetProfileId: '',
+  });
+
+  useEffect(() => {
+    const stateAnnouncementId = location.state?.announcementId;
+    const statePreferredFilter = location.state?.preferredFilter;
+    const queryAnnouncementId = new URLSearchParams(location.search).get('announcementId');
+    const preferredId = stateAnnouncementId || queryAnnouncementId;
+    if (typeof statePreferredFilter === 'string' && FILTERS.includes(statePreferredFilter)) {
+      setActiveFilter(statePreferredFilter);
+    }
+    if (typeof preferredId === 'string' && preferredId.trim()) {
+      setSelectedId(preferredId.trim());
+    }
+  }, [location.search, location.state]);
+
+  useEffect(() => {
+    if (!allowedAttachmentRoles.includes(uploadRole)) {
+      setUploadRole(allowedAttachmentRoles[0] || 'response_upload');
+    }
+  }, [allowedAttachmentRoles, uploadRole]);
+
+  const announcementsQuery = useQuery({
+    queryKey: ['announcements-internal-staff', supabaseAppUser?.id, role],
+    enabled: canUseSupabaseAnnouncements,
+    queryFn: async () => {
+      const result = await listAnnouncements({ audienceType: 'internal_staff' });
+      if (result.error) throw new Error('Unable to load announcements right now.');
+      return Array.isArray(result.data) ? result.data : [];
+    },
+  });
+
+  const parentAnnouncementsQuery = useQuery({
+    queryKey: ['announcements-parent-facing', supabaseAppUser?.id, role],
+    enabled: canUseSupabaseAnnouncements,
+    queryFn: async () => {
+      const result = await listParentAnnouncements({ includeArchived: true });
+      if (result.error) throw new Error('Unable to load parent notices right now.');
+      return Array.isArray(result.data) ? result.data : [];
+    },
+  });
+
+  const authenticatedRows = useMemo(() => {
+    if (!canUseSupabaseAnnouncements) return [];
+    return (announcementsQuery.data || []).map((row) => {
+      const ownStatus = Array.isArray(row.announcement_statuses) ? row.announcement_statuses[0] : null;
+      const doneStatus = ownStatus?.done_status || 'pending';
+      const status = doneStatus === 'done' ? 'done' : doneStatus === 'undone' ? 'undone' : (ownStatus?.read_at ? 'read' : 'pending');
+      return {
+        id: row.id,
+        type: row.announcement_type || 'request',
+        title: row.title || 'Untitled announcement',
+        subtitle: row.subtitle || '',
+        body: row.body || '',
+        priority: row.priority || 'normal',
+        dueDate: row.due_date || null,
+        status,
+        branchLabel: row.branch_id ? `Branch ${row.branch_id.slice(0, 8)}` : 'Global',
+        requiresResponse: Boolean(row.requires_response),
+        requiresUpload: Boolean(row.requires_upload),
+        targetLabel: row.audience_type || 'internal_staff',
+        templateLabel: row.announcement_type === 'company_news' ? 'General news' : 'Request',
+        emoji: row.popup_emoji || null,
+        publishDate: row.published_at ? String(row.published_at).slice(0, 10) : null,
+        popupEnabled: Boolean(row.popup_enabled),
+        toneLabel: row.announcement_type === 'company_news' ? 'warm' : 'operational',
+        audienceLabel: row.audience_type || 'internal_staff',
+        visibleTo: [ROLES.HQ_ADMIN, ROLES.BRANCH_SUPERVISOR, ROLES.TEACHER],
+        replies: [],
+      };
+    });
+  }, [canUseSupabaseAnnouncements, announcementsQuery.data]);
+
+  const authenticatedParentNoticeRows = useMemo(() => {
+    if (!canUseSupabaseAnnouncements) return [];
+    return (parentAnnouncementsQuery.data || []).map((row) => ({
+      id: row.id,
+      type: 'parent_notice',
+      title: row.title || 'Untitled parent notice',
+      subtitle: row.subtitle || '',
+      body: row.body || '',
+      status: row.status || 'draft',
+      branchLabel: row.branchId ? `Branch ${String(row.branchId).slice(0, 8)}` : 'Global',
+      targetLabel: row.classId ? 'Class target' : 'Branch target',
+      priority: 'normal',
+      announcementType: row.announcementType || 'event',
+      eventStartAt: row.eventStartAt || null,
+      eventEndAt: row.eventEndAt || null,
+      location: row.location || '',
+      publishedAt: row.publishedAt || null,
+      createdAt: row.createdAt || null,
+      audienceSummary: row.classId ? 'Class target' : 'Branch target',
+      visibleTo: [ROLES.HQ_ADMIN, ROLES.BRANCH_SUPERVISOR, ROLES.TEACHER],
+    }));
+  }, [canUseSupabaseAnnouncements, parentAnnouncementsQuery.data]);
+
+  const visibleRows = useMemo(() => {
+    const sourceRows = isDemoMode ? [...rows, ...parentNoticeRows] : [...authenticatedRows, ...authenticatedParentNoticeRows];
+    const scoped = sourceRows.filter((row) => row.visibleTo.includes(role));
+    if (activeFilter === 'Requests') return scoped.filter((row) => row.type === 'request');
+    if (activeFilter === 'Parent Notices') return scoped.filter((row) => row.type === 'parent_notice');
+    if (activeFilter === 'Company News') return scoped.filter((row) => row.type === 'company_news');
+    if (activeFilter === 'Done') return scoped.filter((row) => row.status === 'done');
+    if (activeFilter === 'Pending') return scoped.filter((row) => row.status === 'pending' || row.status === 'undone');
+    if (activeFilter === 'Message Templates') return [];
+    return scoped;
+  }, [activeFilter, rows, role, isDemoMode, authenticatedRows, parentNoticeRows, authenticatedParentNoticeRows]);
+
+  const selected = useMemo(
+    () => visibleRows.find((row) => row.id === selectedId) || visibleRows[0] || null,
+    [visibleRows, selectedId]
+  );
+
+  useEffect(() => {
+    if (!selected && visibleRows.length > 0) {
+      setSelectedId(visibleRows[0].id);
+    }
+  }, [selected, visibleRows]);
+
+  const detailQuery = useQuery({
+    queryKey: ['announcement-detail', selected?.id, supabaseAppUser?.id],
+    enabled: canUseSupabaseAnnouncements && selected?.type === 'request' && Boolean(selected?.id),
+    queryFn: async () => {
+      const announcementId = selected.id;
+      const [targetsResult, statusesResult, repliesResult] = await Promise.all([
+        listAnnouncementTargets({ announcementId }),
+        listAnnouncementStatuses({ announcementId }),
+        listAnnouncementReplies({ announcementId }),
+      ]);
+      if (targetsResult.error || statusesResult.error || repliesResult.error) {
+        throw new Error('Unable to load announcement detail right now.');
+      }
+      return {
+        targets: Array.isArray(targetsResult.data) ? targetsResult.data : [],
+        statuses: Array.isArray(statusesResult.data) ? statusesResult.data : [],
+        replies: Array.isArray(repliesResult.data) ? repliesResult.data : [],
+      };
+    },
+  });
+
+  const attachmentsQuery = useQuery({
+    queryKey: ['announcement-attachments', selected?.id, supabaseAppUser?.id, role],
+    enabled: canUseSupabaseAnnouncements && selected?.type === 'request' && Boolean(selected?.id),
+    queryFn: async () => {
+      const result = await listAnnouncementAttachments({ announcementId: selected.id });
+      if (result.error) throw new Error('Unable to load attachments right now.');
+      return Array.isArray(result.data) ? result.data : [];
+    },
+  });
+
+  const completionOverviewQuery = useQuery({
+    queryKey: ['announcement-completion-overview', selected?.id, supabaseAppUser?.id, role],
+    enabled: canUseSupabaseAnnouncements && canViewManagerOverview && selected?.type === 'request' && Boolean(selected?.id),
+    queryFn: async () => {
+      const result = await listAnnouncementCompletionOverview({ announcementId: selected.id });
+      if (result.error) throw new Error('Completion overview is temporarily unavailable.');
+      const first = Array.isArray(result.data) ? (result.data[0] || null) : null;
+      return first;
+    },
+  });
+
+  const parentNoticeMediaQuery = useQuery({
+    queryKey: ['parent-notice-media', selected?.id, supabaseAppUser?.id, role],
+    enabled: canUseSupabaseAnnouncements && selected?.type === 'parent_notice' && Boolean(selected?.id),
+    queryFn: async () => {
+      const result = await listParentAnnouncementMedia({ parentAnnouncementId: selected.id });
+      if (result.error) throw new Error('Unable to load parent media right now.');
+      return Array.isArray(result.data) ? result.data : [];
+    },
+  });
+
+  const templatesQuery = useQuery({
+    queryKey: ['notification-templates-admin', supabaseAppUser?.id, role, activeFilter],
+    enabled: canUseSupabaseAnnouncements && canManageNotificationTemplates && activeFilter === 'Message Templates',
+    queryFn: async () => {
+      const result = await listNotificationTemplates({ channel: 'in_app', includeInactive: true, limit: 300 });
+      if (result.error) throw new Error(result.error.message || 'Unable to load message templates right now.');
+      return Array.isArray(result.data) ? result.data : [];
+    },
+  });
+
+  const templateSaveMutation = useMutation({
+    mutationFn: async ({ templateId, titleTemplate, bodyTemplate, isActive }) => {
+      const result = await updateNotificationTemplate({ templateId, titleTemplate, bodyTemplate, isActive });
+      if (result.error) throw new Error(result.error.message || 'Unable to save message template right now.');
+      return result.data;
+    },
+    onSuccess: async () => {
+      toast.success('Message template updated.');
+      await queryClient.invalidateQueries({ queryKey: ['notification-templates-admin'] });
+    },
+    onError: (error) => toast.error(error?.message || 'Unable to save message template right now.'),
+  });
+
+  const refreshAnnouncements = async () => {
+    await Promise.all([
+      queryClient.invalidateQueries({ queryKey: ['announcements-internal-staff'] }),
+      queryClient.invalidateQueries({ queryKey: ['announcement-detail'] }),
+      queryClient.invalidateQueries({ queryKey: ['announcement-completion-overview'] }),
+    ]);
+  };
+
+  const onDemoStatus = (nextStatus) => {
+    if (!selected) return;
+    setRows((prev) => prev.map((row) => (row.id === selected.id ? { ...row, status: nextStatus } : row)));
+  };
+
+  const onDemoReply = () => {
+    const message = draftReply.trim();
+    if (!selected || !message) return;
+    setRows((prev) => prev.map((row) => (
+      row.id === selected.id
+        ? {
+            ...row,
+            replies: [...row.replies, { id: `reply-${Date.now()}`, author: 'Demo Staff', message }],
+          }
+        : row
+    )));
+    setDraftReply('');
+  };
+
+  const markReadMutation = useMutation({
+    mutationFn: async () => {
+      const result = await markAnnouncementRead({ announcementId: selected.id });
+      if (result.error) throw new Error('Unable to mark as read right now.');
+      return result.data;
+    },
+    onSuccess: async () => {
+      toast.success('Marked as read.');
+      await refreshAnnouncements();
+    },
+    onError: () => toast.error('Unable to mark as read right now.'),
+  });
+
+  const doneMutation = useMutation({
+    mutationFn: async () => {
+      const result = await updateAnnouncementDoneStatus({ announcementId: selected.id, doneStatus: 'done' });
+      if (result.error) throw new Error('Unable to mark done right now.');
+      return result.data;
+    },
+    onSuccess: async () => {
+      toast.success('Marked done.');
+      await refreshAnnouncements();
+    },
+    onError: () => toast.error('Unable to mark done right now.'),
+  });
+
+  const undoneMutation = useMutation({
+    mutationFn: async () => {
+      const result = await updateAnnouncementDoneStatus({
+        announcementId: selected.id,
+        doneStatus: 'undone',
+        undoneReason: undoneReason.trim() || undefined,
+      });
+      if (result.error) throw new Error('Unable to mark undone right now.');
+      return result.data;
+    },
+    onSuccess: async () => {
+      toast.success('Marked undone.');
+      await refreshAnnouncements();
+    },
+    onError: () => toast.error('Unable to mark undone right now.'),
+  });
+
+  const replyMutation = useMutation({
+    mutationFn: async () => {
+      const body = draftReply.trim();
+      if (!body) throw new Error('Reply is required.');
+      const replyType = body.includes('?') ? 'question' : 'update';
+      const result = await createAnnouncementReply({ announcementId: selected.id, body, replyType });
+      if (result.error) throw new Error('Unable to add reply right now.');
+      return result.data;
+    },
+    onSuccess: async () => {
+      setDraftReply('');
+      toast.success('Reply added.');
+      await refreshAnnouncements();
+    },
+    onError: (error) => toast.error(error?.message || 'Unable to add reply right now.'),
+  });
+
+  const uploadAttachmentMutation = useMutation({
+    mutationFn: async () => {
+      if (!selected?.id) throw new Error('Select an announcement first.');
+      if (!uploadFile) throw new Error('Select a file before uploading.');
+      if (!allowedAttachmentRoles.includes(uploadRole)) {
+        throw new Error('Attachment role is not allowed for this account.');
+      }
+      const result = await uploadAnnouncementAttachment({
+        announcementId: selected.id,
+        file: uploadFile,
+        fileRole: uploadRole,
+        staffNote: uploadNote.trim() || undefined,
+      });
+      if (result.error) {
+        throw new Error('Attachment upload is unavailable right now.');
+      }
+      return result.data;
+    },
+    onSuccess: async () => {
+      setUploadFile(null);
+      setUploadNote('');
+      toast.success('Attachment uploaded.');
+      await queryClient.invalidateQueries({ queryKey: ['announcement-attachments'] });
+    },
+    onError: (error) => toast.error(error?.message || 'Attachment upload is unavailable right now.'),
+  });
+
+  const viewAttachmentMutation = useMutation({
+    mutationFn: async (attachmentId) => {
+      const result = await getAnnouncementAttachmentSignedUrl({ attachmentId, expiresIn: 300 });
+      if (result.error || !result.data?.signed_url) {
+        throw new Error('Attachment is unavailable right now.');
+      }
+      return result.data.signed_url;
+    },
+    onSuccess: (signedUrl) => {
+      const opened = window.open(signedUrl, '_blank', 'noopener,noreferrer');
+      if (!opened) {
+        toast.error('Allow pop-ups to open the attachment.');
+      }
+    },
+    onError: () => toast.error('Attachment is unavailable right now.'),
+  });
+
+  const uploadParentMediaMutation = useMutation({
+    mutationFn: async () => {
+      if (!canManageParentNoticeMedia) throw new Error('Only HQ and branch supervisor can upload media.');
+      if (!selected?.id || selected?.type !== 'parent_notice') throw new Error('Select a parent notice first.');
+      if (!parentMediaUploadFile) throw new Error('Select a file before uploading.');
+      if (!PARENT_NOTICE_MEDIA_ROLE_OPTIONS.some((option) => option.value === parentMediaUploadRole)) {
+        throw new Error('Media role is required.');
+      }
+      const result = await uploadParentAnnouncementMedia({
+        parentAnnouncementId: selected.id,
+        file: parentMediaUploadFile,
+        mediaRole: parentMediaUploadRole,
+        fileName: parentMediaUploadFile.name,
+        contentType: parentMediaUploadFile.type,
+      });
+      if (result.error) throw new Error('Parent media upload is unavailable right now.');
+      return result.data;
+    },
+    onSuccess: async () => {
+      setParentMediaUploadFile(null);
+      toast.success('Parent media uploaded as unreleased.');
+      await queryClient.invalidateQueries({ queryKey: ['parent-notice-media'] });
+    },
+    onError: (error) => toast.error(error?.message || 'Parent media upload is unavailable right now.'),
+  });
+
+  const viewParentMediaMutation = useMutation({
+    mutationFn: async (mediaId) => {
+      const result = await getParentAnnouncementMediaSignedUrl({ mediaId, expiresIn: 300 });
+      if (result.error || !result.data?.signed_url) throw new Error('Media preview is unavailable right now.');
+      return result.data.signed_url;
+    },
+    onSuccess: (signedUrl) => {
+      const opened = window.open(signedUrl, '_blank', 'noopener,noreferrer');
+      if (!opened) {
+        toast.error('Allow pop-ups to preview media.');
+      }
+    },
+    onError: () => toast.error('Media preview is unavailable right now.'),
+  });
+
+  const releaseParentMediaMutation = useMutation({
+    mutationFn: async (mediaId) => {
+      if (!canManageParentNoticeMedia) throw new Error('Only HQ and branch supervisor can release media.');
+      const result = await releaseParentAnnouncementMedia({ mediaId });
+      if (result.error) throw new Error('Unable to release media to parents right now.');
+      return result.data;
+    },
+    onSuccess: async () => {
+      toast.success('Media released to parents.');
+      await queryClient.invalidateQueries({ queryKey: ['parent-notice-media'] });
+    },
+    onError: (error) => toast.error(error?.message || 'Unable to release media to parents right now.'),
+  });
+
+  const deleteParentMediaMutation = useMutation({
+    mutationFn: async (mediaId) => {
+      if (!canManageParentNoticeMedia) throw new Error('Only HQ and branch supervisor can delete media.');
+      const result = await deleteParentAnnouncementMedia({ mediaId });
+      if (result.error) throw new Error('Unable to delete media right now.');
+      return result.data;
+    },
+    onSuccess: async (result) => {
+      if (result?.cleanup_warning) {
+        toast.warning('Media metadata deleted. Object cleanup may need review.');
+      } else {
+        toast.success('Media deleted.');
+      }
+      await queryClient.invalidateQueries({ queryKey: ['parent-notice-media'] });
+    },
+    onError: (error) => toast.error(error?.message || 'Unable to delete media right now.'),
+  });
+
+  function toTargetPayload(form) {
+    if (form.targetType === 'role' && form.targetRole.trim()) {
+      return [{ targetType: 'role', targetRole: form.targetRole.trim() }];
+    }
+    if (form.targetType === 'profile' && form.targetProfileId.trim()) {
+      return [{ targetType: 'profile', targetProfileId: form.targetProfileId.trim() }];
+    }
+    if (form.targetType === 'branch' && form.targetBranchId.trim()) {
+      return [{ targetType: 'branch', branchId: form.targetBranchId.trim() }];
+    }
+    return [];
+  }
+
+  const createMutation = useMutation({
+    mutationFn: async () => {
+      if (!createForm.title.trim()) throw new Error('Title is required.');
+      if (
+        !createForm.branchId.trim()
+        && !createForm.targetBranchId.trim()
+        && !createForm.targetRole.trim()
+        && !createForm.targetProfileId.trim()
+        && !createForm.targetLabel.trim()
+      ) {
+        throw new Error('Provide branch or target information.');
+      }
+      const result = await createAnnouncementRequest({
+        branchId: createForm.branchId.trim() || undefined,
+        title: createForm.title.trim(),
+        subtitle: createForm.subtitle.trim() || undefined,
+        body: createForm.body.trim() || undefined,
+        priority: createForm.priority,
+        dueDate: createForm.dueDate || undefined,
+        requiresResponse: createForm.requiresResponse,
+        requiresUpload: createForm.requiresUpload,
+        targets: toTargetPayload(createForm),
+      });
+      if (result.error) throw new Error('Unable to create request right now.');
+      return result.data;
+    },
+    onSuccess: async () => {
+      toast.success('Request created.');
+      setCreateOpen(false);
+      setCreateForm({
+        title: '',
+        subtitle: '',
+        body: '',
+        priority: 'normal',
+        dueDate: '',
+        requiresResponse: true,
+        requiresUpload: false,
+        targetType: 'branch',
+        targetLabel: '',
+        branchId: '',
+        targetBranchId: '',
+        targetRole: '',
+        targetProfileId: '',
+      });
+      await refreshAnnouncements();
+    },
+    onError: (error) => toast.error(error?.message || 'Unable to create request right now.'),
+  });
+
+  const companyNewsCreateMutation = useMutation({
+    mutationFn: async ({ shouldPublish = false } = {}) => {
+      if (!canCreateCompanyNewsInAuth) {
+        throw new Error('Only HQ can create Company News.');
+      }
+      const hasTitle = companyNewsForm.title.trim().length > 0;
+      const hasContent = companyNewsForm.subtitle.trim().length > 0 || companyNewsForm.body.trim().length > 0;
+      if (!hasTitle) throw new Error('Title is required.');
+      if (!hasContent) throw new Error('Add subtitle or body before saving.');
+
+      const targets = toTargetPayload({
+        targetType: companyNewsForm.targetType,
+        targetBranchId: companyNewsForm.targetBranchId,
+        targetRole: companyNewsForm.targetRole,
+        targetProfileId: companyNewsForm.targetProfileId,
+      });
+
+      if (shouldPublish && targets.length === 0) {
+        throw new Error('Add at least one internal target before publishing.');
+      }
+
+      const createResult = await createCompanyNews({
+        title: companyNewsForm.title.trim(),
+        subtitle: companyNewsForm.subtitle.trim() || undefined,
+        body: companyNewsForm.body.trim() || undefined,
+        priority: companyNewsForm.priority,
+        popupEnabled: Boolean(companyNewsForm.popupEnabled),
+        popupEmoji: companyNewsForm.emoji.trim() || undefined,
+        targets,
+      });
+
+      if (createResult.error || !createResult.data?.announcement?.id) {
+        throw new Error('Unable to save Company News draft right now.');
+      }
+
+      if (!shouldPublish) {
+        return {
+          announcementId: createResult.data.announcement.id,
+          published: false,
+        };
+      }
+
+      const publishResult = await publishCompanyNews({ announcementId: createResult.data.announcement.id });
+      if (publishResult.error) {
+        throw new Error('Draft saved, but publish is unavailable right now.');
+      }
+
+      return {
+        announcementId: createResult.data.announcement.id,
+        published: true,
+      };
+    },
+    onSuccess: async (result) => {
+      setCompanyNewsCreateOpen(false);
+      setCompanyNewsForm({
+        title: '',
+        subtitle: '',
+        body: '',
+        templateLabel: 'General news',
+        emoji: '📣',
+        popupEnabled: true,
+        toneLabel: 'warm',
+        priority: 'normal',
+        audienceLabel: 'Internal staff',
+        targetType: 'branch',
+        targetBranchId: '',
+        targetRole: '',
+        targetProfileId: '',
+      });
+      setActiveFilter('Company News');
+      if (result?.announcementId) {
+        setSelectedId(result.announcementId);
+      }
+      toast.success(result?.published ? 'Company News published.' : 'Company News draft saved.');
+      await refreshAnnouncements();
+      if (result?.announcementId) {
+        setSelectedId(result.announcementId);
+      }
+    },
+    onError: (error) => {
+      const message = String(error?.message || '');
+      if (message.includes('Title is required')) {
+        toast.error('Title is required.');
+        return;
+      }
+      if (message.includes('subtitle or body')) {
+        toast.error('Add subtitle or body before saving.');
+        return;
+      }
+      if (message.includes('at least one internal target')) {
+        toast.error('Add branch, role, or profile target before publishing.');
+        return;
+      }
+      if (message.includes('Only HQ can create Company News')) {
+        toast.error('Only HQ can create Company News.');
+        return;
+      }
+      if (message.includes('Draft saved, but publish is unavailable')) {
+        toast.error('Draft saved, but publish is unavailable right now.');
+        return;
+      }
+      toast.error('Company News save is unavailable right now.');
+    },
+  });
+
+  const parentNoticeCreateMutation = useMutation({
+    mutationFn: async ({ shouldPublish = false } = {}) => {
+      if (!canCreateInAuth) {
+        throw new Error('Only HQ and branch supervisor can create parent notices.');
+      }
+      if (!parentNoticeForm.title.trim()) {
+        throw new Error('Title is required.');
+      }
+      if (!parentNoticeForm.body.trim()) {
+        throw new Error('Body is required.');
+      }
+
+      const targets = [];
+      if (parentNoticeForm.targetType === 'branch' && parentNoticeForm.targetBranchId.trim()) {
+        targets.push({ targetType: 'branch', branchId: parentNoticeForm.targetBranchId.trim() });
+      }
+      if (parentNoticeForm.targetType === 'class' && parentNoticeForm.targetClassId.trim()) {
+        targets.push({ targetType: 'class', classId: parentNoticeForm.targetClassId.trim() });
+      }
+
+      const createResult = await createParentAnnouncement({
+        title: parentNoticeForm.title.trim(),
+        subtitle: parentNoticeForm.subtitle.trim() || undefined,
+        body: parentNoticeForm.body.trim(),
+        announcementType: parentNoticeForm.announcementType,
+        branchId: parentNoticeForm.branchId.trim() || undefined,
+        classId: parentNoticeForm.classId.trim() || undefined,
+        eventStartAt: parentNoticeForm.eventStartAt || undefined,
+        eventEndAt: parentNoticeForm.eventEndAt || undefined,
+        location: parentNoticeForm.location.trim() || undefined,
+        targets,
+      });
+
+      if (createResult.error || !createResult.data?.announcement?.id) {
+        throw new Error('Unable to save parent notice draft right now.');
+      }
+
+      if (!shouldPublish) {
+        return {
+          parentAnnouncementId: createResult.data.announcement.id,
+          published: false,
+        };
+      }
+
+      if (targets.length === 0) {
+        throw new Error('Add at least one parent target before publishing.');
+      }
+
+      const publishResult = await publishParentAnnouncement({
+        parentAnnouncementId: createResult.data.announcement.id,
+      });
+      if (publishResult.error) {
+        throw new Error('Draft saved, but publish is unavailable right now.');
+      }
+
+      return {
+        parentAnnouncementId: createResult.data.announcement.id,
+        published: true,
+      };
+    },
+    onSuccess: async (result) => {
+      setParentNoticeCreateOpen(false);
+      setParentNoticeForm({
+        title: '',
+        subtitle: '',
+        body: '',
+        announcementType: 'event',
+        branchId: '',
+        classId: '',
+        targetType: 'branch',
+        targetBranchId: '',
+        targetClassId: '',
+        eventStartAt: '',
+        eventEndAt: '',
+        location: '',
+      });
+      setActiveFilter('Parent Notices');
+      if (result?.parentAnnouncementId) {
+        setSelectedId(result.parentAnnouncementId);
+      }
+      toast.success(result?.published ? 'Parent notice published.' : 'Parent notice draft saved.');
+      await queryClient.invalidateQueries({ queryKey: ['announcements-parent-facing'] });
+    },
+    onError: (error) => {
+      const message = String(error?.message || '');
+      if (message.includes('Title is required')) {
+        toast.error('Title is required.');
+        return;
+      }
+      if (message.includes('Body is required')) {
+        toast.error('Body is required.');
+        return;
+      }
+      if (message.includes('at least one parent target')) {
+        toast.error('Add branch or class target before publishing.');
+        return;
+      }
+      if (message.includes('Draft saved, but publish is unavailable')) {
+        toast.error('Draft saved, but publish is unavailable right now.');
+        return;
+      }
+      toast.error('Parent notice save is unavailable right now.');
+    },
+  });
+
+  const parentNoticeArchiveMutation = useMutation({
+    mutationFn: async () => {
+      if (!selected?.id) throw new Error('Select a parent notice first.');
+      const result = await archiveParentAnnouncement({ parentAnnouncementId: selected.id });
+      if (result.error) throw new Error('Unable to archive parent notice right now.');
+      return result.data;
+    },
+    onSuccess: async () => {
+      toast.success('Parent notice archived.');
+      await queryClient.invalidateQueries({ queryKey: ['announcements-parent-facing'] });
+    },
+    onError: () => toast.error('Unable to archive parent notice right now.'),
+  });
+
+  const onDemoCreate = () => {
+    if (!createForm.title.trim()) return;
+    const created = {
+      id: `demo-ann-created-${Date.now()}`,
+      type: 'request',
+      title: createForm.title.trim(),
+      subtitle: createForm.subtitle.trim() || 'Demo request',
+      body: createForm.body.trim() || 'Demo request body',
+      priority: createForm.priority,
+      dueDate: createForm.dueDate || null,
+      status: 'pending',
+      branchLabel: role === ROLES.HQ_ADMIN ? 'Global or selected branch' : 'Demo North Branch',
+      requiresResponse: createForm.requiresResponse,
+      requiresUpload: createForm.requiresUpload,
+      targetLabel: createForm.targetLabel.trim() || `${createForm.targetType} target`,
+      visibleTo: [ROLES.HQ_ADMIN, ROLES.BRANCH_SUPERVISOR, ROLES.TEACHER],
+      replies: [],
+    };
+    setRows((prev) => [created, ...prev]);
+    setSelectedId(created.id);
+    setCreateOpen(false);
+    setCreateForm({
+      title: '',
+      subtitle: '',
+      body: '',
+      priority: 'normal',
+      dueDate: '',
+      requiresResponse: true,
+      requiresUpload: false,
+      targetType: 'branch',
+      targetLabel: '',
+      branchId: '',
+      targetBranchId: '',
+      targetRole: '',
+      targetProfileId: '',
+    });
+  };
+
+  const onDemoCreateCompanyNews = () => {
+    if (!canCreateCompanyNewsInDemo) return;
+    if (!companyNewsForm.title.trim()) return;
+    const created = {
+      id: `demo-company-news-${Date.now()}`,
+      type: 'company_news',
+      title: companyNewsForm.title.trim(),
+      subtitle: companyNewsForm.subtitle.trim() || 'Company News update',
+      body: companyNewsForm.body.trim() || 'Company News detail preview.',
+      priority: companyNewsForm.priority,
+      dueDate: null,
+      status: 'pending',
+      branchLabel: 'Global',
+      requiresResponse: false,
+      requiresUpload: false,
+      targetLabel: 'All staff',
+      templateLabel: companyNewsForm.templateLabel,
+      emoji: companyNewsForm.emoji.trim() || null,
+      publishDate: new Date().toISOString().slice(0, 10),
+      popupEnabled: Boolean(companyNewsForm.popupEnabled),
+      toneLabel: companyNewsForm.toneLabel,
+      audienceLabel: companyNewsForm.audienceLabel,
+      visibleTo: [ROLES.HQ_ADMIN, ROLES.BRANCH_SUPERVISOR, ROLES.TEACHER],
+      replies: [],
+    };
+    setRows((prev) => [created, ...prev]);
+    setSelectedId(created.id);
+    setCompanyNewsCreateOpen(false);
+    setCompanyNewsForm({
+      title: '',
+      subtitle: '',
+      body: '',
+      templateLabel: 'General news',
+      emoji: '📣',
+      popupEnabled: true,
+      toneLabel: 'warm',
+      priority: 'normal',
+      audienceLabel: 'Internal staff',
+      targetType: 'branch',
+      targetBranchId: '',
+      targetRole: '',
+      targetProfileId: '',
+    });
+    setActiveFilter('Company News');
+    toast.success('Demo Company News saved locally.');
+  };
+
+  const onDemoCreateParentNotice = ({ shouldPublish = false } = {}) => {
+    if (!canCreateInDemo) return;
+    if (!parentNoticeForm.title.trim() || !parentNoticeForm.body.trim()) return;
+
+    const created = {
+      id: `demo-parent-notice-created-${Date.now()}`,
+      type: 'parent_notice',
+      title: parentNoticeForm.title.trim(),
+      subtitle: parentNoticeForm.subtitle.trim() || '',
+      body: parentNoticeForm.body.trim(),
+      status: shouldPublish ? 'published' : 'draft',
+      branchLabel: parentNoticeForm.branchId.trim()
+        ? `Branch ${parentNoticeForm.branchId.trim().slice(0, 8)}`
+        : (role === ROLES.HQ_ADMIN ? 'Global' : 'Demo North Branch'),
+      targetLabel: parentNoticeForm.targetType === 'class' ? 'Class target' : 'Branch target',
+      priority: 'normal',
+      announcementType: parentNoticeForm.announcementType,
+      eventStartAt: parentNoticeForm.eventStartAt || null,
+      eventEndAt: parentNoticeForm.eventEndAt || null,
+      location: parentNoticeForm.location.trim() || '',
+      publishedAt: shouldPublish ? new Date().toISOString() : null,
+      createdAt: new Date().toISOString(),
+      audienceSummary: parentNoticeForm.targetType === 'class' ? 'Class target' : 'Branch target',
+      visibleTo: [ROLES.HQ_ADMIN, ROLES.BRANCH_SUPERVISOR, ROLES.TEACHER],
+    };
+    setParentNoticeRows((prev) => [created, ...prev]);
+    setSelectedId(created.id);
+    setParentNoticeCreateOpen(false);
+    setParentNoticeForm({
+      title: '',
+      subtitle: '',
+      body: '',
+      announcementType: 'event',
+      branchId: '',
+      classId: '',
+      targetType: 'branch',
+      targetBranchId: '',
+      targetClassId: '',
+      eventStartAt: '',
+      eventEndAt: '',
+      location: '',
+    });
+    setActiveFilter('Parent Notices');
+    toast.success(shouldPublish ? 'Demo parent notice published locally.' : 'Demo parent notice draft saved locally.');
+  };
+
+  const onDemoArchiveParentNotice = () => {
+    if (!selected?.id) return;
+    setParentNoticeRows((prev) => prev.map((row) => (
+      row.id === selected.id ? { ...row, status: 'archived' } : row
+    )));
+    toast.success('Demo parent notice archived locally.');
+  };
+
+  const onDemoUploadParentMedia = () => {
+    if (!canManageParentNoticeMedia) return;
+    if (!selected?.id || selected?.type !== 'parent_notice') return;
+    const fileName = demoParentMediaName.trim() || `demo-parent-media-${Date.now()}.pdf`;
+    const nextMedia = {
+      id: `demo-parent-media-${Date.now()}`,
+      file_name: fileName,
+      media_role: parentMediaUploadRole,
+      mime_type: normalizeDemoMediaMimeType(fileName),
+      file_size: 180 * 1024,
+      released_to_parent: false,
+      created_at: new Date().toISOString(),
+    };
+    setDemoParentMediaByNoticeId((prev) => ({
+      ...prev,
+      [selected.id]: [nextMedia, ...(prev[selected.id] || [])],
+    }));
+    setDemoParentMediaName('');
+    toast.success('Demo parent media saved locally as unreleased.');
+  };
+
+  const onDemoReleaseParentMedia = (mediaId) => {
+    if (!canManageParentNoticeMedia || !selected?.id) return;
+    setDemoParentMediaByNoticeId((prev) => ({
+      ...prev,
+      [selected.id]: (prev[selected.id] || []).map((item) => (
+        item.id === mediaId ? { ...item, released_to_parent: true } : item
+      )),
+    }));
+    toast.success('Demo media released locally.');
+  };
+
+  const onDemoDeleteParentMedia = (mediaId) => {
+    if (!canManageParentNoticeMedia || !selected?.id) return;
+    setDemoParentMediaByNoticeId((prev) => ({
+      ...prev,
+      [selected.id]: (prev[selected.id] || []).filter((item) => item.id !== mediaId),
+    }));
+    toast.success('Demo media removed locally.');
+  };
+
+  const onDemoUploadAttachment = () => {
+    if (!selected?.id) return;
+    if (!allowedAttachmentRoles.includes(uploadRole)) return;
+    const selectedName = demoUploadName.trim();
+    const fallbackName = role === ROLES.TEACHER
+      ? `demo-response-${Date.now()}.pdf`
+      : `demo-internal-${Date.now()}.pdf`;
+    const nextAttachment = {
+      id: `demo-att-${Date.now()}`,
+      file_name: selectedName || fallbackName,
+      file_role: uploadRole,
+      mime_type: 'application/pdf',
+      file_size: 125000,
+      created_at: new Date().toISOString(),
+      staff_note: uploadNote.trim() || null,
+    };
+    setDemoAttachmentsByAnnouncementId((prev) => ({
+      ...prev,
+      [selected.id]: [nextAttachment, ...(prev[selected.id] || [])],
+    }));
+    setDemoUploadName('');
+    setUploadNote('');
+    toast.success('Demo attachment saved locally.');
+  };
+
+  const demoAttachments = selected ? (demoAttachmentsByAnnouncementId[selected.id] || []) : [];
+  const authAttachments = Array.isArray(attachmentsQuery.data) ? attachmentsQuery.data : [];
+  const attachmentRows = isDemoMode ? demoAttachments : authAttachments;
+  const parentNoticeMediaRows = selected?.type !== 'parent_notice'
+    ? []
+    : (isDemoMode
+      ? (demoParentMediaByNoticeId[selected.id] || [])
+      : (Array.isArray(parentNoticeMediaQuery.data) ? parentNoticeMediaQuery.data : []));
+  const demoCompletionOverview = selected ? (DEMO_COMPLETION_OVERVIEW[selected.id] || null) : null;
+  const authCompletionOverview = completionOverviewQuery.data || null;
+  const completionOverview = isDemoMode ? demoCompletionOverview : authCompletionOverview;
+
+  if (!isStaff) {
+    return (
+      <EmptyState
+        icon={BellRing}
+        title="Staff announcements only"
+        description="Announcements is a staff-only page. Parent-facing announcements remain a future phase."
+      />
+    );
+  }
+
+  return (
+    <div>
+      <PageHeader
+        title="Announcements"
+        description="Requests: internal staff tasks and reminders. Company News: internal staff news. Parent Notices: official parent-facing centre notices and events. For teacher/class learning updates (memories, comments, weekly progress), use Parent Communication at /parent-updates—not a substitute for official notices."
+        action={activeFilter === 'Message Templates'
+          ? null
+          : (activeFilter === 'Parent Notices'
+          ? (((isDemoMode && canCreateInDemo) || (!isDemoMode && canCreateInAuth)) ? (
+            <Button className="min-h-10" onClick={() => setParentNoticeCreateOpen((prev) => !prev)}>
+              Create Parent Notice
+            </Button>
+          ) : null)
+          : (activeFilter === 'Company News'
+          ? (
+            isDemoMode
+              ? (
+                canCreateCompanyNewsInDemo ? (
+                  <Button className="min-h-10" onClick={() => setCompanyNewsCreateOpen((prev) => !prev)}>
+                    Create Company News
+                  </Button>
+                ) : null
+              )
+              : (
+                canCreateCompanyNewsInAuth ? (
+                  <Button className="min-h-10" onClick={() => setCompanyNewsCreateOpen((prev) => !prev)}>
+                    Create Company News
+                  </Button>
+                ) : null
+              )
+          )
+          : (((isDemoMode && canCreateInDemo) || (!isDemoMode && canCreateInAuth)) ? (
+            <Button className="min-h-10" onClick={() => setCreateOpen((prev) => !prev)}>
+              Create Request
+            </Button>
+          ) : null)))}
+      />
+
+      <Card className="p-4 border-dashed mb-4">
+        <p className="text-sm font-medium mb-2">How this page fits together</p>
+        <ul className="text-sm text-muted-foreground space-y-1.5 list-disc pl-5">
+          <li><span className="text-foreground font-medium">Requests</span> — internal staff tasks and reminders.</li>
+          <li><span className="text-foreground font-medium">Company News</span> — internal staff news and HQ updates.</li>
+          <li><span className="text-foreground font-medium">Parent Notices</span> — official parent-facing centre notices and events.</li>
+          <li><span className="text-foreground font-medium">Parent Communication</span> (route <span className="font-mono text-xs">/parent-updates</span>) — teacher-created class learning evidence and weekly updates; not official notices.</li>
+        </ul>
+      </Card>
+
+      {!isDemoMode && !canUseSupabaseAnnouncements ? (
+        <Card className="p-5 border-dashed">
+          <p className="text-sm text-muted-foreground">Supabase authenticated staff session is required for announcements.</p>
+        </Card>
+      ) : (
+        <div className="space-y-4">
+          {activeFilter !== 'Company News' && activeFilter !== 'Parent Notices' && createOpen && (isDemoMode ? canCreateInDemo : canCreateInAuth) ? (
+            <Card className="p-4 sm:p-5 space-y-3">
+              <p className="font-medium">{isDemoMode ? 'Create Request (demo-only local shell)' : 'Create Request'}</p>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div className="space-y-1">
+                  <Label>Title</Label>
+                  <Input value={createForm.title} onChange={(e) => setCreateForm((p) => ({ ...p, title: e.target.value }))} />
+                </div>
+                <div className="space-y-1">
+                  <Label>Subtitle</Label>
+                  <Input value={createForm.subtitle} onChange={(e) => setCreateForm((p) => ({ ...p, subtitle: e.target.value }))} />
+                </div>
+                <div className="space-y-1 sm:col-span-2">
+                  <Label>Body</Label>
+                  <Textarea value={createForm.body} onChange={(e) => setCreateForm((p) => ({ ...p, body: e.target.value }))} className="min-h-[100px]" />
+                </div>
+                <div className="space-y-1">
+                  <Label>Priority</Label>
+                  <Select value={createForm.priority} onValueChange={(value) => setCreateForm((p) => ({ ...p, priority: value }))}>
+                    <SelectTrigger><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="low">Low</SelectItem>
+                      <SelectItem value="normal">Normal</SelectItem>
+                      <SelectItem value="high">High</SelectItem>
+                      <SelectItem value="urgent">Urgent</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-1">
+                  <Label>Due date</Label>
+                  <Input type="date" value={createForm.dueDate} onChange={(e) => setCreateForm((p) => ({ ...p, dueDate: e.target.value }))} />
+                </div>
+                <div className="space-y-1">
+                  <Label>Target type</Label>
+                  <Select value={createForm.targetType} onValueChange={(value) => setCreateForm((p) => ({ ...p, targetType: value }))}>
+                    <SelectTrigger><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="branch">Branch</SelectItem>
+                      <SelectItem value="role">Role</SelectItem>
+                      <SelectItem value="profile">Profile</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-1">
+                  <Label>Target label</Label>
+                  <Input value={createForm.targetLabel} onChange={(e) => setCreateForm((p) => ({ ...p, targetLabel: e.target.value }))} placeholder="Demo North Branch Teachers" />
+                </div>
+                <div className="space-y-1">
+                  <Label>Branch ID (optional UUID)</Label>
+                  <Input value={createForm.branchId} onChange={(e) => setCreateForm((p) => ({ ...p, branchId: e.target.value }))} placeholder="Branch UUID if known" />
+                </div>
+                <div className="space-y-1">
+                  <Label>Target Branch ID (optional UUID)</Label>
+                  <Input value={createForm.targetBranchId} onChange={(e) => setCreateForm((p) => ({ ...p, targetBranchId: e.target.value }))} placeholder="Target branch UUID" />
+                </div>
+                <div className="space-y-1">
+                  <Label>Target Role (optional)</Label>
+                  <Input value={createForm.targetRole} onChange={(e) => setCreateForm((p) => ({ ...p, targetRole: e.target.value }))} placeholder="teacher / branch_supervisor" />
+                </div>
+                <div className="space-y-1">
+                  <Label>Target Profile ID (optional UUID)</Label>
+                  <Input value={createForm.targetProfileId} onChange={(e) => setCreateForm((p) => ({ ...p, targetProfileId: e.target.value }))} placeholder="Staff profile UUID" />
+                </div>
+              </div>
+              <div className="flex flex-wrap gap-2">
+                <Button
+                  type="button"
+                  variant={createForm.requiresResponse ? 'default' : 'outline'}
+                  className="min-h-10"
+                  onClick={() => setCreateForm((p) => ({ ...p, requiresResponse: !p.requiresResponse }))}
+                >
+                  Requires Response
+                </Button>
+                <Button
+                  type="button"
+                  variant={createForm.requiresUpload ? 'default' : 'outline'}
+                  className="min-h-10"
+                  onClick={() => setCreateForm((p) => ({ ...p, requiresUpload: !p.requiresUpload }))}
+                >
+                  Requires Upload
+                </Button>
+              </div>
+              <div className="flex flex-wrap gap-2">
+                <Button
+                  className="min-h-10"
+                  onClick={() => (isDemoMode ? onDemoCreate() : createMutation.mutate())}
+                  disabled={!isDemoMode && createMutation.isPending}
+                >
+                  {isDemoMode ? 'Save locally' : (createMutation.isPending ? 'Saving...' : 'Save request')}
+                </Button>
+                <Button variant="outline" className="min-h-10" onClick={() => setCreateOpen(false)}>Cancel</Button>
+              </div>
+            </Card>
+          ) : null}
+
+          {activeFilter === 'Parent Notices' && parentNoticeCreateOpen ? (
+            <Card className="p-4 sm:p-5 space-y-3">
+              <p className="font-medium">{isDemoMode ? 'Create Parent Notice (demo-only local shell)' : 'Create Parent Notice'}</p>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div className="space-y-1">
+                  <Label>Title</Label>
+                  <Input
+                    value={parentNoticeForm.title}
+                    onChange={(e) => setParentNoticeForm((p) => ({ ...p, title: e.target.value }))}
+                    placeholder="Required"
+                  />
+                </div>
+                <div className="space-y-1">
+                  <Label>Subtitle</Label>
+                  <Input
+                    value={parentNoticeForm.subtitle}
+                    onChange={(e) => setParentNoticeForm((p) => ({ ...p, subtitle: e.target.value }))}
+                    placeholder="Optional"
+                  />
+                </div>
+                <div className="space-y-1 sm:col-span-2">
+                  <Label>Body</Label>
+                  <Textarea
+                    value={parentNoticeForm.body}
+                    onChange={(e) => setParentNoticeForm((p) => ({ ...p, body: e.target.value }))}
+                    className="min-h-[110px]"
+                    placeholder="Required"
+                  />
+                </div>
+                <div className="space-y-1">
+                  <Label>Type</Label>
+                  <Select
+                    value={parentNoticeForm.announcementType}
+                    onValueChange={(value) => setParentNoticeForm((p) => ({ ...p, announcementType: value }))}
+                  >
+                    <SelectTrigger><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      {PARENT_NOTICE_TYPE_OPTIONS.map((option) => (
+                        <SelectItem key={option.value} value={option.value}>{option.label}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-1">
+                  <Label>Target type</Label>
+                  <Select
+                    value={parentNoticeForm.targetType}
+                    onValueChange={(value) => setParentNoticeForm((p) => ({ ...p, targetType: value }))}
+                  >
+                    <SelectTrigger><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="branch">Branch</SelectItem>
+                      <SelectItem value="class">Class</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-1">
+                  <Label>Branch ID (optional UUID)</Label>
+                  <Input
+                    value={parentNoticeForm.branchId}
+                    onChange={(e) => setParentNoticeForm((p) => ({ ...p, branchId: e.target.value }))}
+                    placeholder="Row branch scope (optional)"
+                  />
+                </div>
+                {parentNoticeForm.targetType === 'branch' ? (
+                  <div className="space-y-1">
+                    <Label>Target Branch ID (UUID)</Label>
+                    <Input
+                      value={parentNoticeForm.targetBranchId}
+                      onChange={(e) => setParentNoticeForm((p) => ({ ...p, targetBranchId: e.target.value }))}
+                      placeholder="Required for branch target publish"
+                    />
+                  </div>
+                ) : (
+                  <div className="space-y-1">
+                    <Label>Target Class ID (UUID)</Label>
+                    <Input
+                      value={parentNoticeForm.targetClassId}
+                      onChange={(e) => setParentNoticeForm((p) => ({ ...p, targetClassId: e.target.value }))}
+                      placeholder="Required for class target publish"
+                    />
+                  </div>
+                )}
+                <div className="space-y-1">
+                  <Label>Class ID (optional row field UUID)</Label>
+                  <Input
+                    value={parentNoticeForm.classId}
+                    onChange={(e) => setParentNoticeForm((p) => ({ ...p, classId: e.target.value }))}
+                    placeholder="Optional class scope"
+                  />
+                </div>
+                <div className="space-y-1">
+                  <Label>Event start (optional)</Label>
+                  <Input
+                    type="datetime-local"
+                    value={parentNoticeForm.eventStartAt}
+                    onChange={(e) => setParentNoticeForm((p) => ({ ...p, eventStartAt: e.target.value }))}
+                  />
+                </div>
+                <div className="space-y-1">
+                  <Label>Event end (optional)</Label>
+                  <Input
+                    type="datetime-local"
+                    value={parentNoticeForm.eventEndAt}
+                    onChange={(e) => setParentNoticeForm((p) => ({ ...p, eventEndAt: e.target.value }))}
+                  />
+                </div>
+                <div className="space-y-1 sm:col-span-2">
+                  <Label>Location (optional)</Label>
+                  <Input
+                    value={parentNoticeForm.location}
+                    onChange={(e) => setParentNoticeForm((p) => ({ ...p, location: e.target.value }))}
+                    placeholder="Optional event location"
+                  />
+                </div>
+              </div>
+
+              <div className="rounded-lg border border-dashed p-3 space-y-2">
+                <p className="text-sm font-medium">Parent-facing preview (pre-submit)</p>
+                <p className="text-xs text-muted-foreground">Preview only. This does not embed ParentView.</p>
+                <div className="rounded-lg border bg-muted/20 p-3 space-y-2">
+                  <div className="flex flex-wrap items-center justify-between gap-2">
+                    <p className="text-sm font-semibold">{parentNoticeForm.title.trim() || 'Untitled parent notice'}</p>
+                    <Badge variant="outline">{formatParentNoticeType(parentNoticeForm.announcementType)}</Badge>
+                  </div>
+                  {parentNoticeForm.subtitle.trim() ? (
+                    <p className="text-xs text-muted-foreground">{parentNoticeForm.subtitle.trim()}</p>
+                  ) : null}
+                  <p className="text-sm">{parentNoticeForm.body.trim() || 'Body preview appears here.'}</p>
+                  <div className="flex flex-wrap gap-2">
+                    <Badge variant="outline">
+                      Audience {parentNoticeForm.targetType === 'class' ? 'Class target' : 'Branch target'}
+                    </Badge>
+                    {parentNoticeForm.eventStartAt ? <Badge variant="outline">Start {formatDateTime(parentNoticeForm.eventStartAt)}</Badge> : null}
+                    {parentNoticeForm.eventEndAt ? <Badge variant="outline">End {formatDateTime(parentNoticeForm.eventEndAt)}</Badge> : null}
+                    {parentNoticeForm.location.trim() ? <Badge variant="outline">Location {parentNoticeForm.location.trim()}</Badge> : null}
+                  </div>
+                </div>
+              </div>
+
+              <div className="flex flex-wrap gap-2">
+                <Button
+                  className="min-h-10"
+                  onClick={() => (isDemoMode
+                    ? onDemoCreateParentNotice({ shouldPublish: false })
+                    : parentNoticeCreateMutation.mutate({ shouldPublish: false }))}
+                  disabled={!isDemoMode && parentNoticeCreateMutation.isPending}
+                >
+                  {!isDemoMode && parentNoticeCreateMutation.isPending ? 'Saving...' : 'Save Draft'}
+                </Button>
+                <Button
+                  className="min-h-10"
+                  variant="outline"
+                  onClick={() => (isDemoMode
+                    ? onDemoCreateParentNotice({ shouldPublish: true })
+                    : parentNoticeCreateMutation.mutate({ shouldPublish: true }))}
+                  disabled={!isDemoMode && parentNoticeCreateMutation.isPending}
+                >
+                  {!isDemoMode && parentNoticeCreateMutation.isPending ? 'Publishing...' : 'Create & Publish'}
+                </Button>
+                <Button
+                  className="min-h-10"
+                  variant="outline"
+                  onClick={() => setParentNoticeCreateOpen(false)}
+                  disabled={!isDemoMode && parentNoticeCreateMutation.isPending}
+                >
+                  Cancel
+                </Button>
+              </div>
+            </Card>
+          ) : null}
+
+          {activeFilter === 'Company News' && companyNewsCreateOpen && isDemoMode && canCreateCompanyNewsInDemo ? (
+            <Card className="p-4 sm:p-5 space-y-3">
+              <p className="font-medium">Create Company News (demo-only local shell)</p>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div className="space-y-1">
+                  <Label>Title</Label>
+                  <Input value={companyNewsForm.title} onChange={(e) => setCompanyNewsForm((p) => ({ ...p, title: e.target.value }))} />
+                </div>
+                <div className="space-y-1">
+                  <Label>Subtitle</Label>
+                  <Input value={companyNewsForm.subtitle} onChange={(e) => setCompanyNewsForm((p) => ({ ...p, subtitle: e.target.value }))} />
+                </div>
+                <div className="space-y-1 sm:col-span-2">
+                  <Label>Body</Label>
+                  <Textarea value={companyNewsForm.body} onChange={(e) => setCompanyNewsForm((p) => ({ ...p, body: e.target.value }))} className="min-h-[100px]" />
+                </div>
+                <div className="space-y-1">
+                  <Label>Category / template</Label>
+                  <Select value={companyNewsForm.templateLabel} onValueChange={(value) => setCompanyNewsForm((p) => ({ ...p, templateLabel: value }))}>
+                    <SelectTrigger><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="Congratulations">Congratulations</SelectItem>
+                      <SelectItem value="Important update">Important update</SelectItem>
+                      <SelectItem value="Training reminder">Training reminder</SelectItem>
+                      <SelectItem value="Holiday / closure">Holiday / closure</SelectItem>
+                      <SelectItem value="Event reminder">Event reminder</SelectItem>
+                      <SelectItem value="General news">General news</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-1">
+                  <Label>Emoji</Label>
+                  <Input value={companyNewsForm.emoji} onChange={(e) => setCompanyNewsForm((p) => ({ ...p, emoji: e.target.value }))} placeholder="📣" />
+                </div>
+                <div className="space-y-1">
+                  <Label>Tone / style</Label>
+                  <Select value={companyNewsForm.toneLabel} onValueChange={(value) => setCompanyNewsForm((p) => ({ ...p, toneLabel: value }))}>
+                    <SelectTrigger><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="celebratory">Celebratory</SelectItem>
+                      <SelectItem value="important">Important</SelectItem>
+                      <SelectItem value="warm reminder">Warm reminder</SelectItem>
+                      <SelectItem value="supportive">Supportive</SelectItem>
+                      <SelectItem value="informative">Informative</SelectItem>
+                      <SelectItem value="warm">Warm</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-1">
+                  <Label>Priority</Label>
+                  <Select value={companyNewsForm.priority} onValueChange={(value) => setCompanyNewsForm((p) => ({ ...p, priority: value }))}>
+                    <SelectTrigger><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="low">Low</SelectItem>
+                      <SelectItem value="normal">Normal</SelectItem>
+                      <SelectItem value="high">High</SelectItem>
+                      <SelectItem value="urgent">Urgent</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+              <div className="flex flex-wrap gap-2">
+                <Button
+                  type="button"
+                  variant={companyNewsForm.popupEnabled ? 'default' : 'outline'}
+                  className="min-h-10"
+                  onClick={() => setCompanyNewsForm((p) => ({ ...p, popupEnabled: !p.popupEnabled }))}
+                >
+                  Pop-up enabled preview
+                </Button>
+                <Badge variant="outline">{companyNewsForm.audienceLabel}</Badge>
+              </div>
+              <div className="flex flex-wrap gap-2">
+                <Button className="min-h-10" onClick={onDemoCreateCompanyNews}>
+                  Save locally
+                </Button>
+                <Button variant="outline" className="min-h-10" onClick={() => setCompanyNewsCreateOpen(false)}>Cancel</Button>
+              </div>
+            </Card>
+          ) : null}
+
+          {activeFilter === 'Company News' && companyNewsCreateOpen && !isDemoMode && canCreateCompanyNewsInAuth ? (
+            <Card className="p-4 sm:p-5 space-y-3">
+              <p className="font-medium">Create Company News</p>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div className="space-y-1">
+                  <Label>Title</Label>
+                  <Input
+                    value={companyNewsForm.title}
+                    onChange={(e) => setCompanyNewsForm((p) => ({ ...p, title: e.target.value }))}
+                    placeholder="Required"
+                  />
+                </div>
+                <div className="space-y-1">
+                  <Label>Subtitle</Label>
+                  <Input
+                    value={companyNewsForm.subtitle}
+                    onChange={(e) => setCompanyNewsForm((p) => ({ ...p, subtitle: e.target.value }))}
+                    placeholder="Optional"
+                  />
+                </div>
+                <div className="space-y-1 sm:col-span-2">
+                  <Label>Body</Label>
+                  <Textarea
+                    value={companyNewsForm.body}
+                    onChange={(e) => setCompanyNewsForm((p) => ({ ...p, body: e.target.value }))}
+                    className="min-h-[100px]"
+                    placeholder="Required when subtitle is empty"
+                  />
+                </div>
+                <div className="space-y-1">
+                  <Label>Category / template</Label>
+                  <Select value={companyNewsForm.templateLabel} onValueChange={(value) => setCompanyNewsForm((p) => ({ ...p, templateLabel: value }))}>
+                    <SelectTrigger><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="Congratulations">Congratulations</SelectItem>
+                      <SelectItem value="Important update">Important update</SelectItem>
+                      <SelectItem value="Training reminder">Training reminder</SelectItem>
+                      <SelectItem value="Holiday / closure">Holiday / closure</SelectItem>
+                      <SelectItem value="Event reminder">Event reminder</SelectItem>
+                      <SelectItem value="General news">General news</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-1">
+                  <Label>Emoji</Label>
+                  <Input
+                    value={companyNewsForm.emoji}
+                    onChange={(e) => setCompanyNewsForm((p) => ({ ...p, emoji: e.target.value }))}
+                    placeholder="📣"
+                  />
+                </div>
+                <div className="space-y-1">
+                  <Label>Tone / style</Label>
+                  <Select value={companyNewsForm.toneLabel} onValueChange={(value) => setCompanyNewsForm((p) => ({ ...p, toneLabel: value }))}>
+                    <SelectTrigger><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="celebratory">Celebratory</SelectItem>
+                      <SelectItem value="important">Important</SelectItem>
+                      <SelectItem value="warm reminder">Warm reminder</SelectItem>
+                      <SelectItem value="supportive">Supportive</SelectItem>
+                      <SelectItem value="informative">Informative</SelectItem>
+                      <SelectItem value="warm">Warm</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-1">
+                  <Label>Priority</Label>
+                  <Select value={companyNewsForm.priority} onValueChange={(value) => setCompanyNewsForm((p) => ({ ...p, priority: value }))}>
+                    <SelectTrigger><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="low">Low</SelectItem>
+                      <SelectItem value="normal">Normal</SelectItem>
+                      <SelectItem value="high">High</SelectItem>
+                      <SelectItem value="urgent">Urgent</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-1">
+                  <Label>Target type</Label>
+                  <Select value={companyNewsForm.targetType} onValueChange={(value) => setCompanyNewsForm((p) => ({ ...p, targetType: value }))}>
+                    <SelectTrigger><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="branch">Branch</SelectItem>
+                      <SelectItem value="role">Role</SelectItem>
+                      <SelectItem value="profile">Profile</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-1">
+                  <Label>Target Branch ID (UUID)</Label>
+                  <Input
+                    value={companyNewsForm.targetBranchId}
+                    onChange={(e) => setCompanyNewsForm((p) => ({ ...p, targetBranchId: e.target.value }))}
+                    placeholder="Required for branch target"
+                  />
+                </div>
+                <div className="space-y-1">
+                  <Label>Target Role</Label>
+                  <Input
+                    value={companyNewsForm.targetRole}
+                    onChange={(e) => setCompanyNewsForm((p) => ({ ...p, targetRole: e.target.value }))}
+                    placeholder="hq_admin / branch_supervisor / teacher"
+                  />
+                </div>
+                <div className="space-y-1">
+                  <Label>Target Profile ID (UUID)</Label>
+                  <Input
+                    value={companyNewsForm.targetProfileId}
+                    onChange={(e) => setCompanyNewsForm((p) => ({ ...p, targetProfileId: e.target.value }))}
+                    placeholder="Required for profile target"
+                  />
+                </div>
+              </div>
+              <div className="flex flex-wrap gap-2">
+                <Button
+                  type="button"
+                  variant={companyNewsForm.popupEnabled ? 'default' : 'outline'}
+                  className="min-h-10"
+                  onClick={() => setCompanyNewsForm((p) => ({ ...p, popupEnabled: !p.popupEnabled }))}
+                  disabled={companyNewsCreateMutation.isPending}
+                >
+                  Pop-up enabled
+                </Button>
+                <Badge variant="outline">{companyNewsForm.audienceLabel}</Badge>
+              </div>
+              <div className="flex flex-wrap gap-2">
+                <Button
+                  className="min-h-10"
+                  onClick={() => companyNewsCreateMutation.mutate({ shouldPublish: false })}
+                  disabled={companyNewsCreateMutation.isPending}
+                >
+                  {companyNewsCreateMutation.isPending ? 'Saving...' : 'Save Draft'}
+                </Button>
+                <Button
+                  className="min-h-10"
+                  variant="outline"
+                  onClick={() => companyNewsCreateMutation.mutate({ shouldPublish: true })}
+                  disabled={companyNewsCreateMutation.isPending}
+                >
+                  {companyNewsCreateMutation.isPending ? 'Publishing...' : 'Create & Publish'}
+                </Button>
+                <Button
+                  variant="outline"
+                  className="min-h-10"
+                  onClick={() => setCompanyNewsCreateOpen(false)}
+                  disabled={companyNewsCreateMutation.isPending}
+                >
+                  Cancel
+                </Button>
+              </div>
+            </Card>
+          ) : null}
+
+          {activeFilter === 'Company News' && !isDemoMode && !canCreateCompanyNewsInAuth ? (
+            <Card className="p-4 sm:p-5 border-dashed">
+              <p className="text-sm font-medium">Company News is HQ-managed</p>
+              <p className="text-xs text-muted-foreground mt-1">
+                Branch supervisor and teacher roles have view-only access for this milestone.
+              </p>
+            </Card>
+          ) : null}
+
+          <Card className="p-3">
+            <div className="flex gap-2 overflow-x-auto">
+              {(canManageNotificationTemplates ? FILTERS : FILTERS.filter((item) => item !== 'Message Templates')).map((filter) => (
+                <Button
+                  key={filter}
+                  size="sm"
+                  variant={activeFilter === filter ? 'default' : 'outline'}
+                  className="min-h-10 whitespace-nowrap"
+                  onClick={() => {
+                    setActiveFilter(filter);
+                    setCreateOpen(false);
+                    setCompanyNewsCreateOpen(false);
+                    setParentNoticeCreateOpen(false);
+                  }}
+                >
+                  {filter}
+                </Button>
+              ))}
+            </div>
+          </Card>
+
+          {activeFilter === 'Message Templates' ? (
+            canManageNotificationTemplates ? (
+              <NotificationTemplateManager
+                templates={Array.isArray(templatesQuery.data) ? templatesQuery.data : []}
+                isLoading={templatesQuery.isLoading}
+                isError={templatesQuery.isError}
+                canEdit
+                isSaving={templateSaveMutation.isPending}
+                onSaveTemplate={(payload) => templateSaveMutation.mutate(payload)}
+              />
+            ) : (
+              <Card className="p-4 sm:p-5 border-dashed">
+                <p className="text-sm font-medium">Message templates are HQ-managed</p>
+                <p className="text-xs text-muted-foreground mt-1">
+                  This section is available only to HQ Admin in v1.
+                </p>
+              </Card>
+            )
+          ) : null}
+          {activeFilter === 'Company News' ? (
+            <Card className="p-4 sm:p-5 border-dashed">
+              <div className="flex items-center gap-2 mb-2">
+                <Megaphone className="h-4 w-4 text-muted-foreground" />
+                <p className="font-medium">Company News shell</p>
+              </div>
+              <p className="text-sm text-muted-foreground">
+                News-style Company News cards/details are enabled in this shell milestone. Runtime warm pop-up behavior remains future and is not implemented here.
+              </p>
+            </Card>
+          ) : null}
+          {activeFilter === 'Parent Notices' ? (
+            <Card className="p-4 sm:p-5 border-dashed">
+              <div className="flex items-center gap-2 mb-2">
+                <BellRing className="h-4 w-4 text-muted-foreground" />
+                <p className="font-medium">Parent notices creation shell</p>
+              </div>
+              <p className="text-sm text-muted-foreground">
+                Parent notice draft/publish/archive flow is enabled here for allowed staff roles. Media controls are staff-side only in this detail panel, with explicit release required before parent visibility. Email and notification automation remain deferred.
+              </p>
+            </Card>
+          ) : null}
+
+          {activeFilter !== 'Message Templates' ? (
+          <div className="grid grid-cols-1 xl:grid-cols-5 gap-4">
+            <div className="xl:col-span-2 space-y-3">
+              {visibleRows.map((row) => (
+                <Card
+                  key={row.id}
+                  className={`p-4 cursor-pointer ${selected?.id === row.id ? 'border-primary bg-primary/5' : ''}`}
+                  onClick={() => setSelectedId(row.id)}
+                >
+                  <div className="flex items-start justify-between gap-2">
+                    <p className="font-medium text-sm">{row.title}</p>
+                    <Badge variant="outline" className={priorityTone(row.priority)}>{row.priority}</Badge>
+                  </div>
+                  <p className="text-xs text-muted-foreground mt-1">{row.subtitle}</p>
+                  <p className="text-xs text-muted-foreground mt-2 line-clamp-2">{row.body}</p>
+                  <div className="flex flex-wrap gap-2 mt-3">
+                    <Badge variant="outline" className={statusTone(row.status)}>{row.status}</Badge>
+                    <Badge variant="outline">{row.branchLabel}</Badge>
+                    {row.type === 'company_news'
+                      ? <Badge variant="outline">Published {row.publishDate || 'TBD'}</Badge>
+                      : (row.type === 'parent_notice'
+                        ? <Badge variant="outline">{formatParentNoticeType(row.announcementType)}</Badge>
+                        : (row.dueDate ? <Badge variant="outline">Due {row.dueDate}</Badge> : null))}
+                    {row.type === 'company_news' && row.popupEnabled ? <Badge variant="outline">Pop-up enabled</Badge> : null}
+                    {row.type === 'parent_notice' && row.publishedAt ? <Badge variant="outline">Published {String(row.publishedAt).slice(0, 10)}</Badge> : null}
+                  </div>
+                  <div className="flex flex-wrap gap-2 mt-2 text-xs text-muted-foreground">
+                    {row.type === 'company_news' ? (
+                      <>
+                        <span>{row.templateLabel || 'General news'}</span>
+                        {row.emoji ? <span>{row.emoji}</span> : null}
+                        <span>{row.toneLabel || 'warm'}</span>
+                      </>
+                    ) : row.type === 'parent_notice' ? (
+                      <>
+                        <span>{row.audienceSummary || row.targetLabel || 'Parent target'}</span>
+                        {row.eventStartAt ? <span>Starts {formatDateTime(row.eventStartAt)}</span> : null}
+                        {row.location ? <span>{row.location}</span> : null}
+                      </>
+                    ) : (
+                      <>
+                        {row.requiresResponse ? <span>Requires response</span> : null}
+                        {row.requiresUpload ? <span>Requires upload</span> : null}
+                      </>
+                    )}
+                  </div>
+                  {row.type === 'company_news' ? (
+                    <div className="mt-2">
+                      <Button size="sm" variant="outline" className="min-h-9">
+                        View detail
+                      </Button>
+                    </div>
+                  ) : null}
+                </Card>
+              ))}
+            </div>
+
+            <div className="xl:col-span-3">
+              {!selected ? (
+                <Card className="p-5">
+                  <p className="text-sm text-muted-foreground">
+                    {(!isDemoMode && (announcementsQuery.isLoading || parentAnnouncementsQuery.isLoading)) ? 'Loading announcements...' : 'No announcements in this filter.'}
+                  </p>
+                </Card>
+              ) : selected.type === 'parent_notice' ? (
+                <Card className="p-4 sm:p-5 space-y-4">
+                  <div className="flex flex-wrap items-center justify-between gap-2">
+                    <p className="font-semibold">{selected.title}</p>
+                    <div className="flex flex-wrap gap-2">
+                      <Badge variant="outline" className={statusTone(selected.status)}>{selected.status}</Badge>
+                      <Badge variant="outline">{formatParentNoticeType(selected.announcementType)}</Badge>
+                    </div>
+                  </div>
+                  <p className="text-sm text-muted-foreground">{selected.subtitle || 'No subtitle'}</p>
+                  <p className="text-sm">{selected.body}</p>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                    <Badge variant="outline">Audience {selected.audienceSummary || selected.targetLabel || 'Parent target'}</Badge>
+                    <Badge variant="outline">Branch {selected.branchLabel || 'Global'}</Badge>
+                    <Badge variant="outline">Start {formatDateTime(selected.eventStartAt)}</Badge>
+                    <Badge variant="outline">End {formatDateTime(selected.eventEndAt)}</Badge>
+                    <Badge variant="outline">Location {selected.location || '—'}</Badge>
+                    <Badge variant="outline">Published {selected.publishedAt ? formatDateTime(selected.publishedAt) : 'Draft only'}</Badge>
+                  </div>
+
+                  {role === ROLES.TEACHER ? (
+                    <p className="text-xs text-muted-foreground">
+                      Teacher role is view-only for parent-facing creation in this MVP. Future: teachers may submit event or class content for supervisor/HQ review before parent release.
+                    </p>
+                  ) : null}
+
+                  {(role === ROLES.HQ_ADMIN || role === ROLES.BRANCH_SUPERVISOR) && selected.status !== 'archived' ? (
+                    <div className="flex flex-wrap gap-2">
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="min-h-10"
+                        onClick={() => (isDemoMode ? onDemoArchiveParentNotice() : parentNoticeArchiveMutation.mutate())}
+                        disabled={!isDemoMode && parentNoticeArchiveMutation.isPending}
+                      >
+                        {!isDemoMode && parentNoticeArchiveMutation.isPending ? 'Archiving...' : 'Archive'}
+                      </Button>
+                    </div>
+                  ) : null}
+
+                  <div className="rounded-lg border border-dashed p-3 space-y-3">
+                    <div>
+                      <p className="text-sm font-medium">Parent-facing media</p>
+                      <p className="text-xs text-muted-foreground mt-1">
+                        Upload defaults to unreleased. Use &quot;Release to Parents&quot; only when approved. Signed URL preview only; no public URL.
+                      </p>
+                    </div>
+
+                    {canManageParentNoticeMedia ? (
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                        <div className="space-y-1">
+                          <Label>Media role</Label>
+                          <Select value={parentMediaUploadRole} onValueChange={setParentMediaUploadRole}>
+                            <SelectTrigger><SelectValue /></SelectTrigger>
+                            <SelectContent>
+                              {PARENT_NOTICE_MEDIA_ROLE_OPTIONS.map((option) => (
+                                <SelectItem key={option.value} value={option.value}>{option.label}</SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </div>
+                        <div className="space-y-1 sm:col-span-2">
+                          <Label>{isDemoMode ? 'Demo file name (optional)' : 'Select file'}</Label>
+                          {isDemoMode ? (
+                            <Input
+                              value={demoParentMediaName}
+                              onChange={(e) => setDemoParentMediaName(e.target.value)}
+                              placeholder="demo-parent-guide.pdf"
+                            />
+                          ) : (
+                            <Input
+                              type="file"
+                              onChange={(e) => setParentMediaUploadFile(e.target.files?.[0] || null)}
+                              disabled={uploadParentMediaMutation.isPending}
+                            />
+                          )}
+                        </div>
+                        <div className="sm:col-span-2">
+                          <p className="text-xs text-muted-foreground">
+                            Allowed types: {PARENT_NOTICE_MEDIA_ALLOWED_TYPES.join(', ')}. Max file size: {formatFileSize(PARENT_NOTICE_MEDIA_MAX_BYTES)}.
+                          </p>
+                        </div>
+                        <div className="sm:col-span-2">
+                          <Button
+                            size="sm"
+                            className="min-h-10"
+                            onClick={() => (isDemoMode ? onDemoUploadParentMedia() : uploadParentMediaMutation.mutate())}
+                            disabled={!isDemoMode && uploadParentMediaMutation.isPending}
+                          >
+                            {isDemoMode
+                              ? 'Save demo media'
+                              : (uploadParentMediaMutation.isPending ? 'Uploading...' : 'Upload media')}
+                          </Button>
+                        </div>
+                      </div>
+                    ) : (
+                      <p className="text-xs text-muted-foreground">
+                        Teacher role is view-only in this MVP. Future: teachers may submit event/class photos for supervisor/HQ review before parent release.
+                      </p>
+                    )}
+
+                    <div className="space-y-2">
+                      {!isDemoMode && parentNoticeMediaQuery.isLoading ? (
+                        <p className="text-xs text-muted-foreground">Loading media...</p>
+                      ) : null}
+                      {!isDemoMode && parentNoticeMediaQuery.isError ? (
+                        <p className="text-xs text-amber-700">Media list is temporarily unavailable.</p>
+                      ) : null}
+                      {parentNoticeMediaRows.length === 0 ? (
+                        <p className="text-xs text-muted-foreground">No media uploaded for this notice yet.</p>
+                      ) : (
+                        parentNoticeMediaRows.map((mediaItem) => (
+                          <div key={mediaItem.id} className="rounded-lg border p-2 space-y-2">
+                            <p className="text-xs font-medium">{mediaItem.file_name || 'Untitled media'}</p>
+                            <p className="text-xs text-muted-foreground">
+                              {formatParentMediaRole(mediaItem.media_role)} · {formatFileType(mediaItem.mime_type)} · {formatFileSize(mediaItem.file_size)} · {formatAttachmentDate(mediaItem.created_at)}
+                            </p>
+                            <div className="flex flex-wrap gap-2">
+                              <Badge variant={mediaItem.released_to_parent ? 'default' : 'outline'}>
+                                {mediaItem.released_to_parent ? 'Released' : 'Unreleased'}
+                              </Badge>
+                            </div>
+                            <div className="flex flex-wrap gap-2">
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                className="min-h-9"
+                                onClick={() => (
+                                  isDemoMode
+                                    ? toast.success('Demo media preview only (local simulation).')
+                                    : viewParentMediaMutation.mutate(mediaItem.id)
+                                )}
+                                disabled={!isDemoMode && viewParentMediaMutation.isPending}
+                              >
+                                View / Preview
+                              </Button>
+                              {canManageParentNoticeMedia && !mediaItem.released_to_parent ? (
+                                <Button
+                                  size="sm"
+                                  className="min-h-9"
+                                  onClick={() => (
+                                    isDemoMode
+                                      ? onDemoReleaseParentMedia(mediaItem.id)
+                                      : releaseParentMediaMutation.mutate(mediaItem.id)
+                                  )}
+                                  disabled={!isDemoMode && releaseParentMediaMutation.isPending}
+                                >
+                                  Release to Parents
+                                </Button>
+                              ) : null}
+                              {canManageParentNoticeMedia ? (
+                                <Button
+                                  size="sm"
+                                  variant="destructive"
+                                  className="min-h-9"
+                                  onClick={() => {
+                                    const confirmed = window.confirm('Delete this media file? This action cannot be undone.');
+                                    if (!confirmed) return;
+                                    if (isDemoMode) {
+                                      onDemoDeleteParentMedia(mediaItem.id);
+                                      return;
+                                    }
+                                    deleteParentMediaMutation.mutate(mediaItem.id);
+                                  }}
+                                  disabled={!isDemoMode && deleteParentMediaMutation.isPending}
+                                >
+                                  Delete media
+                                </Button>
+                              ) : null}
+                            </div>
+                          </div>
+                        ))
+                      )}
+                    </div>
+                  </div>
+                </Card>
+              ) : selected.type === 'company_news' ? (
+                <Card className="p-4 sm:p-5 space-y-4">
+                  <div className="flex flex-wrap items-center justify-between gap-2">
+                    <div className="flex items-center gap-2">
+                      <p className="font-semibold">{selected.title}</p>
+                      {selected.emoji ? <span className="text-lg">{selected.emoji}</span> : null}
+                    </div>
+                    <Badge variant="outline" className={priorityTone(selected.priority)}>{selected.priority}</Badge>
+                  </div>
+                  <p className="text-sm text-muted-foreground">{selected.subtitle}</p>
+                  <p className="text-sm">{selected.body}</p>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                    <Badge variant="outline">Category {selected.templateLabel || 'General news'}</Badge>
+                    <Badge variant="outline">Audience {selected.audienceLabel || selected.targetLabel || 'Internal staff'}</Badge>
+                    <Badge variant="outline">Published {selected.publishDate || 'TBD'}</Badge>
+                    <Badge variant="outline">Tone {selected.toneLabel || 'warm'}</Badge>
+                    {selected.popupEnabled ? <Badge variant="outline">Pop-up enabled</Badge> : <Badge variant="outline">Pop-up disabled</Badge>}
+                  </div>
+
+                  <div className="rounded-lg border border-dashed p-3 space-y-2">
+                    <p className="text-sm font-medium">Warm pop-up preview (non-runtime)</p>
+                    <p className="text-xs text-muted-foreground">
+                      5-10 second style preview only. Runtime app-shell pop-up behavior, dismissal persistence, and frequency logic are future milestones.
+                    </p>
+                    <div className="rounded-lg border bg-muted/30 p-3 space-y-2">
+                      <p className="text-xs text-muted-foreground">Preview headline</p>
+                      <p className="text-sm font-medium">{selected.emoji ? `${selected.emoji} ` : ''}{selected.title}</p>
+                      <p className="text-xs text-muted-foreground line-clamp-2">{selected.subtitle || selected.body}</p>
+                      <div className="flex flex-wrap gap-2">
+                        <Button size="sm" className="min-h-9" variant="outline">View</Button>
+                        <Button size="sm" className="min-h-9" variant="outline">Dismiss</Button>
+                      </div>
+                    </div>
+                  </div>
+                </Card>
+              ) : (
+                <Card className="p-4 sm:p-5 space-y-4">
+                  <div className="flex flex-wrap items-center justify-between gap-2">
+                    <p className="font-semibold">{selected.title}</p>
+                    <Badge variant="outline" className={statusTone(selected.status)}>{selected.status}</Badge>
+                  </div>
+                  <p className="text-sm text-muted-foreground">{selected.subtitle}</p>
+                  <p className="text-sm">{selected.body}</p>
+                  <p className="text-xs text-muted-foreground">
+                    Target: {isDemoMode ? selected.targetLabel : `${detailQuery.data?.targets?.length || 0} target row(s)`}
+                  </p>
+                  {!isDemoMode ? (
+                    <p className="text-xs text-muted-foreground">
+                      Status rows: {detailQuery.data?.statuses?.length || 0}
+                    </p>
+                  ) : null}
+                  {!isDemoMode && detailQuery.isError ? (
+                    <p className="text-xs text-amber-700">Announcement detail is temporarily unavailable.</p>
+                  ) : null}
+
+                  <div className="flex flex-wrap gap-2">
+                    <Button
+                      size="sm"
+                      className="min-h-10"
+                      onClick={() => (isDemoMode ? onDemoStatus('read') : markReadMutation.mutate())}
+                      disabled={!isDemoMode && markReadMutation.isPending}
+                    >
+                      Mark Read
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="min-h-10"
+                      onClick={() => (isDemoMode ? onDemoStatus('done') : doneMutation.mutate())}
+                      disabled={!isDemoMode && doneMutation.isPending}
+                    >
+                      Done
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="min-h-10"
+                      onClick={() => (isDemoMode ? onDemoStatus('undone') : undoneMutation.mutate())}
+                      disabled={!isDemoMode && undoneMutation.isPending}
+                    >
+                      Undone
+                    </Button>
+                  </div>
+                  {!isDemoMode ? (
+                    <Input
+                      value={undoneReason}
+                      onChange={(e) => setUndoneReason(e.target.value)}
+                      placeholder="Optional undone reason"
+                    />
+                  ) : null}
+
+                  <div className="space-y-2">
+                    <p className="text-sm font-medium">Replies / Questions</p>
+                    {(isDemoMode ? selected.replies.length : (detailQuery.data?.replies?.length || 0)) === 0 ? (
+                      <p className="text-xs text-muted-foreground">No replies yet.</p>
+                    ) : (
+                      <div className="space-y-2">
+                        {(isDemoMode ? selected.replies : (detailQuery.data?.replies || [])).map((reply) => (
+                          <div key={reply.id} className="rounded-lg border p-2">
+                            <p className="text-xs font-medium">{reply.author || reply.profile_id || 'Staff'}</p>
+                            <p className="text-xs text-muted-foreground">{reply.message || reply.body}</p>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                    <div className="flex flex-col sm:flex-row gap-2">
+                      <Input
+                        value={draftReply}
+                        onChange={(e) => setDraftReply(e.target.value)}
+                        placeholder={isDemoMode ? 'Add local reply in demo mode' : 'Add reply'}
+                      />
+                      <Button className="min-h-10" onClick={() => (isDemoMode ? onDemoReply() : replyMutation.mutate())}>
+                        <MessageSquare className="h-4 w-4 mr-1" />
+                        Add Reply
+                      </Button>
+                    </div>
+                  </div>
+
+                  <div className="rounded-lg border border-dashed p-3">
+                    <p className="text-sm font-medium">Attachments</p>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      Internal staff attachments only. Parent-facing media remains disabled in this milestone.
+                    </p>
+
+                    {canUploadAttachments ? (
+                      <div className="mt-3 grid grid-cols-1 sm:grid-cols-2 gap-2">
+                        <div className="space-y-1">
+                          <Label>Attachment role</Label>
+                          <Select value={uploadRole} onValueChange={setUploadRole}>
+                            <SelectTrigger>
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {ANNOUNCEMENT_ATTACHMENT_ROLE_OPTIONS
+                                .filter((option) => allowedAttachmentRoles.includes(option.value))
+                                .map((option) => (
+                                  <SelectItem key={option.value} value={option.value}>
+                                    {option.label}
+                                  </SelectItem>
+                                ))}
+                            </SelectContent>
+                          </Select>
+                        </div>
+                        <div className="space-y-1 sm:col-span-2">
+                          <Label>{isDemoMode ? 'Demo file name (optional)' : 'Select file'}</Label>
+                          {isDemoMode ? (
+                            <Input
+                              value={demoUploadName}
+                              onChange={(e) => setDemoUploadName(e.target.value)}
+                              placeholder="demo-response-note.pdf"
+                            />
+                          ) : (
+                            <Input
+                              type="file"
+                              onChange={(e) => setUploadFile(e.target.files?.[0] || null)}
+                              disabled={uploadAttachmentMutation.isPending}
+                            />
+                          )}
+                        </div>
+                        <div className="space-y-1 sm:col-span-2">
+                          <Label>Staff note (optional)</Label>
+                          <Textarea
+                            value={uploadNote}
+                            onChange={(e) => setUploadNote(e.target.value)}
+                            className="min-h-[80px]"
+                            placeholder="Add internal context for staff only"
+                          />
+                        </div>
+                        <div className="sm:col-span-2">
+                          <Button
+                            size="sm"
+                            className="min-h-10"
+                            onClick={() => (isDemoMode ? onDemoUploadAttachment() : uploadAttachmentMutation.mutate())}
+                            disabled={!isDemoMode && uploadAttachmentMutation.isPending}
+                          >
+                            {isDemoMode
+                              ? 'Save demo attachment'
+                              : (uploadAttachmentMutation.isPending ? 'Uploading...' : 'Upload attachment')}
+                          </Button>
+                        </div>
+                      </div>
+                    ) : null}
+
+                    <div className="mt-3 space-y-2">
+                      {isDemoMode ? null : (attachmentsQuery.isLoading ? (
+                        <p className="text-xs text-muted-foreground">Loading attachments...</p>
+                      ) : null)}
+                      {!isDemoMode && attachmentsQuery.isError ? (
+                        <p className="text-xs text-amber-700">Attachments are temporarily unavailable.</p>
+                      ) : null}
+                      {attachmentRows.length === 0 ? (
+                        <p className="text-xs text-muted-foreground">No attachments yet.</p>
+                      ) : (
+                        attachmentRows.map((attachment) => (
+                          <div key={attachment.id} className="rounded-lg border p-2">
+                            <p className="text-xs font-medium">{attachment.file_name || 'Untitled attachment'}</p>
+                            <p className="text-xs text-muted-foreground">
+                              {attachment.file_role || 'unknown_role'} · {formatFileType(attachment.mime_type)} · {formatFileSize(attachment.file_size)} · {formatAttachmentDate(attachment.created_at)}
+                            </p>
+                            {attachment.staff_note ? (
+                              <p className="text-xs text-muted-foreground mt-1">{attachment.staff_note}</p>
+                            ) : null}
+                            <div className="mt-2">
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                className="min-h-9"
+                                onClick={() => (
+                                  isDemoMode
+                                    ? toast.success('Demo attachment view only (local simulation).')
+                                    : viewAttachmentMutation.mutate(attachment.id)
+                                )}
+                                disabled={!isDemoMode && viewAttachmentMutation.isPending}
+                              >
+                                View
+                              </Button>
+                            </div>
+                          </div>
+                        ))
+                      )}
+                    </div>
+                  </div>
+
+                  {canViewManagerOverview ? (
+                    <div className="rounded-lg border p-3 space-y-3">
+                      <div>
+                        <p className="text-sm font-medium">Completion Overview</p>
+                        <p className="text-xs text-muted-foreground mt-1">
+                          Read-only manager visibility for HQ and branch supervisors only.
+                        </p>
+                      </div>
+
+                      {!isDemoMode && completionOverviewQuery.isLoading ? (
+                        <p className="text-xs text-muted-foreground">Loading completion overview...</p>
+                      ) : null}
+
+                      {!isDemoMode && completionOverviewQuery.isError ? (
+                        <p className="text-xs text-amber-700">Completion overview is temporarily unavailable.</p>
+                      ) : null}
+
+                      {!isDemoMode && !completionOverviewQuery.isLoading && !completionOverviewQuery.isError && !completionOverview ? (
+                        <p className="text-xs text-muted-foreground">No completion overview rows available for this announcement.</p>
+                      ) : null}
+
+                      {isDemoMode && !completionOverview ? (
+                        <p className="text-xs text-muted-foreground">No demo completion overview for this announcement yet.</p>
+                      ) : null}
+
+                      {completionOverview ? (
+                        <>
+                          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
+                            <Badge variant="outline">Total targeted {completionOverview.totalTargeted || 0}</Badge>
+                            <Badge variant="outline">Read {completionOverview.readCount || 0} / Unread {completionOverview.unreadCount || 0}</Badge>
+                            <Badge variant="outline">Done {completionOverview.doneCount || 0} / Pending {completionOverview.pendingCount || 0} / Undone {completionOverview.undoneCount || 0}</Badge>
+                            <Badge variant="outline">Response provided {completionOverview.responseProvidedCount || 0} / missing {completionOverview.responseMissingCount || 0}</Badge>
+                            <Badge variant="outline">Upload provided {completionOverview.uploadProvidedCount || 0} / missing {completionOverview.uploadMissingCount || 0}</Badge>
+                            <Badge variant="outline">Overdue {completionOverview.overdueCount || 0}</Badge>
+                            <Badge variant="outline">Latest reply {formatDateTime(completionOverview.latestReplyAt)}</Badge>
+                            <Badge variant="outline">Latest upload {formatDateTime(completionOverview.latestUploadAt)}</Badge>
+                          </div>
+
+                          <div className="space-y-2">
+                            {(completionOverview.rows || []).length === 0 ? (
+                              <p className="text-xs text-muted-foreground">No per-person completion rows available.</p>
+                            ) : (
+                              (completionOverview.rows || []).map((person) => (
+                                <div key={person.profileId} className="rounded-lg border p-2 space-y-1">
+                                  <div className="flex flex-wrap items-center justify-between gap-2">
+                                    <p className="text-xs font-medium">{person.staffName || 'Staff'}</p>
+                                    <div className="flex flex-wrap gap-1">
+                                      <Badge variant="outline">{roleLabel(person.role)}</Badge>
+                                      <Badge variant="outline">{person.branchName || 'No branch'}</Badge>
+                                      <Badge variant="outline" className={statusTone(person.doneStatus || 'pending')}>
+                                        {person.doneStatus || 'pending'}
+                                      </Badge>
+                                      {person.isOverdue ? <Badge variant="outline" className="bg-red-100 text-red-700 border-red-200">Overdue</Badge> : null}
+                                    </div>
+                                  </div>
+                                  <div className="flex flex-wrap gap-2 text-xs text-muted-foreground">
+                                    <span>Read: {person.readAt ? formatDateTime(person.readAt) : 'Unread'}</span>
+                                    <span>Replies: {person.replyCount || 0}</span>
+                                    <span>Uploads: {person.attachmentCount || 0}</span>
+                                    <span>{person.responseProvided ? 'Response provided' : 'Response missing'}</span>
+                                    <span>{person.uploadProvided ? 'Upload provided' : 'Upload missing'}</span>
+                                    <span>Last activity: {formatDateTime(person.lastActivityAt)}</span>
+                                  </div>
+                                  {person.undoneReason ? (
+                                    <p className="text-xs text-amber-700">Undone reason: {person.undoneReason}</p>
+                                  ) : null}
+                                </div>
+                              ))
+                            )}
+                          </div>
+                        </>
+                      ) : null}
+                    </div>
+                  ) : null}
+                </Card>
+              )}
+            </div>
+          </div>
+          ) : null}
+        </div>
+      )}
+    </div>
+  );
+}

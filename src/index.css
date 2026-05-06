@@ -4,6 +4,69 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Hash scroll targets: clear space below fixed-style header in portal layout */
+@layer components {
+  #parent-portal-overview,
+  #attendance-summary,
+  #homework-history,
+  #parent-homework-status,
+  #parent-progress-reports,
+  #latest-report,
+  #latest-parent-comment,
+  #student-learning-portal,
+  #homework-due,
+  #recent-feedback,
+  #learning-resources,
+  #simple-progress-summary,
+  #parent-announcements-events {
+    scroll-margin-top: 5rem;
+  }
+}
+
+/* Parent / student portal: in-section highlight after hash navigation (respects reduced motion in JS + CSS) */
+@layer components {
+  @media (prefers-reduced-motion: no-preference) {
+    .parent-view-section-enter {
+      animation: pv-section-reveal 0.38s cubic-bezier(0.22, 1, 0.36, 1);
+    }
+    .parent-view-section-enter > * {
+      animation: pv-section-child 0.3s ease-out backwards;
+    }
+    .parent-view-section-enter > *:nth-child(1) {
+      animation-delay: 0s;
+    }
+    .parent-view-section-enter > *:nth-child(2) {
+      animation-delay: 0.09s;
+    }
+    .parent-view-section-enter > *:nth-child(3) {
+      animation-delay: 0.18s;
+    }
+    .parent-view-section-enter > *:nth-child(4) {
+      animation-delay: 0.27s;
+    }
+    @keyframes pv-section-reveal {
+      from {
+        opacity: 0.65;
+        transform: translateY(10px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+    @keyframes pv-section-child {
+      from {
+        opacity: 0.45;
+        transform: translateY(6px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+  }
+}
+
 @layer base {
   :root {
     --font-inter: 'Inter', sans-serif;

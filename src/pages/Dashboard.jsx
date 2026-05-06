@@ -1,7 +1,7 @@
 import React from 'react';
 import { Link, useOutletContext } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
-import { listParentUpdates, getTeacherKpiMetrics, getHqDashboardSummary, getHqAlertLists, getStudentDashboardSummary, getTrialSchedules, getTeacherNotifications, listFeeRecords, getFeeDashboardSummary, listHomeworkAttachments, getHomeworkAttachmentSummary } from '@/services/dataService';
+import { listParentUpdates, getTeacherKpiMetrics, getHqDashboardSummary, getHqAlertLists, getStudentDashboardSummary, getTrialSchedules, getTeacherNotifications, listFeeRecords, getFeeDashboardSummary, listHomeworkAttachments, getHomeworkAttachmentSummary, getDashboardReadSummary, getReadDataSource } from '@/services/dataService';
 import { getDashboardLabel } from '@/services/permissionService';
 import { Building2, BookOpen, ClipboardCheck, MessageSquarePlus, PlayCircle, BookOpenCheck, FileClock, Users, UserCheck, FolderOpen } from 'lucide-react';
 import UpcomingTrialsCard from '@/components/dashboard/UpcomingTrialsCard';
@@ -13,6 +13,7 @@ import TeacherAttentionSection from '@/components/dashboard/TeacherAttentionSect
 import { DashboardListCard, DashboardSectionGrid } from '@/components/dashboard/RoleDashboardLists';
 import HomeworkUploadSummaryCards from '@/components/dashboard/HomeworkUploadSummaryCards';
 import { Button } from '@/components/ui/button';
+import { Card } from '@/components/ui/card';
 import { format } from 'date-fns';
 
 export default function Dashboard() {
@@ -33,11 +34,19 @@ export default function Dashboard() {
   };
 
   const teacherMetrics = getTeacherKpiMetrics(user);
+  const commentPendingApprovalCount = recentUpdates.filter((item) => item.update_type !== 'weekly_report' && ['note_created', 'ai_draft_generated', 'edited'].includes(item.status)).length;
+  const weeklyReadyForReviewCount = recentUpdates.filter((item) => item.update_type === 'weekly_report' && ['ai_draft_generated', 'edited', 'approved'].includes(item.status)).length;
   const hqSummary = getHqDashboardSummary(user);
   const hqAlerts = getHqAlertLists(user);
   const studentSummary = getStudentDashboardSummary(user);
   const upcomingTrials = getTrialSchedules(user).filter((item) => item.trial_status === 'scheduled').slice(0, 3);
   const teacherNotifications = getTeacherNotifications(user).slice(0, 5);
+  const { data: dashboardReadSummary } = useQuery({
+    queryKey: ['dashboard-read-summary', role, user?.branch_id, user?.email],
+    queryFn: () => getDashboardReadSummary(user),
+    enabled: !!user && (role === 'hq_admin' || role === 'branch_supervisor'),
+  });
+  const dashboardSourceLabel = getReadDataSource('dashboard') === 'supabase' ? 'Loaded from Supabase test data' : 'Demo data';
 
   const { data: feeRecords = [] } = useQuery({
     queryKey: ['dashboard-fee-records', role, user?.branch_id, user?.student_id],
@@ -74,6 +83,17 @@ export default function Dashboard() {
 
       {role === 'hq_admin' ? (
         <>
+          <Card className="p-4 mb-6">
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <p className="text-xs text-muted-foreground">{dashboardSourceLabel}</p>
+              <div className="text-xs text-muted-foreground flex gap-4">
+                <span>Branches: {dashboardReadSummary?.branchCount ?? 0}</span>
+                <span>Classes: {dashboardReadSummary?.classCount ?? 0}</span>
+                <span>Students: {dashboardReadSummary?.studentCount ?? 0}</span>
+                <span>Approved Sales Kit: {dashboardReadSummary?.approvedSalesKitCount ?? 0}</span>
+              </div>
+            </div>
+          </Card>
           <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4 mb-6">
             <StatCard label="Total Unpaid" value={feeSummary.unpaid} icon={Building2} />
             <StatCard label="Overdue Payments" value={feeSummary.overdue} icon={Users} />
@@ -95,6 +115,17 @@ export default function Dashboard() {
         </>
       ) : role === 'branch_supervisor' ? (
         <>
+          <Card className="p-4 mb-6">
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <p className="text-xs text-muted-foreground">{dashboardSourceLabel}</p>
+              <div className="text-xs text-muted-foreground flex gap-4">
+                <span>Branches: {dashboardReadSummary?.branchCount ?? 0}</span>
+                <span>Classes: {dashboardReadSummary?.classCount ?? 0}</span>
+                <span>Students: {dashboardReadSummary?.studentCount ?? 0}</span>
+                <span>Approved Sales Kit: {dashboardReadSummary?.approvedSalesKitCount ?? 0}</span>
+              </div>
+            </div>
+          </Card>
           <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4 mb-6">
             <StatCard label="Unpaid Students" value={feeSummary.unpaid} icon={Building2} />
             <StatCard label="Overdue Payments" value={feeSummary.overdue} icon={BookOpen} />
@@ -119,6 +150,32 @@ export default function Dashboard() {
             <StatCard label="Parent Reports Pending" value={teacherMetrics.reportsPending} icon={FileClock} />
           </div>
           <div className="space-y-6">
+            <Card className="p-5">
+              <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+                <div>
+                  <h3 className="font-semibold">Parent Comments & Weekly Reports</h3>
+                  <p className="text-sm text-muted-foreground">Demo-only workflow: teachers draft, review, approve, and release communication manually.</p>
+                </div>
+                <div className="flex gap-2 flex-wrap">
+                  <Button asChild variant="outline">
+                    <Link to="/parent-updates">Open Parent Communication</Link>
+                  </Button>
+                  <Button asChild>
+                    <Link to="/class-session">Start Class Session</Link>
+                  </Button>
+                </div>
+              </div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-4">
+                <div className="rounded-lg bg-accent/40 px-3 py-2">
+                  <p className="text-xs text-muted-foreground">Comments pending approval</p>
+                  <p className="text-lg font-semibold">{commentPendingApprovalCount}</p>
+                </div>
+                <div className="rounded-lg bg-accent/40 px-3 py-2">
+                  <p className="text-xs text-muted-foreground">Weekly reports ready for review</p>
+                  <p className="text-lg font-semibold">{weeklyReadyForReviewCount}</p>
+                </div>
+              </div>
+            </Card>
             <TeacherClassOverviewSection sessions={teacherMetrics.classOverview} />
             <TeacherAttentionSection items={teacherMetrics.studentsNeedingAttention.slice(0, 3)} />
             <TeacherNotificationsCard items={teacherNotifications.slice(0, 5)} />

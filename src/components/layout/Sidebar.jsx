@@ -1,14 +1,15 @@
-import React from 'react';
-import { Link, useLocation } from 'react-router-dom';
-import { 
-  LayoutDashboard, Building2, BookOpen, Users, GraduationCap, 
+import React, { useEffect, useState } from 'react';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
+import {
+  LayoutDashboard, Building2, BookOpen, Users, GraduationCap,
   ClipboardCheck, MessageSquarePlus, LogOut, ChevronLeft, ChevronRight,
-  PenLine, UserPlus, PlayCircle, ClipboardPen, ChartNoAxesColumn, Bot, FolderGit2, BarChart3, CalendarRange, BellRing, FileText, Wallet
+  PenLine, UserPlus, PlayCircle, ClipboardPen, ChartNoAxesColumn, Bot, FolderGit2, BarChart3, CalendarRange, BellRing, FileText, Wallet, Briefcase, Timer, Megaphone, Shield
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { base44 } from '@/api/base44Client';
 import { cn } from '@/lib/utils';
 import { getSelectedDemoRole, normalizeRole } from '@/services/authService';
+import { getRoleNavigation } from '@/services/permissionService';
+import { signOutSupabasePrimary } from '@/services/supabaseAuthService';
 
 const ROLE_TITLES = {
   hq_admin: 'HQ Admin',
@@ -18,71 +19,153 @@ const ROLE_TITLES = {
   student: 'Student',
 };
 
-const NAV_ITEMS = {
-  hq_admin: [
-    { label: 'Dashboard', icon: LayoutDashboard, path: '/' },
-    { label: 'Branches', icon: Building2, path: '/branches' },
-    { label: 'Classes', icon: BookOpen, path: '/classes' },
-    { label: 'Teachers', icon: Users, path: '/teachers' },
-    { label: 'Students', icon: GraduationCap, path: '/students' },
-    { label: 'Attendance', icon: ClipboardCheck, path: '/attendance' },
-    { label: 'Homework', icon: PenLine, path: '/homework' },
-    { label: 'Parent Updates', icon: MessageSquarePlus, path: '/parent-updates' },
-    { label: 'Fee Tracking', icon: Wallet, path: '/fee-tracking' },
-    { label: 'Leads & Enrolment', icon: UserPlus, path: '/leads' },
-    { label: 'Trial Scheduling', icon: CalendarRange, path: '/trial-scheduling' },
-    { label: 'Observations', icon: ClipboardPen, path: '/observations' },
-    { label: 'Teacher KPI', icon: ChartNoAxesColumn, path: '/teacher-kpi' },
-    { label: 'Future AI Engine', icon: Bot, path: '/future-ai-learning-engine' },
-    { label: 'Migration Audit', icon: FolderGit2, path: '/migration-ownership-audit' },
-    { label: 'Prototype Summary', icon: FileText, path: '/prototype-summary' },
-    { label: 'Branch Performance', icon: BarChart3, path: '/branch-performance' },
-    { label: 'My Tasks', icon: BellRing, path: '/my-tasks' },
-  ],
-  branch_supervisor: [
-    { label: 'Dashboard', icon: LayoutDashboard, path: '/' },
-    { label: 'Classes', icon: BookOpen, path: '/classes' },
-    { label: 'Teachers', icon: Users, path: '/teachers' },
-    { label: 'Students', icon: GraduationCap, path: '/students' },
-    { label: 'Attendance', icon: ClipboardCheck, path: '/attendance' },
-    { label: 'Homework', icon: PenLine, path: '/homework' },
-    { label: 'Parent Updates', icon: MessageSquarePlus, path: '/parent-updates' },
-    { label: 'Fee Tracking', icon: Wallet, path: '/fee-tracking' },
-    { label: 'Leads & Enrolment', icon: UserPlus, path: '/leads' },
-    { label: 'Trial Scheduling', icon: CalendarRange, path: '/trial-scheduling' },
-    { label: 'Observations', icon: ClipboardPen, path: '/observations' },
-    { label: 'Teacher KPI', icon: ChartNoAxesColumn, path: '/teacher-kpi' },
-    { label: 'Prototype Summary', icon: FileText, path: '/prototype-summary' },
-    { label: 'Branch Performance', icon: BarChart3, path: '/branch-performance' },
-    { label: 'My Tasks', icon: BellRing, path: '/my-tasks' },
-  ],
-  teacher: [
-    { label: 'Dashboard', icon: LayoutDashboard, path: '/' },
-    { label: 'Class Session', icon: PlayCircle, path: '/class-session' },
-    { label: 'My Classes', icon: BookOpen, path: '/classes' },
-    { label: 'My Students', icon: GraduationCap, path: '/students' },
-    { label: 'Attendance', icon: ClipboardCheck, path: '/attendance' },
-    { label: 'Homework', icon: PenLine, path: '/homework' },
-    { label: 'Parent Updates', icon: MessageSquarePlus, path: '/parent-updates' },
-    { label: 'My Trial Classes', icon: CalendarRange, path: '/trial-scheduling' },
-    { label: 'My Tasks', icon: BellRing, path: '/my-tasks' },
-    { label: 'Teacher KPI', icon: ChartNoAxesColumn, path: '/teacher-kpi' },
-    { label: 'Observations', icon: ClipboardPen, path: '/observations' },
-  ],
-  parent: [
-    { label: 'Parent Dashboard', icon: LayoutDashboard, path: '/parent-view' },
-    { label: 'Fee Tracking', icon: Wallet, path: '/fee-tracking' },
-  ],
-  student: [
-    { label: 'Learning Portal', icon: BookOpen, path: '/parent-view' },
-  ],
+const ICONS = {
+  dashboard: LayoutDashboard,
+  branches: Building2,
+  classes: BookOpen,
+  teachers: Users,
+  students: GraduationCap,
+  attendance: ClipboardCheck,
+  parentUpdates: MessageSquarePlus,
+  homework: PenLine,
+  leads: UserPlus,
+  classSession: PlayCircle,
+  observations: ClipboardPen,
+  teacherKpi: ChartNoAxesColumn,
+  futureAi: Bot,
+  migrationAudit: FolderGit2,
+  branchPerformance: BarChart3,
+  trialScheduling: CalendarRange,
+  myTasks: BellRing,
+  prototypeSummary: FileText,
+  feeTracking: Wallet,
+  salesKit: Briefcase,
+  staffTimeClock: Timer,
+  announcements: Megaphone,
+  parentReports: FileText,
+  sessionReview: Shield,
+};
+
+function withDemoRole(path, selectedDemoRole) {
+  if (!selectedDemoRole) return path;
+  const [pathWithoutHash, hash = ''] = path.split('#');
+  const [pathname, search = ''] = pathWithoutHash.split('?');
+  const params = new URLSearchParams(search);
+  params.set('demoRole', selectedDemoRole);
+  if ((selectedDemoRole === 'parent' || selectedDemoRole === 'student') && pathname === '/parent-view' && !params.has('student')) {
+    params.set('student', 'student-01');
+  }
+  return `${pathname}?${params.toString()}${hash ? `#${hash}` : ''}`;
+}
+
+/** Real mode: keep ?student= on /parent-view; demo mode uses withDemoRole (demoRole + default student). */
+function buildParentViewNavTo(itemPath, selectedDemoRole, currentSearch) {
+  if (selectedDemoRole) {
+    return withDemoRole(itemPath, selectedDemoRole);
+  }
+  const [pathnameOnly, hash = ''] = itemPath.split('#');
+  if (pathnameOnly === '/parent-view') {
+    return `/parent-view${currentSearch || ''}${hash ? `#${hash}` : ''}`;
+  }
+  return itemPath;
+}
+
+function isParentViewNavItemActive(itemPath, location) {
+  const itemBase = itemPath.split('#')[0];
+  if (itemBase !== '/parent-view' || location.pathname !== '/parent-view') {
+    return false;
+  }
+  const itemHash = itemPath.includes('#') ? itemPath.slice(itemPath.indexOf('#') + 1) : '';
+  const locHash = (location.hash || '').replace(/^#/, '');
+  if (!itemHash) {
+    return !locHash;
+  }
+  return locHash === itemHash;
+}
+
+/** Match IDs on ParentView layout order (deterministic sidebar highlight). */
+const PARENT_VIEW_SECTION_SCROLL_ORDER = [
+  'parent-portal-overview',
+  'parent-updates-feed',
+  'attendance-summary',
+  'parent-homework-status',
+  'parent-progress-reports',
+  'parent-settings',
+];
+
+/** Legacy anchors from deep links → canonical section ids */
+const PARENT_VIEW_HASH_CANONICAL = {
+  'latest-report': 'parent-progress-reports',
 };
 
 export default function Sidebar({ user, collapsed, onToggle }) {
   const location = useLocation();
+  const navigate = useNavigate();
   const selectedDemoRole = getSelectedDemoRole();
-  const role = selectedDemoRole || normalizeRole(user?.role) || 'teacher';
-  const items = NAV_ITEMS[role] || NAV_ITEMS.teacher;
+  const [signingOut, setSigningOut] = useState(false);
+  const [observedParentViewHash, setObservedParentViewHash] = useState('');
+  const role = selectedDemoRole || normalizeRole(user?.role) || null;
+  const items = role ? getRoleNavigation(role) : [];
+
+  useEffect(() => {
+    if (location.pathname !== '/parent-view') return undefined;
+
+    const rawHash = (location.hash || '').replace(/^#/, '');
+    const canonicalFromUrl = PARENT_VIEW_HASH_CANONICAL[rawHash] || rawHash;
+    if (canonicalFromUrl && PARENT_VIEW_SECTION_SCROLL_ORDER.includes(canonicalFromUrl)) {
+      setObservedParentViewHash(canonicalFromUrl);
+    }
+
+    const TOP_LINE_PX = 140;
+    let raf = 0;
+
+    const computeSectionFromScrollOrder = () => {
+      let activeId = PARENT_VIEW_SECTION_SCROLL_ORDER[0];
+      for (const id of PARENT_VIEW_SECTION_SCROLL_ORDER) {
+        const el = document.getElementById(id);
+        if (!el) continue;
+        const { top } = el.getBoundingClientRect();
+        if (top <= TOP_LINE_PX) {
+          activeId = id;
+        }
+      }
+      setObservedParentViewHash((prev) => (prev === activeId ? prev : activeId));
+    };
+
+    const onScrollOrResize = () => {
+      if (raf) cancelAnimationFrame(raf);
+      raf = requestAnimationFrame(computeSectionFromScrollOrder);
+    };
+
+    requestAnimationFrame(() => {
+      computeSectionFromScrollOrder();
+      requestAnimationFrame(computeSectionFromScrollOrder);
+    });
+
+    window.addEventListener('scroll', onScrollOrResize, { passive: true });
+    window.addEventListener('resize', onScrollOrResize, { passive: true });
+    return () => {
+      window.removeEventListener('scroll', onScrollOrResize);
+      window.removeEventListener('resize', onScrollOrResize);
+      if (raf) cancelAnimationFrame(raf);
+    };
+  }, [location.pathname, location.hash]);
+
+  const handleSignOut = async () => {
+    if (signingOut) return;
+    setSigningOut(true);
+    try {
+      if (selectedDemoRole) {
+        // Demo preview is URL-driven. Exiting demo should not mutate real auth state.
+        navigate('/welcome', { replace: true });
+        return;
+      }
+      await signOutSupabasePrimary();
+      navigate('/login', { replace: true });
+    } finally {
+      setSigningOut(false);
+    }
+  };
 
   return (
     <aside className={cn(
@@ -96,18 +179,31 @@ export default function Sidebar({ user, collapsed, onToggle }) {
         {!collapsed && (
           <div className="overflow-hidden">
             <h1 className="font-bold text-base tracking-tight truncate">EduCentre</h1>
-            <p className="text-[11px] text-muted-foreground truncate">{ROLE_TITLES[role] || role.replace('_', ' ')}</p>
+            <p className="text-[11px] text-muted-foreground truncate">
+              {role ? ROLE_TITLES[role] || role.replace('_', ' ') : 'Profile role pending'}
+            </p>
           </div>
         )}
       </div>
 
       <nav className="flex-1 py-4 px-3 space-y-1 overflow-y-auto">
+        {items.length === 0 ? (
+          <p className="px-3 text-xs text-muted-foreground leading-relaxed">
+            {user?.id
+              ? 'Navigation will appear when your account profile has a valid role. Contact support if this persists.'
+              : 'Sign in to see navigation.'}
+          </p>
+        ) : null}
         {items.map((item) => {
-          const isActive = location.pathname === item.path;
+          const itemPath = item.path.split('#')[0];
+          const itemHash = item.path.includes('#') ? item.path.slice(item.path.indexOf('#') + 1) : '';
+          const isActive = itemPath === '/parent-view'
+            ? (itemHash ? observedParentViewHash === itemHash : isParentViewNavItemActive(item.path, location))
+            : location.pathname === itemPath;
           return (
             <Link
               key={item.path}
-              to={item.path}
+              to={buildParentViewNavTo(item.path, selectedDemoRole, location.search)}
               className={cn(
                 "flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-200",
                 isActive 
@@ -115,7 +211,7 @@ export default function Sidebar({ user, collapsed, onToggle }) {
                   : "text-muted-foreground hover:bg-accent hover:text-accent-foreground"
               )}
             >
-              <item.icon className="h-[18px] w-[18px] flex-shrink-0" />
+              {React.createElement(ICONS[item.icon] || LayoutDashboard, { className: "h-[18px] w-[18px] flex-shrink-0" })}
               {!collapsed && <span className="truncate">{item.label}</span>}
             </Link>
           );
@@ -134,11 +230,12 @@ export default function Sidebar({ user, collapsed, onToggle }) {
         <Button
           variant="ghost"
           size="sm"
-          onClick={() => base44.auth.logout()}
+          onClick={handleSignOut}
+          disabled={signingOut}
           className={cn("w-full text-muted-foreground hover:text-destructive", collapsed ? "justify-center" : "justify-start gap-3")}
         >
           <LogOut className="h-4 w-4 flex-shrink-0" />
-          {!collapsed && <span>Sign Out</span>}
+          {!collapsed && <span>{signingOut ? 'Signing out…' : 'Sign Out'}</span>}
         </Button>
       </div>
     </aside>

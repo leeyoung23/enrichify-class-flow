@@ -6,8 +6,97 @@ export const ROLES = {
   STUDENT: 'student',
 };
 
+export const ROLE_LABELS = {
+  [ROLES.HQ_ADMIN]: 'HQ Admin',
+  [ROLES.BRANCH_SUPERVISOR]: 'Branch Supervisor',
+  [ROLES.TEACHER]: 'Teacher',
+  [ROLES.PARENT]: 'Parent',
+  [ROLES.STUDENT]: 'Student',
+};
+
+export const ROLE_NAVIGATION = {
+  [ROLES.HQ_ADMIN]: [
+    { label: 'Dashboard', icon: 'dashboard', path: '/' },
+    { label: 'Session Review', icon: 'sessionReview', path: '/session-review' },
+    { label: 'Announcements', icon: 'announcements', path: '/announcements' },
+    { label: 'AI Parent Reports', icon: 'parentReports', path: '/ai-parent-reports' },
+    { label: 'Branches', icon: 'branches', path: '/branches' },
+    { label: 'Classes', icon: 'classes', path: '/classes' },
+    { label: 'Teachers', icon: 'teachers', path: '/teachers' },
+    { label: 'Students', icon: 'students', path: '/students' },
+    { label: 'Attendance', icon: 'attendance', path: '/attendance' },
+    { label: 'Staff Time Clock', icon: 'staffTimeClock', path: '/staff-time-clock' },
+    { label: 'Homework', icon: 'homework', path: '/homework' },
+    { label: 'Parent Communication', icon: 'parentUpdates', path: '/parent-updates' },
+    { label: 'Leads & Enrolment', icon: 'leads', path: '/leads' },
+    { label: 'Trial Scheduling', icon: 'trialScheduling', path: '/trial-scheduling' },
+    { label: 'Teacher KPI', icon: 'teacherKpi', path: '/teacher-kpi' },
+    { label: 'Fee Tracking', icon: 'feeTracking', path: '/fee-tracking' },
+    { label: 'Sales Kit', icon: 'salesKit', path: '/sales-kit' },
+    { label: 'Observations', icon: 'observations', path: '/observations' },
+    { label: 'Branch Performance', icon: 'branchPerformance', path: '/branch-performance' },
+    { label: 'Future AI Engine', icon: 'futureAi', path: '/future-ai-learning-engine' },
+    { label: 'Migration Audit', icon: 'migrationAudit', path: '/migration-ownership-audit' },
+    { label: 'Prototype Summary', icon: 'prototypeSummary', path: '/prototype-summary' },
+  ],
+  [ROLES.BRANCH_SUPERVISOR]: [
+    { label: 'Dashboard', icon: 'dashboard', path: '/' },
+    { label: 'Announcements', icon: 'announcements', path: '/announcements' },
+    { label: 'AI Parent Reports', icon: 'parentReports', path: '/ai-parent-reports' },
+    { label: 'Classes', icon: 'classes', path: '/classes' },
+    { label: 'Teachers', icon: 'teachers', path: '/teachers' },
+    { label: 'Students', icon: 'students', path: '/students' },
+    { label: 'Attendance', icon: 'attendance', path: '/attendance' },
+    { label: 'Staff Time Clock', icon: 'staffTimeClock', path: '/staff-time-clock' },
+    { label: 'Homework', icon: 'homework', path: '/homework' },
+    { label: 'Parent Communication', icon: 'parentUpdates', path: '/parent-updates' },
+    { label: 'Leads & Enrolment', icon: 'leads', path: '/leads' },
+    { label: 'Trial Scheduling', icon: 'trialScheduling', path: '/trial-scheduling' },
+    { label: 'Teacher KPI', icon: 'teacherKpi', path: '/teacher-kpi' },
+    { label: 'Fee Tracking', icon: 'feeTracking', path: '/fee-tracking' },
+    { label: 'Sales Kit', icon: 'salesKit', path: '/sales-kit' },
+    { label: 'Observations', icon: 'observations', path: '/observations' },
+    { label: 'Branch Performance', icon: 'branchPerformance', path: '/branch-performance' },
+  ],
+  [ROLES.TEACHER]: [
+    { label: 'Dashboard', icon: 'dashboard', path: '/' },
+    { label: 'Announcements', icon: 'announcements', path: '/announcements' },
+    { label: 'AI Parent Reports', icon: 'parentReports', path: '/ai-parent-reports' },
+    { label: 'Class Session', icon: 'classSession', path: '/class-session' },
+    { label: 'My Classes', icon: 'classes', path: '/classes' },
+    { label: 'My Students', icon: 'students', path: '/students' },
+    { label: 'Attendance', icon: 'attendance', path: '/attendance' },
+    { label: 'Staff Time Clock', icon: 'staffTimeClock', path: '/staff-time-clock' },
+    { label: 'Homework', icon: 'homework', path: '/homework' },
+    { label: 'Parent Communication', icon: 'parentUpdates', path: '/parent-updates' },
+    { label: 'My Tasks', icon: 'myTasks', path: '/my-tasks' },
+    { label: 'Teacher KPI', icon: 'teacherKpi', path: '/teacher-kpi' },
+    { label: 'Observations', icon: 'observations', path: '/observations' },
+  ],
+  [ROLES.PARENT]: [
+    { label: 'Parent Dashboard', icon: 'dashboard', path: '/parent-view#parent-portal-overview' },
+    { label: 'Updates', icon: 'announcements', path: '/parent-view#parent-updates-feed' },
+    { label: 'Child Attendance', icon: 'attendance', path: '/parent-view#attendance-summary' },
+    { label: 'Child Homework', icon: 'homework', path: '/parent-view#parent-homework-status' },
+    { label: 'Parent Reports', icon: 'parentUpdates', path: '/parent-view#parent-progress-reports' },
+    { label: 'Settings', icon: 'sessionReview', path: '/parent-view#parent-settings' },
+  ],
+  [ROLES.STUDENT]: [
+    { label: 'Student Learning Portal', icon: 'classes', path: '/parent-view#student-learning-portal' },
+    { label: 'Homework Due', icon: 'homework', path: '/parent-view#homework-due' },
+    { label: 'Recent Feedback', icon: 'parentUpdates', path: '/parent-view#recent-feedback' },
+    { label: 'Learning Resources', icon: 'classes', path: '/parent-view#learning-resources' },
+    { label: 'Simple Progress Summary', icon: 'teacherKpi', path: '/parent-view#simple-progress-summary' },
+  ],
+};
+
 export function getRole(user) {
-  const role = String(user?.role || ROLES.TEACHER).trim().toLowerCase().replace(/\s+/g, '_');
+  if (user == null) return null;
+  const raw = user.role;
+  if (raw == null) return null;
+  const trimmed = String(raw).trim();
+  if (!trimmed) return null;
+  const role = trimmed.toLowerCase().replace(/\s+/g, '_');
   if (role === 'admin' || role === 'hq' || role === 'hqadmin') return ROLES.HQ_ADMIN;
   if (role === 'branchsupervisor') return ROLES.BRANCH_SUPERVISOR;
   return role;
@@ -36,27 +125,31 @@ export function isTeacherRole(user) {
 
 export function getDashboardLabel(user) {
   const role = getRole(user);
+  if (!role) return 'Dashboard';
   if (role === ROLES.HQ_ADMIN) return 'HQ Dashboard';
   if (role === ROLES.BRANCH_SUPERVISOR) return 'Branch Dashboard';
   if (role === ROLES.PARENT) return 'Parent Dashboard';
   if (role === ROLES.STUDENT) return 'Learning Portal';
-  return 'Teacher Dashboard';
+  if (role === ROLES.TEACHER) return 'Teacher Dashboard';
+  return 'Dashboard';
 }
 
 export function getAllowedRoutes(role) {
-  const routeMap = {
-    [ROLES.HQ_ADMIN]: ['/', '/branches', '/classes', '/teachers', '/students', '/attendance', '/homework', '/parent-updates', '/fee-tracking', '/leads', '/trial-scheduling', '/observations', '/teacher-kpi', '/branch-performance', '/future-ai-learning-engine', '/migration-ownership-audit', '/prototype-summary', '/my-tasks'],
-    [ROLES.BRANCH_SUPERVISOR]: ['/', '/classes', '/teachers', '/students', '/attendance', '/homework', '/parent-updates', '/fee-tracking', '/leads', '/trial-scheduling', '/observations', '/teacher-kpi', '/branch-performance', '/prototype-summary', '/my-tasks'],
-    [ROLES.TEACHER]: ['/', '/class-session', '/classes', '/students', '/attendance', '/homework', '/parent-updates', '/trial-scheduling', '/my-tasks', '/teacher-kpi', '/observations'],
-    [ROLES.PARENT]: ['/parent-view'],
-    [ROLES.STUDENT]: ['/parent-view'],
-  };
+  return [...new Set(getRoleNavigation(role).map((item) => item.path.split('#')[0]))];
+}
 
-  return routeMap[role] || [];
+export function getRoleNavigation(role) {
+  return ROLE_NAVIGATION[role] || [];
+}
+
+export function isRouteAllowed(role, pathname) {
+  const allowedRoutes = getAllowedRoutes(role);
+  return allowedRoutes.includes(pathname) || (pathname.startsWith('/observations/') && allowedRoutes.includes('/observations'));
 }
 
 export function canAccessStudentRecord(user, student, links = []) {
   const role = getRole(user);
+  if (!role) return false;
   if (role === ROLES.HQ_ADMIN) return true;
   if (role === ROLES.BRANCH_SUPERVISOR) return student?.branch_id === user?.branch_id;
   if (role === ROLES.TEACHER) return Array.isArray(user?.assigned_class_ids) && user.assigned_class_ids.includes(student?.class_id);

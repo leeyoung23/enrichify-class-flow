@@ -1,7 +1,20 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { useNavigate, useOutletContext } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { listStudents, listClasses, createStudent, invokeParentReport, getStudentFeeStatus, listHomeworkAttachments, listHomeworkAttachmentsByStudent } from '@/services/dataService';
+import {
+  listStudents,
+  listClasses,
+  createStudent,
+  invokeParentReport,
+  getStudentFeeStatus,
+  listHomeworkAttachments,
+  getReadDataSource,
+  getStaffGuardianLinkSummaries,
+} from '@/services/dataService';
+import { isDebugModeEnabled } from '@/services/authService';
+import { listAttendanceRecords } from '@/services/dataService';
+import { getStudentLearningContext, listCurriculumProfiles } from '@/services/supabaseReadService';
+import { upsertStudentSchoolProfile } from '@/services/supabaseWriteService';
 import { canManageStudents, isTeacherRole } from '@/services/permissionService';
 import { GraduationCap, Plus, Phone, Mail, Send, ExternalLink } from 'lucide-react';
 import { toast } from 'sonner';
@@ -18,6 +31,82 @@ import HomeworkReviewInbox from '@/components/students/HomeworkReviewInbox';
 import StudentHomeworkUploadHistory from '@/components/students/StudentHomeworkUploadHistory';
 
 const initialForm = { name: '', class_id: '', branch_id: '', parent_name: '', parent_phone: '', parent_email: '' };
+const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+const isUuid = (value) => typeof value === 'string' && UUID_REGEX.test(value.trim());
+const NONE_PROFILE_VALUE = "__none__";
+const trimToNull = (value) => {
+  if (typeof value !== 'string') return null;
+  const trimmed = value.trim();
+  return trimmed || null;
+};
+
+function GuardianLinkPolicyFooter() {
+  return (
+    <p className="text-[11px] text-muted-foreground mt-1 pt-1 border-t border-border/40">
+      Linking parents to students is managed by HQ or Branch Supervisors. Parent self-link is not available in this build.
+    </p>
+  );
+}
+
+function GuardianLinkStatusBlock({ summary, canSeeGuardianDetails, isTeacher, loading }) {
+  if (loading) {
+    return <p className="text-xs text-muted-foreground">Loading parent link status…</p>;
+  }
+  if (!summary || summary.status === 'unavailable') {
+    return (
+      <div className="rounded-md border border-dashed border-muted bg-muted/20 p-2 text-xs text-muted-foreground space-y-1">
+        <p>
+          <span className="font-medium text-foreground">Parent link status:</span> Unavailable
+        </p>
+        <p>
+          {isTeacher
+            ? 'Guardian link records are not readable on this teacher session under current access rules. HQ or Branch Supervisor can confirm linkage in centre records.'
+            : 'Could not read guardian link rows (access or configuration). HQ or Branch Supervisor remains the source of truth.'}
+        </p>
+        <GuardianLinkPolicyFooter />
+      </div>
+    );
+  }
+  if (summary.status === 'not_linked') {
+    return (
+      <div className="space-y-1">
+        <p className="text-xs text-muted-foreground">
+          <span className="font-medium text-foreground">Parent link status:</span> No parent account linked yet
+        </p>
+        <GuardianLinkPolicyFooter />
+      </div>
+    );
+  }
+  if (!canSeeGuardianDetails) {
+    return (
+      <div className="space-y-1">
+        <p className="text-xs text-muted-foreground">
+          <span className="font-medium text-foreground">Parent link status:</span> Parent account linked
+        </p>
+        <GuardianLinkPolicyFooter />
+      </div>
+    );
+  }
+  return (
+    <div className="rounded-md border border-dashed border-muted bg-muted/20 p-2 text-xs space-y-1.5">
+      <p className="text-muted-foreground">
+        <span className="font-medium text-foreground">Parent link status:</span> Parent account linked
+        {summary.linkedCount != null ? ` (${summary.linkedCount})` : ''}
+      </p>
+      {Array.isArray(summary.guardians) && summary.guardians.length > 0 ? (
+        <ul className="list-disc pl-4 space-y-0.5 text-muted-foreground">
+          {summary.guardians.map((g, idx) => (
+            <li key={`${g.displayName || 'g'}-${idx}`}>
+              {g.displayName}
+              {g.email ? <span className="break-all"> — {g.email}</span> : null}
+            </li>
+          ))}
+        </ul>
+      ) : null}
+      <GuardianLinkPolicyFooter />
+    </div>
+  );
+}
 
 async function sendReport(student) {
   if (!student.parent_email) {
@@ -33,47 +122,118 @@ async function sendReport(student) {
   }
 }
 
-export default function Students() {
+class StudentsErrorBoundary extends React.Component {
+  constructor(props) {
+    super(props);
+    this.state = { error: null };
+  }
+
+  static getDerivedStateFromError(error) {
+    return { error };
+  }
+
+  render() {
+    if (this.state.error) {
+      const err = this.state.error;
+      const showTech = typeof window !== 'undefined' && isDebugModeEnabled();
+      return (
+        <div className="p-6">
+          <Card className="border-destructive/30 p-6">
+            <p className="text-sm font-medium text-destructive">Something went wrong on this page.</p>
+            <p className="mt-2 text-xs text-muted-foreground">
+              Please refresh <code className="rounded bg-muted px-1">/students</code>. If it continues, contact support and mention this route.
+            </p>
+            {showTech ? (
+              <div className="mt-4 rounded-md border border-dashed bg-muted/40 p-3 text-left">
+                <p className="text-xs font-medium text-foreground">Debug detail (add <code className="rounded bg-background px-1">?debug=1</code> to the URL)</p>
+                <pre className="mt-2 max-h-40 overflow-auto text-[11px] whitespace-pre-wrap text-muted-foreground">
+                  {String(err?.message || err)}
+                  {err?.stack ? `\n${err.stack}` : ''}
+                </pre>
+              </div>
+            ) : null}
+          </Card>
+        </div>
+      );
+    }
+    return this.props.children;
+  }
+}
+
+function StudentsPage() {
   const { user } = useOutletContext();
   const navigate = useNavigate();
   const [dialogOpen, setDialogOpen] = useState(false);
   const [form, setForm] = useState(initialForm);
+  const [editingSchoolProfileStudentId, setEditingSchoolProfileStudentId] = useState(null);
+  const [schoolProfileFormByStudentId, setSchoolProfileFormByStudentId] = useState({});
+  const [savingSchoolProfileStudentId, setSavingSchoolProfileStudentId] = useState(null);
+  const [selectedStudentId, setSelectedStudentId] = useState(null);
   const queryClient = useQueryClient();
   const isTeacher = isTeacherRole(user);
 
-  const { data: students = [], isLoading } = useQuery({
+  const { data: studentsRaw, isLoading, error: studentsError } = useQuery({
     queryKey: ['students', user?.role, user?.email],
     queryFn: () => listStudents(user),
     enabled: !!user,
   });
 
-  const { data: classes = [] } = useQuery({
+  const { data: classesRaw, error: classesError } = useQuery({
     queryKey: ['all-classes', user?.role, user?.email],
     queryFn: () => listClasses(user),
     enabled: !!user,
   });
 
-  const { data: homeworkInboxItems = [] } = useQuery({
+  const { data: homeworkInboxRaw, error: homeworkInboxError } = useQuery({
     queryKey: ['homework-attachments', user?.role, user?.email],
     queryFn: () => listHomeworkAttachments(user),
     enabled: !!user,
   });
+  const { data: attendanceRecordsRaw } = useQuery({
+    queryKey: ['students-attendance-summary', user?.role, user?.email],
+    queryFn: () => listAttendanceRecords(user),
+    enabled: !!user,
+  });
+
+  const students = Array.isArray(studentsRaw) ? studentsRaw : [];
+  const classes = Array.isArray(classesRaw) ? classesRaw : [];
+  const homeworkInboxItems = Array.isArray(homeworkInboxRaw) ? homeworkInboxRaw : [];
+  const attendanceRecords = Array.isArray(attendanceRecordsRaw) ? attendanceRecordsRaw : [];
 
   const createMutation = useMutation({
     mutationFn: (data) => createStudent(data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['students'] });
+      queryClient.invalidateQueries({ queryKey: ['staff-guardian-link-summary'] });
       setDialogOpen(false);
       setForm(initialForm);
     },
   });
 
-  const classStudents = isTeacher
-    ? students.filter(s => classes.some(c => c.id === s.class_id))
-    : students;
+  const classStudents = useMemo(() => {
+    if (!isTeacher) return students;
+    if (!students.length) return [];
+    if (!Array.isArray(classes) || classes.length === 0) {
+      // Fallback: if class metadata is temporarily unavailable, keep teacher-scoped student rows visible.
+      return students;
+    }
+    const classIdSet = new Set(classes.map((c) => c.id).filter(Boolean));
+    return students.filter((student) => classIdSet.has(student.class_id));
+  }, [isTeacher, students, classes]);
 
   const [feeStatuses, setFeeStatuses] = useState({});
-
+  const selectedStudent = useMemo(
+    () => classStudents.find((student) => student.id === selectedStudentId) || null,
+    [classStudents, selectedStudentId]
+  );
+  const selectedStudentAttendance = useMemo(
+    () => attendanceRecords.filter((record) => record.student_id === selectedStudentId),
+    [attendanceRecords, selectedStudentId]
+  );
+  const selectedStudentHomeworkUploads = useMemo(
+    () => homeworkInboxItems.filter((item) => item.student_id === selectedStudentId),
+    [homeworkInboxItems, selectedStudentId]
+  );
   useEffect(() => {
     if (!user || classStudents.length === 0) return;
     Promise.all(classStudents.map(async (student) => [student.id, await getStudentFeeStatus(user, student.id)])).then((entries) => {
@@ -87,35 +247,206 @@ export default function Students() {
     const cls = classes.find(c => c.id === classId);
     setForm({ ...form, class_id: classId, branch_id: cls?.branch_id || '' });
   };
+  const isSupabaseStudentSource = getReadDataSource('students') === 'supabase';
+  const sourceLabel = isSupabaseStudentSource ? 'Loaded from Supabase test data' : 'Demo data';
+  const validStudentIds = useMemo(
+    () => classStudents.map((student) => student?.id).filter(isUuid),
+    [classStudents]
+  );
+  const studentIdsForGuardianSummary = useMemo(
+    () => classStudents.map((student) => student?.id).filter((id) => id != null && String(id).trim() !== ''),
+    [classStudents]
+  );
+  const isDemoRole = String(user?.role || '').trim().toLowerCase() === 'demorole';
+  const shouldReadSupabaseLearningContext = Boolean(user) && isSupabaseStudentSource && !isDemoRole && validStudentIds.length > 0;
+
+  const { data: curriculumProfiles = [] } = useQuery({
+    queryKey: ['student-curriculum-profiles', user?.role, user?.branch_id],
+    enabled: shouldReadSupabaseLearningContext,
+    queryFn: async () => {
+      const { data, error } = await listCurriculumProfiles({});
+      if (error) return [];
+      return Array.isArray(data) ? data : [];
+    },
+  });
+
+  const curriculumProfileById = useMemo(
+    () => new Map(curriculumProfiles.map((profile) => [profile.id, profile])),
+    [curriculumProfiles]
+  );
+
+  const { data: studentContextById = {} } = useQuery({
+    queryKey: ['student-learning-context', validStudentIds.join('|')],
+    enabled: shouldReadSupabaseLearningContext,
+    queryFn: async () => {
+      const entries = await Promise.all(
+        validStudentIds.map(async (studentId) => {
+          const result = await getStudentLearningContext({ studentId });
+          if (result?.error || !result?.data) return [studentId, null];
+          return [studentId, result.data];
+        })
+      );
+      return Object.fromEntries(entries);
+    },
+  });
+
+  const selectedStudentContext = useMemo(() => {
+    if (!selectedStudent?.id) return null;
+    const context = studentContextById[selectedStudent.id] || null;
+    const schoolProfile = context?.student_school_profile || null;
+    const goals = Array.isArray(context?.learning_goals) ? context.learning_goals : [];
+    return { schoolProfile, goals };
+  }, [selectedStudent?.id, studentContextById]);
+
+  const shouldLoadGuardianLinkSummary = Boolean(user) && studentIdsForGuardianSummary.length > 0 && !isDemoRole;
+  const { data: guardianSummaryById = {}, isLoading: guardianSummaryLoading } = useQuery({
+    queryKey: ['staff-guardian-link-summary', studentIdsForGuardianSummary.join('|'), user?.role, isSupabaseStudentSource],
+    enabled: shouldLoadGuardianLinkSummary,
+    queryFn: async () => {
+      const { data, error } = await getStaffGuardianLinkSummaries(user, studentIdsForGuardianSummary);
+      if (error) {
+        console.warn('getStaffGuardianLinkSummaries', error);
+      }
+      return data && typeof data === 'object' ? data : {};
+    },
+  });
+
+  const startEditSchoolProfile = (studentId, schoolProfile) => {
+    if (!studentId) return;
+    setEditingSchoolProfileStudentId(studentId);
+    setSchoolProfileFormByStudentId((prev) => ({
+      ...prev,
+      [studentId]: {
+        schoolName: schoolProfile?.school_name || '',
+        gradeYear: schoolProfile?.grade_year || '',
+        curriculumProfileId: schoolProfile?.curriculum_profile_id || NONE_PROFILE_VALUE,
+        parentGoals: schoolProfile?.parent_goals || '',
+        teacherNotes: schoolProfile?.teacher_notes || '',
+      },
+    }));
+  };
+
+  const cancelEditSchoolProfile = (studentId) => {
+    setEditingSchoolProfileStudentId((prev) => (prev === studentId ? null : prev));
+    setSchoolProfileFormByStudentId((prev) => {
+      const next = { ...prev };
+      delete next[studentId];
+      return next;
+    });
+  };
+
+  const updateSchoolProfileForm = (studentId, patch) => {
+    setSchoolProfileFormByStudentId((prev) => ({
+      ...prev,
+      [studentId]: {
+        ...(prev[studentId] || {
+          schoolName: '',
+          gradeYear: '',
+          curriculumProfileId: NONE_PROFILE_VALUE,
+          parentGoals: '',
+          teacherNotes: '',
+        }),
+        ...patch,
+      },
+    }));
+  };
+
+  const handleSaveSchoolProfile = async ({ studentId }) => {
+    const formState = schoolProfileFormByStudentId[studentId] || {};
+    const schoolName = trimToNull(formState.schoolName);
+    const gradeYear = trimToNull(formState.gradeYear);
+    const parentGoals = trimToNull(formState.parentGoals);
+    const teacherNotes = trimToNull(formState.teacherNotes);
+    const selectedProfileId = formState.curriculumProfileId;
+    const curriculumProfileId =
+      selectedProfileId && selectedProfileId !== NONE_PROFILE_VALUE ? selectedProfileId : null;
+
+    if (!isUuid(studentId)) {
+      toast.message('Student id is invalid. Please refresh and try again.');
+      return;
+    }
+    if (curriculumProfileId && !isUuid(curriculumProfileId)) {
+      toast.message('Curriculum profile selection is invalid.');
+      return;
+    }
+
+    if (isDemoRole || !isSupabaseStudentSource) {
+      toast.message('Demo/local mode keeps school profile changes local and does not write to Supabase.');
+      cancelEditSchoolProfile(studentId);
+      return;
+    }
+
+    setSavingSchoolProfileStudentId(studentId);
+    try {
+      const result = await upsertStudentSchoolProfile({
+        studentId,
+        schoolId: null,
+        schoolName,
+        gradeYear,
+        curriculumProfileId,
+        parentGoals,
+        teacherNotes,
+      });
+
+      if (result?.error) {
+        toast.error(result.error.message || 'Unable to save school profile.');
+        return;
+      }
+      toast.success('Student school profile saved.');
+      cancelEditSchoolProfile(studentId);
+      await queryClient.invalidateQueries({ queryKey: ['student-learning-context'] });
+    } catch (error) {
+      toast.error(error?.message || 'Unable to save school profile.');
+    } finally {
+      setSavingSchoolProfileStudentId(null);
+    }
+  };
 
   return (
     <div>
       <PageHeader
         title={isTeacher ? "My Students" : "Students"}
-        description={isTeacher ? 'See your assigned students only using demo data only.' : 'Manage student records.'}
+        description={
+          isTeacher
+            ? 'Your class list — cards help you scan names; deep edit-from-card is a future step. Demo/local where noted.'
+            : 'Student directory — cards preview records; use Add Student or row actions to manage.'
+        }
         action={canManageStudents(user) && (
           <Button onClick={() => setDialogOpen(true)} className="gap-2">
             <Plus className="h-4 w-4" /> Add Student
           </Button>
         )}
       />
+      <p className="text-xs text-muted-foreground mb-3">{sourceLabel}</p>
 
-      {classStudents.length === 0 && !isLoading ? (
+      {isLoading ? (
+        <Card className="p-5 border-muted/80">
+          <p className="text-sm text-muted-foreground">Loading students...</p>
+        </Card>
+      ) : (studentsError || classesError || homeworkInboxError) ? (
+        <Card className="p-5 border-dashed border-amber-200 bg-amber-50/50">
+          <p className="text-sm font-medium text-amber-900">We could not load students right now.</p>
+          <p className="mt-1 text-xs text-amber-800">
+            Please refresh this page. If it continues, contact support with this route: <code>/students</code>.
+          </p>
+        </Card>
+      ) : classStudents.length === 0 ? (
         <EmptyState
           icon={GraduationCap}
           title={isTeacher ? 'No assigned students yet' : 'No students yet'}
           description={isTeacher ? 'Assigned students will appear here for your classes only.' : 'Add students to your classes to get started.'}
         />
       ) : (
+        <>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
           {classStudents.map((student) => (
-            <Card key={student.id} className="p-5 hover:shadow-lg transition-shadow duration-300">
+            <Card key={student.id} className="p-5 border-muted/80">
               <div className="flex items-center gap-3 mb-3">
                 <div className="h-10 w-10 rounded-full bg-accent flex items-center justify-center text-accent-foreground font-bold">
-                  {student.name[0].toUpperCase()}
+                  {String(student.name || student.full_name || '?').charAt(0).toUpperCase() || '?'}
                 </div>
                 <div className="flex-1 min-w-0">
-                  <h3 className="font-semibold truncate">{student.name}</h3>
+                  <h3 className="font-semibold truncate">{student.name || student.full_name || 'Unnamed student'}</h3>
                   <Badge variant="outline" className="text-xs mt-0.5">{getClassName(student.class_id)}</Badge>
                 </div>
               </div>
@@ -180,12 +511,297 @@ export default function Students() {
                     Demo Report Link
                   </Button>
                 )}
+                <Button
+                  size="sm"
+                  variant={selectedStudentId === student.id ? "default" : "outline"}
+                  className="gap-1.5 text-xs"
+                  onClick={() => setSelectedStudentId((prev) => (prev === student.id ? null : student.id))}
+                >
+                  {selectedStudentId === student.id ? 'Hide profile' : 'Open profile'}
+                </Button>
+              </div>
+              {shouldLoadGuardianLinkSummary ? (
+                <div className="mt-3 border-t pt-3 space-y-2">
+                  <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Guardian link</p>
+                  <GuardianLinkStatusBlock
+                    summary={guardianSummaryById[student.id]}
+                    canSeeGuardianDetails={canManageStudents(user)}
+                    isTeacher={isTeacher}
+                    loading={guardianSummaryLoading}
+                  />
+                </div>
+              ) : null}
+              <div className="mt-3 border-t pt-3 space-y-2">
+                <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">School / Learning Context</p>
+                {!isSupabaseStudentSource ? (
+                  <div className="space-y-1 text-sm">
+                    <p className="text-muted-foreground">Demo-only school/learning preview.</p>
+                    <p>
+                      <span className="text-muted-foreground">School:</span> Demo Learning School
+                    </p>
+                    <p>
+                      <span className="text-muted-foreground">Grade/Year:</span> Demo Year Level
+                    </p>
+                    <p>
+                      <span className="text-muted-foreground">Learning focus:</span> Demo profile context only (no live Supabase read).
+                    </p>
+                  </div>
+                ) : !isUuid(student?.id) ? (
+                  <p className="text-sm text-muted-foreground">No school profile added yet.</p>
+                ) : (() => {
+                  const context = studentContextById[student.id];
+                  const schoolProfile = context?.student_school_profile || null;
+                  const curriculumProfile = schoolProfile?.curriculum_profile_id
+                    ? curriculumProfileById.get(schoolProfile.curriculum_profile_id)
+                    : null;
+                  const activeStudentGoals = Array.isArray(context?.learning_goals)
+                    ? context.learning_goals.filter((goal) => goal?.status === 'active' && goal?.student_id === student.id)
+                    : [];
+                  const canEditSchoolProfile = canManageStudents(user);
+                  const isEditingSchoolProfile = editingSchoolProfileStudentId === student.id;
+                  const schoolProfileForm = schoolProfileFormByStudentId[student.id] || {
+                    schoolName: schoolProfile?.school_name || '',
+                    gradeYear: schoolProfile?.grade_year || '',
+                    curriculumProfileId: schoolProfile?.curriculum_profile_id || NONE_PROFILE_VALUE,
+                    parentGoals: schoolProfile?.parent_goals || '',
+                    teacherNotes: schoolProfile?.teacher_notes || '',
+                  };
+                  const curriculumProfileOptions = curriculumProfiles
+                    .filter((profile) => isUuid(profile?.id))
+                    .map((profile) => ({
+                      id: profile.id,
+                      label: `${profile.name || 'Unnamed profile'}${profile.subject ? ` • ${profile.subject}` : ''}${profile.skill_focus ? ` • ${profile.skill_focus}` : ''}`,
+                    }));
+
+                  return (
+                    <div className="space-y-1.5 text-sm">
+                      {!schoolProfile ? (
+                        <p className="text-sm text-muted-foreground">No school profile added yet.</p>
+                      ) : (
+                        <>
+                          <p>
+                            <span className="text-muted-foreground">School:</span> {schoolProfile.school_name || '—'}
+                          </p>
+                          <p>
+                            <span className="text-muted-foreground">Grade/Year:</span> {schoolProfile.grade_year || '—'}
+                          </p>
+                          <p>
+                            <span className="text-muted-foreground">Curriculum profile:</span> {curriculumProfile?.name || '—'}
+                          </p>
+                          <p>
+                            <span className="text-muted-foreground">Subject:</span> {curriculumProfile?.subject || '—'}
+                          </p>
+                          <p>
+                            <span className="text-muted-foreground">Level/Year/Grade:</span> {curriculumProfile?.level_year_grade || '—'}
+                          </p>
+                          <p>
+                            <span className="text-muted-foreground">Skill focus:</span> {curriculumProfile?.skill_focus || '—'}
+                          </p>
+                        </>
+                      )}
+                      {schoolProfile?.parent_goals ? (
+                        <p>
+                          <span className="text-muted-foreground">Parent goals:</span> {schoolProfile.parent_goals}
+                        </p>
+                      ) : null}
+                      {schoolProfile?.teacher_notes ? (
+                        <p>
+                          <span className="text-muted-foreground">Teacher notes:</span> {schoolProfile.teacher_notes}
+                        </p>
+                      ) : null}
+                      {activeStudentGoals.length > 0 ? (
+                        <div className="pt-1">
+                          <p className="text-xs text-muted-foreground">Active student goals</p>
+                          <ul className="list-disc pl-5 text-sm space-y-0.5">
+                            {activeStudentGoals.map((goal, idx) => (
+                              <li key={goal?.id || `goal-${student.id}-${idx}`}>{goal.goal_title || 'Untitled goal'}</li>
+                            ))}
+                          </ul>
+                        </div>
+                      ) : null}
+                      {canEditSchoolProfile ? (
+                        <div className="pt-2 border-t mt-2 space-y-2">
+                          {!isEditingSchoolProfile ? (
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              className="w-full sm:w-auto"
+                              onClick={() => startEditSchoolProfile(student.id, schoolProfile)}
+                            >
+                              Edit School Profile
+                            </Button>
+                          ) : (
+                            <div className="space-y-3">
+                              <div className="space-y-1">
+                                <Label className="text-xs">School Name</Label>
+                                <Input
+                                  value={schoolProfileForm.schoolName}
+                                  onChange={(event) => updateSchoolProfileForm(student.id, { schoolName: event.target.value })}
+                                  placeholder="e.g. Demo Primary School"
+                                />
+                              </div>
+                              <div className="space-y-1">
+                                <Label className="text-xs">Grade / Year</Label>
+                                <Input
+                                  value={schoolProfileForm.gradeYear}
+                                  onChange={(event) => updateSchoolProfileForm(student.id, { gradeYear: event.target.value })}
+                                  placeholder="e.g. Year 4"
+                                />
+                              </div>
+                              <div className="space-y-1">
+                                <Label className="text-xs">Curriculum Profile</Label>
+                                <Select
+                                  value={schoolProfileForm.curriculumProfileId}
+                                  onValueChange={(value) => updateSchoolProfileForm(student.id, { curriculumProfileId: value })}
+                                >
+                                  <SelectTrigger>
+                                    <SelectValue placeholder="Select curriculum profile" />
+                                  </SelectTrigger>
+                                  <SelectContent>
+                                    <SelectItem value={NONE_PROFILE_VALUE}>No curriculum profile</SelectItem>
+                                    {curriculumProfileOptions.map((option) => (
+                                      <SelectItem key={option.id} value={option.id}>
+                                        {option.label}
+                                      </SelectItem>
+                                    ))}
+                                  </SelectContent>
+                                </Select>
+                              </div>
+                              <div className="space-y-1">
+                                <Label className="text-xs">Parent Goals (supportive)</Label>
+                                <textarea
+                                  value={schoolProfileForm.parentGoals}
+                                  onChange={(event) => updateSchoolProfileForm(student.id, { parentGoals: event.target.value })}
+                                  placeholder="Add supportive home learning goals"
+                                  className="w-full min-h-[80px] rounded-md border bg-background px-3 py-2 text-sm"
+                                />
+                              </div>
+                              <div className="space-y-1">
+                                <Label className="text-xs">Teacher Notes (internal)</Label>
+                                <textarea
+                                  value={schoolProfileForm.teacherNotes}
+                                  onChange={(event) => updateSchoolProfileForm(student.id, { teacherNotes: event.target.value })}
+                                  placeholder="Internal notes for staff context only"
+                                  className="w-full min-h-[80px] rounded-md border bg-background px-3 py-2 text-sm"
+                                />
+                              </div>
+                              <div className="flex flex-col sm:flex-row gap-2">
+                                <Button
+                                  size="sm"
+                                  className="w-full sm:w-auto"
+                                  disabled={savingSchoolProfileStudentId === student.id}
+                                  onClick={() => handleSaveSchoolProfile({ studentId: student.id })}
+                                >
+                                  {savingSchoolProfileStudentId === student.id ? 'Saving...' : 'Save'}
+                                </Button>
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  className="w-full sm:w-auto"
+                                  disabled={savingSchoolProfileStudentId === student.id}
+                                  onClick={() => cancelEditSchoolProfile(student.id)}
+                                >
+                                  Cancel
+                                </Button>
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      ) : null}
+                    </div>
+                  );
+                })()}
               </div>
               <StudentHomeworkUploadHistory items={homeworkInboxItems.filter((item) => item.student_id === student.id)} />
               </Card>
 
           ))}
         </div>
+        {selectedStudent ? (
+          <Card className="mt-6 p-5 border-primary/20 bg-muted/10">
+            <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
+              <div>
+                <h3 className="text-lg font-semibold">{selectedStudent.name || selectedStudent.full_name || 'Unnamed student'}</h3>
+                <p className="text-sm text-muted-foreground">Student profile and learning context (teacher-safe view)</p>
+              </div>
+              <Badge variant="outline">
+                Class: {getClassName(selectedStudent.class_id)}
+              </Badge>
+            </div>
+
+            <div className="mt-4 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 text-sm">
+              <div className="rounded-md border p-3">
+                <p className="text-xs text-muted-foreground">Programme / subject</p>
+                <p className="font-medium">{classes.find((c) => c.id === selectedStudent.class_id)?.subject || 'Not set'}</p>
+              </div>
+              <div className="rounded-md border p-3">
+                <p className="text-xs text-muted-foreground">Branch</p>
+                <p className="font-medium">{selectedStudent.branch_id || user?.branch_id || 'Not set'}</p>
+              </div>
+              <div className="rounded-md border p-3">
+                <p className="text-xs text-muted-foreground">Attendance records</p>
+                <p className="font-medium">{selectedStudentAttendance.length}</p>
+              </div>
+              <div className="rounded-md border p-3">
+                <p className="text-xs text-muted-foreground">Homework uploads</p>
+                <p className="font-medium">{selectedStudentHomeworkUploads.length}</p>
+              </div>
+            </div>
+
+            {shouldLoadGuardianLinkSummary ? (
+              <div className="mt-4 rounded-md border border-dashed p-3 space-y-2">
+                <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Guardian link</p>
+                <GuardianLinkStatusBlock
+                  summary={guardianSummaryById[selectedStudent.id]}
+                  canSeeGuardianDetails={canManageStudents(user)}
+                  isTeacher={isTeacher}
+                  loading={guardianSummaryLoading}
+                />
+              </div>
+            ) : null}
+
+            <div className="mt-4 rounded-md border border-dashed p-3 space-y-1.5">
+              <p className="text-sm font-medium">Learning notes</p>
+              <p className="text-sm text-muted-foreground">
+                Learning notes are internal staff evidence. Parents will not see these notes unless they are later included in an approved report or released parent communication.
+              </p>
+              {selectedStudentContext?.schoolProfile?.teacher_notes ? (
+                <p className="text-xs text-muted-foreground">
+                  Latest internal note: {selectedStudentContext.schoolProfile.teacher_notes}
+                </p>
+              ) : null}
+              {selectedStudentContext?.goals?.length ? (
+                <p className="text-xs text-muted-foreground">
+                  Active learning goals: {selectedStudentContext.goals.filter((goal) => goal?.status === 'active').length}
+                </p>
+              ) : null}
+            </div>
+
+            <div className="mt-4 flex flex-wrap gap-2">
+              <p className="w-full text-xs text-muted-foreground">
+                Use the tools below to record evidence through the existing workflows.
+              </p>
+              <Button size="sm" variant="outline" onClick={() => navigate('/attendance')}>
+                View attendance
+              </Button>
+              <Button size="sm" variant="outline" onClick={() => navigate('/homework')}>
+                View homework
+              </Button>
+              <Button size="sm" variant="outline" onClick={() => navigate('/observations')}>
+                Add observation / learning note
+              </Button>
+              <Button size="sm" variant="outline" onClick={() => navigate('/parent-updates')}>
+                Parent communication
+              </Button>
+            </div>
+
+            <div className="mt-4 rounded-md border border-amber-200 bg-amber-50/50 p-3 text-xs text-amber-900">
+              Official profile, class, branch, and guardian links are managed by HQ or Branch Supervisors.
+              Teacher view here is read-only for those official profile fields.
+            </div>
+          </Card>
+        ) : null}
+        </>
       )}
 
       {isTeacher && (
@@ -239,5 +855,13 @@ export default function Students() {
         </DialogContent>
       </Dialog>
     </div>
+  );
+}
+
+export default function Students() {
+  return (
+    <StudentsErrorBoundary>
+      <StudentsPage />
+    </StudentsErrorBoundary>
   );
 }

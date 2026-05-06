@@ -1,6 +1,8 @@
 #env
 .env
 .env.*
+# Project-root local secrets (also matched by *.local); never commit
+.env.local
 
 # Logs
 /logs
@@ -29,3 +31,6 @@ dist-ssr
 
 .env
 .vite
+
+# Supabase CLI local cache (do not commit)
+supabase/.temp/

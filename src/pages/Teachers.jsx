@@ -3,7 +3,7 @@ import { useOutletContext } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { inviteUser, listStaff } from '@/services/dataService';
 import { canInviteStaff } from '@/services/permissionService';
-import { Users, Plus, Mail, UserPlus } from 'lucide-react';
+import { Users, Mail, UserPlus } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -40,7 +40,7 @@ export default function Teachers() {
     <div>
       <PageHeader
         title="Teachers & Staff"
-        description="Manage teachers and staff roles"
+        description="Directory preview — staff cards do not open profiles yet. Use Invite Staff to add people."
         action={isAdmin && (
           <Button onClick={() => setDialogOpen(true)} className="gap-2">
             <UserPlus className="h-4 w-4" /> Invite Staff
@@ -62,7 +62,7 @@ export default function Teachers() {
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
           {staff.map((person) => (
-            <Card key={person.id} className="p-5 hover:shadow-lg transition-shadow duration-300">
+            <Card key={person.id} className="p-5 border-muted/80">
               <div className="flex items-center gap-4">
                 <div className="h-12 w-12 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold text-lg">
                   {(person.full_name || person.email || '?')[0].toUpperCase()}

@@ -1,0 +1,325 @@
+import React, { useState } from "react";
+import { Link, useNavigate, useSearchParams } from "react-router-dom";
+import { GraduationCap, Loader2 } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { isSupabaseConfigured } from "@/services/supabaseClient.js";
+import {
+  getCurrentProfile,
+  mapProfileToAppUser,
+  signInWithEmailPassword,
+  signOut,
+} from "@/services/supabaseAuthService.js";
+import { createAuthSession, recordAuthLifecycleAudit } from "@/services/supabaseWriteService.js";
+import { parseReturnUrlQueryParam } from "@/lib/supabaseAuthReturnUrl.js";
+import { getDefaultLandingPathForRole } from "@/lib/roleLanding.js";
+import { useSupabaseAuthState } from "@/hooks/useSupabaseAuthState";
+import {
+  getKeepSignedInPreference,
+  initializeSessionGovernanceOnSignIn,
+  setCurrentAuthSessionId,
+  setKeepSignedInPreference,
+} from "@/services/sessionGovernanceService";
+
+export default function Login() {
+  const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const { session, appUser, loading: supabaseLoading, refreshAuthState } = useSupabaseAuthState();
+
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [formError, setFormError] = useState(null);
+  const [keepSignedIn, setKeepSignedIn] = useState(getKeepSignedInPreference);
+
+  const configured = isSupabaseConfigured();
+
+  const goAfterSignIn = (nextAppUser = null) => {
+    const returnUrl = parseReturnUrlQueryParam(searchParams.get("returnUrl"));
+    const roleLanding = getDefaultLandingPathForRole(nextAppUser ?? appUser);
+    navigate(returnUrl || roleLanding || "/", { replace: true });
+  };
+
+  const handleSignIn = async (e) => {
+    e?.preventDefault?.();
+    if (!configured) return;
+    setBusy(true);
+    setFormError(null);
+    const previousKeepSignedIn = getKeepSignedInPreference();
+    const isDemoPreview = Boolean(searchParams.get("demoRole"));
+    setKeepSignedInPreference(keepSignedIn);
+    try {
+      const { error: signErr } = await signInWithEmailPassword(email, password);
+      if (signErr) {
+        setFormError(signErr.message || "Sign-in failed");
+        return;
+      }
+      const { profile, error: profileErr } = await getCurrentProfile();
+      if (profileErr) {
+        setFormError(profileErr.message || "Could not load your profile");
+        await signOut();
+        return;
+      }
+      if (!profile) {
+        setFormError("No profile found for this account. Please contact your centre.");
+        await signOut();
+        return;
+      }
+      initializeSessionGovernanceOnSignIn();
+      await refreshAuthState();
+      const mappedAppUser = mapProfileToAppUser(profile);
+
+      if (!isDemoPreview) {
+        const authSessionResult = await createAuthSession({
+          rememberMeEnabled: keepSignedIn,
+          safeDeviceLabel: "Current browser",
+        });
+        if (authSessionResult.data?.id) {
+          setCurrentAuthSessionId(authSessionResult.data.id);
+        } else if (import.meta.env.DEV) {
+          // eslint-disable-next-line no-console
+          console.warn(
+            "[auth_sessions] createAuthSession failed during login:",
+            authSessionResult.error?.message || "unknown"
+          );
+        }
+
+        await recordAuthLifecycleAudit({
+          actionType: "user.login",
+          role: mappedAppUser?.role || "unknown",
+          rememberMeEnabled: keepSignedIn,
+          reason: "authenticated_sign_in",
+          source: "login",
+          includeResultRow: false,
+        });
+        if (previousKeepSignedIn !== keepSignedIn) {
+          await recordAuthLifecycleAudit({
+            actionType: keepSignedIn ? "user.remember_me_enabled" : "user.remember_me_disabled",
+            role: mappedAppUser?.role || "unknown",
+            rememberMeEnabled: keepSignedIn,
+            reason: "login_checkbox_changed",
+            source: "login_checkbox",
+            includeResultRow: false,
+          });
+        }
+      }
+
+      goAfterSignIn(mappedAppUser);
+    } catch (err) {
+      setFormError(err?.message || "Something went wrong. Please try again.");
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const handleSignOut = async () => {
+    setBusy(true);
+    setFormError(null);
+    try {
+      await signOut();
+      await refreshAuthState();
+    } catch (err) {
+      setFormError(err?.message || "Sign-out failed");
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const handleContinue = () => {
+    goAfterSignIn();
+  };
+
+  const sessionNotice = searchParams.get("session") === "expired"
+    ? "Your session expired for security. Please sign in again."
+    : null;
+
+  if (!configured) {
+    return (
+      <div className="min-h-screen bg-gradient-to-b from-slate-50 via-background to-slate-50/80 flex items-center justify-center p-6">
+        <Card className="w-full max-w-md border-border/80 shadow-sm">
+          <CardHeader>
+            <CardTitle>Sign-in unavailable</CardTitle>
+            <CardDescription>
+              Supabase is not configured in this environment. Use demo preview links or configure your local app.
+            </CardDescription>
+          </CardHeader>
+        </Card>
+      </div>
+    );
+  }
+
+  if (configured && supabaseLoading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-b from-slate-50 via-background to-slate-50/80 flex items-center justify-center">
+        <Loader2 className="h-9 w-9 animate-spin text-primary" aria-hidden />
+      </div>
+    );
+  }
+
+  if (configured && session?.user && !appUser) {
+    return (
+      <div className="min-h-screen bg-gradient-to-b from-slate-50 via-background to-slate-50/80 flex items-center justify-center p-6">
+        <Card className="w-full max-w-md border-border/80 shadow-sm">
+          <CardHeader className="text-center pb-2">
+            <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-xl bg-primary text-primary-foreground shadow-sm">
+              <GraduationCap className="h-6 w-6" aria-hidden />
+            </div>
+            <CardTitle className="text-xl">Profile not ready</CardTitle>
+            <CardDescription>
+              You are signed in, but we could not load your centre profile. Try signing out and signing in again, or contact support.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="flex flex-col gap-2 sm:flex-row sm:justify-center">
+            <Button type="button" variant="secondary" disabled={busy} onClick={handleSignOut}>
+              {busy ? "Working…" : "Sign out"}
+            </Button>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
+  if (configured && session?.user && appUser) {
+    return (
+      <div className="min-h-screen bg-gradient-to-b from-slate-50 via-background to-slate-50/80 flex items-center justify-center p-6">
+        <Card className="w-full max-w-md border-border/80 shadow-sm">
+          <CardHeader className="text-center pb-2">
+            <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-xl bg-primary text-primary-foreground shadow-sm">
+              <GraduationCap className="h-6 w-6" aria-hidden />
+            </div>
+            <CardTitle className="text-xl">You are already signed in</CardTitle>
+            <CardDescription>
+              Signed in as {appUser.full_name || appUser.email || "your account"}. Continue to the dashboard or sign out.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="flex flex-col gap-2 sm:flex-row sm:justify-center">
+            <Button type="button" disabled={busy} onClick={handleContinue}>
+              Continue to dashboard
+            </Button>
+            <Button type="button" variant="outline" disabled={busy} onClick={handleSignOut}>
+              {busy ? "Working…" : "Sign out"}
+            </Button>
+          </CardContent>
+          {formError ? (
+            <CardContent className="pt-0">
+              <p className="text-center text-sm text-destructive" role="alert">
+                {formError}
+              </p>
+            </CardContent>
+          ) : null}
+        </Card>
+      </div>
+    );
+  }
+
+  return (
+    <div className="min-h-screen bg-gradient-to-b from-slate-50 via-background to-slate-50/80 flex flex-col items-center justify-center p-6 md:p-10">
+      <div className="w-full max-w-md space-y-8">
+        <div className="text-center space-y-3">
+          <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-primary text-primary-foreground shadow-md shadow-primary/20">
+            <GraduationCap className="h-7 w-7" aria-hidden />
+          </div>
+          <div>
+            <h1 className="text-2xl font-bold tracking-tight text-foreground">Young&apos;s Learners Portal</h1>
+            <p className="mt-2 text-sm text-muted-foreground">Secure access for staff and families</p>
+          </div>
+        </div>
+
+        <Card className="border-border/80 shadow-md">
+          <CardHeader className="pb-4">
+            <CardTitle className="text-lg">Sign in</CardTitle>
+            <CardDescription>Use the email and password provided by your centre.</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <form className="space-y-4" onSubmit={handleSignIn}>
+              <div className="space-y-2">
+                <label className="text-sm font-medium" htmlFor="login-email">
+                  Email
+                </label>
+                <Input
+                  id="login-email"
+                  type="email"
+                  autoComplete="username"
+                  value={email}
+                  onChange={(ev) => setEmail(ev.target.value)}
+                  placeholder="you@example.com"
+                  disabled={busy}
+                />
+              </div>
+              <div className="space-y-2">
+                <label className="text-sm font-medium" htmlFor="login-password">
+                  Password
+                </label>
+                <Input
+                  id="login-password"
+                  type="password"
+                  autoComplete="current-password"
+                  value={password}
+                  onChange={(ev) => setPassword(ev.target.value)}
+                  placeholder="Enter your password"
+                  disabled={busy}
+                />
+              </div>
+              <div className="rounded-md border border-border/70 bg-muted/20 px-3 py-2.5">
+                <label className="flex items-start gap-2.5 cursor-pointer" htmlFor="login-keep-signed-in">
+                  <input
+                    id="login-keep-signed-in"
+                    type="checkbox"
+                    className="mt-0.5 h-4 w-4 rounded border-border text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                    checked={keepSignedIn}
+                    onChange={(ev) => setKeepSignedIn(ev.target.checked)}
+                    disabled={busy}
+                  />
+                  <span className="space-y-0.5">
+                    <span className="block text-sm font-medium text-foreground">
+                      Keep me signed in on this device
+                    </span>
+                    <span className="block text-xs text-muted-foreground">
+                      Use this only on a private device. You can sign out anytime.
+                    </span>
+                  </span>
+                </label>
+              </div>
+              {formError ? (
+                <p className="text-sm text-destructive" role="alert">
+                  {formError}
+                </p>
+              ) : sessionNotice ? (
+                <p className="text-sm text-amber-700" role="status">
+                  {sessionNotice}
+                </p>
+              ) : null}
+              <Button type="submit" className="w-full gap-2" disabled={busy}>
+                {busy ? (
+                  <>
+                    <Loader2 className="h-4 w-4 animate-spin shrink-0" aria-hidden />
+                    Signing in…
+                  </>
+                ) : (
+                  "Sign in"
+                )}
+              </Button>
+            </form>
+            <p className="mt-6 text-xs text-muted-foreground text-center leading-relaxed">
+              Your role and access are loaded securely after sign-in.
+            </p>
+            <p className="mt-2 text-xs text-muted-foreground text-center">
+              Demo preview links remain available separately.
+            </p>
+          </CardContent>
+        </Card>
+
+        <p className="text-center text-xs text-muted-foreground">
+          <Link to="/welcome" className="underline-offset-4 hover:underline text-primary">
+            Back to welcome
+          </Link>
+          <span className="mx-2 text-border">·</span>
+          <Link to="/auth-preview" className="underline-offset-4 hover:underline text-muted-foreground">
+            Developer auth preview
+          </Link>
+        </p>
+      </div>
+    </div>
+  );
+}

@@ -5,6 +5,17 @@ import { createAxiosClient } from '@base44/sdk/dist/utils/axios-client';
 
 const AuthContext = createContext();
 
+function buildSafeLoginUrl() {
+  try {
+    if (typeof window === 'undefined') return '/login';
+    const returnTarget = `${window.location.pathname || '/'}${window.location.search || ''}`;
+    const qs = new URLSearchParams({ returnUrl: returnTarget });
+    return `/login?${qs.toString()}`;
+  } catch (_error) {
+    return '/login';
+  }
+}
+
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
@@ -117,19 +128,22 @@ export const AuthProvider = ({ children }) => {
   const logout = (shouldRedirect = true) => {
     setUser(null);
     setIsAuthenticated(false);
-    
-    if (shouldRedirect) {
-      // Use the SDK's logout method which handles token cleanup and redirect
-      base44.auth.logout(window.location.href);
-    } else {
-      // Just remove the token without redirect
+
+    // Keep Base44 cleanup non-navigating to avoid legacy /api/apps/auth/logout redirects.
+    try {
       base44.auth.logout();
+    } catch (_error) {
+      // Best-effort cleanup only.
+    }
+
+    if (shouldRedirect && typeof window !== 'undefined') {
+      window.location.assign('/login');
     }
   };
 
   const navigateToLogin = () => {
-    // Use the SDK's redirectToLogin method
-    base44.auth.redirectToLogin(window.location.href);
+    if (typeof window === 'undefined') return;
+    window.location.assign(buildSafeLoginUrl());
   };
 
   return (

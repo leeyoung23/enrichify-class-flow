@@ -1,8 +1,22 @@
 import { base44 } from '@/api/base44Client';
 import { getSelectedDemoRole } from './authService';
-import { ROLES } from './permissionService';
+import { getRole, ROLES } from './permissionService';
+import {
+  getApprovedSalesKitResources,
+  getBranches,
+  getClasses,
+  getGuardianLinkSummaryByStudentIds,
+  getStudents,
+} from './supabaseReadService';
+import { isSupabaseConfigured, supabase } from './supabaseClient';
 
 const demoEnabled = () => Boolean(getSelectedDemoRole());
+const readSources = {
+  branches: 'demo',
+  classes: 'demo',
+  students: 'demo',
+  dashboard: 'demo',
+};
 
 const demoData = {
   branches: [
@@ -260,20 +274,139 @@ function filterByRole(items, user, type) {
 }
 
 export async function listBranches(user) {
-  if (demoEnabled()) return filterByRole(demoData.branches, user, 'branches');
-  if (user?.role === ROLES.BRANCH_SUPERVISOR) return base44.entities.Branch.filter({ id: user.branch_id });
-  return base44.entities.Branch.list();
+  if (demoEnabled()) {
+    readSources.branches = 'demo';
+    return filterByRole(demoData.branches, user, 'branches');
+  }
+  if (isSupabaseConfigured()) {
+    const { data, error } = await getBranches();
+    if (!error && Array.isArray(data) && data.length > 0) {
+      readSources.branches = 'supabase';
+      return data;
+    }
+  }
+  readSources.branches = 'demo';
+  return filterByRole(demoData.branches, user, 'branches');
 }
 
 export async function listClasses(user) {
-  if (demoEnabled()) return filterByRole(demoData.classes, user, 'classes');
-  if (user?.role === ROLES.TEACHER) return base44.entities.Class.filter({ teacher_email: user?.email });
-  return base44.entities.Class.list();
+  if (demoEnabled()) {
+    readSources.classes = 'demo';
+    return filterByRole(demoData.classes, user, 'classes');
+  }
+  if (isSupabaseConfigured()) {
+    const { data, error } = await getClasses();
+    if (!error && Array.isArray(data) && data.length > 0) {
+      readSources.classes = 'supabase';
+      return data.map((item) => ({
+        ...item,
+        schedule: item.schedule_note || '',
+      }));
+    }
+  }
+  readSources.classes = 'demo';
+  return filterByRole(demoData.classes, user, 'classes');
 }
 
 export async function listStudents(user) {
-  if (demoEnabled()) return filterByRole(demoData.students, user, 'students');
-  return base44.entities.Student.list();
+  if (demoEnabled()) {
+    readSources.students = 'demo';
+    return filterByRole(demoData.students, user, 'students');
+  }
+  if (isSupabaseConfigured()) {
+    const { data, error } = await getStudents();
+    if (!error && Array.isArray(data) && data.length > 0) {
+      readSources.students = 'supabase';
+      return data.map((item) => ({
+        ...item,
+        name: item.full_name,
+      }));
+    }
+  }
+  readSources.students = 'demo';
+  return filterByRole(demoData.students, user, 'students');
+}
+
+function demoGuardianSummariesByStudentIds(studentIds, viewerRole) {
+  const links = demoData.guardianStudentLinks || [];
+  const result = {};
+  for (const sid of studentIds) {
+    const rows = links.filter((l) => l.student_id === sid);
+    const count = rows.length;
+    const status = count > 0 ? 'linked' : 'not_linked';
+    if (viewerRole === ROLES.TEACHER) {
+      result[sid] = { status, linkedCount: count, guardians: [] };
+      continue;
+    }
+    if (viewerRole === ROLES.HQ_ADMIN || viewerRole === ROLES.BRANCH_SUPERVISOR) {
+      result[sid] = {
+        status,
+        linkedCount: count,
+        guardians:
+          count > 0 ? [{ displayName: 'Linked parent account (demo fixture)', email: null }] : [],
+      };
+      continue;
+    }
+    result[sid] = { status: 'unavailable', linkedCount: null, guardians: [] };
+  }
+  return result;
+}
+
+/** Staff `/students` guardian visibility — demo fixtures or Supabase RLS-scoped reads (see supabaseReadService). */
+export async function getStaffGuardianLinkSummaries(user, studentIds) {
+  const ids = Array.isArray(studentIds)
+    ? [...new Set(studentIds.map((id) => (typeof id === 'string' ? id.trim() : '')).filter(Boolean))]
+    : [];
+  const role = getRole(user);
+  if (ids.length === 0) {
+    return { data: {}, error: null };
+  }
+  if (demoEnabled() || getReadDataSource('students') !== 'supabase') {
+    return { data: demoGuardianSummariesByStudentIds(ids, role), error: null };
+  }
+  return getGuardianLinkSummaryByStudentIds({ studentIds: ids, viewerRole: role });
+}
+
+export async function getDashboardReadSummary(user) {
+  if (demoEnabled()) {
+    readSources.dashboard = 'demo';
+    return {
+      branchCount: filterByRole(demoData.branches, user, 'branches').length,
+      classCount: filterByRole(demoData.classes, user, 'classes').length,
+      studentCount: filterByRole(demoData.students, user, 'students').length,
+      approvedSalesKitCount: 0,
+    };
+  }
+
+  if (isSupabaseConfigured()) {
+    const [branchesResult, classesResult, studentsResult, salesKitResult] = await Promise.all([
+      getBranches(),
+      getClasses(),
+      getStudents(),
+      getApprovedSalesKitResources(),
+    ]);
+
+    const hasCoreErrors = Boolean(branchesResult.error || classesResult.error || studentsResult.error);
+    const hasEmptyCoreData = !branchesResult.data.length || !classesResult.data.length || !studentsResult.data.length;
+
+    if (!hasCoreErrors && !hasEmptyCoreData) {
+      readSources.dashboard = 'supabase';
+      return {
+        branchCount: branchesResult.data.length,
+        classCount: classesResult.data.length,
+        studentCount: studentsResult.data.length,
+        approvedSalesKitCount: salesKitResult.error ? 0 : salesKitResult.data.length,
+      };
+    }
+  }
+
+  readSources.dashboard = 'demo';
+  return {
+    branchCount: filterByRole(demoData.branches, user, 'branches').length,
+    classCount: filterByRole(demoData.classes, user, 'classes').length,
+    studentCount: filterByRole(demoData.students, user, 'students').length,
+    approvedSalesKitCount: 0,
+  };
 }
 
 export async function listStudentsByClass(user, classId) {
@@ -286,11 +419,85 @@ export async function listAttendanceRecords(user, filters = {}) {
     let items = filterByRole(demoData.attendance, user, 'attendance');
     return items.filter(item => Object.entries(filters).every(([key, value]) => !value || item[key] === value));
   }
+  if (isSupabaseConfigured() && supabase) {
+    try {
+      let query = supabase
+        .from('attendance_records')
+        .select('id,branch_id,class_id,student_id,teacher_id,session_date,status,note,updated_at')
+        .order('session_date', { ascending: false });
+      if (filters.class_id) query = query.eq('class_id', filters.class_id);
+      if (filters.student_id) query = query.eq('student_id', filters.student_id);
+      if (filters.date) query = query.eq('session_date', filters.date);
+
+      const { data, error } = await query;
+      if (!error && Array.isArray(data)) {
+        return data.map((row) => ({
+          ...row,
+          date: row.session_date,
+          notes: row.note ?? '',
+        }));
+      }
+    } catch {
+      // Fallback to legacy source below
+    }
+  }
   return base44.entities.Attendance.filter(filters);
 }
 
 export async function listParentUpdates(user) {
   if (demoEnabled()) return filterByRole(demoData.parentUpdates, user, 'parentUpdates');
+  if (isSupabaseConfigured() && supabase) {
+    try {
+      const { data: parentCommentRows, error: parentCommentsError } = await supabase
+        .from('parent_comments')
+        .select('id,branch_id,class_id,student_id,teacher_id,comment_text,status,created_at,updated_at')
+        .order('updated_at', { ascending: false });
+
+      const { data: weeklyReportRows, error: weeklyReportsError } = await supabase
+        .from('weekly_progress_reports')
+        .select('id,branch_id,class_id,student_id,teacher_id,week_start_date,report_text,status,created_at,updated_at')
+        .order('updated_at', { ascending: false });
+
+      if (!parentCommentsError && !weeklyReportsError && Array.isArray(parentCommentRows) && Array.isArray(weeklyReportRows)) {
+        const parentComments = parentCommentRows.map((row) => ({
+          id: row.id,
+          branch_id: row.branch_id,
+          class_id: row.class_id,
+          student_id: row.student_id,
+          teacher_id: row.teacher_id,
+          note_text: row.comment_text ?? '',
+          final_message: row.comment_text ?? '',
+          status: row.status,
+          created_date: row.updated_at || row.created_at,
+          update_type: 'comment',
+          data_source: 'supabase_parent_comments',
+        }));
+
+        const weeklyReports = weeklyReportRows.map((row) => ({
+          id: row.id,
+          branch_id: row.branch_id,
+          class_id: row.class_id,
+          student_id: row.student_id,
+          teacher_id: row.teacher_id,
+          note_text: row.report_text ?? '',
+          final_message: row.report_text ?? '',
+          approved_report: row.report_text ?? '',
+          shared_report: row.report_text ?? '',
+          status: row.status,
+          created_date: row.updated_at || row.created_at,
+          update_type: 'weekly_report',
+          data_source: 'supabase_weekly_progress_reports',
+          week_start_date: row.week_start_date,
+        }));
+
+        return [...parentComments, ...weeklyReports].sort(
+          (a, b) => new Date(b.created_date || 0) - new Date(a.created_date || 0),
+        );
+      }
+    } catch {
+      // Fallback to legacy source below
+    }
+  }
   return base44.entities.ParentUpdate.list('-created_date', 20);
 }
 
@@ -416,7 +623,65 @@ export async function listParentUpdatesByStudent(user, studentId) {
 }
 
 export async function listFeeRecords(user) {
-  if (!demoEnabled()) return [];
+  if (!demoEnabled() && isSupabaseConfigured() && supabase) {
+    try {
+      const { data, error } = await supabase
+        .from('fee_records')
+        .select(`
+          id,
+          branch_id,
+          class_id,
+          student_id,
+          fee_period,
+          amount,
+          status,
+          receipt_file_path,
+          receipt_storage_bucket,
+          uploaded_by_profile_id,
+          uploaded_at,
+          verified_by_profile_id,
+          verified_at,
+          verification_status,
+          internal_note,
+          student:students!fee_records_student_id_fkey(full_name),
+          class:classes!fee_records_class_id_fkey(name),
+          branch:branches!fee_records_branch_id_fkey(name)
+        `)
+        .order('updated_at', { ascending: false });
+
+      if (!error && Array.isArray(data)) {
+        return data.map((row) => ({
+          id: row.id,
+          fee_record_id: row.id,
+          student_id: row.student_id,
+          student_name: row.student?.full_name || row.student_id,
+          parent_guardian_name: 'Linked Parent/Guardian',
+          branch_id: row.branch_id,
+          branch_name: row.branch?.name || row.branch_id,
+          class_id: row.class_id,
+          class_name: row.class?.name || row.class_id,
+          fee_period: row.fee_period,
+          fee_amount: Number(row.amount ?? 0),
+          due_date: '',
+          payment_status: row.status === 'pending_verification' ? 'pending verification' : row.status,
+          payment_method: 'not_set',
+          receipt_uploaded: Boolean(row.receipt_file_path),
+          receipt_reference_note: row.receipt_file_path || '',
+          verified_by: row.verified_by_profile_id || '',
+          verified_date: row.verified_at ? new Date(row.verified_at).toISOString().slice(0, 10) : '',
+          internal_note: row.internal_note || '',
+          receipt_storage_bucket: row.receipt_storage_bucket || 'fee-receipts',
+          uploaded_by_profile_id: row.uploaded_by_profile_id || null,
+          uploaded_at: row.uploaded_at || null,
+          verification_status: row.verification_status || 'not_uploaded',
+          data_source: 'supabase_fee_records',
+        }));
+      }
+    } catch {
+      // Fallback below
+    }
+    return [];
+  }
   const role = user?.role;
   if (role === ROLES.HQ_ADMIN) return demoData.feeRecords;
   if (role === ROLES.BRANCH_SUPERVISOR) return demoData.feeRecords.filter((item) => item.branch_id === user?.branch_id);
@@ -519,12 +784,24 @@ export async function inviteUser(email) {
 }
 
 export async function generateParentMessage(student, notes) {
-  if (demoEnabled()) {
-    return `Hello ${student?.parent_name || 'Parent'},\n\n${student?.name || 'Your child'} had a positive session today. ${notes}\n\nPlease continue the same support at home. Thank you.`;
-  }
-  return base44.integrations.Core.InvokeLLM({
-    prompt: `You are a professional enrichment centre teacher writing a parent update message.\n\nStudent name: ${student?.name || 'Student'}\nParent name: ${student?.parent_name || 'Parent'}\nTeacher notes: ${notes}\n\nWrite a warm, professional, and concise parent update message.`
-  });
+  // Real AI generation is intentionally disabled in this prototype.
+  // Future implementation should use Supabase Edge Functions or a secure backend, not frontend direct calls.
+  const studentName = student?.name || 'Your child';
+  const parentName = student?.parent_name || student?.guardian_name || 'Parent/Guardian';
+  const className = student?.class_name || 'the class';
+  const attendanceStatus = student?.attendance_status || 'being tracked';
+  const homeworkStatus = student?.homework_status || 'pending review';
+  const teacherNote = notes?.trim() || 'Today we focused on steady progress and participation.';
+
+  return `Hello ${parentName},
+
+${studentName} completed today\'s session in ${className}.
+Attendance status: ${attendanceStatus}.
+Homework status: ${homeworkStatus}.
+
+Teacher note: ${teacherNote}
+
+This is a demo parent update draft only. It should be reviewed and approved by the teacher before sharing.`;
 }
 
 export async function uploadHomeworkAttachment(file, studentId) {
@@ -700,6 +977,80 @@ export function getTeacherNotifications(user) {
   return [];
 }
 
+function toDueLabel(dueAt) {
+  if (!dueAt) return 'No due date';
+  const date = new Date(dueAt);
+  if (Number.isNaN(date.getTime())) return 'No due date';
+  return date.toLocaleString();
+}
+
+function sortTeacherNotifications(items = []) {
+  const order = { overdue: 0, pending: 1, in_progress: 2, completed: 3 };
+  return [...items].sort((a, b) => {
+    const left = order[a.status] ?? 9;
+    const right = order[b.status] ?? 9;
+    if (left !== right) return left - right;
+    return (a.due_at || '').localeCompare(b.due_at || '');
+  });
+}
+
+export async function listTeacherNotifications(user) {
+  if (demoEnabled()) {
+    return getTeacherNotifications(user).map((item) => ({
+      ...item,
+      assignmentId: null,
+    }));
+  }
+
+  if (!isSupabaseConfigured() || !supabase) {
+    return getTeacherNotifications(user).map((item) => ({
+      ...item,
+      assignmentId: null,
+    }));
+  }
+
+  try {
+    const { data, error } = await supabase
+      .from('teacher_task_assignments')
+      .select('id,status,completed_at,updated_at,teacher_id,task:teacher_tasks!inner(id,title,due_at,class_id,student_id)')
+      .order('updated_at', { ascending: false });
+
+    if (error || !Array.isArray(data)) {
+      return getTeacherNotifications(user).map((item) => ({
+        ...item,
+        assignmentId: null,
+      }));
+    }
+
+    const rows = data.map((row) => {
+      const relatedLabel = row?.task?.class_id
+        ? 'Class task'
+        : row?.task?.student_id
+          ? 'Student task'
+          : 'General task';
+      return {
+        id: row.id,
+        assignmentId: row.id,
+        status: row.status || 'pending',
+        priority: row.status === 'overdue' ? 'high' : 'medium',
+        title: row?.task?.title || 'Teacher task',
+        related_label: relatedLabel,
+        related_type: row?.task?.class_id ? 'class' : (row?.task?.student_id ? 'student' : 'task'),
+        due_at: row?.task?.due_at || '',
+        due_label: toDueLabel(row?.task?.due_at),
+        completed_at: row?.completed_at || null,
+      };
+    });
+
+    return sortTeacherNotifications(rows);
+  } catch {
+    return getTeacherNotifications(user).map((item) => ({
+      ...item,
+      assignmentId: null,
+    }));
+  }
+}
+
 export function getTeacherTaskCompletionOverview(user) {
   const items = getTeacherNotifications(user);
   return {
@@ -711,4 +1062,8 @@ export function getTeacherTaskCompletionOverview(user) {
 
 export function getDemoSummary() {
   return demoData;
+}
+
+export function getReadDataSource(type) {
+  return readSources[type] || 'demo';
 }

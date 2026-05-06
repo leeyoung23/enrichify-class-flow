@@ -1,7 +1,7 @@
 import { Toaster } from "@/components/ui/toaster"
 import { QueryClientProvider } from '@tanstack/react-query'
 import { queryClientInstance } from '@/lib/query-client'
-import { BrowserRouter as Router, Route, Routes } from 'react-router-dom';
+import { BrowserRouter as Router, Link, Navigate, Route, Routes, useLocation } from 'react-router-dom';
 import PageNotFound from './lib/PageNotFound';
 import { AuthProvider, useAuth } from '@/lib/AuthContext';
 import UserNotRegisteredError from '@/components/UserNotRegisteredError';
@@ -14,6 +14,7 @@ import Students from '@/pages/Students';
 import Attendance from '@/pages/Attendance';
 import ParentUpdates from '@/pages/ParentUpdates';
 import Homework from '@/pages/Homework';
+import Announcements from '@/pages/Announcements';
 import Leads from '@/pages/Leads';
 import ClassSession from '@/pages/ClassSession';
 import ParentView from '@/pages/ParentView';
@@ -27,9 +28,49 @@ import TrialScheduling from '@/pages/TrialScheduling';
 import MyTasks from '@/pages/MyTasks';
 import PrototypeSummary from '@/pages/PrototypeSummary';
 import FeeTracking from '@/pages/FeeTracking';
+import PublicWelcome from '@/pages/PublicWelcome';
+import AuthPreview from '@/pages/AuthPreview';
+import Login from '@/pages/Login';
+import SalesKit from '@/pages/SalesKit';
+import StaffTimeClock from '@/pages/StaffTimeClock';
+import AiParentReports from '@/pages/AiParentReports';
+import AiParentReportPdfPreview from '@/pages/AiParentReportPdfPreview';
+import SessionReview from '@/pages/SessionReview';
+import { SupabaseAuthStateProvider, useSupabaseAuthState } from '@/hooks/useSupabaseAuthState';
+import { getSelectedDemoRole } from '@/services/authService';
+import { sanitizeReturnUrlForRedirect } from '@/lib/supabaseAuthReturnUrl';
+
+function SupabaseProfileMissing() {
+  const { error } = useSupabaseAuthState();
+  return (
+    <div className="fixed inset-0 flex items-center justify-center p-6 bg-background">
+      <div className="max-w-md rounded-lg border border-border bg-card p-6 space-y-4 text-center shadow-sm">
+        <h1 className="text-lg font-semibold tracking-tight">Profile not available</h1>
+        <p className="text-sm text-muted-foreground">
+          You are signed in with Supabase, but no usable application profile was loaded for this app.
+          {error?.message ? (
+            <span className="block mt-2 text-destructive">{error.message}</span>
+          ) : null}
+        </p>
+        <p className="text-xs text-muted-foreground">
+          Use Auth Preview to sign out and try again, or contact an administrator. You are not sent back to sign-in in a loop.
+        </p>
+        <Link
+          to="/auth-preview"
+          className="inline-block text-sm font-medium text-primary underline-offset-4 hover:underline"
+        >
+          Go to Auth Preview
+        </Link>
+      </div>
+    </div>
+  );
+}
 
 const AuthenticatedApp = () => {
+  const location = useLocation();
   const { isLoadingAuth, isLoadingPublicSettings, authError, navigateToLogin } = useAuth();
+  const { session, appUser, loading: supabaseAuthLoading, isSupabaseAuthAvailable } = useSupabaseAuthState();
+  const demoRole = getSelectedDemoRole();
 
   // Show loading spinner while checking app public settings or auth
   if (isLoadingPublicSettings || isLoadingAuth) {
@@ -51,6 +92,25 @@ const AuthenticatedApp = () => {
     }
   }
 
+  // Phase 3C-2: Supabase session gate — signed-out users go to /login (demoRole and unconfigured Supabase unchanged)
+  if (!demoRole && isSupabaseAuthAvailable) {
+    if (supabaseAuthLoading) {
+      return (
+        <div className="fixed inset-0 flex items-center justify-center">
+          <div className="w-8 h-8 border-4 border-slate-200 border-t-slate-800 rounded-full animate-spin"></div>
+        </div>
+      );
+    }
+    if (session?.user && !appUser) {
+      return <SupabaseProfileMissing />;
+    }
+    if (!session) {
+      const returnTarget = sanitizeReturnUrlForRedirect(`${location.pathname}${location.search}`);
+      const qs = new URLSearchParams({ returnUrl: returnTarget });
+      return <Navigate to={`/login?${qs.toString()}`} replace />;
+    }
+  }
+
   // Render the main app
   return (
     <Routes>
@@ -61,8 +121,12 @@ const AuthenticatedApp = () => {
         <Route path="/teachers" element={<Teachers />} />
         <Route path="/students" element={<Students />} />
         <Route path="/attendance" element={<Attendance />} />
+        <Route path="/staff-time-clock" element={<StaffTimeClock />} />
         <Route path="/parent-updates" element={<ParentUpdates />} />
         <Route path="/homework" element={<Homework />} />
+        <Route path="/announcements" element={<Announcements />} />
+        <Route path="/ai-parent-reports" element={<AiParentReports />} />
+        <Route path="/ai-parent-report-pdf-preview" element={<AiParentReportPdfPreview />} />
         <Route path="/leads" element={<Leads />} />
         <Route path="/class-session" element={<ClassSession />} />
         <Route path="/observations" element={<Observations />} />
@@ -75,8 +139,10 @@ const AuthenticatedApp = () => {
         <Route path="/my-tasks" element={<MyTasks />} />
         <Route path="/prototype-summary" element={<PrototypeSummary />} />
         <Route path="/fee-tracking" element={<FeeTracking />} />
+        <Route path="/sales-kit" element={<SalesKit />} />
+        <Route path="/parent-view" element={<ParentView />} />
+        <Route path="/session-review" element={<SessionReview />} />
       </Route>
-      <Route path="/parent-view" element={<ParentView />} />
       <Route path="*" element={<PageNotFound />} />
     </Routes>
   );
@@ -86,14 +152,23 @@ const AuthenticatedApp = () => {
 function App() {
 
   return (
-    <AuthProvider>
-      <QueryClientProvider client={queryClientInstance}>
-        <Router>
-          <AuthenticatedApp />
-        </Router>
+    <QueryClientProvider client={queryClientInstance}>
+      <SupabaseAuthStateProvider>
+      <Router>
+        <Routes>
+          <Route path="/auth-preview" element={<AuthPreview />} />
+          <Route path="/welcome" element={<PublicWelcome />} />
+          <Route path="/login" element={<Login />} />
+          <Route path="/*" element={(
+            <AuthProvider>
+              <AuthenticatedApp />
+            </AuthProvider>
+          )} />
+        </Routes>
         <Toaster />
-      </QueryClientProvider>
-    </AuthProvider>
+      </Router>
+      </SupabaseAuthStateProvider>
+    </QueryClientProvider>
   )
 }
 

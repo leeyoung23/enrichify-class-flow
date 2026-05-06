@@ -1,0 +1,62 @@
+# AI Parent Report UI Shell Final Checkpoint
+
+Date: 2026-05-02  
+Scope: docs-only final checkpoint for staff AI parent report UI shell milestone
+
+## Final docs-only alignment update (mock draft UI milestone)
+
+- Staff `Generate Mock Draft` wiring is now complete and checkpointed:
+  - `docs/mock-ai-parent-report-draft-ui-final-checkpoint.md`
+- UI shell boundaries remain unchanged:
+  - staff-side workflow only,
+  - no real provider wiring,
+  - no provider keys,
+  - no PDF/export,
+  - no notification/email/live-chat side effects,
+  - no auto-release behavior.
+- ParentView visibility rule remains:
+  - released/current-version-only.
+
+## Snapshot
+
+- Staff-only UI shell is implemented at `/ai-parent-reports`.
+- Staff navigation is wired for HQ, branch supervisor, and teacher roles.
+- Demo mode uses local fake/dev rows only (no Supabase report calls in demo).
+- Authenticated mode uses existing AI parent report services with JWT + RLS.
+- ParentView released-report display is deferred in this milestone.
+- No SQL/RLS/provider/PDF/export/notification changes.
+
+## Validation snapshot
+
+- `git diff --name-only` ran before tests.
+- `build/lint/typecheck` PASS.
+- `test:supabase:ai-parent-reports` PASS (expected unrelated-parent CHECK).
+- `test:supabase:parent-announcements` PASS (expected unrelated-parent CHECK).
+- `test:supabase:announcements:phase1` PASS (expected optional branch fixture CHECK).
+- `test:supabase:announcements:mytasks` PASS.
+- `test:supabase:company-news:create` PASS.
+
+## Next milestone recommendation
+
+Recommendation: **A. ParentView released-report display planning**.
+
+Reason:
+
+- Staff release action exists already.
+- Parent release boundary display is the remaining critical product surface.
+- Parent-safe visibility rules should be fully planned before more AI generation UX.
+
+## Follow-up status
+
+- ParentView released-report display UI is now implemented in a dedicated parent-safe section.
+- Follow-up checkpoint:
+  - `docs/parent-view-ai-report-display-ui-checkpoint.md`
+- Finalized docs-only checkpoint:
+  - `docs/parent-view-ai-report-display-final-checkpoint.md`
+- ParentView strict boundary reminder:
+  - released/current-version only,
+  - no evidence links/raw metadata/PDF/export/staff actions in parent surface.
+- Additional follow-up:
+  - staff-side `Generate Mock Draft` action is now wired in `AI Parent Reports` using existing mock helper only.
+- UI checkpoint:
+  - `docs/mock-ai-parent-report-draft-ui-checkpoint.md`
