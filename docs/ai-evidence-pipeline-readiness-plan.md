@@ -125,6 +125,8 @@ Aligns with parent section keys already mapped in ParentView where applicable:
 5. Parent: sign in → ParentView → **Progress Reports** — see released card; open **printable layout** preview.  
 6. Automated: `npm run test:supabase:ai-parent-reports`, `test:supabase:ai-parent-report:mock-draft`, `test:supabase:ai-parent-report:source-aggregation` / `:rls-source-aggregation` as appropriate for environment.
 
+For a persistent screenshot sample, use `npm run uat:ai-parent-report:sample` with `ALLOW_UAT_SAMPLE_WRITE=1`. It is manual-only, JWT+RLS scoped, provider-free, and reuse-first to avoid duplicate report spam.
+
 ---
 
 ## Related documents

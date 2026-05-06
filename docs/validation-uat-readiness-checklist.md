@@ -111,6 +111,8 @@ Spot-check quickly before sign-off:
 - [ ] Screenshot **one** released monthly-style sample for evidence pack (filename in `docs/uat-evidence-log-template.md` convention).
 - [ ] Follow `docs/monthly-report-uat-sample-proof.md` and record PASS/CHECK lines in `docs/uat-evidence-log-2026-05-06.md`.
 - [ ] Note that default AI parent report smoke archives its created report rows after run; keep manual sample creation separate from smoke cleanup.
+- [ ] If using script helper, run only with explicit flag: `ALLOW_UAT_SAMPLE_WRITE=1 npm run uat:ai-parent-report:sample`.
+- [ ] Confirm sample helper was run manually (not CI), and no provider/OCR/PDF-storage/email paths were invoked.
 - [ ] Optional smokes: `npm run test:supabase:ai-parent-reports`, `test:supabase:ai-parent-report:mock-draft`, `test:supabase:ai-parent-report:source-aggregation` / `test:supabase:ai-parent-report:rls-source-aggregation` as environment allows.
 
 ### Notification admin and governance

@@ -86,6 +86,9 @@ Credential note:
 **Evidence pipeline reference:** `docs/ai-evidence-pipeline-readiness-plan.md` (what aggregates today vs placeholders).  
 **Sample-proof runbook:** `docs/monthly-report-uat-sample-proof.md` (one clean released sample for screenshots).
 
+Optional helper for persistent sample setup (manual-only): `ALLOW_UAT_SAMPLE_WRITE=1 npm run uat:ai-parent-report:sample`.  
+Do not run this in CI/normal smoke loops.
+
 1. Create/open a report shell in AI Parent Reports.
 2. Open **Source Evidence Preview** — confirm attendance/homework/parent-comms/curriculum/memories behave as expected for your tenant; confirm **Released homework feedback** reflects released-to-parent rows only (or warm empty state); confirm **Observations** and **worksheet OCR** show as **not wired** (placeholder), not as hidden automation.
 3. Generate **mock** draft (always available). Optionally generate **real** Edge draft only when signed-in staff + environment allows provider — skip if quota or policy unclear.

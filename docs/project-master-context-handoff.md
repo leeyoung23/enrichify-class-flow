@@ -1,5 +1,17 @@
 # Project Master Context Handoff
 
+## Checkpoint update (Stable AI report UAT sample workflow — 2026-05-06)
+
+- **Regression guards (static):** `Students.jsx`, `ParentUpdates.jsx`, `ParentView.jsx`, `Sidebar.jsx`, `sessionGovernanceService.js`, `supabaseAuthService.js`, `permissionService.js` spot-check stays healthy; no blocker fix needed.
+- **Manual-only script:** added `scripts/supabase-ai-parent-report-uat-sample.mjs` with package command `uat:ai-parent-report:sample`.
+- **Hard safety gate:** script exits unless `ALLOW_UAT_SAMPLE_WRITE=1`.
+- **Write scope safety:** anon+JWT + RLS only; no service-role browser usage; no provider/OCR/email/PDF-storage paths.
+- **Lifecycle behavior:** create shell + manual/sample version + submit + approve + release via existing service functions; no silent auto-release.
+- **Anti-duplicate behavior:** reuse existing active sample marker by default; old-sample archive only if `ALLOW_UAT_SAMPLE_ARCHIVE_OLD=1`.
+- **Parent checks in script:** verify released visibility when fixture credentials exist and verify evidence-link rows remain blocked/empty for parent.
+- **Persistence intent:** unlike default AI report smoke cleanup (archives created rows), UAT sample helper is designed for long-lived screenshot sample reuse.
+- **Docs aligned:** `docs/monthly-report-uat-sample-proof.md`, `docs/ai-evidence-pipeline-readiness-plan.md`, `docs/validation-uat-readiness-checklist.md`, `docs/manual-walkthrough-execution-guide.md`.
+
 ## Checkpoint update (Monthly report UAT sample proof — 2026-05-06)
 
 - **Regression guards (static):** `Students.jsx`, `ParentUpdates.jsx`, `ParentView.jsx`, `Sidebar.jsx`, `sessionGovernanceService.js`, `supabaseAuthService.js`, `permissionService.js` spot-check remains healthy; no blocker fix needed for this milestone.

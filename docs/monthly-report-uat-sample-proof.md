@@ -49,6 +49,41 @@ If fixture alignment is missing, record **CHECK** in the UAT evidence log instea
 
 ---
 
+## Manual-only helper script (optional)
+
+Script: `scripts/supabase-ai-parent-report-uat-sample.mjs`  
+Package command: `npm run uat:ai-parent-report:sample`
+
+This script is intentionally **manual-only** and **not** part of normal test/build flow.
+
+### Required safety flag
+
+- `ALLOW_UAT_SAMPLE_WRITE=1` is mandatory, otherwise the script exits without writing.
+
+### Optional fixture/env controls
+
+- `UAT_SAMPLE_STUDENT_ID`
+- `UAT_SAMPLE_CLASS_ID`
+- `UAT_SAMPLE_BRANCH_ID`
+- `ALLOW_UAT_SAMPLE_ARCHIVE_OLD=1` (optional; off by default)
+
+If explicit `UAT_SAMPLE_*` vars are not provided, the script falls back to the same fixture style as AI report smoke.
+
+### Safety behavior
+
+- Uses anon+JWT sign-in (`signInWithEmailPassword`) only.
+- Uses manual/mock sections only (no provider/real AI call path).
+- Runs lifecycle explicitly: create -> version -> submit -> approve -> release.
+- Reuse-first anti-duplicate behavior:
+  - default: reuses existing active sample marker report for same fixture,
+  - optional archive-old mode only when `ALLOW_UAT_SAMPLE_ARCHIVE_OLD=1`.
+- Verifies parent release visibility when parent fixture credentials exist.
+- Verifies parent evidence-link read stays blocked/empty.
+- Does **not** archive the active sample by default.
+- Prints ParentView URL for screenshot capture.
+
+---
+
 ## Screenshot checklist
 
 - Staff: report shell created (status Draft).
@@ -112,6 +147,8 @@ Do not paste secrets or full internal IDs into screenshots.
 
 `npm run test:supabase:ai-parent-reports` currently archives created report fixtures during cleanup (`archiveAiParentReport` over `createdReportIds`).  
 This is good for non-destructive automated checks but means smoke-created reports are not a stable showcase sample.
+
+By contrast, the manual-only UAT sample script is designed to keep one long-lived released sample (reuse-first), unless archive-old mode is explicitly enabled.
 
 ---
 
