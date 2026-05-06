@@ -131,9 +131,13 @@ Spot-check quickly before sign-off:
 - [ ] **`/parent-view`** without **`?student=`** shows the warm **no child linked yet** state (centre-managed linking; contact-centre guidance; **no** class picker; **no** student creation).
 - [ ] **`/parent-view?student=<uuid>`** when the parent is **not** linked to that student shows a blocked/denied message — **no** other family’s data, **no** self-serve linking UI.
 - [ ] ParentView opens for linked child in real mode.
+- [ ] Parent with one linked child can open `/parent-view` without manual `?student=`; app resolves linked child context safely.
+- [ ] Parent with multiple linked children remains centre-link driven (no full in-page selector in this milestone); document as deferred if needed.
 - [ ] Notification inbox renders with unread indicator behavior.
 - [ ] Dashboard notification preview limits to **three** items by default; **View more** / **View less** toggles expanded list when more filtered rows exist.
 - [ ] Operational notification phrases (payments, homework/feedback, attendance, reports/released, communications) are visible in normal mode; smoke/fixture wording stays hidden unless `?debug=1`.
+- [ ] For report release notifications with action target data, **View report** opens the exact released report (not only the generic section).
+- [ ] If a targeted report is no longer visible/released, ParentView shows a friendly inline message and keeps parent in released-only scope.
 - [ ] Notification action routing opens/scrolls to expected target sections.
 - [ ] Communication & notification settings load/save correctly.
 - [ ] Parent portal v1: no Active Sessions / technical session history UI (deferred); HQ Session Review unchanged for staff.

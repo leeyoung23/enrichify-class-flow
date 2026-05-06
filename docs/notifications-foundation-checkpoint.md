@@ -188,7 +188,12 @@ Applied + verified (linked project):
   - `parent_comment.released` / `weekly_progress_report.released` (heuristic) -> `#parent-communication-updates` (**View update**)
   - `fee_payment.proof_requested` / `fee_payment.proof_verified` / `fee_payment.proof_rejected` (heuristic) -> `#parent-payment-proof` (**Upload proof** / **View payment**)
   - unknown -> `#parent-in-app-notifications` (**View details**)
-- **Routing safety limits:** parent `notifications` rows do not expose `event_type` directly under current RLS/read helper shape, so v1 mapping is based on safe title/body text patterns; no `action_url`, no external navigation, no metadata/entity ids shown. Action click marks unread rows as read before scrolling.
+- **Notification Action Routing v2 (exact report target):**
+  - Added RPC `get_my_in_app_notifications_with_action_targets_044` via `supabase/sql/044_notifications_parent_action_targets_rpc.sql`.
+  - RPC is `SECURITY DEFINER` and returns only rows where `notifications.recipient_profile_id = auth.uid()` and `channel = in_app`.
+  - Returned action-target fields are minimal: `event_type`, `entity_type`, `entity_id` (no delivery logs, no raw metadata payloads, no unrelated event rows).
+  - Parent UI now prefers exact report routing for `ai_parent_report.released` + `entity_type=ai_parent_report`: mark read, move to target student when needed, scroll to `#parent-progress-reports`, and open the exact released report by `entity_id`.
+  - Fallback remains safe: if exact target is unavailable, route by section intent only and show a friendly notice.
 
 ### Safety boundaries (unchanged after apply)
 

@@ -119,6 +119,8 @@ Read-only finder (safe anytime): `npm run uat:ai-parent-report:find-sample` to l
 6. Validate released report visibility.
 7. Validate notification inbox and unread behavior.
 8. Validate notification action routing.
+   - For a report-release notification, tap **View report** and confirm it opens the exact released report when action target fields are available.
+   - If the report target is unavailable, confirm the fallback message appears: report no longer available or not released for this child.
 9. Validate communication settings load/save.
 10. Confirm **Settings** shows **Communication & Notification Settings** only (no Account Security / Active Sessions for parents).
 11. Confirm the notification list shows **three** items by default when more exist, with **View more** / **View less**; repeat with `?debug=1` if you need to see suppressed smoke/fixture copy (still no internal metadata).
@@ -321,6 +323,9 @@ Use this quick pass during ParentView checks:
    - **`/homework`** explains mock AI drafting (no file OCR yet) and marked-work release rules,
    - parent homework section copy matches privacy-after-upload expectations,
    - see `docs/homework-ai-marking-readiness-plan.md` for architecture/future OCR notes.
+25. Parent linked-child resolution sanity:
+   - parent with one linked child can open `/parent-view` without manually adding `?student=`.
+   - multi-child selector workflow remains deferred (centre-managed linkage still applies).
 
 ---
 

@@ -2343,6 +2343,27 @@ export async function listMyInAppNotifications({ status, unreadOnly = false, lim
   const safeLimit = Number.isInteger(limit) && limit > 0 ? Math.min(limit, 200) : 50;
 
   try {
+    // Preferred path: RPC returns notification rows plus safe action-target fields for own rows only.
+    const rpcStatus = status != null && status !== "" ? trimString(status) : null;
+    const rpcRead = await supabase.rpc("get_my_in_app_notifications_with_action_targets_044", {
+      p_status: rpcStatus,
+      p_unread_only: Boolean(unreadOnly),
+      p_limit: safeLimit,
+    });
+    if (!rpcRead.error && Array.isArray(rpcRead.data)) {
+      return { data: rpcRead.data, error: null };
+    }
+
+    const rpcMissing =
+      trimString(rpcRead.error?.code) === "PGRST202"
+      || /get_my_in_app_notifications_with_action_targets_044/i.test(
+        trimString(rpcRead.error?.message)
+      );
+    // Fallback preserves behavior when migration 044 has not been applied yet.
+    if (rpcRead.error && !rpcMissing) {
+      return { data: [], error: rpcRead.error };
+    }
+
     let query = supabase
       .from("notifications")
       .select(NOTIFICATION_FIELDS)

@@ -578,6 +578,14 @@
 - **Security boundary:** no SQL/RLS changes, no `action_url`, no metadata/event/entity identifiers shown in UI, no external routing, no email/PDF/attachment behavior.
 - **Limitation:** parent notification rows currently expose `event_id` but not direct `event_type`; v1 routing uses safe title/body heuristics until a future reviewed field-expansion path.
 
+## Checkpoint update (parent notification action routing v2 — 2026-05-06)
+
+- **Exact report target routing added:** parent notification action now uses safe action-target fields (`event_type`, `entity_type`, `entity_id`) for own in-app notifications when available, so `View report` can open the exact released AI report.
+- **Safe SQL addition:** `supabase/sql/044_notifications_parent_action_targets_rpc.sql` adds `get_my_in_app_notifications_with_action_targets_044` (`SECURITY DEFINER`) scoped to `recipient_profile_id = auth.uid()`.
+- **Fallback preserved:** if migration 044 is not applied, client falls back to existing `listMyInAppNotifications` behavior (section-intent routing).
+- **ParentView deep-link support:** `?report=<reportId>#parent-progress-reports` is now honored for released reports; unavailable target shows a friendly message without exposing draft/internal data.
+- **Linked-child default behavior (safe improvement):** parent can open `/parent-view` without `?student=` when exactly one linked child context is available via profile link; multi-child selector remains deferred.
+
 ## Checkpoint update (payment proof request notification v1 — 2026-05-05)
 
 - **UI:** `src/pages/FeeTracking.jsx` adds staff action button **Request payment proof** in the per-row action area (HQ/branch supervisor page scope only; no parent/student surface).

@@ -103,6 +103,8 @@ This finder is **read-only** and does not create/update/release/archive/delete r
   - whether released/current
 - Prints safe ParentView URL:
   - `/parent-view?student=<studentId>#parent-progress-reports`
+  - Optional exact-target format for notification deep-link checks:
+    `/parent-view?student=<studentId>&report=<reportId>#parent-progress-reports`
 - Prints suggested screenshot filenames.
 
 If parent fixture credentials are available, finder also performs read-only checks:
@@ -183,6 +185,7 @@ Known placeholders: structured observations and worksheet OCR pipeline.
 ## Parent-visible result (expected)
 
 - Parent can see only released report rows tied to linked child.
+- Notification **View report** now supports exact released report targeting (when action target fields are present) and falls back safely if target is missing.
 - Parent can view sectioned narrative and printable layout preview in browser.
 - Parent cannot access draft statuses, internal evidence links, or staff-only notes.
 

@@ -35,11 +35,13 @@ async function signInRole({ label, email, passwordVar }, deps) {
 }
 
 async function run() {
-  const [{ signInWithEmailPassword, signOut }, writeService, { supabase }] = await Promise.all([
+  const [{ signInWithEmailPassword, signOut }, readService, writeService, { supabase }] = await Promise.all([
     import("../src/services/supabaseAuthService.js"),
+    import("../src/services/supabaseReadService.js"),
     import("../src/services/supabaseWriteService.js"),
     import("../src/services/supabaseClient.js"),
   ]);
+  const { listMyInAppNotifications } = readService;
   const { createNotificationEvent, createInAppNotification, markNotificationRead } = writeService;
 
   if (!supabase) {
@@ -234,6 +236,19 @@ async function run() {
     } else {
       printResult("WARNING", "Parent: delivery logs unexpectedly readable");
       failureCount += 1;
+    }
+
+    const parentInboxResult = await listMyInAppNotifications({ limit: 20 });
+    if (parentInboxResult.error) {
+      printResult("CHECK", `Parent: action-target helper CHECK (${parentInboxResult.error.message || "unknown"})`);
+    } else {
+      const rows = Array.isArray(parentInboxResult.data) ? parentInboxResult.data : [];
+      const ownRow = rows.find((row) => row?.id === parentNotificationId);
+      if (ownRow && ownRow?.event_type === "smoke.notification.parent_ready" && ownRow?.entity_type === "smoke_check") {
+        printResult("PASS", "Parent: own notification action-target fields available");
+      } else {
+        printResult("CHECK", "Parent: own action-target fields unavailable (migration 044 optional)");
+      }
     }
   }
   await signOut();

@@ -1,5 +1,5 @@
 import React, { useMemo, useState, useEffect, useCallback } from 'react';
-import { useOutletContext, useLocation } from 'react-router-dom';
+import { useOutletContext, useLocation, useNavigate } from 'react-router-dom';
 import {
   buildReleasedReportPdfInputFromParentViewContext,
   renderReleasedReportPdfHtml,
@@ -199,6 +199,22 @@ function normalizeNotificationText(value) {
 }
 
 function resolveParentNotificationAction(notification) {
+  const normalizedEntityType =
+    typeof notification?.entity_type === 'string' ? notification.entity_type.trim() : '';
+  const normalizedEventType =
+    typeof notification?.event_type === 'string' ? notification.event_type.trim() : '';
+  const hasExactReportTarget =
+    isUuidLike(notification?.entity_id)
+    && normalizedEntityType === 'ai_parent_report'
+    && normalizedEventType === 'ai_parent_report.released';
+  if (hasExactReportTarget) {
+    return {
+      label: 'View report',
+      targetId: 'parent-progress-reports',
+      targetReportId: String(notification.entity_id).trim(),
+    };
+  }
+
   const haystack = `${normalizeNotificationText(notification?.title)} ${normalizeNotificationText(notification?.body)}`;
 
   if (haystack.includes('payment proof requested')) {
@@ -221,9 +237,9 @@ function resolveParentNotificationAction(notification) {
     return { label: 'View update', targetId: 'parent-communication-updates' };
   }
   if (haystack.includes('report') || haystack.includes('progress report')) {
-    return { label: 'View report', targetId: 'parent-progress-reports' };
+    return { label: 'View report', targetId: 'parent-progress-reports', targetReportId: null };
   }
-  return { label: 'View details', targetId: 'parent-in-app-notifications' };
+  return { label: 'View details', targetId: 'parent-in-app-notifications', targetReportId: null };
 }
 
 function formatReleasedDateLabel(value) {
@@ -2250,8 +2266,13 @@ export default function ParentView() {
   const outletUser = outletContext?.user ?? null;
   const { appUser: supabaseAppUser, user: supabaseSessionUser } = useSupabaseAuthState();
   const location = useLocation();
-  const urlParams = new URLSearchParams(window.location.search);
+  const navigate = useNavigate();
+  const urlParams = useMemo(() => new URLSearchParams(location.search), [location.search]);
   const studentId = urlParams.get('student');
+  const reportIdFromUrl = (() => {
+    const raw = urlParams.get('report');
+    return isUuidLike(raw) ? raw.trim() : null;
+  })();
   const previewRole = urlParams.get('demoRole');
   const isDemoStudentPreview = previewRole === 'student';
   const isDemoMode = Boolean(getSelectedDemoRole());
@@ -2406,12 +2427,6 @@ export default function ParentView() {
   }, [loading, notFound, location.hash]);
 
   useEffect(() => {
-    if (!studentId) {
-      setParentViewBlockedKind('missing_student_query');
-      setNotFound(true);
-      setLoading(false);
-      return;
-    }
     let cancelled = false;
     (async () => {
       try {
@@ -2445,7 +2460,16 @@ export default function ParentView() {
             setLoading(false);
             return;
           }
+          if (!studentId && isUuidLike(targetStudentId)) {
+            navigate(`/parent-view?student=${targetStudentId}${reportIdFromUrl ? `&report=${reportIdFromUrl}` : ''}${location.hash || ''}`, { replace: true });
+          }
         } else {
+          if (!studentId) {
+            setParentViewBlockedKind('missing_student_query');
+            setNotFound(true);
+            setLoading(false);
+            return;
+          }
           targetStudentId = studentId;
         }
         const s = await getStudentById(currentUser, targetStudentId);
@@ -2487,7 +2511,17 @@ export default function ParentView() {
     return () => {
       cancelled = true;
     };
-  }, [studentId, isDemoMode, outletUser?.id, outletUser?.role, supabaseAppUser?.id, supabaseAppUser?.role]);
+  }, [
+    studentId,
+    isDemoMode,
+    location.hash,
+    navigate,
+    outletUser?.id,
+    outletUser?.role,
+    reportIdFromUrl,
+    supabaseAppUser?.id,
+    supabaseAppUser?.role,
+  ]);
 
   useEffect(() => {
     let cancelled = false;
@@ -2685,6 +2719,12 @@ export default function ParentView() {
   useEffect(() => {
     void loadParentProgressReports();
   }, [loadParentProgressReports]);
+
+  useEffect(() => {
+    if (!reportIdFromUrl) return;
+    if (!parentProgressReports.some((row) => row?.id === reportIdFromUrl)) return;
+    setSelectedParentProgressReportId((prev) => (prev === reportIdFromUrl ? prev : reportIdFromUrl));
+  }, [parentProgressReports, reportIdFromUrl]);
 
   const loadParentInAppNotifications = useCallback(async () => {
     if (isDemoStudentPreview || !isParentViewerRole) {
@@ -2900,13 +2940,46 @@ export default function ParentView() {
     }
 
     const action = resolveParentNotificationAction(notificationRow);
+    const targetStudentId = isUuidLike(notificationRow?.student_id)
+      ? String(notificationRow.student_id).trim()
+      : null;
+    if (targetStudentId && student?.id && targetStudentId !== student.id) {
+      navigate(
+        `/parent-view?student=${targetStudentId}${action.targetReportId ? `&report=${action.targetReportId}` : ''}#${action.targetId}`
+      );
+      return;
+    }
+
+    if (action.targetId === 'parent-progress-reports' && action.targetReportId) {
+      const reportExists = parentProgressReports.some((row) => row?.id === action.targetReportId);
+      if (reportExists) {
+        setSelectedParentProgressReportId(action.targetReportId);
+        const progressOk = scrollToParentSection('parent-progress-reports');
+        if (!progressOk) {
+          setParentInAppActionNotice('Progress Reports section is not available in this view yet.');
+        }
+        return;
+      }
+      const progressOk = scrollToParentSection('parent-progress-reports');
+      if (progressOk) {
+        setParentInAppActionNotice('This report is no longer available or has not been released for this child.');
+        return;
+      }
+    }
+
     const directOk = scrollToParentSection(action.targetId);
     if (directOk) return;
 
     const fallbackOk = scrollToParentSection('parent-in-app-notifications');
     if (!fallbackOk) return;
     setParentInAppActionNotice('That section is not available in this view yet. You can still review the notification details here.');
-  }, [handleMarkParentNotificationRead, scrollToParentSection]);
+  }, [
+    handleMarkParentNotificationRead,
+    navigate,
+    parentProgressReports,
+    scrollToParentSection,
+    student?.id,
+  ]);
 
   const handleToggleParentNotificationCategory = useCallback((category, enabled) => {
     if (!Object.prototype.hasOwnProperty.call(parentNotificationPreferences, category)) return;

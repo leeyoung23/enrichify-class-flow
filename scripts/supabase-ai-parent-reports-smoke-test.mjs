@@ -271,6 +271,7 @@ async function run() {
     listAiParentReportVersions,
     getAiParentReportCurrentVersion,
     listAiParentReportEvidenceLinks,
+    listMyInAppNotifications,
   } = readService;
   const {
     createAiParentReportDraft,
@@ -757,6 +758,29 @@ async function run() {
           .maybeSingle();
         if (!sampleRow.error && sampleRow.data?.id) {
           linkedParentSampleNotificationId = sampleRow.data.id;
+        }
+      }
+
+      const parentInboxResult = await listMyInAppNotifications({ limit: 50 });
+      if (parentInboxResult.error) {
+        printResult("CHECK", `Parent: action-target notification read CHECK (${parentInboxResult.error.message || "unknown"})`);
+      } else {
+        const inboxRows = Array.isArray(parentInboxResult.data) ? parentInboxResult.data : [];
+        const exactReportRow = inboxRows.find(
+          (row) =>
+            row?.title === AI_REPORT_RELEASE_IN_APP_TITLE &&
+            row?.student_id === fixtureStudentId &&
+            row?.entity_type === "ai_parent_report" &&
+            row?.event_type === "ai_parent_report.released" &&
+            row?.entity_id === draftReportId
+        );
+        if (exactReportRow) {
+          printResult("PASS", "Parent: notification includes exact released report action target");
+        } else {
+          printResult(
+            "CHECK",
+            "Parent: exact action target unavailable (apply supabase/sql/044_notifications_parent_action_targets_rpc.sql)"
+          );
         }
       }
     }
