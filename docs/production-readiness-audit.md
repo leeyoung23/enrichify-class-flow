@@ -77,7 +77,7 @@ The following files were reviewed against the **known UAT regression guard list*
 | Printable preview | Browser layout; not PDF binary download |
 | Deferrals | PDF storage, email delivery — documented |
 
-**Evidence pipeline:** **Partially implemented.** `collectAiParentReportSourceEvidence` (RLS mode) aggregates attendance, homework assignee snapshot, **released homework feedback** text (`feedback_text` / `next_step`, release-gated — **no** `internal_note`, paths, or URLs), parent_comments + weekly_progress_reports, curriculum/learning context, class memory **captions**, staff evidence-link snapshots; **Observations** and **worksheet OCR** remain placeholders — see **`docs/ai-evidence-pipeline-readiness-plan.md`**.
+**Evidence pipeline:** **Partially implemented.** `collectAiParentReportSourceEvidence` (RLS mode) aggregates attendance, homework assignee snapshot, **released homework feedback** text (`feedback_text` / `next_step`, release-gated — **no** `internal_note`, paths, or URLs), parent_comments + weekly_progress_reports, curriculum/learning context, **staff-only teacher-learning cues** (`observationSummary` / `teacher_observations` from `student_school_profiles` + scoped `learning_goals`, sanitised — **not** the MVP **`observations`** table), class memory **captions**, staff evidence-link snapshots; **worksheet OCR** remains a placeholder — see **`docs/ai-evidence-pipeline-readiness-plan.md`**.
 
 **Monthly sample proof status:** A safe manual proof runbook exists at `docs/monthly-report-uat-sample-proof.md`. Current automated smoke validates lifecycle + parent-release visibility but archives created report rows during cleanup, so it is not a persistent showcase artefact.
 

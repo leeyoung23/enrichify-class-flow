@@ -603,6 +603,16 @@ async function run() {
           "No released homework feedback text in period for fixture (ok if DB has no released rows in window)"
         );
       }
+      const obs =
+        typeof agg.observationSummary === "string" ? agg.observationSummary.trim() : "";
+      if (obs && obs.includes("Teacher observation:")) {
+        printResult("PASS", "Teacher observation summaries present in RLS aggregation (staff-only path)");
+      } else {
+        printResult(
+          "CHECK",
+          "No fixture teacher observation / profile-note lines in aggregation window (ok if DB has none)"
+        );
+      }
     } catch (err) {
       printResult("CHECK", `Source evidence aggregation CHECK (${err?.message || err})`);
     }

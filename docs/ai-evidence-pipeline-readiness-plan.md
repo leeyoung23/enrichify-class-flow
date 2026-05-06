@@ -37,7 +37,7 @@ Implementation is centralized in **`collectAiParentReportSourceEvidence`** (mode
 | **Attendance** | **Yes** | Query `attendance_records` by `student_id`, optional period filters → **summary text** (`summarizeAttendanceRows`). |
 | **Homework** | **Yes (assignee / completion snapshot)** | `listAssignedHomeworkForStudent` → summary string — **not** full OCR of attachments. |
 | **Released homework feedback text** | **Yes (staff source evidence + mock draft path)** | `listReleasedHomeworkFeedbackForAiEvidence` → `feedback_text` + `next_step` only, `status = released_to_parent`, period filter on `released_to_parent_at`. **`internal_note` is never selected.** No file paths, storage URLs, or raw attachment analysis. Unreleased / draft feedback remains out of this roll-up. |
-| **Teacher observations** | **No** | **Placeholder only:** “Structured observations feed not implemented”. |
+| **Teacher observations / learning evidence** | **Yes (staff-only roll-up)** | Sanitised lines from **`student_school_profiles`** (`teacher_notes`, `subject_notes`, `learning_context_notes`, short `parent_goals` excerpts) plus **scoped `learning_goals`** for the student (optionally filtered to `class_id` + report period dates). **`public.observations`** (classroom teaching-quality rows — no `student_id`) is **not** used here. Raw rows, storage links, and URLs are never passed through. |
 | **Class memories** | **Yes (captions/metadata only)** | `listClassMemories` → **captions/titles**; **no media URLs** passed through sanitised summaries. |
 | **Parent communication** | **Yes** | `parent_comments` + `weekly_progress_reports` → combined summary text. |
 | **Curriculum / learning context** | **Yes** | `getStudentLearningContext`, `getClassLearningContext`, fallbacks (school profile, class curriculum assignment). |
@@ -56,8 +56,9 @@ Merges string fields preferring RLS when non-empty; evidence items list prefers 
 
 ## UI-only or not yet in aggregation
 
-- **`Observations.jsx`** (and structured observation records): **not** wired into `collectRlsSourceEvidence` — remains **staff UI + DB** without automatic roll-up into AI report text (explicit placeholder in aggregation).
-- **Internal learning notes** on `/students`: **not** automatically fed; policy is **staff-only** until released via approved channels (see student profile plan).
+- **`Observations.jsx`** (MVP **classroom** observation module): **not** wired into per-student AI evidence — those rows are **not student-scoped** in schema.
+- **Student school profile “teacher notes” / context fields** (`getStudentLearningContext`): **wired** into RLS aggregation as **`teacher_observations`** / `observationSummary` — staff Source Evidence Preview and mock-draft scaffolding only; **no** verbatim parent surfacing until report narrative is reviewed and **released**.
+- **Internal narrative on `/students`:** continues to clarify staff-only posture; rollup source is the same **`student_school_profiles`** lane under staff RLS.
 
 ---
 
@@ -71,7 +72,7 @@ For a reproducible screenshot pass, use `docs/monthly-report-uat-sample-proof.md
 
 ## Monthly “full product” gaps
 
-- **Observations → aggregation:** Need approved, sensitivity-flagged excerpt pipeline.
+- **Classroom-quality `observations` table → per-student aggregation:** Still **deferred** (would need student linkage or explicit policy). Staff learning cues today come from **profile + goals** path above.
 - **Homework feedback lines:** ~~Stronger link from **released feedback** rows~~ **Done (2026-05-06):** released rows feed staff Source Evidence Preview + `buildMockDraftInputFromSourceEvidence` (`homeworkPerformance`) — still **no OCR** of uploads.
 - **Period-native rollups:** Monthly calendar boundaries, branch reporting policy, absence reasons.
 - **Single “monthly report” template:** Section ordering and centre branding — partly in PDF HTML template; production PDF deferred.

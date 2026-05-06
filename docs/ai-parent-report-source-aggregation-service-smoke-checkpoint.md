@@ -51,7 +51,7 @@ Each row includes `sourceType`, human-readable `label`, `summary`, plus classifi
 | `homework_completion_summary` | Fake homework completion snapshot |
 | `worksheet_upload_placeholder` | Worksheet pipeline not connected |
 | `lesson_progression_summary` | Fake curriculum tie-in |
-| `observation_placeholder` | Observations feed not connected |
+| `teacher_observations` | Staff learning evidence (student school profile notes + scoped learning goals); not the MVP classroom `observations` table |
 | `parent_communication_summary` | Simulated communication threads |
 | `memories_media_placeholder` | Memories aggregate not wired |
 | `curriculum_context` | Fake school/curriculum framing |

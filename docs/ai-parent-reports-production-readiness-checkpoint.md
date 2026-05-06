@@ -32,7 +32,8 @@ Handled in `collectAiParentReportSourceEvidence` / related reads (availability d
 - Lesson / curriculum assignments context where linked
 - Class memories list (summaries — not raw asset URLs into provider payloads)
 - Parent communication / weekly-style sources where present
-- School / curriculum / learning context reads where configured
+- School / curriculum / learning context reads where configured  
+- **Staff-only teacher observation / learning evidence cues** (`observationSummary`): sanitised excerpts from **`student_school_profiles`** narrative fields plus scoped **`learning_goals`** (JWT/RLS). **No** verbatim raw dump to ParentView; **no** MVP `observations` table linkage; lifecycle **approve + release** still required.
 - Manual evidence links on the report (`ai_parent_report_evidence_links`) for staff-visible classification
 
 Synthetic **fake** items still appear in demo/offline previews for pipeline testing.
@@ -45,7 +46,7 @@ Not a commitment to automate all of these in one sprint — **teacher review rem
 
 - Full **attendance summary** roll-ups by period/class policy
 - **Homework feedback** lines — **partially done:** released rows feed staff evidence / draft context; **teacher approval + parent report release** gates unchanged
-- **Observations / learning notes** — only when explicitly flagged safe and staff-approved for inclusion
+- **Formal classroom observations module** (`Observations.jsx` / `observations` table) — **deferred for per-student AI roll-up** pending schema/policy; meanwhile **profile + learning-goal cues** feed staff drafts under teacher review.
 - **Class memories** — captions/themes only unless media policy expands
 - **Parent communication history** — released-thread summaries only  
 - Structured **billing / medical** domains remain **explicitly out of scope** unless a future policy gate exists

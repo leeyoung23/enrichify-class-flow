@@ -13,7 +13,7 @@ const SCHOOL_FIELDS =
 const CURRICULUM_PROFILE_FIELDS =
   "id,branch_id,name,provider,curriculum_system,level_year_grade,subject,skill_focus,assessment_style,notes,created_at,updated_at";
 const STUDENT_SCHOOL_PROFILE_FIELDS =
-  "id,student_id,school_id,school_name,grade_year,curriculum_profile_id,parent_goals,teacher_notes,created_at,updated_at";
+  "id,student_id,school_id,school_name,grade_year,curriculum_profile_id,parent_goals,teacher_notes,subject_notes,learning_context_notes,updated_at,created_at";
 const CLASS_CURRICULUM_ASSIGNMENT_FIELDS =
   "id,class_id,curriculum_profile_id,term_label,start_date,end_date,learning_focus,created_at,updated_at";
 const LEARNING_GOAL_FIELDS =

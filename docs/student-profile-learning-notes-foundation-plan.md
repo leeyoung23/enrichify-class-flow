@@ -73,6 +73,12 @@ Teacher access:
 - Quick-link guidance in student detail panel:
   - "Use the tools below to record evidence through the existing workflows."
 
+## AI Parent Report evidence roll-up (2026-05-06)
+
+- **`collectAiParentReportSourceEvidence` (RLS)** now includes a **`teacher_observations` / `observationSummary`** lane fed from `student_school_profiles` (`teacher_notes`, `subject_notes`, `learning_context_notes`, short `parent_goals` snippets) and student **`learning_goals`** (class + period filters when dates are present), all **sanitised** (no URLs/storage paths).
+- **Parents never see** this staff evidence list; only **teacher-edited, approved, and released** report sections reach ParentView.
+- **No auto-release** of AI output; MVP **`observations`** (classroom quality) table remains **out** of this path until explicitly designed.
+
 ## Test posture for this polish pass
 
 - No existing lightweight UI smoke/unit pattern was found for route-level `/students` copy assertions.

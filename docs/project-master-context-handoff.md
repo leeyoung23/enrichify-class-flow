@@ -2623,6 +2623,13 @@ Handoff status: complete for continuity. Use this file as the primary context an
   - no parent visibility expansion into internal notes,
   - no provider/email/SMS/chat work.
 
+### Teacher observation AI evidence (2026-05-06)
+
+- **Included:** Staff-only `observationSummary` / **`teacher_observations`** evidence lane in **`collectAiParentReportSourceEvidence` (RLS)** — sanitised excerpts from **`student_school_profiles`** (`teacher_notes`, `subject_notes`, `learning_context_notes`, short **`parent_goals`**) plus scoped **`learning_goals`** (class filter + optional period filter on timestamps). Wired into **`buildMockDraftInputFromSourceEvidence`** as **`teacherObservations` / `learningEvidence` / `engagementNotes`** (mock core dedupes identical strings).
+- **`AiParentReports.jsx`:** Source Evidence Preview card labels this as **staff evidence, not auto-sent to parents**.
+- **Deferred:** MVP **`observations`** table (classroom teaching-quality; not student-linked) does **not** feed per-student reports until schema/product design.
+- **Unchanged gates:** Teacher review + explicit **release**; **no** auto-release; **no** raw URLs/storage paths through **`sanitizeAggregationText`**.
+
 ### UAT blocker polish follow-up note (2026-05-06)
 
 - `/students` blank white-screen root cause:
