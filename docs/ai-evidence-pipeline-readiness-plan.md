@@ -136,13 +136,19 @@ For a persistent screenshot sample, use `npm run uat:ai-parent-report:sample` wi
 
 ## Guided teacher observation tasks (future structured evidence)
 
-Per-student **monthly learning observations** (rating + evidence comment + next action) are **planned** as internal staff evidence feeding AI report drafts after review — see **`docs/guided-teacher-observation-tasks-plan.md`**. The MVP **`observations`** table remains **classroom teaching-quality** (no `student_id`); a **separate** student-linked store is the likely SQL direction.
+Per-student **Monthly Learning Observations** (rating + evidence-based observation + next action) are **planned** as internal staff evidence feeding AI report drafts after review. Naming boundary: Observation = staff input; Teacher Feedback = parent-facing output in released reports.
+
+- Concept + rubric: `docs/guided-teacher-observation-tasks-plan.md`
+- Proposed schema + RLS + task typing: `docs/monthly-learning-observation-schema-rLS-plan.md`
+
+The MVP **`observations`** table remains **classroom teaching-quality** (no `student_id`); a **separate** student-linked store is the intended SQL direction.
 
 ---
 
 ## Related documents
 
 - `docs/guided-teacher-observation-tasks-plan.md`  
+- `docs/monthly-learning-observation-schema-rLS-plan.md`  
 - `docs/ai-parent-reports-production-readiness-checkpoint.md`  
 - `docs/homework-ai-marking-readiness-plan.md`  
 - `docs/production-readiness-audit.md`  

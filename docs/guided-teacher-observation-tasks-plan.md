@@ -174,5 +174,6 @@ The existing table is **teacher-centric** and **not student-linked**. Extending 
 ## 8. References
 
 - `docs/ai-evidence-pipeline-readiness-plan.md`  
+- `docs/monthly-learning-observation-schema-rLS-plan.md`  
 - `docs/student-profile-learning-notes-foundation-plan.md`  
 - `docs/production-readiness-audit.md`

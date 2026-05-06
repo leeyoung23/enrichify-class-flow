@@ -2639,7 +2639,8 @@ Handoff status: complete for continuity. Use this file as the primary context an
 
 ### Guided teacher observation tasks — planning only (2026-05-06)
 
-- **Doc:** `docs/guided-teacher-observation-tasks-plan.md` — v1 **rubric** (five rated dimensions + strength/improve/next step + internal note), roles, suggested **new student-linked table** vs extending MVP **`observations`**, and sequencing before SQL/UI.
+- **Doc:** `docs/guided-teacher-observation-tasks-plan.md` — v1 **rubric** + naming boundary (**Observation** vs **Teacher Feedback**), roles, workload rotation, and sequencing before SQL/UI.
+- **Schema/RLS/task typing plan:** `docs/monthly-learning-observation-schema-rLS-plan.md` — proposed `student_learning_observations` table (columns v1), lifecycle statuses, RLS design, weekly batch task metadata, and audit event list (planning-only).
 - **UI:** `Observations.jsx` — non-interactive **guidance card** clarifying roadmap vs current classroom-observation demo; **no** new persist path.
 - **No** RLS/SQL in this milestone; **no** parent exposure of raw rows.
 

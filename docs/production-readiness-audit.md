@@ -81,7 +81,7 @@ The following files were reviewed against the **known UAT regression guard list*
 
 **Monthly sample proof status:** A safe manual proof runbook exists at `docs/monthly-report-uat-sample-proof.md`. Current automated smoke validates lifecycle + parent-release visibility but archives created report rows during cleanup, so it is not a persistent showcase artefact.
 
-**Guided teacher observation tasks:** Planned structured **per-student monthly** observation rubric (rating + evidence + next action) — **`docs/guided-teacher-observation-tasks-plan.md`**. Not yet persisted in DB or wired to aggregation; MVP **`observations`** table remains teaching-quality, not student-scoped.
+**Guided teacher observation tasks:** Planned structured **per-student Monthly Learning Observation** rubric (rating + evidence-based observation + next action) and naming boundary (**Observation** internal vs **Teacher Feedback** parent-facing) — `docs/guided-teacher-observation-tasks-plan.md`. Proposed schema + RLS + task typing plan: `docs/monthly-learning-observation-schema-rLS-plan.md`. Not yet persisted in DB or wired to aggregation; MVP **`observations`** table remains teaching-quality, not student-scoped.
 
 **Status category:** **UAT ready** (internal tenant); **Needs legal/compliance before parent pilot** (AI disclosures, retention); **Not production ready** for automated PDF/email distribution.
 
