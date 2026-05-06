@@ -138,6 +138,7 @@ Spot-check quickly before sign-off:
 - [ ] Operational notification phrases (payments, homework/feedback, attendance, reports/released, communications) are visible in normal mode; smoke/fixture wording stays hidden unless `?debug=1`.
 - [ ] For report release notifications with action target data, **View report** opens the exact released report (not only the generic section).
 - [ ] If a targeted report is no longer visible/released, ParentView shows a friendly inline message and keeps parent in released-only scope.
+- [ ] Post-044 checkpoint: notifications smoke reports **own action-target fields available** (no migration-missing warning).
 - [ ] Notification action routing opens/scrolls to expected target sections.
 - [ ] Communication & notification settings load/save correctly.
 - [ ] Parent portal v1: no Active Sessions / technical session history UI (deferred); HQ Session Review unchanged for staff.

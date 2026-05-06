@@ -582,6 +582,7 @@
 
 - **Exact report target routing added:** parent notification action now uses safe action-target fields (`event_type`, `entity_type`, `entity_id`) for own in-app notifications when available, so `View report` can open the exact released AI report.
 - **Safe SQL addition:** `supabase/sql/044_notifications_parent_action_targets_rpc.sql` adds `get_my_in_app_notifications_with_action_targets_044` (`SECURITY DEFINER`) scoped to `recipient_profile_id = auth.uid()`.
+- **Apply status:** migration 044 manually applied in Supabase SQL Editor and re-verified via notification + AI report smokes.
 - **Fallback preserved:** if migration 044 is not applied, client falls back to existing `listMyInAppNotifications` behavior (section-intent routing).
 - **ParentView deep-link support:** `?report=<reportId>#parent-progress-reports` is now honored for released reports; unavailable target shows a friendly message without exposing draft/internal data.
 - **Linked-child default behavior (safe improvement):** parent can open `/parent-view` without `?student=` when exactly one linked child context is available via profile link; multi-child selector remains deferred.

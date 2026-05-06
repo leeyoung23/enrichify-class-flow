@@ -186,6 +186,7 @@ Known placeholders: structured observations and worksheet OCR pipeline.
 
 - Parent can see only released report rows tied to linked child.
 - Notification **View report** now supports exact released report targeting (when action target fields are present) and falls back safely if target is missing.
+- Post-migration checkpoint: `get_my_in_app_notifications_with_action_targets_044` action-target fields are verified in smoke runs; exact report target is now available for release notifications.
 - Parent can view sectioned narrative and printable layout preview in browser.
 - Parent cannot access draft statuses, internal evidence links, or staff-only notes.
 

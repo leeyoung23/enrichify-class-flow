@@ -190,10 +190,12 @@ Applied + verified (linked project):
   - unknown -> `#parent-in-app-notifications` (**View details**)
 - **Notification Action Routing v2 (exact report target):**
   - Added RPC `get_my_in_app_notifications_with_action_targets_044` via `supabase/sql/044_notifications_parent_action_targets_rpc.sql`.
+  - Migration 044 has now been manually applied in Supabase SQL Editor (post-migration checkpoint).
   - RPC is `SECURITY DEFINER` and returns only rows where `notifications.recipient_profile_id = auth.uid()` and `channel = in_app`.
   - Returned action-target fields are minimal: `event_type`, `entity_type`, `entity_id` (no delivery logs, no raw metadata payloads, no unrelated event rows).
   - Parent UI now prefers exact report routing for `ai_parent_report.released` + `entity_type=ai_parent_report`: mark read, move to target student when needed, scroll to `#parent-progress-reports`, and open the exact released report by `entity_id`.
   - Fallback remains safe: if exact target is unavailable, route by section intent only and show a friendly notice.
+  - Post-apply smoke verification now passes exact target checks (`Parent: own notification action-target fields available`; `Parent: notification includes exact released report action target`).
 
 ### Safety boundaries (unchanged after apply)
 
