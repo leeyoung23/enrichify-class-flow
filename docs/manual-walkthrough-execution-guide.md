@@ -83,7 +83,7 @@ Credential note:
 
 ## 4) Walkthrough Flow B: AI Parent Report
 
-**Evidence pipeline reference:** `docs/ai-evidence-pipeline-readiness-plan.md` (what aggregates today vs placeholders).  
+**Evidence pipeline reference:** `docs/ai-evidence-pipeline-readiness-plan.md` (what aggregates today vs placeholders). **Future structured teacher observations:** `docs/guided-teacher-observation-tasks-plan.md` (rubric + workflow; not built into AI aggregation yet).  
 **Sample-proof runbook:** `docs/monthly-report-uat-sample-proof.md` (one clean released sample for screenshots).
 
 Optional helper for persistent sample setup (manual-only): `ALLOW_UAT_SAMPLE_WRITE=1 npm run uat:ai-parent-report:sample`.  

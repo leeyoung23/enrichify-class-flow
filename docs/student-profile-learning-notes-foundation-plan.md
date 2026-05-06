@@ -79,6 +79,7 @@ Teacher access:
 - **Parents never see** this staff evidence list; only **teacher-edited, approved, and released** report sections reach ParentView.
 - **No auto-release** of AI output; MVP **`observations`** (classroom quality) table remains **out** of this path until explicitly designed.
 - **Automated fixture proof:** After **`013`** (manual/dev), run **`npm run test:supabase:ai-parent-report:observation-evidence`** — wide + narrow period: **`observationSummary`** (report window) and **`learningContextSnapshotSummary`** (standing background) + mock-draft **`learningContextSnapshot`** / **`engagementNotes`**. Snapshot fills gaps when the monthly window is thin; **not** parent raw output.
+- **Guided monthly learning observations (planned):** Structured rubric + task workflow for teachers — **`docs/guided-teacher-observation-tasks-plan.md`**. Distinct from MVP **`observations`** (teaching-quality, not student-linked).
 
 ## Test posture for this polish pass
 
