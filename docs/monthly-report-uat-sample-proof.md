@@ -34,7 +34,7 @@ If fixture alignment is missing, record **CHECK** in the UAT evidence log instea
 3. Open **Source Evidence Preview** and capture:
    - attendance/homework/curriculum lines,
    - released homework feedback card (or warm empty state),
-   - **Learning context · teacher notes · goals** card (staff-only; sanitised profile + learning-goals cues — not classroom observation rubrics; warm empty if your report period excludes seeded `updated_at` / goal dates),
+   - **Learning context** card: **report-period** lane + **learning context snapshot** (standing background when the period is thin — staff-only; not raw parent output),
    - explicit placeholder for **worksheet OCR** (not wired).
    - Optional (dev, `013` seed applied): `npm run test:supabase:ai-parent-report:observation-evidence` should **PASS** staff aggregation + mock-draft bridge; parents still cannot read staff evidence links.
 4. Generate **mock draft** from source evidence (real provider draft remains optional and quota-aware).

@@ -38,6 +38,7 @@ async function run() {
     "worksheetEvidenceSummary",
     "lessonProgressionSummary",
     "observationSummary",
+    "learningContextSnapshotSummary",
     "parentCommunicationSummary",
     "memoriesEvidenceSummary",
     "curriculumContext",

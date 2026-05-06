@@ -641,6 +641,38 @@ async function run() {
           "No teacher learning-context seed lines under wide period — apply 013 fake seed or npm run test:supabase:ai-parent-report:observation-evidence"
         );
       }
+
+      const aggNarrow = await aggModule.collectAiParentReportSourceEvidence({
+        studentId: fixtureStudentId,
+        classId: fixtureClassId,
+        branchId: fixtureBranchId,
+        periodStart: "2026-04-01",
+        periodEnd: "2026-04-07",
+        reportId: draftReportId || "",
+        mode: aggModule.SOURCE_AGGREGATION_MODES.RLS,
+      });
+      const snapNarrow =
+        typeof aggNarrow.learningContextSnapshotSummary === "string"
+          ? aggNarrow.learningContextSnapshotSummary.trim()
+          : "";
+      if (snapNarrow && (snapNarrow.includes("Learning context snapshot") || snapNarrow.includes("Learning goal snapshot"))) {
+        printResult(
+          "PASS",
+          "Narrow period: learningContextSnapshotSummary provides standing background when dated cues fall outside the report window"
+        );
+        try {
+          const dN = aggModule.buildMockDraftInputFromSourceEvidence(aggNarrow);
+          if (dN.learningContextSnapshot?.trim?.() || dN.engagementNotes?.trim?.()) {
+            printResult("PASS", "Narrow period: mock draft includes learningContextSnapshot / engagementNotes background");
+          } else {
+            printResult("CHECK", "Narrow period mock draft missing snapshot fields");
+          }
+        } catch {
+          printResult("CHECK", "narrow-period draft bridge threw");
+        }
+      } else {
+        printResult("CHECK", "Narrow period snapshot empty (ok if all cues fall inside the window)");
+      }
     } catch (err) {
       printResult("CHECK", `Source evidence aggregation CHECK (${err?.message || err})`);
     }

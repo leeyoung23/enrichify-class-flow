@@ -226,7 +226,7 @@ async function run() {
     const teacherObsItem = Array.isArray(agg.evidenceItems)
       ? agg.evidenceItems.find((i) => i?.sourceType === "teacher_observations")
       : null;
-    if (teacherObsItem?.summary && !String(teacherObsItem.summary).includes("No teacher observations")) {
+    if (teacherObsItem?.summary && !String(teacherObsItem.summary).includes("No report-period")) {
       printResult("PASS", "Evidence items include teacher_observations row with non-empty summary");
     } else {
       printResult("CHECK", "teacher_observations evidence row shape unexpected");
@@ -242,6 +242,35 @@ async function run() {
       "CHECK",
       "No teacher learning-context lines under wide period — apply supabase/sql/013_school_curriculum_fake_seed_data.sql in dev or run with ALLOW_UAT_OBSERVATION_FIXTURE_WRITE=1"
     );
+  }
+
+  const narrowAgg = await collectAiParentReportSourceEvidence({
+    studentId,
+    classId,
+    branchId,
+    periodStart: "2026-04-01",
+    periodEnd: "2026-04-07",
+    reportId,
+    mode: SOURCE_AGGREGATION_MODES.RLS,
+  });
+  const snapNarrow =
+    typeof narrowAgg.learningContextSnapshotSummary === "string" ? narrowAgg.learningContextSnapshotSummary.trim() : "";
+  const draftNarrow = buildMockDraftInputFromSourceEvidence(narrowAgg);
+  if (
+    snapNarrow &&
+    (snapNarrow.includes("Learning context snapshot") || snapNarrow.includes("Learning goal snapshot"))
+  ) {
+    printResult(
+      "PASS",
+      "Narrow monthly-style window still yields learningContextSnapshotSummary (standing background)"
+    );
+  } else {
+    printResult("CHECK", "Narrow period snapshot empty — ok if fixture dates align entirely inside April window");
+  }
+  if (draftNarrow.learningContextSnapshot?.trim?.() || draftNarrow.engagementNotes?.trim?.()) {
+    printResult("PASS", "Narrow period: mock draft includes learningContextSnapshot / engagementNotes background");
+  } else {
+    printResult("CHECK", "Narrow period: mock draft snapshot fields empty");
   }
 
   const parentEmail = process.env.RLS_TEST_PARENT_EMAIL || process.env.RLS_TEST_PARENT_A_EMAIL;

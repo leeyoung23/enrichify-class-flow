@@ -2637,6 +2637,12 @@ Handoff status: complete for continuity. Use this file as the primary context an
 - **Optional writes:** `ALLOW_UAT_OBSERVATION_FIXTURE_WRITE=1` — HQ session upserts deterministic **`013`** UUIDs (dev/test only).
 - **Main AI report smoke:** Wide-period observation assertion ensures PASS when dev DB has **`013`** applied.
 
+### Learning context snapshot (period-aware fallback) (2026-05-06)
+
+- **Fields:** **`learningContextSnapshotSummary`** + evidence item **`learning_context_snapshot`** — standing background from **`student_school_profiles`** + **active `learning_goals`** when report-period rows are sparse; labelled **not limited to this report period**. **`observationSummary`** stays strictly **in-window** profile/goal timestamps.
+- **Mock draft:** **`learningContextSnapshot`**, **`engagementNotes`** (snapshot-heavy), **`learningEvidence`** merges period + labelled snapshot strings so drafts **do not** imply snapshot events occurred “this month”.
+- **UI:** Source Evidence Preview — two sub-cards (report-period vs snapshot) + amber guidance when only snapshot applies.
+
 ### UAT blocker polish follow-up note (2026-05-06)
 
 - `/students` blank white-screen root cause:

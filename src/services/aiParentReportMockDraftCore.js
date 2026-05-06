@@ -75,13 +75,14 @@ export function buildMockAiParentReportStructuredSections(input = {}) {
   const teacherObservations = normalizeMockAiInputText(input.teacherObservations);
   const learningEvidence = normalizeMockAiInputText(input.learningEvidence);
   const engagementNotes = normalizeMockAiInputText(input.engagementNotes);
+  const learningContextSnapshot = normalizeMockAiInputText(input.learningContextSnapshot);
   const nextRecommendations = normalizeMockAiInputText(input.nextRecommendations);
   const parentSupportSuggestions = normalizeMockAiInputText(input.parentSupportSuggestions);
   const teacherFinalComment = normalizeMockAiInputText(input.teacherFinalComment);
 
-  const internalEvidenceCue = [...new Set([teacherObservations, learningEvidence, engagementNotes].filter(Boolean))].join(
-    " · "
-  );
+  const internalEvidenceCue = [
+    ...new Set([teacherObservations, learningEvidence, engagementNotes, learningContextSnapshot].filter(Boolean)),
+  ].join(" · ");
   const summaryParts = [studentSummary, internalEvidenceCue].filter(Boolean);
   const summaryText =
     summaryParts.length > 0

@@ -36,6 +36,7 @@ function assertShape(agg, label) {
     "worksheetEvidenceSummary",
     "lessonProgressionSummary",
     "observationSummary",
+    "learningContextSnapshotSummary",
     "parentCommunicationSummary",
     "memoriesEvidenceSummary",
     "curriculumContext",

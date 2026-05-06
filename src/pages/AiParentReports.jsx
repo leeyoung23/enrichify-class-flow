@@ -1936,36 +1936,61 @@ export default function AiParentReports() {
                 <p className="text-xs font-medium text-muted-foreground">Lesson progression</p>
                 <p>{sourceEvidencePreview.lessonProgressionSummary}</p>
               </div>
-              <div className="rounded-lg border bg-muted/20 p-3 space-y-2 md:col-span-2 border-amber-200/50 dark:border-amber-900/40">
+              <div className="rounded-lg border bg-muted/20 p-3 space-y-3 md:col-span-2 border-amber-200/50 dark:border-amber-900/40">
                 <div className="flex flex-wrap items-center gap-2">
                   <p className="text-xs font-medium text-muted-foreground">
                     Learning context · teacher notes · goals (staff evidence)
                   </p>
                   <Badge variant="outline" className="text-[10px]">
-                    Staff-only · not auto-sent to parents
+                    Staff-only · draft assist only
                   </Badge>
                 </div>
                 <p className="text-xs text-muted-foreground">
-                  Sanitised roll-up from <span className="font-medium text-foreground">student school profile</span> fields
-                  and scoped <span className="font-medium text-foreground">learning goals</span> under staff RLS. This is
-                  not the same as future <span className="font-medium text-foreground">classroom observation rubrics</span>{' '}
-                  (the separate Observations module / quality rounds). No raw files or storage paths appear here; parents
-                  never see this list — only reviewed, released report prose may reflect approved wording.
+                  <span className="font-medium text-foreground">Report-period</span> cues use profile/goal timestamps inside
+                  this report&apos;s window. The <span className="font-medium text-foreground">snapshot</span> lane adds
+                  latest standing context when the window is thin — clearly not framed as &quot;this month only&quot; for
+                  parents. Not the classroom Observations rubric module. Raw notes never ship to ParentView.
                 </p>
-                {sourceEvidencePreview.observationSummary?.trim() ? (
-                  <p className="text-xs text-muted-foreground">
-                    Staff cues in preview:{' '}
-                    <span className="font-medium text-foreground">
-                      {(sourceEvidencePreview.observationSummary.match(/Teacher observation:/g) || []).length || 0}
-                    </span>{' '}
-                    line(s) (sanitised excerpts for drafting).
+                <div className="space-y-2 rounded-md border border-border/60 bg-background/40 p-2">
+                  <p className="text-xs font-medium text-foreground">1) Report-period learning evidence</p>
+                  {sourceEvidencePreview.observationSummary?.trim() ? (
+                    <>
+                      <p className="text-xs text-muted-foreground">
+                        Cues:{' '}
+                        <span className="font-medium text-foreground">
+                          {(sourceEvidencePreview.observationSummary.match(/Teacher observation:/g) || []).length || 0}
+                        </span>{' '}
+                        line(s)
+                      </p>
+                      <p className="text-sm">{sourceEvidencePreview.observationSummary}</p>
+                    </>
+                  ) : (
+                    <p className="text-sm text-muted-foreground">
+                      No report-period learning cues found for this window yet.
+                    </p>
+                  )}
+                </div>
+                <div className="space-y-2 rounded-md border border-border/60 bg-background/40 p-2">
+                  <p className="text-xs font-medium text-foreground">2) Learning context snapshot (standing background)</p>
+                  {sourceEvidencePreview.learningContextSnapshotSummary?.trim() ? (
+                    <p className="text-sm">{sourceEvidencePreview.learningContextSnapshotSummary}</p>
+                  ) : (
+                    <p className="text-sm text-muted-foreground">
+                      No standing snapshot assembled beyond period-bound rows.
+                    </p>
+                  )}
+                </div>
+                {!sourceEvidencePreview.observationSummary?.trim() &&
+                sourceEvidencePreview.learningContextSnapshotSummary?.trim() ? (
+                  <p className="text-xs text-amber-950/90 dark:text-amber-200/95 bg-amber-50/70 dark:bg-amber-950/35 rounded-md p-2 border border-amber-200/70 dark:border-amber-900/50">
+                    No report-period observations found yet. Using the latest learning context as staff-only background for
+                    drafting — not presented to parents as raw notes or as proof of this month&apos;s events.
                   </p>
                 ) : null}
-                <p className="text-sm">
-                  {sourceEvidencePreview.observationSummary?.trim()
-                    ? sourceEvidencePreview.observationSummary
-                    : 'No teacher learning context or goals found for this report period yet.'}
-                </p>
+                {!sourceEvidencePreview.observationSummary?.trim() &&
+                !sourceEvidencePreview.learningContextSnapshotSummary?.trim() ? (
+                  <p className="text-sm text-muted-foreground">No teacher learning context or goals found yet.</p>
+                ) : null}
               </div>
               <div className="rounded-lg border bg-muted/20 p-3 space-y-1">
                 <p className="text-xs font-medium text-muted-foreground">Parent Communication</p>

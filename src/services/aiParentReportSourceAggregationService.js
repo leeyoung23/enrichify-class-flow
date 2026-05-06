@@ -131,6 +131,17 @@ function buildFakeEvidenceItems({ periodStart, periodEnd, digest }) {
       classification: EVIDENCE_CLASSIFICATION.STAFF_ONLY_REQUIRES_SELECTION,
     },
     {
+      sourceType: "learning_context_snapshot",
+      label: "Learning context snapshot (demo)",
+      summary:
+        "Demo standing background — latest-style profile cues labelled as not limited to the synthetic report window; real mode uses student_school_profiles + active goals outside the period when needed.",
+      confidence: "low",
+      visibility: "staff",
+      requiresTeacherConfirmation: true,
+      includedInDraftByDefault: false,
+      classification: EVIDENCE_CLASSIFICATION.STAFF_ONLY_REQUIRES_SELECTION,
+    },
+    {
       sourceType: "parent_communication_summary",
       label: "Parent Communication (simulated)",
       summary: `Demo quick-comment threads ${digest % 83}: synthetic tone check; not live parent communications.`,
@@ -207,6 +218,7 @@ function buildFakeAggregationOutput(params) {
     worksheetEvidenceSummary: pick("worksheet_upload_placeholder"),
     lessonProgressionSummary: pick("lesson_progression_summary"),
     observationSummary: pick("teacher_observations"),
+    learningContextSnapshotSummary: pick("learning_context_snapshot"),
     parentCommunicationSummary: pick("parent_communication_summary"),
     memoriesEvidenceSummary: pick("memories_media_placeholder"),
     curriculumContext: pick("curriculum_context"),
@@ -351,9 +363,19 @@ function isDateInInclusiveRange(datePart, periodStart, periodEnd) {
   return true;
 }
 
+function substringLikelyContained(haystack, needlePrefix) {
+  if (!needlePrefix || needlePrefix.length < 14) return false;
+  const h = String(haystack || "").toLowerCase();
+  const n = String(needlePrefix || "")
+    .toLowerCase()
+    .slice(0, 72)
+    .trim();
+  return n.length >= 14 && h.includes(n);
+}
+
 /**
- * Staff-only learning evidence tied to this student via RLS (student school profile narratives + scoped learning goals).
- * Does not query the MVP `observations` table (classroom observation quality rows are not student-scoped).
+ * Report-period only: profile narrative rows whose `updated_at` falls in the selected window, plus learning goals whose
+ * timestamps fall in the window. Does not query the MVP `observations` table.
  */
 export function summarizeTeacherObservationEvidence(studentData = {}, opts = {}) {
   const periodStart = trimIso(opts.periodStart || "");
@@ -407,6 +429,92 @@ export function summarizeTeacherObservationEvidence(studentData = {}, opts = {})
   return sanitizeAggregationText(lines.join(" | "));
 }
 
+/**
+ * Standing background for drafting when report-period rows are sparse: latest profile notes / family context and
+ * active goals (especially those outside the period). Omits text already represented in `inPeriodSummary` where
+ * detectable. Staff-only; never implies snapshot lines occurred “this month”.
+ */
+export function summarizeLearningContextSnapshot(studentData = {}, opts = {}) {
+  const periodStart = trimIso(opts.periodStart || "");
+  const periodEnd = trimIso(opts.periodEnd || "");
+  const classId = typeof opts.classId === "string" ? opts.classId.trim() : "";
+  const inPeriodSummary = typeof opts.inPeriodSummary === "string" ? opts.inPeriodSummary.trim() : "";
+  const hasPeriod = Boolean(periodStart || periodEnd);
+  if (!hasPeriod) return "";
+
+  const profile = studentData?.student_school_profile;
+  const goals = Array.isArray(studentData?.learning_goals) ? studentData.learning_goals : [];
+  const chunks = [];
+
+  if (profile) {
+    const profDate = isoDatePart(profile.updated_at);
+    const profileInPeriod = isDateInInclusiveRange(profDate, periodStart, periodEnd);
+    const bits = [];
+    for (const field of ["teacher_notes", "subject_notes", "learning_context_notes", "parent_goals"]) {
+      const t = profile[field];
+      if (t && String(t).trim()) {
+        bits.push(sanitizeAggregationText(String(t).trim(), { maxLength: 240 }));
+      }
+    }
+    if (bits.length) {
+      const merged = bits.join(" · ");
+      const shouldInclude =
+        !inPeriodSummary ||
+        !profileInPeriod ||
+        !substringLikelyContained(inPeriodSummary, merged.slice(0, 80));
+      if (shouldInclude) {
+        chunks.push(
+          sanitizeAggregationText(
+            `Learning context snapshot (standing background; not limited to this report period): ${merged}`,
+            { maxLength: 750 }
+          )
+        );
+      }
+    }
+  }
+
+  const goalLines = [];
+  const sortedGoals = [...goals].sort((a, b) => {
+    const ta = new Date(a?.updated_at || a?.created_at || 0).getTime();
+    const tb = new Date(b?.updated_at || b?.created_at || 0).getTime();
+    return tb - ta;
+  });
+
+  for (const g of sortedGoals) {
+    if (classId && g?.class_id && String(g.class_id).trim() !== classId) continue;
+    const st = String(g?.status || "").toLowerCase();
+    if (st === "cancelled" || st === "archived") continue;
+
+    const gDate = isoDatePart(g.updated_at || g.created_at);
+    const goalInPeriod = isDateInInclusiveRange(gDate, periodStart, periodEnd);
+    const title = g?.goal_title ? String(g.goal_title).trim() : "";
+    const desc = g?.goal_description ? String(g.goal_description).trim() : "";
+    const excerpt = desc ? `${title || "Goal"} — ${desc}` : title || "Learning goal";
+    const line = sanitizeAggregationText(excerpt, { maxLength: 280 });
+
+    if (!goalInPeriod) {
+      goalLines.push(`Outside period — ${line}`);
+    } else if (!inPeriodSummary && goalLines.length < 8) {
+      goalLines.push(line);
+    }
+    if (goalLines.length >= 10) break;
+  }
+
+  if (goalLines.length) {
+    chunks.push(
+      sanitizeAggregationText(
+        `Learning goal snapshot (active goals; may fall outside the selected report period — background only): ${goalLines.join(
+          " | "
+        )}`,
+        { maxLength: 900 }
+      )
+    );
+  }
+
+  if (chunks.length === 0) return "";
+  return sanitizeAggregationText(chunks.join(" "), { maxLength: 1200 });
+}
+
 function summarizeMemoriesCaptionOnly(rows) {
   if (!Array.isArray(rows) || rows.length === 0) return "";
   const bits = [];
@@ -446,6 +554,7 @@ function buildRlsEvidenceItems({
   worksheetEvidenceSummary,
   lessonProgressionSummary,
   observationSummary,
+  learningContextSnapshotSummary,
   parentCommunicationSummary,
   memoriesEvidenceSummary,
   curriculumContext,
@@ -515,12 +624,25 @@ function buildRlsEvidenceItems({
     },
     {
       sourceType: "teacher_observations",
-      label: "Teacher observations (staff profile & goals)",
+      label: "Report-period learning evidence (profile & goals)",
       summary:
         typeof observationSummary === "string" && observationSummary.trim()
           ? observationSummary
-          : "No teacher observations found for this report period yet.",
+          : "No report-period learning cues found for this window yet.",
       confidence: typeof observationSummary === "string" && observationSummary.trim() ? "medium" : "low",
+      visibility: "staff",
+      requiresTeacherConfirmation: true,
+      includedInDraftByDefault: false,
+      classification: EVIDENCE_CLASSIFICATION.STAFF_ONLY_REQUIRES_SELECTION,
+    },
+    {
+      sourceType: "learning_context_snapshot",
+      label: "Learning context snapshot (standing background)",
+      summary:
+        typeof learningContextSnapshotSummary === "string" && learningContextSnapshotSummary.trim()
+          ? learningContextSnapshotSummary
+          : "No standing learning context snapshot assembled (or none beyond report-period rows).",
+      confidence: learningContextSnapshotSummary?.trim?.() ? "medium" : "low",
       visibility: "staff",
       requiresTeacherConfirmation: true,
       includedInDraftByDefault: false,
@@ -607,6 +729,7 @@ async function collectRlsSourceEvidence(params) {
   );
   let lessonProgressionSummary = "";
   let observationSummary = "";
+  let learningContextSnapshotSummary = "";
   let parentCommunicationSummary = "";
   let memoriesEvidenceSummary = "";
   let curriculumContext = "";
@@ -723,6 +846,12 @@ async function collectRlsSourceEvidence(params) {
         periodEnd: trimIso(periodEnd),
         classId: cid,
       });
+      learningContextSnapshotSummary = summarizeLearningContextSnapshot(studentCtx?.data ?? {}, {
+        periodStart: trimIso(periodStart),
+        periodEnd: trimIso(periodEnd),
+        classId: cid,
+        inPeriodSummary: observationSummary,
+      });
       if (!curriculumContext) {
         const school = await listStudentSchoolProfiles({ studentId: sid });
         if (!school.error && Array.isArray(school.data) && school.data[0]) {
@@ -785,6 +914,11 @@ async function collectRlsSourceEvidence(params) {
   if (!trimIso(observationSummary)) {
     missingEvidence.push("teacher_observations_empty_in_period");
   }
+  if (trimIso(periodStart) || trimIso(periodEnd)) {
+    if (!trimIso(learningContextSnapshotSummary)) {
+      missingEvidence.push("learning_context_snapshot_missing");
+    }
+  }
 
   const evidenceItems = buildRlsEvidenceItems({
     attendanceSummary,
@@ -793,6 +927,7 @@ async function collectRlsSourceEvidence(params) {
     worksheetEvidenceSummary,
     lessonProgressionSummary,
     observationSummary,
+    learningContextSnapshotSummary,
     parentCommunicationSummary,
     memoriesEvidenceSummary,
     curriculumContext,
@@ -806,6 +941,7 @@ async function collectRlsSourceEvidence(params) {
     worksheetEvidenceSummary,
     lessonProgressionSummary: lessonProgressionSummary || "",
     observationSummary,
+    learningContextSnapshotSummary,
     parentCommunicationSummary: parentCommunicationSummary || "",
     memoriesEvidenceSummary: memoriesEvidenceSummary || "",
     curriculumContext: curriculumContext || "",
@@ -824,6 +960,7 @@ function mergeHybridOutputs(rlsOut, fakeOut) {
     worksheetEvidenceSummary: pick("worksheetEvidenceSummary"),
     lessonProgressionSummary: pick("lessonProgressionSummary"),
     observationSummary: pick("observationSummary"),
+    learningContextSnapshotSummary: pick("learningContextSnapshotSummary"),
     parentCommunicationSummary: pick("parentCommunicationSummary"),
     memoriesEvidenceSummary: pick("memoriesEvidenceSummary"),
     curriculumContext: pick("curriculumContext"),
@@ -944,32 +1081,49 @@ export function buildMockDraftInputFromSourceEvidence(sourceEvidence) {
 
   const lesson = safe(sourceEvidence.lessonProgressionSummary);
   const obs = safe(sourceEvidence.observationSummary);
+  const snap = safe(sourceEvidence.learningContextSnapshotSummary);
   const curr = safe(sourceEvidence.curriculumContext);
   const parentComm = safe(sourceEvidence.parentCommunicationSummary);
 
   const strengthsMerged =
-    lesson && obs
-      ? sanitizeAggregationText(`Lesson progression cues: ${lesson} | Staff learning evidence (draft scaffolding): ${obs}`, {
-          maxLength: 1100,
-        })
-      : lesson || obs || undefined;
+    lesson && (obs || snap)
+      ? sanitizeAggregationText(
+          `Lesson progression cues: ${lesson} | Report-period learning cues: ${obs || "(none)"} | Standing background (not month-specific): ${snap || "(none)"}`,
+          { maxLength: 1100 }
+        )
+      : lesson || obs || snap || undefined;
 
   const recommendationsMerged =
-    curr && obs
-      ? sanitizeAggregationText(`${curr} | Align next steps with staff learning cues: ${obs.slice(0, 420)}`, {
-          maxLength: 1100,
-        })
-      : curr || obs || undefined;
+    curr || obs || snap
+      ? sanitizeAggregationText(
+          `${curr ? `${curr} | ` : ""}Report-period cues: ${obs.slice(0, 280) || "(none)"} | Draft background from snapshot (do not imply month timing): ${snap.slice(0, 380) || "(none)"}`,
+          { maxLength: 1100 }
+        )
+      : undefined;
 
   const parentSupportMerged =
-    parentComm && obs
-      ? sanitizeAggregationText(`${parentComm} | Context from staff-only learning notes (edit before sending): ${obs.slice(0, 380)}`, {
-          maxLength: 1100,
-        })
-      : parentComm || obs || undefined;
+    parentComm || obs || snap
+      ? sanitizeAggregationText(
+          `${parentComm ? `${parentComm} | ` : ""}Report-period: ${obs.slice(0, 260) || "(none)"} | Family/programme background (staff review; not raw parent release): ${snap.slice(0, 340) || "(none)"}`,
+          { maxLength: 1100 }
+        )
+      : undefined;
+
+  const learningEvidenceMerged =
+    obs || snap
+      ? [
+          obs ? `Report-period learning evidence: ${obs.slice(0, 550)}` : "",
+          snap ? `Standing learning context snapshot (background only; not dated to this month): ${snap.slice(0, 550)}` : "",
+        ]
+          .filter(Boolean)
+          .join(" || ") || undefined
+      : undefined;
 
   return {
-    studentSummary: studentBits || undefined,
+    studentSummary:
+      [studentBits, snap ? `Standing context snapshot (staff draft only): ${snap.slice(0, 400)}` : ""]
+        .filter(Boolean)
+        .join(" ") || undefined,
     attendanceSummary: safe(sourceEvidence.attendanceSummary) || undefined,
     lessonProgression: lesson || undefined,
     homeworkCompletion: hwComp || undefined,
@@ -978,8 +1132,9 @@ export function buildMockDraftInputFromSourceEvidence(sourceEvidence) {
     improvementAreas: obs || undefined,
     learningGaps: undefined,
     teacherObservations: obs || undefined,
-    learningEvidence: obs || undefined,
-    engagementNotes: obs || undefined,
+    learningEvidence: learningEvidenceMerged,
+    engagementNotes: snap || undefined,
+    learningContextSnapshot: snap || undefined,
     nextRecommendations: recommendationsMerged || undefined,
     parentSupportSuggestions: parentSupportMerged || undefined,
     teacherFinalComment: undefined,
