@@ -1,5 +1,15 @@
 # Project Master Context Handoff
 
+## Checkpoint update (Parent printable A4 preview polish — 2026-05-06)
+
+- **Regression guards (static):** `Students.jsx`, `ParentUpdates.jsx`, `ParentView.jsx`, `Sidebar.jsx`, `sessionGovernanceService.js`, `supabaseAuthService.js`, `permissionService.js` remain healthy; no blocker fix required.
+- **Printable template polish:** `src/services/aiParentReportPdfTemplate.js` keeps existing A4 `@page` and now tightens page framing for UAT credibility:
+  - `.sheet` uses explicit A4-style width/min-height (`210mm` / `297mm`) for screen preview,
+  - print-mode CSS resets sheet box-shadow/padding for cleaner browser print preview,
+  - still no PDF file generation/storage/download behavior change.
+- **Parent boundaries unchanged:** released-only preview remains in ParentView; no draft/internal evidence exposure, no release-rule changes.
+- **Docs aligned for screenshot QA:** `docs/monthly-report-uat-sample-proof.md`, `docs/manual-walkthrough-execution-guide.md`, `docs/validation-uat-readiness-checklist.md` now include Chrome print-preview A4 checks (paper size A4, scale 100%).
+
 ## Checkpoint update (Read-only AI report UAT sample finder — 2026-05-06)
 
 - **Regression guards (static):** `Students.jsx`, `ParentUpdates.jsx`, `ParentView.jsx`, `Sidebar.jsx`, `sessionGovernanceService.js`, `supabaseAuthService.js`, `permissionService.js` spot-check remains healthy; no blocker fix required.

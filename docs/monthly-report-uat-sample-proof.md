@@ -116,6 +116,34 @@ If no sample is found, finder prints guidance to run the write-gated creator:
 
 ---
 
+## A4 printable preview verification (ParentView)
+
+Use the known released sample:
+
+- Report ID: `fb7c9801-faf6-472c-a723-72bce2393260`
+- Version ID: `ccc0107b-e5f2-4ae7-8229-d7b34a723f6a`
+- URL: `/parent-view?student=55555555-5555-5555-5555-555555555555#parent-progress-reports`
+
+Steps:
+
+1. Open ParentView URL and expand the released report detail.
+2. Click **Open printable layout**.
+3. Confirm preview copy still states:
+   - printable preview only,
+   - no PDF file generated or stored,
+   - official PDF download comes later.
+4. In Chrome, press `Cmd+P` (or browser Print) while focused on the page.
+5. In print dialog:
+   - Destination: Save to PDF (preview only) or printer,
+   - Paper size: **A4**,
+   - Scale: **100%**,
+   - Margins: Default.
+6. Confirm content is readable and section cards/signature areas are not cut unexpectedly.
+
+This browser print-preview flow is a temporary UAT workaround; product still has **no stored/downloadable official PDF file**.
+
+---
+
 ## Screenshot checklist
 
 - Staff: report shell created (status Draft).
@@ -135,6 +163,7 @@ Finder also prints suggested names:
 - `uat-ai-report-parent-progress-list-<student>-<report>.png`
 - `uat-ai-report-parent-report-detail-<student>-<report>.png`
 - `uat-ai-report-parent-printable-layout-<student>-<report>.png`
+- `uat-ai-report-parent-print-dialog-a4-<student>-<report>.png`
 
 ---
 

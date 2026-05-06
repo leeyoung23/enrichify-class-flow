@@ -139,6 +139,7 @@ Spot-check quickly before sign-off:
 - [ ] Parent portal v1: no Active Sessions / technical session history UI (deferred); HQ Session Review unchanged for staff.
 - [ ] Released progress reports are visible after release only.
 - [ ] Printable **layout** preview (released content) opens for parents without demo/debug-only gating — still no PDF download.
+- [ ] Browser print preview check (A4, 100% scale) looks credible for UAT screenshots; still no official PDF download/storage path.
 - [ ] Homework feedback is visible after release only.
 - [ ] Homework uploads and unreleased drafts are **not** exposed as final feedback to parents (copy + behaviour align with centre-private review model).
 - [ ] Attendance arrival notification appears when triggered.

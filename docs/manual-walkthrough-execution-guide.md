@@ -102,6 +102,7 @@ Read-only finder (safe anytime): `npm run uat:ai-parent-report:find-sample` to l
    - released/current report is visible when a release exists.
    - draft/internal content is not visible.
    - **Open printable layout** works for released report (browser layout preview — not a downloadable PDF).
+   - Chrome print preview check: Paper size **A4**, scale **100%**, margins default; verify page layout remains credible for screenshot evidence.
 9. Archive **one** screenshot set for UAT evidence (`docs/uat-evidence-log-template.md` naming convention) and log outcomes in `docs/uat-evidence-log-2026-05-06.md`.
 
 **Planning reference:** `docs/ai-evidence-pipeline-readiness-plan.md`

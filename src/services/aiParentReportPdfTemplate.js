@@ -577,12 +577,18 @@ export function renderReleasedReportPdfHtml(input) {
       color: #0f172a;
       margin: 0;
       padding: 0;
-      background: #fff;
+      background: #f8fafc;
+      print-color-adjust: exact;
+      -webkit-print-color-adjust: exact;
     }
     .sheet {
+      width: 210mm;
+      min-height: 297mm;
       max-width: 210mm;
       margin: 0 auto;
-      padding: 0 2mm;
+      padding: 2mm;
+      background: #fff;
+      box-shadow: 0 8px 24px rgba(15, 23, 42, 0.08);
     }
     .brand-strip {
       border: 1px solid #cbd5e1;
@@ -759,6 +765,17 @@ export function renderReleasedReportPdfHtml(input) {
       line-height: 1.4;
     }
     .report-footer div + div { margin-top: 4pt; }
+    @media print {
+      body.report-root { background: #fff; }
+      .sheet {
+        width: auto;
+        min-height: auto;
+        max-width: none;
+        margin: 0;
+        padding: 0;
+        box-shadow: none;
+      }
+    }
   `);
   parts.push('</style>');
   parts.push('</head>');
